@@ -64,7 +64,12 @@ jobs:
     name: codeql
     if: ${{ inputs.run-security && inputs.run-codeql }}
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    # No container: CodeQL autobuild for compiled languages (go, java, rust)
+    # needs the language toolchain on PATH. The prod-base image has none, and
+    # language images (prod-go, prod-java, …) are published per-version only —
+    # there is no prod-<lang>:latest tag to default to. The bare ubuntu-latest
+    # runner ships all the toolchains autobuild needs, and ./actions/shared/setup/vergil
+    # installs uv there for the SARIF-evaluation step. See issue #658.
     permissions:
       contents: read
       security-events: write
