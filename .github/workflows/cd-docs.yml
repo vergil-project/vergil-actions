@@ -35,7 +35,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.0.27
 
       - name: Run pre-deploy command
         if: inputs.pre-deploy-command != ''
@@ -45,7 +45,7 @@ jobs:
         run: eval "$PRE_DEPLOY_COMMAND"
 
       - name: Deploy docs
-        uses: ./actions/cd/docs/deploy
+        uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.0.27
         with:
           version-command: vrg-version show --major-minor
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
