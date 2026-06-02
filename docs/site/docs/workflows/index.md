@@ -17,6 +17,7 @@ rulesets.
 
 | Workflow | File | Purpose |
 | ---------- | ------ | --------- |
+| [CI Docs](ci-docs.md) | `ci-docs.yml` | Build-only MkDocs strict verification (no deploy) |
 | [CI Security](ci-security.md) | `ci-security.yml` | Standards compliance and security scanning |
 | [CI Quality](ci-quality.md) | `ci-quality.yml` | Common linting, language-specific lint and typecheck |
 | [CI Audit](ci-audit.md) | `ci-audit.yml` | Dependency audit |

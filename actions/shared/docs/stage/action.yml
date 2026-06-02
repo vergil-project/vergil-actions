@@ -1,0 +1,41 @@
+name: Stage documentation sources
+description: >-
+  Stages changelog and release-notes pages and patches the mkdocs nav with
+  release versions. Shared by the CI build-only verification and the CD deploy
+  so both build the docs from an identical source tree — a green CI docs check
+  reliably predicts a green CD docs deploy.
+
+inputs:
+  mkdocs-config:
+    description: Path to mkdocs.yml configuration file.
+    required: false
+    default: docs/site/mkdocs.yml
+
+runs:
+  using: composite
+  steps:
+    - name: Allow git operations in the container workspace
+      shell: bash
+      # vrg-docs-stage reads git history. Inside a container the workspace is
+      # mounted with a UID that differs from the user git runs as, which trips
+      # git's dubious-ownership check; exempt the workspace. Issue #206.
+      run: git config --global --add safe.directory '*'
+
+    - name: Stage changelog and release notes
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        MKDOCS_CONFIG: ${{ inputs.mkdocs-config }}
+      run: |
+        vrg-docs-stage --docs-dir "$(dirname "$MKDOCS_CONFIG")/docs"
+
+    - name: Patch mkdocs nav with release versions
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        MKDOCS_CONFIG: ${{ inputs.mkdocs-config }}
+      run: |
+        DOCS_DIR=$(dirname "$MKDOCS_CONFIG")/docs
+        vrg-docs-patch-nav \
+          --mkdocs-yml "$MKDOCS_CONFIG" \
+          --releases-dir "$DOCS_DIR/releases"
