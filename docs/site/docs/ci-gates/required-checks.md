@@ -58,6 +58,7 @@ Each reusable workflow produces canonical check names. See
 
 | Workflow | Check names produced |
 | ---------- | ---------------------- |
+| `ci-docs.yml` | `CI Docs / docs` |
 | `ci-security.yml` | `CI Security / standards`, `CI Security / codeql`, `CI Security / trivy`, `CI Security / semgrep` |
 | `ci-quality.yml` | `CI Quality / common`, `CI Quality / lint / <version>`, `CI Quality / typecheck / <version>` |
 | `ci-audit.yml` | `CI Audit / dependencies / <version>` |

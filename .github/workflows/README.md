@@ -21,6 +21,7 @@ across all managed repositories.
 
 | Workflow | Purpose |
 |---|---|
+| `ci-docs.yml` | Build-only MkDocs strict verification (no deploy) |
 | `ci-quality.yml` | Common linting, language-specific lint and typecheck |
 | `ci-security.yml` | Standards compliance and security scanning |
 | `ci-test.yml` | Unit and integration tests |

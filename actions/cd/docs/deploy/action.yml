@@ -2,6 +2,9 @@ name: Deploy documentation
 description: >-
   Deploys MkDocs documentation using mike for versioned documentation.
   Handles git configuration, version detection, and mike deploy/set-default.
+  Staging (changelog/release-notes pages and nav patching) is a prerequisite
+  performed by the shared actions/shared/docs/stage action, so CD deploy and
+  CI build-only verification stage the docs identically.
 
 inputs:
   version-command:
@@ -80,25 +83,6 @@ runs:
           echo "version=dev" >> "$GITHUB_OUTPUT"
           echo "alias=" >> "$GITHUB_OUTPUT"
         fi
-
-    - name: Stage changelog and release notes
-      shell: bash
-      working-directory: ${{ github.workspace }}
-      env:
-        MKDOCS_CONFIG: ${{ inputs.mkdocs-config }}
-      run: |
-        vrg-docs-stage --docs-dir "$(dirname "$MKDOCS_CONFIG")/docs"
-
-    - name: Patch mkdocs nav with release versions
-      shell: bash
-      working-directory: ${{ github.workspace }}
-      env:
-        MKDOCS_CONFIG: ${{ inputs.mkdocs-config }}
-      run: |
-        DOCS_DIR=$(dirname "$MKDOCS_CONFIG")/docs
-        vrg-docs-patch-nav \
-          --mkdocs-yml "$MKDOCS_CONFIG" \
-          --releases-dir "$DOCS_DIR/releases"
 
     - name: Deploy docs
       shell: bash

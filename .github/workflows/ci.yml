@@ -12,6 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs:
+    uses: ./.github/workflows/ci-docs.yml
+
   quality:
     uses: ./.github/workflows/ci-quality.yml
     with:

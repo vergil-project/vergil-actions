@@ -164,6 +164,8 @@ look in `actions/{phase}/{domain}/`. Cross-phase actions live in
   boundary tags, and GitHub Releases
 - `actions/cd/docs/deploy` — MkDocs Material + mike versioned
   documentation deployment
+- `actions/shared/docs/stage` — Stages changelog/release-notes pages and
+  patches mkdocs nav; shared by CI docs verification and CD docs deploy
 - `actions/shared/security/trivy` — Trivy vulnerability scanning
   (filesystem, SBOM, container image)
 - `actions/shared/setup/vergil-tooling` — Installs vergil-tooling
@@ -176,6 +178,7 @@ look in `actions/{phase}/{domain}/`. Cross-phase actions live in
 CI and CD workflows live under `.github/workflows/` and are consumed via
 `workflow_call`:
 
+- `ci-docs.yml` — Build-only MkDocs strict verification (no deploy)
 - `ci-quality.yml` — Common linting, language-specific lint and typecheck
 - `ci-security.yml` — Standards compliance and security scanning
 - `ci-test.yml` — Unit and integration tests
