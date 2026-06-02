@@ -44,6 +44,11 @@ jobs:
           PRE_DEPLOY_COMMAND: ${{ inputs.pre-deploy-command }}
         run: eval "$PRE_DEPLOY_COMMAND"
 
+      - name: Stage documentation sources
+        uses: ./actions/shared/docs/stage
+        with:
+          mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
+
       - name: Deploy docs
         uses: ./actions/cd/docs/deploy
         with:

@@ -78,6 +78,7 @@ nav:
           - shared/security/trivy: actions/shared-security-trivy.md
   - Reusable Workflows:
       - Overview: workflows/index.md
+      - ci-docs: workflows/ci-docs.md
       - ci-security: workflows/ci-security.md
       - ci-quality: workflows/ci-quality.md
       - ci-audit: workflows/ci-audit.md

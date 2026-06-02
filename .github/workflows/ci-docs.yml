@@ -1,0 +1,82 @@
+name: CI Docs
+
+on:
+  workflow_call:
+    inputs:
+      mkdocs-config:
+        description: Path to mkdocs.yml configuration file.
+        type: string
+        default: docs/site/mkdocs.yml
+      container-prefix:
+        description: Container image name prefix (prod or dev). Defaults to "prod".
+        type: string
+        default: prod
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: docs
+    runs-on: ubuntu-latest
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Detect docs
+        id: detect
+        shell: bash
+        # Self-guard so the job is a no-op pass in repos without docs, mirroring
+        # how cd-docs is wired in only for repos that publish documentation.
+        env:
+          MKDOCS_CONFIG: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
+        run: |
+          if [ -f "$MKDOCS_CONFIG" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No mkdocs config at $MKDOCS_CONFIG; skipping docs build." >&2
+          fi
+
+      - name: Stage documentation sources
+        if: steps.detect.outputs.present == 'true'
+        uses: ./actions/shared/docs/stage
+        with:
+          mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
+
+      - name: Resolve mkdocs command
+        id: mkdocs-cmd
+        if: steps.detect.outputs.present == 'true'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        # Mirrors the mike-command resolution in actions/cd/docs/deploy so the
+        # verification build uses the same toolchain as the deploy build.
+        run: |
+          lang=$(/usr/local/bin/python3 -c "
+          import tomllib, pathlib
+          cfg = tomllib.loads(pathlib.Path('vergil.toml').read_text())
+          print(cfg.get('project', {}).get('primary-language', ''))
+          ")
+          if [ "$lang" = "python" ]; then
+            echo "cmd=uv run mkdocs" >> "$GITHUB_OUTPUT"
+          else
+            echo "cmd=mkdocs" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build docs
+        if: steps.detect.outputs.present == 'true'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        # Build only: no mike, no --push, no credentials. --strict fails the
+        # build on nav/reference warnings, matching the strict CD deploy build.
+        env:
+          MKDOCS_CMD: ${{ steps.mkdocs-cmd.outputs.cmd }}
+          MKDOCS_CONFIG: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
+        run: |
+          $MKDOCS_CMD build --strict -f "$MKDOCS_CONFIG"
