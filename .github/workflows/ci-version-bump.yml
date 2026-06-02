@@ -41,10 +41,10 @@ jobs:
           fetch-depth: 0
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.0.29
 
       - name: Verify version bump
-        uses: ./actions/ci/version-bump/version-divergence
+        uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.0.29
         with:
           head-version-command: vrg-version show
           main-version-command: vrg-version show --ref origin/main

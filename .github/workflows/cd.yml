@@ -40,7 +40,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.0.29
 
       - name: Extract version
         id: version
@@ -62,13 +62,13 @@ jobs:
 
       - name: Freeze internal refs to release tag
         if: steps.tag_check.outputs.exists == 'false'
-        uses: ./actions/local/freeze-internal-refs
+        uses: vergil-project/vergil-actions/actions/local/freeze-internal-refs@v2.0.29
         with:
           tag: ${{ steps.version.outputs.tag }}
 
       - name: Tag and release
         if: steps.tag_check.outputs.exists == 'false'
-        uses: ./actions/cd/release/tag-and-release
+        uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.0.29
         with:
           version: ${{ steps.version.outputs.version }}
 
