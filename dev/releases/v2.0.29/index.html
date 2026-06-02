@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v1.3.0/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v2.0.29/">
       
       
-        <link rel="prev" href="../v1.3.1/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v1.2.1/">
+        <link rel="next" href="../v2.0.28/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>1.2.1 - Vergil Actions</title>
+        <title>2.0.29 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-121-2026-04-24" class="md-skip">
+        <a href="#release-2029-2026-06-02" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              1.2.1
+              2.0.29
             
           </span>
         </div>
@@ -771,10 +771,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.0.29/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -790,6 +799,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -2535,37 +2545,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    1.2.1
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v1.3.0/" class="md-nav__link">
         
   
   
@@ -2581,59 +2564,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bug fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fix
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Release
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3926,47 +3856,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bug fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fix
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Release
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -3982,46 +3871,7 @@
 
 
 
-<h1 id="release-121-2026-04-24">Release 1.2.1 (2026-04-24)<a class="headerlink" href="#release-121-2026-04-24" title="Permanent link">&para;</a></h1>
-<h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>use env vars + quoted heredoc in version-bump-pr Update step</strong>
-Surfaced on wphillipmoore/standard-tooling-plugin#78 (v1.4.1
-publish): version-regex <code>(\s*"version":\s*").*("\s*)</code> contains
-literal double-quotes; GitHub expression interpolation put the
-raw value into the bash <code>python3 -c "..."</code> string, bash's outer
-double-quote closed at the first embedded <code>"</code>, the <code>(</code> in the
-regex became a subshell-open, and the <code>)</code> produced
-"unexpected token" at exit.</li>
-</ul>
-<p>Latent since the step was written. Only surfaced once earlier
-composite failures (CHANGELOG merge, missing version-replacement)
-stopped masking it.</p>
-<h2 id="fix">Fix<a class="headerlink" href="#fix" title="Permanent link">&para;</a></h2>
-<p>Pass values via <code>env:</code> and use a single-quoted heredoc delimiter
-<code>&lt;&lt;'PYEOF'</code> so bash performs zero interpolation on the body. The
-regex, replacement, and next version are all read from
-<code>os.environ</code> inside the python block.</p>
-<p>No caller-visible change to the composite's interface (same
-inputs, same behavior). Patch-level bump — v1.2.0 consumers
-automatically get the fix when <code>v1.2</code> rolls forward.</p>
-<h2 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>1.1.3 (#190)</strong></li>
-<li>
-<p>chore: bump version to 1.1.3</p>
-</li>
-<li>
-<p>chore: update toolchain dependencies for next development cycle (#162)</p>
-</li>
-<li>
-<p>actions/setup-python v5 -&gt; v6</p>
-</li>
-<li>actions/setup-node v4 -&gt; v6</li>
-<li>actions/cache v4 -&gt; v5</li>
-<li>aquasec/trivy 0.69.1 -&gt; 0.69.2</li>
-<li>uv 0.9.26 -&gt; 0.10.7</li>
-</ul>
+<h1 id="release-2029-2026-06-02">Release 2.0.29 (2026-06-02)<a class="headerlink" href="#release-2029-2026-06-02" title="Permanent link">&para;</a></h1>
 
 
 
