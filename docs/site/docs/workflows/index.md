@@ -37,12 +37,12 @@ Reference workflows using the full path to the workflow file with a rolling
 minor tag pin:
 
 ```yaml
-uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
 ```
 
 !!! note "Tag pinning"
     The same tag pinning guidance applies as for composite actions. Pin to
-    `@v2.0` for automatic patch releases, or `@v2.0.0` for full
+    `@v2.1` for automatic patch releases, or `@v2.1.0` for full
     reproducibility.
 
 ## Permissions
@@ -53,7 +53,7 @@ declare the permissions each workflow needs at the job level:
 ```yaml
 jobs:
   security:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
     permissions:
       contents: read
       security-events: write
@@ -88,7 +88,7 @@ all calls in a file to run the full CI/CD pipeline against dev images.
 ```yaml
 jobs:
   quality:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'
@@ -100,20 +100,20 @@ jobs:
 ```yaml
 jobs:
   quality:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'
       container-prefix: dev
 
   security:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
     with:
       language: python
       container-prefix: dev
 
   test:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'
@@ -133,5 +133,5 @@ for instructions on specifying the container prefix.
 
 The workflow source files reference composite actions via `@develop` during
 development. At release time, the publish workflow freezes all `@develop`
-references to the release tag (e.g., `@v2.0.0`), ensuring that a pinned
+references to the release tag (e.g., `@v2.1.0`), ensuring that a pinned
 workflow version uses the matching action versions.

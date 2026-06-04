@@ -21,7 +21,7 @@ Dependency audit workflow.
 ```yaml
 jobs:
   audit:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-audit.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-audit.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'

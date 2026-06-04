@@ -35,7 +35,7 @@ permissions:
 ```yaml
 jobs:
   security:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
     permissions:
       contents: read
       security-events: write
@@ -48,7 +48,7 @@ To skip CodeQL for languages it does not support:
 ```yaml
 jobs:
   security:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
     permissions:
       contents: read
       security-events: write

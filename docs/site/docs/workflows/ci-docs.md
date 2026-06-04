@@ -45,7 +45,7 @@ For Python repositories the build runs as `uv run mkdocs`; otherwise it runs
 ```yaml
 jobs:
   docs:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-docs.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-docs.yml@v2.1
 ```
 
 Add the job only in repositories that publish documentation
