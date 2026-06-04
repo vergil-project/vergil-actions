@@ -34,9 +34,29 @@ runs:
     - name: Fetch main branch
       shell: bash
       run: |
-        if ! git rev-parse --verify origin/main >/dev/null 2>&1; then
-          git fetch origin main --depth=1
+        # A missing origin/main is a legitimate bootstrap / pre-release state:
+        # nothing ships without main, so there is no published version to
+        # diverge from. Treat that as a first-release no-op rather than a hard
+        # failure, while still letting genuine fetch/network errors fail.
+        if git rev-parse --verify origin/main >/dev/null 2>&1; then
+          exit 0
         fi
+        ls_remote_rc=0
+        git ls-remote --exit-code --heads origin main >/dev/null 2>&1 || ls_remote_rc=$?
+        case "$ls_remote_rc" in
+          0)
+            git fetch origin main --depth=1
+            ;;
+          2)
+            echo "origin/main does not exist on the remote; treating as a" \
+              "first-release no-op (no published version to diverge from)."
+            ;;
+          *)
+            echo "Failed to query the remote for main" \
+              "(git ls-remote exit ${ls_remote_rc})." >&2
+            exit "$ls_remote_rc"
+            ;;
+        esac
 
     - name: Compare versions
       id: compare
