@@ -38,7 +38,7 @@ files exist in the repository:
 ```yaml
 jobs:
   quality:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'

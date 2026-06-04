@@ -12,7 +12,7 @@ action safe to re-run.
 ## Usage
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.0
+- uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.1
   with:
     version: "1.2.3"
     release-title: mqrestadmin
@@ -62,7 +62,7 @@ action safe to re-run.
 ### Standard library release
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.0
+- uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.1
   with:
     version: ${{ steps.version.outputs.version }}
     release-title: mqrestadmin
@@ -72,7 +72,7 @@ action safe to re-run.
 ### Release with build artifacts
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.0
+- uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.1
   with:
     version: "2.0.0"
     release-title: myapp

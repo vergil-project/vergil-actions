@@ -6,7 +6,7 @@ language.
 ## Usage
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.0
+- uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.1
   with:
     language: python
     queries: "+security-extended"
@@ -48,7 +48,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.0
+      - uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.1
         with:
           language: python
 ```
@@ -56,7 +56,7 @@ jobs:
 ### Go CodeQL analysis
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.0
+- uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.1
   with:
     language: go
 ```

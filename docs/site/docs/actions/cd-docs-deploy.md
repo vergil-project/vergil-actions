@@ -6,7 +6,7 @@ git configuration, version detection, and mike deploy/set-default.
 ## Usage
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.0
+- uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.1
   with:
     version-command: cat VERSION | cut -d. -f1,2
     mkdocs-config: docs/site/mkdocs.yml
@@ -51,7 +51,7 @@ rather than calling the composite action directly:
 ```yaml
 jobs:
   docs:
-    uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
       contents: write
 ```
@@ -61,7 +61,7 @@ jobs:
 ### Direct usage (standalone)
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.0
+- uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.1
   with:
     version-command: cat VERSION | cut -d. -f1,2
 ```
@@ -69,7 +69,7 @@ jobs:
 ### Python repo with uv-managed dependencies
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.0
+- uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.1
   with:
     version-command: cat VERSION | cut -d. -f1,2
     mike-command: uv run mike
