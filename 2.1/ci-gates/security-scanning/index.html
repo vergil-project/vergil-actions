@@ -705,6 +705,8 @@
       
         
       
+        
+      
     
     
     
@@ -757,6 +759,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4279,7 +4309,7 @@ control flow, and language-specific patterns.</p>
 <li><strong>Autobuild</strong>: CodeQL automatically detects the build system and compiles the
   project.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/security/codeql@v2.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/security/codeql@v2.1</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 </code></pre></div>
@@ -4293,7 +4323,7 @@ community-maintained rules.</p>
 <li><code>p/secrets</code> — Secret detection (API keys, tokens, passwords)</li>
 </ul>
 <p>Additional rulesets can be added via <code>extra-config</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/security/semgrep@v2.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/security/semgrep@v2.1</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">golang</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">extra-config</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;p/owasp-top-ten&quot;</span>
@@ -4330,7 +4360,7 @@ community-maintained rules.</p>
 <h3 id="severity-filtering">Severity filtering<a class="headerlink" href="#severity-filtering" title="Permanent link">&para;</a></h3>
 <p>By default, only <code>CRITICAL</code> and <code>HIGH</code> severity vulnerabilities are reported.
 This can be adjusted:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/shared/security/trivy@v2.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/shared/security/trivy@v2.1</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">scan-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fs</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CRITICAL,HIGH,MEDIUM&quot;</span>
@@ -4338,7 +4368,7 @@ This can be adjusted:</p>
 <h3 id="exit-code-behavior">Exit code behavior<a class="headerlink" href="#exit-code-behavior" title="Permanent link">&para;</a></h3>
 <p>By default, Trivy exits with code <code>1</code> when vulnerabilities are found, failing
 the CI check. Set <code>exit-code: "0"</code> for advisory-only mode:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/shared/security/trivy@v2.0</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/shared/security/trivy@v2.1</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">scan-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fs</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">exit-code</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span>
