@@ -6,7 +6,7 @@ across all managed repositories.
 ## Status
 
 **Stable (v2.x)** — Actions and reusable workflows are consumed by pinning to
-a rolling minor tag (e.g., `@v2.0`), which automatically receives patch
+a rolling minor tag (e.g., `@v2.1`), which automatically receives patch
 releases.
 
 ## Action categories

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.1] - 2026-06-04
+
+### Bug fixes
+
+- track @develop for standards-compliance setup ref (#679)
+
+### Chores
+
+- bump vergil pin to v2.1 (#679)
+
+### Documentation
+
+- add v2.0→v2.1 canary design (#679)
+- revise v2.0→v2.1 canary design after pushback (#679)
+- drop unneeded VERSION bump from canary design (#679)
+- expand canary doc scope to full @v2.0 sweep (#679)
+- add v2.0→v2.1 canary implementation plan (#679)
+- note no-auto-close-keyword PR constraint (#679)
+- bump consumer @v2.0 references to v2.1 (#679)
+
 ## [2.1.0] - 2026-06-04
 
 ### Bug fixes

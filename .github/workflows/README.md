@@ -105,14 +105,14 @@ concurrency:
 
 jobs:
   quality:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: shell
       versions: '["latest"]'
       container-suffix: base
 
   security:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
     permissions:
       contents: read
       security-events: write
@@ -120,7 +120,7 @@ jobs:
       language: shell
 
   version:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-version-bump.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-version-bump.yml@v2.1
     with:
       language: shell
 ```
@@ -152,13 +152,13 @@ concurrency:
 
 jobs:
   audit:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-audit.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-audit.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'
 
   quality:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'
@@ -166,7 +166,7 @@ jobs:
       container-suffix: python
 
   security:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
     permissions:
       contents: read
       security-events: write
@@ -178,13 +178,13 @@ jobs:
       container-suffix: python
 
   test:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
     with:
       language: python
       versions: '["3.12", "3.13", "3.14"]'
 
   version:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-version-bump.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/ci-version-bump.yml@v2.1
     with:
       language: python
       run-release: ${{ inputs.run-release != false }}
@@ -211,13 +211,13 @@ permissions:
 
 jobs:
   docs:
-    uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
       contents: write
 
   release:
     if: github.ref == 'refs/heads/main'
-    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
     secrets: inherit
@@ -242,7 +242,7 @@ permissions:
 
 jobs:
   release:
-    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.0
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
     secrets: inherit

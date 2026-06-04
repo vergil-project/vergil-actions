@@ -7,7 +7,7 @@ Repository profile, markdown, and other structural validations are handled by
 ## Usage
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/ci/security/standards-compliance@v2.0
+- uses: vergil-project/vergil-actions/actions/ci/security/standards-compliance@v2.1
 ```
 
 ## Inputs
@@ -37,7 +37,7 @@ Both steps only run on `pull_request` events.
 - uses: actions/checkout@v6
   with:
     fetch-depth: 0
-- uses: vergil-project/vergil-actions/actions/ci/security/standards-compliance@v2.0
+- uses: vergil-project/vergil-actions/actions/ci/security/standards-compliance@v2.1
 ```
 
 ## GitHub configuration

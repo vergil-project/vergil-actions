@@ -6,7 +6,7 @@ the step if the two versions are identical.
 ## Usage
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.0
+- uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.1
   with:
     head-version-command: cat VERSION
     main-version-command: git show origin/main:VERSION
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.0
+      - uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.1
         with:
           head-version-command: cat VERSION
           main-version-command: git show origin/main:VERSION
@@ -58,7 +58,7 @@ jobs:
 ### Python project version check
 
 ```yaml
-- uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.0
+- uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.1
   with:
     head-version-command: >-
       grep -oP 'version\s*=\s*"\K[^"]+' pyproject.toml

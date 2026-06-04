@@ -81,7 +81,7 @@ skip standards and security while PR CI (tier 3) runs the full suite:
 
 ```yaml
 security-and-standards:
-  uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.0
+  uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
   with:
     language: <lang>
     run-standards: ${{ inputs.run-release-gates || 'true' }}

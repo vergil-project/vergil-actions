@@ -131,7 +131,7 @@ pre-installed in the dev container images. No local setup required beyond
 the host-level tool (`vrg-docker-run`, `vrg-commit`, etc.):
 
 ```bash
-uv tool install 'vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v1.4'
+uv tool install 'vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1'
 ```
 
 All validation tools (yamllint, shellcheck, actionlint, markdownlint, etc.)
