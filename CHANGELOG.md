@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.2] - 2026-06-05
+
+### Bug fixes
+
+- gate follows release-model instead of run-release wiring
+
+### Documentation
+
+- describe dynamic cached-image tooling install
+- replace vrg-docker-run, fix v1.4 pin and pre-installed claim
+
 ## [2.1.1] - 2026-06-04
 
 ### Bug fixes
