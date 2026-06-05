@@ -9,6 +9,11 @@ on:
       run-release:
         type: boolean
         default: true
+        description: >-
+          Deprecated — the gate now follows release-model in vergil.toml.
+          Passing false still suppresses the gate for backwards
+          compatibility but emits a deprecation warning. Tracked for
+          removal in #688.
       container-suffix:
         type: string
         required: false
@@ -31,7 +36,6 @@ on:
 jobs:
   version-bump:
     name: version-bump
-    if: ${{ inputs.run-release }}
     runs-on: ubuntu-latest
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ inputs.container-tag || 'latest' }}
     steps:
@@ -40,10 +44,43 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Detect release model
+        id: release-model
+        shell: bash
+        # Self-guard so the gate follows repo configuration (#675): a repo
+        # with release-model = "none" has nothing to version-bump, so the
+        # gate steps do not run and the job passes without caller wiring.
+        env:
+          RUN_RELEASE: ${{ inputs.run-release }}
+        run: |
+          if [ "$RUN_RELEASE" = "false" ]; then
+            msg='run-release is deprecated: the version-bump gate now'
+            msg="$msg follows release-model in vergil.toml. Remove"
+            msg="$msg run-release from the calling workflow (see"
+            msg="$msg vergil-actions#688)."
+            echo "::warning::$msg"
+            echo "releases=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          model=$(/usr/local/bin/python3 -c "
+          import tomllib, pathlib
+          path = pathlib.Path('vergil.toml')
+          cfg = tomllib.loads(path.read_text()) if path.is_file() else {}
+          print(cfg.get('project', {}).get('release-model', ''))
+          ")
+          if [ "$model" = "none" ]; then
+            echo "release-model is \"none\"; nothing to version-bump." >&2
+            echo "releases=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "releases=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install vergil-tooling
+        if: steps.release-model.outputs.releases == 'true'
         uses: ./actions/shared/setup/vergil
 
       - name: Verify version bump
+        if: steps.release-model.outputs.releases == 'true'
         uses: ./actions/ci/version-bump/version-divergence
         with:
           head-version-command: vrg-version show
