@@ -126,17 +126,24 @@ to a tag or branch reference.
 
 ### Environment Setup
 
-Standard-tooling CLI tools (`vrg-commit`, `vrg-validate`, etc.) are
-pre-installed in the dev container images. No local setup required beyond
-the host-level tool (`vrg-docker-run`, `vrg-commit`, etc.):
+Install the vergil-tooling host tool, which provides `vrg-container-run`,
+`vrg-commit`, `vrg-validate`, and other workflow commands:
 
 ```bash
 uv tool install 'vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1'
 ```
 
-All validation tools (yamllint, shellcheck, actionlint, markdownlint, etc.)
-run inside the `ghcr.io/vergil-project/dev-base:latest` container — no manual
-host installs needed.
+Container-side tooling is **not** pre-installed in the base container
+images. On first `vrg-container-run`, the CLI builds a per-branch cached
+image (`<base>:<tag>--<branch>--<hash>`) by running
+`uv tool install 'vergil-tooling @ git+…@<pin>'` with the version pinned
+in `vergil.toml` (`[dependencies] vergil`), plus any language warmup.
+The cache is keyed on lockfiles plus `vergil.toml` and is rebuilt
+automatically when they change.
+
+Static validation tools (yamllint, shellcheck, actionlint, markdownlint,
+etc.) ship in the base container image, so no manual host installs are
+needed.
 
 ## Architecture
 
@@ -168,7 +175,7 @@ look in `actions/{phase}/{domain}/`. Cross-phase actions live in
   patches mkdocs nav; shared by CI docs verification and CD docs deploy
 - `actions/shared/security/trivy` — Trivy vulnerability scanning
   (filesystem, SBOM, container image)
-- `actions/shared/setup/vergil-tooling` — Installs vergil-tooling
+- `actions/shared/setup/vergil` — Installs vergil-tooling
   from the version pinned in `vergil.toml`
 - `actions/local/freeze-internal-refs` — Freezes relative action refs
   to absolute tagged refs (repo-local)
@@ -197,7 +204,10 @@ action are validated by the same PR that modifies them.
 ### Standard-Tooling Integration
 
 Shared validators (`st-repo-profile`, `st-pr-issue-linkage`) and local
-validation (`vrg-validate`) are provided by `vergil-tooling`. CI uses
-the `ghcr.io/vergil-project/dev-base:latest` container image which has all
-validators pre-installed. Locally, `vrg-docker-run` uses the same image so
-validation results match CI exactly.
+validation (`vrg-validate`) are provided by `vergil-tooling`, which is
+**not** baked into the container images. CI jobs run in the
+`ghcr.io/vergil-project/dev-base:latest` container image and install
+vergil-tooling dynamically via the `actions/shared/setup/vergil` action,
+which reads the version pinned in `vergil.toml`. Locally,
+`vrg-container-run` builds a per-branch cached image with the same
+pinned version, so validation results match CI exactly.
