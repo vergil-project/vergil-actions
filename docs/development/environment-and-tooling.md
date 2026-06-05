@@ -7,6 +7,6 @@
 ## Host prerequisites
 
 Install the vergil-tooling host tool and ensure Docker is running. All
-other tools run inside the dev-base container via `vrg-docker-run`.
+other tools run inside the dev-base container via `vrg-container-run`.
 
 See [tooling-dependencies.md](tooling-dependencies.md).

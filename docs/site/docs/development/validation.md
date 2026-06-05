@@ -3,12 +3,16 @@
 ## Canonical command
 
 ```bash
-vrg-docker-run -- vrg-validate
+vrg-container-run -- vrg-validate
 ```
 
-This runs all validation inside the `ghcr.io/vergil-project/dev-base:latest`
-container, which has every required tool pre-installed. No manual host
-installs needed beyond the vergil-tooling host tool.
+This runs all validation inside a per-branch cached container image that
+`vrg-container-run` builds on first use from
+`ghcr.io/vergil-project/dev-base:latest`: vergil-tooling is installed into
+it at the version pinned in `vergil.toml` (`[dependencies] vergil`), and
+the cache is rebuilt automatically when `vergil.toml` or the lockfiles
+change. No manual host installs are needed beyond the vergil-tooling host
+tool.
 
 ## Architecture
 
@@ -19,7 +23,7 @@ shellcheck, yamllint, and actionlint.
 
 ## Tooling
 
-All validation tools are pre-installed in the dev-base container image:
+The static validation tools are baked into the dev-base container image:
 
 | Tool | Purpose |
 | --- | --- |
@@ -28,4 +32,6 @@ All validation tools are pre-installed in the dev-base container image:
 | `markdownlint` | Markdown formatting linter |
 | `yamllint` | YAML formatting linter |
 
-No host-level installs of these tools are required.
+`vrg-validate` itself is not baked in — it arrives via the dynamic
+vergil-tooling install described above. No host-level installs of any of
+these tools are required.

@@ -8,4 +8,4 @@
 
 All validation tools (actionlint, shellcheck, markdownlint, yamllint) are
 pre-installed in the `ghcr.io/vergil-project/dev-base:latest` container image
-and run via `vrg-docker-run`. No manual host installs needed.
+and run via `vrg-container-run`. No manual host installs needed.
