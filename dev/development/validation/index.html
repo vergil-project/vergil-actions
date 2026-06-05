@@ -4039,18 +4039,22 @@
 
 <h1 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h1>
 <h2 id="canonical-command">Canonical command<a class="headerlink" href="#canonical-command" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>vrg-docker-run<span class="w"> </span>--<span class="w"> </span>vrg-validate
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>vrg-container-run<span class="w"> </span>--<span class="w"> </span>vrg-validate
 </code></pre></div>
-<p>This runs all validation inside the <code>ghcr.io/vergil-project/dev-base:latest</code>
-container, which has every required tool pre-installed. No manual host
-installs needed beyond the vergil-tooling host tool.</p>
+<p>This runs all validation inside a per-branch cached container image that
+<code>vrg-container-run</code> builds on first use from
+<code>ghcr.io/vergil-project/dev-base:latest</code>: vergil-tooling is installed into
+it at the version pinned in <code>vergil.toml</code> (<code>[dependencies] vergil</code>), and
+the cache is rebuilt automatically when <code>vergil.toml</code> or the lockfiles
+change. No manual host installs are needed beyond the vergil-tooling host
+tool.</p>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <p><code>vrg-validate</code> reads <code>primary_language</code> from <code>vergil.toml</code> and runs
 common checks followed by language-specific checks from the built-in command
 registry. Common checks include repo-profile validation, markdownlint,
 shellcheck, yamllint, and actionlint.</p>
 <h2 id="tooling">Tooling<a class="headerlink" href="#tooling" title="Permanent link">&para;</a></h2>
-<p>All validation tools are pre-installed in the dev-base container image:</p>
+<p>The static validation tools are baked into the dev-base container image:</p>
 <table>
 <thead>
 <tr>
@@ -4077,7 +4081,9 @@ shellcheck, yamllint, and actionlint.</p>
 </tr>
 </tbody>
 </table>
-<p>No host-level installs of these tools are required.</p>
+<p><code>vrg-validate</code> itself is not baked in — it arrives via the dynamic
+vergil-tooling install described above. No host-level installs of any of
+these tools are required.</p>
 
 
 

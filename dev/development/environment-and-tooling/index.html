@@ -4045,20 +4045,22 @@
 <p>This enables the pre-commit hook that prevents direct commits to protected
 branches (<code>main</code>, <code>develop</code>).</p>
 <h2 id="host-prerequisites">Host prerequisites<a class="headerlink" href="#host-prerequisites" title="Permanent link">&para;</a></h2>
-<p>Install the vergil-tooling host tool, which provides <code>vrg-docker-run</code>,
+<p>Install the vergil-tooling host tool, which provides <code>vrg-container-run</code>,
 <code>vrg-commit</code>, <code>vrg-validate</code>, and other workflow commands:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v1.4&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1&#39;</span>
 </code></pre></div>
-<p>Docker must be running for <code>vrg-docker-run</code> to work.</p>
+<p>Docker must be running for <code>vrg-container-run</code> to work.</p>
 <h2 id="validation-and-development-tools">Validation and development tools<a class="headerlink" href="#validation-and-development-tools" title="Permanent link">&para;</a></h2>
 <p>All validation tools (actionlint, shellcheck, markdownlint, yamllint) and
 documentation tools (mkdocs-material, mike) are pre-installed in the
-<code>ghcr.io/vergil-project/dev-base:latest</code> container image. No manual host
-installs are needed — <code>vrg-docker-run</code> pulls and runs this image
-automatically.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>vrg-docker-run<span class="w"> </span>--<span class="w"> </span>vrg-validate<span class="w">             </span><span class="c1"># Run all validation checks</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>vrg-docker-run<span class="w"> </span>--<span class="w"> </span>mkdocs<span class="w"> </span>serve<span class="w"> </span>-f<span class="w"> </span>docs/site/mkdocs.yml<span class="w">   </span><span class="c1"># Preview docs locally</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>vrg-docker-run<span class="w"> </span>--<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>docs/site/mkdocs.yml<span class="w"> </span>--strict<span class="w">  </span><span class="c1"># Strict docs build</span>
+<code>ghcr.io/vergil-project/dev-base:latest</code> container image. vergil-tooling
+itself is not — on first use, <code>vrg-container-run</code> builds a per-branch
+cached image with vergil-tooling installed at the version pinned in
+<code>vergil.toml</code>, and rebuilds it when <code>vergil.toml</code> or the lockfiles
+change. No manual host installs are needed.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>vrg-container-run<span class="w"> </span>--<span class="w"> </span>vrg-validate<span class="w">             </span><span class="c1"># Run all validation checks</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>vrg-container-run<span class="w"> </span>--<span class="w"> </span>mkdocs<span class="w"> </span>serve<span class="w"> </span>-f<span class="w"> </span>docs/site/mkdocs.yml<span class="w">   </span><span class="c1"># Preview docs locally</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>vrg-container-run<span class="w"> </span>--<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>docs/site/mkdocs.yml<span class="w"> </span>--strict<span class="w">  </span><span class="c1"># Strict docs build</span>
 </code></pre></div>
 
 
