@@ -126,7 +126,7 @@ the overrides once the dev images have been validated and promoted to
 prod.
 
 For local validation using development containers, see the
-[`vrg-docker-run` documentation](https://vergil-project.github.io/vergil-tooling/reference/cli-tools-overview/#vrg-docker-run)
+[`vrg-container-run` documentation](https://vergil-project.github.io/vergil-tooling/reference/cli-tools-overview/#vrg-container-run)
 for instructions on specifying the container prefix.
 
 ## Reference freezing

@@ -13,25 +13,27 @@ branches (`main`, `develop`).
 
 ## Host prerequisites
 
-Install the vergil-tooling host tool, which provides `vrg-docker-run`,
+Install the vergil-tooling host tool, which provides `vrg-container-run`,
 `vrg-commit`, `vrg-validate`, and other workflow commands:
 
 ```bash
-uv tool install 'vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v1.4'
+uv tool install 'vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1'
 ```
 
-Docker must be running for `vrg-docker-run` to work.
+Docker must be running for `vrg-container-run` to work.
 
 ## Validation and development tools
 
 All validation tools (actionlint, shellcheck, markdownlint, yamllint) and
 documentation tools (mkdocs-material, mike) are pre-installed in the
-`ghcr.io/vergil-project/dev-base:latest` container image. No manual host
-installs are needed — `vrg-docker-run` pulls and runs this image
-automatically.
+`ghcr.io/vergil-project/dev-base:latest` container image. vergil-tooling
+itself is not — on first use, `vrg-container-run` builds a per-branch
+cached image with vergil-tooling installed at the version pinned in
+`vergil.toml`, and rebuilds it when `vergil.toml` or the lockfiles
+change. No manual host installs are needed.
 
 ```bash
-vrg-docker-run -- vrg-validate             # Run all validation checks
-vrg-docker-run -- mkdocs serve -f docs/site/mkdocs.yml   # Preview docs locally
-vrg-docker-run -- mkdocs build -f docs/site/mkdocs.yml --strict  # Strict docs build
+vrg-container-run -- vrg-validate             # Run all validation checks
+vrg-container-run -- mkdocs serve -f docs/site/mkdocs.yml   # Preview docs locally
+vrg-container-run -- mkdocs build -f docs/site/mkdocs.yml --strict  # Strict docs build
 ```
