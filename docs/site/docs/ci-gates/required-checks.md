@@ -89,6 +89,7 @@ security-and-standards:
   permissions:
     contents: read
     security-events: write
+    actions: read
 ```
 
 Using a job-level `if` on a single flag (e.g., `if: inputs.run-security !=
