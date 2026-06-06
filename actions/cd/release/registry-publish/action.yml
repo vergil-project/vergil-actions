@@ -139,7 +139,7 @@ runs:
 
     - name: Generate SBOM
       if: inputs.sbom-output-file != ''
-      uses: ./actions/shared/security/trivy
+      uses: vergil-project/vergil-actions/actions/shared/security/trivy@v2.1.4
       with:
         scan-type: sbom
         output-file: ${{ steps.resolve.outputs.sbom-output-file }}
