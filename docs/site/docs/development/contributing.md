@@ -27,6 +27,36 @@
 - **Environment variables for sensitive data** — Use `env` blocks rather than
   inline interpolation for values that might contain special characters.
 
+## Reusable workflow caller contract
+
+The `permissions:` blocks of a `workflow_call` workflow — workflow-level
+and job-level alike — are **requests against the caller**, not grants.
+GitHub validates at workflow startup that the calling job's effective
+permissions cover every requested scope; a caller that does not is
+rejected with `startup_failure` before any job runs, and no checks are
+registered on the PR.
+
+Treat any **addition** to a `permissions:` block in a `workflow_call`
+workflow as a breaking change to the caller contract:
+
+- It requires a coordinated consumer rollout: every consumer must add the
+  grant to its calling job **before** the rolling tag is promoted to a
+  release containing the new request. Grants are backward-compatible
+  (callers may grant more than a called workflow requests), so consumer
+  patches can always land first.
+- Call the new requirement out prominently in the release notes, under a
+  **Breaking change** heading.
+- Removing or narrowing a request is non-breaking and needs no rollout.
+
+Incident [#698](https://github.com/vergil-project/vergil-actions/issues/698)
+is the cautionary tale: v2.1.3 added `actions: read` to `ci-security.yml`'s
+request and broke every consumer of `@v2.1` at the moment of promote.
+Follow-ups
+[#699](https://github.com/vergil-project/vergil-actions/issues/699)
+(consumer-refresh release stage) and
+[#700](https://github.com/vergil-project/vergil-actions/issues/700)
+(release-gate permissions diff) track automating this policy.
+
 ## Testing via self-referencing CI
 
 This repository tests its own actions by using local path references in the CI

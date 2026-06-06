@@ -29,6 +29,22 @@ repositories do not need it, but reusable-workflow jobs can only downgrade
 caller permissions, so the caller must grant it for the workflow-level
 grant to take effect.
 
+### Upgrading from v2.1.2 or earlier
+
+v2.1.3 added `actions: read` to this workflow's `permissions:` request.
+GitHub validates the request against the calling job's **effective**
+permissions at startup, so a caller whose `security:` job carries an
+explicit `permissions:` block (the standard posture) must add
+`actions: read` to that job-level block — the job block fully replaces
+any workflow-level block in the caller, so a workflow-level grant alone
+is not sufficient. Callers without the grant fail with `startup_failure`
+and no registered checks.
+
+The grant is backward-compatible with earlier releases, so it can merge
+before the workflow pin moves to v2.1.3. See
+[#698](https://github.com/vergil-project/vergil-actions/issues/698) for
+the incident that motivated this note.
+
 ## Jobs and check names
 
 | Job | Check name | Condition |

@@ -57,9 +57,16 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      actions: read
     with:
       language: python
 ```
+
+A called workflow's own `permissions:` blocks are **requests against the
+caller**: GitHub validates at workflow startup that the calling job's
+effective permissions cover every requested scope, and rejects the run with
+`startup_failure` if they do not. See each workflow's page for the scopes
+it requests.
 
 ## Container image prefix
 
