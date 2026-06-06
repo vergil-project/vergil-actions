@@ -709,6 +709,8 @@
       
         
       
+        
+      
     
     
     
@@ -761,6 +763,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4254,11 +4284,18 @@ rulesets.</p>
 <td><code>""</code></td>
 <td>Additional Semgrep config strings, space-separated (e.g. <code>p/owasp-top-ten</code>).</td>
 </tr>
+<tr>
+<td><code>upload-sarif</code></td>
+<td>No</td>
+<td><code>true</code></td>
+<td>Upload SARIF to GitHub code scanning. Set to <code>false</code> on private repos without GHAS; results are attached as a build artifact instead.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>security-events: write</code> (required for uploading SARIF results)</li>
+<li><code>actions: read</code> (required by the SARIF upload on <strong>private</strong> repositories)</li>
 <li><code>contents: read</code></li>
 </ul>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
@@ -4289,7 +4326,9 @@ rulesets.</p>
 </li>
 <li><strong>Upload SARIF</strong> — Uploads the SARIF output file to GitHub code scanning
    using <code>github/codeql-action/upload-sarif@v4</code>, categorized as <code>semgrep</code>.
-   This step runs even if the scan finds issues (<code>if: always()</code>).</li>
+   This step runs even if the scan finds issues (<code>if: always()</code>). When
+   <code>upload-sarif</code> is <code>false</code>, the SARIF file is attached to the workflow run
+   as a build artifact (<code>semgrep-sarif</code>) instead.</li>
 </ol>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="python-semgrep-scan">Python Semgrep scan<a class="headerlink" href="#python-semgrep-scan" title="Permanent link">&para;</a></h3>
@@ -4314,7 +4353,9 @@ rulesets.</p>
 </code></pre></div>
 <h2 id="github-configuration">GitHub configuration<a class="headerlink" href="#github-configuration" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>GitHub Advanced Security (GHAS)</strong> — Must be enabled for SARIF upload.</li>
+<li><strong>GitHub Advanced Security (GHAS)</strong> — Must be enabled for SARIF upload.
+  On private repos without GHAS, set <code>upload-sarif: false</code> to preserve
+  results as a build artifact instead.</li>
 <li><strong>Code scanning alerts</strong> — Results appear in the repository's <strong>Security &gt;
   Code scanning alerts</strong> tab alongside CodeQL results.</li>
 </ul>
