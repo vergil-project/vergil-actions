@@ -3502,6 +3502,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#private-repo-without-ghas-artifact-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Private repo without GHAS (artifact fallback)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4289,6 +4300,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#private-repo-without-ghas-artifact-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Private repo without GHAS (artifact fallback)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4399,12 +4421,19 @@
 <td><code>aquasec/trivy:0.70.0</code></td>
 <td>Docker image to use for Trivy. Override to pin a specific version.</td>
 </tr>
+<tr>
+<td><code>upload-sarif</code></td>
+<td>No</td>
+<td><code>true</code></td>
+<td>Upload SARIF to GitHub code scanning. Set to <code>false</code> on private repos without GHAS; results are attached as a build artifact instead.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>security-events: write</code> (required for SARIF upload when <code>scan-type</code> is <code>fs</code>
   or <code>image</code>)</li>
+<li><code>actions: read</code> (required by the SARIF upload on <strong>private</strong> repositories)</li>
 <li><code>contents: read</code></li>
 </ul>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
@@ -4467,10 +4496,20 @@ or extra DB download.</p>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">scan-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fs</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">sarif-category</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;trivy-fs-${{</span><span class="nv"> </span><span class="s">matrix.target</span><span class="nv"> </span><span class="s">}}&quot;</span>
 </code></pre></div>
+<h3 id="private-repo-without-ghas-artifact-fallback">Private repo without GHAS (artifact fallback)<a class="headerlink" href="#private-repo-without-ghas-artifact-fallback" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/shared/security/trivy@v2.1</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">scan-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fs</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">upload-sarif</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div>
+<p>The scan still runs and still fails on findings; the SARIF file is attached
+to the workflow run as a build artifact (named after the SARIF category,
+e.g. <code>trivy-fs-sarif</code>) instead of being uploaded to code scanning.</p>
 <h2 id="github-configuration">GitHub configuration<a class="headerlink" href="#github-configuration" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>GitHub Advanced Security (GHAS)</strong> — Must be enabled for SARIF upload
-  (<code>fs</code> and <code>image</code> scan types).</li>
+  (<code>fs</code> and <code>image</code> scan types). On private repos without GHAS, set
+  <code>upload-sarif: false</code> to preserve results as a build artifact instead.</li>
 <li><strong>Code scanning alerts</strong> — Results appear in <strong>Security &gt; Code scanning
   alerts</strong> with categories <code>trivy-fs</code> or <code>trivy-image</code>.</li>
 </ul>

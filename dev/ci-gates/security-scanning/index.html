@@ -4292,6 +4292,12 @@ requires <strong>GitHub Advanced Security (GHAS)</strong>:</p>
 <li><strong>Private repositories</strong> — A GHAS license is required. Contact your GitHub
   administrator.</li>
 </ul>
+<p>On a private repository <strong>without</strong> GHAS, set <code>upload-sarif: false</code> on the
+<a href="../../workflows/ci-security/">ci-security workflow</a>: Trivy and Semgrep still
+run (and still fail on findings) but attach their SARIF results as build
+artifacts instead of uploading to code scanning, and the CodeQL job is
+skipped (CodeQL cannot run on private repos without GHAS at all). See
+<a href="../../workflows/ci-security/#private-repos-without-github-advanced-security">Private repos without GitHub Advanced Security</a>.</p>
 <h2 id="check-names-in-the-pr-status-area">Check names in the PR status area<a class="headerlink" href="#check-names-in-the-pr-status-area" title="Permanent link">&para;</a></h2>
 <p>Each security scanner produces <strong>two</strong> check runs on a pull request:</p>
 <table>
@@ -4404,12 +4410,15 @@ the CI check. Set <code>exit-code: "0"</code> for advisory-only mode:</p>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">exit-code</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span>
 </code></pre></div>
 <h2 id="workflow-permissions">Workflow permissions<a class="headerlink" href="#workflow-permissions" title="Permanent link">&para;</a></h2>
-<p>All security scanning jobs require the <code>security-events: write</code> permission:</p>
+<p>All security scanning jobs require the <code>security-events: write</code> permission,
+plus <code>actions: read</code>, which <code>codeql-action/upload-sarif</code> needs on <strong>private</strong>
+repositories (it reads the workflow run via the Actions API):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">codeql</span><span class="p">:</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 </code></pre></div>
 
 
