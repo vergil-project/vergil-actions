@@ -17,6 +17,13 @@ inputs:
       "p/owasp-top-ten").
     required: false
     default: ""
+  upload-sarif:
+    description: >-
+      Upload SARIF results to GitHub code scanning. Set to "false" on
+      private repos without GitHub Advanced Security; results are
+      attached as a build artifact instead.
+    required: false
+    default: "true"
 
 runs:
   using: composite
@@ -46,8 +53,16 @@ runs:
         vrg-semgrep-scan "${args[@]}"
 
     - name: Upload SARIF
-      if: always()
+      if: inputs.upload-sarif == 'true' && always()
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: semgrep-results.sarif
         category: semgrep
+
+    - name: Attach SARIF as build artifact
+      if: inputs.upload-sarif != 'true' && always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: semgrep-sarif
+        path: semgrep-results.sarif
+        if-no-files-found: warn

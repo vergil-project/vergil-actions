@@ -18,10 +18,12 @@ rulesets.
 | ------ | ---------- | --------- | ------------- |
 | `language` | **Yes** | — | Language ruleset to enable (maps to `p/<language>`, e.g. `python`, `java`, `golang`). |
 | `extra-config` | No | `""` | Additional Semgrep config strings, space-separated (e.g. `p/owasp-top-ten`). |
+| `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning. Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
 
 ## Permissions
 
 - `security-events: write` (required for uploading SARIF results)
+- `actions: read` (required by the SARIF upload on **private** repositories)
 - `contents: read`
 
 ## Behavior
@@ -48,7 +50,9 @@ rulesets.
     - Any additional rulesets from `extra-config`
 4. **Upload SARIF** — Uploads the SARIF output file to GitHub code scanning
    using `github/codeql-action/upload-sarif@v4`, categorized as `semgrep`.
-   This step runs even if the scan finds issues (`if: always()`).
+   This step runs even if the scan finds issues (`if: always()`). When
+   `upload-sarif` is `false`, the SARIF file is attached to the workflow run
+   as a build artifact (`semgrep-sarif`) instead.
 
 ## Examples
 
@@ -81,6 +85,8 @@ jobs:
 ## GitHub configuration
 
 - **GitHub Advanced Security (GHAS)** — Must be enabled for SARIF upload.
+  On private repos without GHAS, set `upload-sarif: false` to preserve
+  results as a build artifact instead.
 - **Code scanning alerts** — Results appear in the repository's **Security >
   Code scanning alerts** tab alongside CodeQL results.
 
