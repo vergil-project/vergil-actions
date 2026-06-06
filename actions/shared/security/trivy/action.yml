@@ -46,6 +46,13 @@ inputs:
       Docker image to use for Trivy. Override to pin a specific version.
     required: false
     default: "aquasec/trivy:0.70.0"
+  upload-sarif:
+    description: >-
+      Upload SARIF results to GitHub code scanning. Set to "false" on
+      private repos without GitHub Advanced Security; results are
+      attached as a build artifact instead.
+    required: false
+    default: "true"
 
 runs:
   using: composite
@@ -101,7 +108,7 @@ runs:
           '
 
     - name: Upload SARIF (filesystem scan)
-      if: inputs.scan-type == 'fs' && always()
+      if: inputs.scan-type == 'fs' && inputs.upload-sarif == 'true' && always()
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ inputs.output-file }}
@@ -159,11 +166,21 @@ runs:
           '
 
     - name: Upload SARIF (image scan)
-      if: inputs.scan-type == 'image' && always()
+      if: inputs.scan-type == 'image' && inputs.upload-sarif == 'true' && always()
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ inputs.output-file }}
         category: ${{ inputs.sarif-category || 'trivy-image' }}
+
+    - name: Attach SARIF as build artifact
+      if: >-
+        (inputs.scan-type == 'fs' || inputs.scan-type == 'image') &&
+        inputs.upload-sarif != 'true' && always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.sarif-category || format('trivy-{0}', inputs.scan-type) }}-sarif
+        path: ${{ inputs.output-file }}
+        if-no-files-found: warn
 
     - name: Generate SBOM
       if: inputs.scan-type == 'sbom'
