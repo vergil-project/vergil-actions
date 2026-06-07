@@ -711,6 +711,8 @@
       
         
       
+        
+      
     
     
     
@@ -763,6 +765,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -3552,6 +3582,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Required permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-v212-or-earlier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrading from v2.1.2 or earlier
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4100,6 +4147,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Required permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-v212-or-earlier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrading from v2.1.2 or earlier
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4239,6 +4303,19 @@ repositories (it reads the workflow run via the Actions API). Public
 repositories do not need it, but reusable-workflow jobs can only downgrade
 caller permissions, so the caller must grant it for the workflow-level
 grant to take effect.</p>
+<h3 id="upgrading-from-v212-or-earlier">Upgrading from v2.1.2 or earlier<a class="headerlink" href="#upgrading-from-v212-or-earlier" title="Permanent link">&para;</a></h3>
+<p>v2.1.3 added <code>actions: read</code> to this workflow's <code>permissions:</code> request.
+GitHub validates the request against the calling job's <strong>effective</strong>
+permissions at startup, so a caller whose <code>security:</code> job carries an
+explicit <code>permissions:</code> block (the standard posture) must add
+<code>actions: read</code> to that job-level block — the job block fully replaces
+any workflow-level block in the caller, so a workflow-level grant alone
+is not sufficient. Callers without the grant fail with <code>startup_failure</code>
+and no registered checks.</p>
+<p>The grant is backward-compatible with earlier releases, so it can merge
+before the workflow pin moves to v2.1.3. See
+<a href="https://github.com/vergil-project/vergil-actions/issues/698">#698</a> for
+the incident that motivated this note.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

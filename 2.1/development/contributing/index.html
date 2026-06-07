@@ -709,6 +709,8 @@
       
         
       
+        
+      
     
     
     
@@ -761,6 +763,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -3993,6 +4023,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reusable-workflow-caller-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reusable workflow caller contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#testing-via-self-referencing-ci" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4101,6 +4142,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reusable-workflow-caller-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reusable workflow caller contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#testing-via-self-referencing-ci" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4189,6 +4241,33 @@
 <li><strong>Environment variables for sensitive data</strong> — Use <code>env</code> blocks rather than
   inline interpolation for values that might contain special characters.</li>
 </ul>
+<h2 id="reusable-workflow-caller-contract">Reusable workflow caller contract<a class="headerlink" href="#reusable-workflow-caller-contract" title="Permanent link">&para;</a></h2>
+<p>The <code>permissions:</code> blocks of a <code>workflow_call</code> workflow — workflow-level
+and job-level alike — are <strong>requests against the caller</strong>, not grants.
+GitHub validates at workflow startup that the calling job's effective
+permissions cover every requested scope; a caller that does not is
+rejected with <code>startup_failure</code> before any job runs, and no checks are
+registered on the PR.</p>
+<p>Treat any <strong>addition</strong> to a <code>permissions:</code> block in a <code>workflow_call</code>
+workflow as a breaking change to the caller contract:</p>
+<ul>
+<li>It requires a coordinated consumer rollout: every consumer must add the
+  grant to its calling job <strong>before</strong> the rolling tag is promoted to a
+  release containing the new request. Grants are backward-compatible
+  (callers may grant more than a called workflow requests), so consumer
+  patches can always land first.</li>
+<li>Call the new requirement out prominently in the release notes, under a
+  <strong>Breaking change</strong> heading.</li>
+<li>Removing or narrowing a request is non-breaking and needs no rollout.</li>
+</ul>
+<p>Incident <a href="https://github.com/vergil-project/vergil-actions/issues/698">#698</a>
+is the cautionary tale: v2.1.3 added <code>actions: read</code> to <code>ci-security.yml</code>'s
+request and broke every consumer of <code>@v2.1</code> at the moment of promote.
+Follow-ups
+<a href="https://github.com/vergil-project/vergil-actions/issues/699">#699</a>
+(consumer-refresh release stage) and
+<a href="https://github.com/vergil-project/vergil-actions/issues/700">#700</a>
+(release-gate permissions diff) track automating this policy.</p>
 <h2 id="testing-via-self-referencing-ci">Testing via self-referencing CI<a class="headerlink" href="#testing-via-self-referencing-ci" title="Permanent link">&para;</a></h2>
 <p>This repository tests its own actions by using local path references in the CI
 workflow:</p>
