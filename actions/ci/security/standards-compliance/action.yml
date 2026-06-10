@@ -10,7 +10,7 @@ runs:
   steps:
     - name: Install vergil-tooling
       if: github.event_name == 'pull_request'
-      uses: vergil-project/vergil-actions/actions/shared/setup/vergil@develop
+      uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.5
 
     - name: Validate pull request issue linkage
       if: github.event_name == 'pull_request'
