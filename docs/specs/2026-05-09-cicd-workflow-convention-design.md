@@ -121,7 +121,7 @@ The change is caused by the `ci.yml` caller job key changing from
 
 | Workflow | Check name |
 |---|---|
-| `cd-release.yml` | `cd / release` |
+| `cd-release.yml` | `release / release` |
 | `cd-docs.yml` | `cd / docs` |
 
 ---
