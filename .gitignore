@@ -17,3 +17,6 @@ build/
 
 # Parallel AI agent worktrees (see CLAUDE.md)
 .worktrees/
+
+# Vergil tooling scratch dir
+.vergil/
