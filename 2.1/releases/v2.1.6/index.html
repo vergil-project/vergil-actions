@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.24/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.6/">
       
       
-        <link rel="prev" href="../v2.0.25/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v2.0.23/">
+        <link rel="next" href="../v2.1.5/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>2.0.24 - Vergil Actions</title>
+        <title>2.1.6 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-2024-2026-05-28" class="md-skip">
+        <a href="#release-216-2026-07-01" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              2.0.24
+              2.1.6
             
           </span>
         </div>
@@ -785,10 +785,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.6/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.6
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -804,6 +831,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chores
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1121,37 +1190,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    2.0.24
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v2.0.24/" class="md-nav__link">
         
   
   
@@ -1167,37 +1209,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bug fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4131,6 +4142,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#chores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chores
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4148,30 +4170,27 @@
 
 
 
-<h1 id="release-2024-2026-05-28">Release 2.0.24 (2026-05-28)<a class="headerlink" href="#release-2024-2026-05-28" title="Permanent link">&para;</a></h1>
+<h1 id="release-216-2026-07-01">Release 2.1.6 (2026-07-01)<a class="headerlink" href="#release-216-2026-07-01" title="Permanent link">&para;</a></h1>
 <h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>install uv via setup-uv when not present on bare runners</strong>
-The vergil-tooling setup action assumed uv was pre-installed, which
-breaks on bare ubuntu-latest runners used by CD pipelines. Add a
-conditional astral-sh/setup-uv step that only runs when uv is not
-found on PATH.</li>
+<li><strong>deploy un-versioned site when versioning-scheme=none (#714)</strong>
+Docs repos with versioning-scheme=none (single-branch org docs sites) were
+still deployed through mike, producing a versioned site: a 'dev' version with
+the current content plus an init '0.1'/'latest' version frozen at scaffold.
+The root redirected to /dev/, but /latest/ (and /0.1/) served stale content,
+and the /dev/ URL prefix and version selector are meaningless for a repo with
+one branch and no versions.</li>
 </ul>
-<p>Replace duplicated vergil-tooling install logic in the Trivy action
-with delegation to the setup action, establishing a single source of
-truth for the install path.</p>
+<p>Read versioning-scheme from vergil.toml (same [project] read used for
+primary-language). When it is 'none', skip mike entirely and publish a single
+plain site to the gh-pages root via 'mkdocs gh-deploy --force' — no version
+split, no versions.json, no selector. --force replaces the branch, so the
+prior dev/0.1/latest fragments are cleaned up on the next deploy. Versioned
+repos are unchanged.</p>
+<h2 id="chores">Chores<a class="headerlink" href="#chores" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>use astral-sh/setup-uv@v7 (v8 has no rolling major tag)</strong></li>
-<li><strong>use pip to install uv on bare runners instead of astral-sh/setup-uv</strong>
-Replace astral-sh/setup-uv with pip install to avoid a circular
-dependency: the repo allowlist compliance check rejects astral-sh/*
-until vergil-tooling is updated, but vergil-tooling can't be fixed
-until this action works on bare runners.</li>
+<li><strong>point plugin marketplace at main (single released channel, #45) (#712)</strong></li>
 </ul>
-<p>The pip approach matches how the Docker base images install uv and
-has no external action dependency. A follow-up issue (#643) tracks
-upgrading to astral-sh/setup-uv once the allowlist and compliance
-tooling are updated.</p>
 
 
 
