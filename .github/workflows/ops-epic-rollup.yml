@@ -1,0 +1,55 @@
+name: Ops — Epic Rollup
+
+on:
+  workflow_call:
+    inputs:
+      container-prefix:
+        type: string
+        required: false
+        default: prod
+        description: >-
+          Container image name prefix (prod or dev). Defaults to "prod".
+      epic-repo:
+        type: string
+        required: false
+        default: .github
+        description: >-
+          Repo within the caller's org that holds epics. The App token is
+          scoped to this repo so rollup can close the cross-repo parent epic.
+          Defaults to ".github".
+    secrets:
+      APP_CLIENT_ID:
+        required: true
+      APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  epic-rollup:
+    name: epic-rollup
+    runs-on: ubuntu-latest
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+            ${{ inputs.epic-repo }}
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Roll up parent epic
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: vrg-epic-rollup --task "${{ github.repository }}#${{ github.event.issue.number }}"
