@@ -1,0 +1,41 @@
+name: CD Docs Refresh
+
+# Regenerates the generated documentation pages (roadmap / activity) and
+# republishes the site. Org documentation-site repos publish pages that change
+# with epic activity, not with any release of the docs repo itself, so there is
+# no push/release event to rebuild on — the caller drives this on a schedule
+# and on demand (workflow_dispatch). Thin wrapper over cd-docs.yml with the
+# page generation pre-wired, so every org's docs repo shares one definition.
+
+on:
+  workflow_call:
+    inputs:
+      pre-deploy-command:
+        description: >-
+          Command that regenerates the generated pages before deploy.
+          Defaults to regenerating the roadmap and activity pages.
+        type: string
+        default: >-
+          vrg-roadmap > docs/site/docs/roadmap.md &&
+          vrg-activity-log > docs/site/docs/activity.md
+      mkdocs-config:
+        description: Path to mkdocs.yml configuration file.
+        type: string
+        default: docs/site/mkdocs.yml
+      container-prefix:
+        description: Container image name prefix (prod or dev). Defaults to "prod".
+        type: string
+        default: prod
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    uses: ./.github/workflows/cd-docs.yml
+    permissions:
+      contents: write
+    with:
+      pre-deploy-command: ${{ inputs.pre-deploy-command }}
+      mkdocs-config: ${{ inputs.mkdocs-config }}
+      container-prefix: ${{ inputs.container-prefix }}
