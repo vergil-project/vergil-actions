@@ -1,8 +1,9 @@
 name: Deploy documentation
 description: >-
-  Deploys MkDocs documentation using mike for versioned documentation.
-  Handles git configuration, version detection, and mike deploy/set-default.
-  Staging (changelog/release-notes pages and nav patching) is a prerequisite
+  Deploys MkDocs documentation. Versioned repos use mike (version detection +
+  deploy/set-default); versioning-scheme=none repos publish a single
+  un-versioned site to the gh-pages root via mkdocs gh-deploy. Staging
+  (changelog/release-notes pages and nav patching) is a prerequisite
   performed by the shared actions/shared/docs/stage action, so CD deploy and
   CI build-only verification stage the docs identically.
 
@@ -45,30 +46,43 @@ runs:
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global --add safe.directory '*'
 
-    - name: Resolve mike command
+    - name: Resolve build commands and versioning scheme
       id: mike-cmd
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
         INPUT_MIKE_COMMAND: ${{ inputs.mike-command }}
       run: |
+        lang=$(/usr/local/bin/python3 -c "
+        import tomllib, pathlib
+        cfg = tomllib.loads(pathlib.Path('vergil.toml').read_text())
+        print(cfg.get('project', {}).get('primary-language', ''))
+        ")
+        scheme=$(/usr/local/bin/python3 -c "
+        import tomllib, pathlib
+        cfg = tomllib.loads(pathlib.Path('vergil.toml').read_text())
+        print(cfg.get('project', {}).get('versioning-scheme', ''))
+        ")
+        # Python repos ship mike/mkdocs behind uv; other repos have them on
+        # PATH. The same runner prefix applies to both tools.
+        if [ "$lang" = "python" ]; then
+          runner="uv run "
+        else
+          runner=""
+        fi
         if [ -n "$INPUT_MIKE_COMMAND" ]; then
           echo "cmd=$INPUT_MIKE_COMMAND" >> "$GITHUB_OUTPUT"
         else
-          lang=$(/usr/local/bin/python3 -c "
-          import tomllib, pathlib
-          cfg = tomllib.loads(pathlib.Path('vergil.toml').read_text())
-          print(cfg.get('project', {}).get('primary-language', ''))
-          ")
-          if [ "$lang" = "python" ]; then
-            echo "cmd=uv run mike" >> "$GITHUB_OUTPUT"
-          else
-            echo "cmd=mike" >> "$GITHUB_OUTPUT"
-          fi
+          echo "cmd=${runner}mike" >> "$GITHUB_OUTPUT"
         fi
+        echo "mkdocs=${runner}mkdocs" >> "$GITHUB_OUTPUT"
+        echo "scheme=$scheme" >> "$GITHUB_OUTPUT"
 
     - name: Determine version
       id: version
+      # Un-versioned (versioning-scheme=none) repos skip mike entirely, so
+      # there is no version/alias to resolve — and no version-command to eval.
+      if: steps.mike-cmd.outputs.scheme != 'none'
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
@@ -89,11 +103,20 @@ runs:
       working-directory: ${{ github.workspace }}
       env:
         MIKE_CMD: ${{ steps.mike-cmd.outputs.cmd }}
+        MKDOCS_CMD: ${{ steps.mike-cmd.outputs.mkdocs }}
+        SCHEME: ${{ steps.mike-cmd.outputs.scheme }}
         MKDOCS_CONFIG: ${{ inputs.mkdocs-config }}
         DOC_VERSION: ${{ steps.version.outputs.version }}
         DOC_ALIAS: ${{ steps.version.outputs.alias }}
       run: |
-        if [ -n "$DOC_ALIAS" ]; then
+        if [ "$SCHEME" = "none" ]; then
+          # Single-branch, un-versioned docs (versioning-scheme = none):
+          # publish one plain site to the gh-pages root — no mike version
+          # split, no versions.json, no version selector. --force replaces the
+          # branch, so any prior mike versions (dev/0.1/latest) are cleaned up
+          # on the next deploy. Issue #713.
+          $MKDOCS_CMD gh-deploy --config-file "$MKDOCS_CONFIG" --force
+        elif [ -n "$DOC_ALIAS" ]; then
           $MIKE_CMD deploy \
             -F "$MKDOCS_CONFIG" --push --update-aliases \
             "$DOC_VERSION" \
