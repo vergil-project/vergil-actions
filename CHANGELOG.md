@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.10] - 2026-07-02
+
+### CI
+
+- add on: issues.closed caller for event-driven epic rollup (#738)
+
+### Chores
+
+- relicense to MIT (#740)
+
+### Features
+
+- add reusable ops-epic-sweep reconciliation workflow (#742)
+
 ## [2.1.9] - 2026-07-01
 
 ### Chores
