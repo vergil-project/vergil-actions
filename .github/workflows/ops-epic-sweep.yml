@@ -61,4 +61,8 @@ jobs:
           # Authorizes the automated --close (the tool is otherwise human-only);
           # see vrg-epic-audit _SWEEP_ENV.
           VRG_EPIC_SWEEP: "1"
-        run: vrg-epic-audit --close --window-days "${{ inputs.window-days }}"
+          # Pass the input through env, not inline ${{ }} in run: — that trips the
+          # semgrep run-shell-injection rule (a workflow_call input is
+          # caller-controlled). Reference it double-quoted as "$WINDOW_DAYS".
+          WINDOW_DAYS: ${{ inputs.window-days }}
+        run: vrg-epic-audit --close --window-days "$WINDOW_DAYS"
