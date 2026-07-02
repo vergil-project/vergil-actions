@@ -1,0 +1,64 @@
+name: Ops — Epic Sweep
+
+# Scheduled reconciliation sweep (epic vergil-project/.github#75, #80). Reusable
+# workflow: a caller triggers it on a schedule; it runs `vrg-epic-audit --close`
+# to catch any epic/task that missed its event-driven close (Action down, broken
+# secret, race) and close it. Idempotent — only closes provably-complete drift.
+
+on:
+  workflow_call:
+    inputs:
+      container-prefix:
+        type: string
+        required: false
+        default: prod
+        description: >-
+          Container image name prefix (prod or dev). Defaults to "prod".
+      window-days:
+        type: string
+        required: false
+        default: "30"
+        description: >-
+          How many days back vrg-epic-audit scans for merged PRs whose task
+          issue is still open. Epic drift (all children closed) is unbounded.
+          Defaults to "30".
+    secrets:
+      APP_CLIENT_ID:
+        required: true
+      APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  epic-sweep:
+    name: epic-sweep
+    runs-on: ubuntu-latest
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          # No 'repositories' input: mint a token for every repo the app is
+          # installed on in the org. The sweep closes drifted tasks across the
+          # code repos AND rolled-up epics in .github, so it needs org-wide
+          # issues:write, not a two-repo scope like the per-close rollup.
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Reconcile epic/task drift
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # Authorizes the automated --close (the tool is otherwise human-only);
+          # see vrg-epic-audit _SWEEP_ENV.
+          VRG_EPIC_SWEEP: "1"
+        run: vrg-epic-audit --close --window-days "${{ inputs.window-days }}"
