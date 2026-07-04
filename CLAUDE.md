@@ -157,8 +157,10 @@ split on the first `-` to get phase and domain (`ci` / `security`), and
 look in `actions/{phase}/{domain}/`. Cross-phase actions live in
 `actions/shared/`. Repo-local actions live in `actions/local/`.
 
-- `actions/ci/security/standards-compliance` — PR-specific compliance
-  checks: issue linkage and auto-close keyword rejection
+- PR-linkage enforcement (issue linkage and auto-close keyword rejection)
+  is no longer a CI gate here; the action that used to run it has been
+  removed. Linkage is now enforced at PR-body construction time in
+  vergil-tooling (epic vergil-project/.github#82).
 - `actions/ci/security/codeql` — CodeQL static analysis
 - `actions/ci/security/semgrep` — Semgrep SAST scanning
 - `actions/ci/version-bump/version-divergence` — Pre-merge version
