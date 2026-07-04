@@ -26,7 +26,6 @@ actions/                          Composite GitHub Actions
   release-gates/                  Pre-merge version validation
   security/                       CodeQL, Semgrep, Trivy scanning
   setup/vergil-tooling/         vergil-tooling CLI installer
-  standards-compliance/           PR issue linkage enforcement
 .github/workflows/
   ci.yml                          Local CI umbrella (pull_request)
   ci-*.yml                        Reusable pre-merge CI gates

@@ -172,7 +172,6 @@ jobs:
       security-events: write
     with:
       language: python
-      run-standards: ${{ inputs.run-release != false }}
       run-security: ${{ inputs.run-security != false }}
       container-tag: '3.14'
       container-suffix: python

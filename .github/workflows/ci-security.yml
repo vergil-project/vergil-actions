@@ -8,9 +8,14 @@ on:
         type: string
         required: true
       run-standards:
-        description: Run standards-compliance job
+        # Deprecated / vestigial. The standards-compliance gate
+        # (vrg-pr-issue-linkage) was retired — PR-linkage is now enforced at
+        # PR-body construction in vergil-tooling (epic vergil-project/.github#82).
+        # Kept as an accepted-but-ignored input so consumers passing it do not
+        # error; remove in a coordinated follow-up once no consumer passes it.
+        description: Deprecated; no longer has any effect.
         type: boolean
-        default: true
+        default: false
       run-security:
         description: Run security scanner jobs
         type: boolean
@@ -34,14 +39,14 @@ on:
         type: string
         required: false
         description: >-
-          Container image name suffix for the standards job
-          (e.g. python, base). Defaults to "base".
+          Deprecated; fed the removed standards job and no longer has any
+          effect. Retained so consumers passing it do not error.
       container-tag:
         type: string
         required: false
         description: >-
-          Container image tag for the standards job.
-          Defaults to "latest".
+          Deprecated; fed the removed standards job and no longer has any
+          effect. Retained so consumers passing it do not error.
       container-prefix:
         type: string
         required: false
@@ -58,21 +63,6 @@ permissions:
   actions: read
 
 jobs:
-  standards:
-    name: standards
-    if: ${{ inputs.run-standards }}
-    runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ inputs.container-tag || 'latest' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
-
-      - name: Validate standards
-        uses: ./actions/ci/security/standards-compliance
-
   codeql:
     name: codeql
     # upload-sarif gates this job entirely: CodeQL requires GitHub code
