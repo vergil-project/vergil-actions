@@ -1,7 +1,9 @@
 name: Version divergence gate
 description: >-
   Verifies that the PR branch version differs from the main branch version.
-  Fails the step if the two versions are identical.
+  Fails the step if the two versions are identical. Before the first release
+  (no release tag exists) the gate is a no-op: there is no published version to
+  diverge from.
 
 inputs:
   head-version-command:
@@ -31,35 +33,51 @@ runs:
       shell: bash
       run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-    - name: Fetch main branch
+    - name: Detect first release
+      id: first-release
       shell: bash
       run: |
-        # A missing origin/main is a legitimate bootstrap / pre-release state:
-        # nothing ships without main, so there is no published version to
-        # diverge from. Treat that as a first-release no-op rather than a hard
-        # failure, while still letting genuine fetch/network errors fail.
+        # The gate only has meaning once a release has happened: before the
+        # first release there is no published version to diverge from. Every
+        # release is stamped with a `vX.Y.Z` tag (see cd/release/tag-and-release),
+        # so the absence of any such tag is the precise "no release yet" signal.
+        #
+        # Do NOT key this off a missing origin/main: the bootstrap wizard creates
+        # and pushes `main` at init, so `main` exists on a brand-new repo that has
+        # never released. Keying off `main` made the hatch unreachable and
+        # hard-failed the first PR of every release-bearing repo (vergil-actions
+        # #756). The tag signal distinguishes the two EQUAL cases exactly:
+        # bootstrap (no tag) passes; a genuine "forgot to bump" after a prior
+        # release (tag exists) still fails.
+        ls_remote_rc=0
+        tags=$(git ls-remote --tags --refs origin 2>/dev/null) || ls_remote_rc=$?
+        if [ "$ls_remote_rc" -ne 0 ]; then
+          echo "Failed to query the remote for release tags" \
+            "(git ls-remote exit ${ls_remote_rc})." >&2
+          exit "$ls_remote_rc"
+        fi
+        if printf '%s\n' "$tags" | grep -qE 'refs/tags/v[0-9]+\.[0-9]+\.[0-9]+'; then
+          echo "first-release=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "No release tag found; treating as a first-release no-op" \
+            "(no published version to diverge from)."
+          echo "first-release=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Fetch main branch
+      if: steps.first-release.outputs.first-release != 'true'
+      shell: bash
+      run: |
+        # A release has occurred, so origin/main exists and carries the
+        # published version. Fetch it when the checkout did not already.
         if git rev-parse --verify origin/main >/dev/null 2>&1; then
           exit 0
         fi
-        ls_remote_rc=0
-        git ls-remote --exit-code --heads origin main >/dev/null 2>&1 || ls_remote_rc=$?
-        case "$ls_remote_rc" in
-          0)
-            git fetch origin main --depth=1
-            ;;
-          2)
-            echo "origin/main does not exist on the remote; treating as a" \
-              "first-release no-op (no published version to diverge from)."
-            ;;
-          *)
-            echo "Failed to query the remote for main" \
-              "(git ls-remote exit ${ls_remote_rc})." >&2
-            exit "$ls_remote_rc"
-            ;;
-        esac
+        git fetch origin main --depth=1
 
     - name: Compare versions
       id: compare
+      if: steps.first-release.outputs.first-release != 'true'
       shell: bash
       env:
         HEAD_VERSION_CMD: ${{ inputs.head-version-command }}
