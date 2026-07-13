@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.15] - 2026-07-13
+
+### Bug fixes
+
+- pass GH_TOKEN to the docs stage step so evidence links resolve (#772)
+
+### Features
+
+- harvest, attest, and attach CI evidence (warning mode) (#771)
+
 ## [2.1.14] - 2026-07-13
 
 ### Documentation
