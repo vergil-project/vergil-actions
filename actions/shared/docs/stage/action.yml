@@ -26,6 +26,11 @@ runs:
       working-directory: ${{ github.workspace }}
       env:
         MKDOCS_CONFIG: ${{ inputs.mkdocs-config }}
+        # vrg-docs-stage links each release page to its CI-evidence bundle via
+        # `gh release view`, which needs an authenticated gh. Both docs
+        # workflows grant the permission (ci-docs: contents:read; cd-docs:
+        # contents:write); wire the token so gh is authenticated. Issue #770.
+        GH_TOKEN: ${{ github.token }}
       run: |
         vrg-docs-stage --docs-dir "$(dirname "$MKDOCS_CONFIG")/docs"
 
