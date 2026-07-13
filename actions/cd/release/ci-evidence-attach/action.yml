@@ -28,7 +28,7 @@ inputs:
     default: "false"
   timeout-minutes:
     description: >-
-      Upper bound (minutes) on the harvest+bundle step. Composite steps cannot
+      Upper bound (minutes) on the offline assemble step. Composite steps cannot
       use the step-level timeout-minutes key, so the bound is enforced with the
       coreutils `timeout` command; a timeout is treated as a bundle failure
       (non-fatal in warning mode, fatal in enforcing mode).
@@ -45,21 +45,26 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Harvest and bundle CI evidence
+    - name: Assemble CI evidence bundle
       id: bundle
       shell: bash
       env:
         ENFORCE: ${{ inputs.enforce }}
         TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
-        GH_TOKEN: ${{ github.token }}
-        REPO: ${{ github.repository }}
-        MERGE_SHA: ${{ github.sha }}
         VERSION: ${{ inputs.version }}
         SBOM_FILE: ${{ inputs.sbom-file }}
+        STAGING: ${{ github.workspace }}/.ci-evidence-staging
       run: |
         # Non-fatal by construction: capture the exit code explicitly instead of
         # letting `set -e` (GitHub's default for composite bash) abort the step,
         # so warning mode can convert any failure into a ::warning:: and exit 0.
+        #
+        # `vrg-ci-evidence assemble` is fully network-free: it reads the evidence
+        # and harvest-state.json that ci-evidence-gate already downloaded into the
+        # shared STAGING dir and produces the tarball + standalone manifest into
+        # evidence-out. The release's artifacts were downloaded exactly once, by
+        # the pre-publish gate's harvest. The SBOM, now built by registry-publish,
+        # is folded in here so the bundle is self-contained.
         set +e
         generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -72,10 +77,9 @@ runs:
           fi
         fi
 
-        timeout "${TIMEOUT_MINUTES}m" vrg-ci-evidence bundle \
-          --repo "$REPO" \
+        timeout "${TIMEOUT_MINUTES}m" vrg-ci-evidence assemble \
+          --staging "$STAGING" \
           --version "$VERSION" \
-          --merge-sha "$MERGE_SHA" \
           --generated-at "$generated_at" \
           --out-dir evidence-out \
           "${sbom_args[@]}"
