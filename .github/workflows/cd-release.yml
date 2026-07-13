@@ -43,6 +43,15 @@ on:
         description: Files to attach to release ($VERSION placeholder).
         type: string
         default: ""
+      evidence-enforce:
+        description: >-
+          CI-evidence gate fatality. false (default) = WARNING mode: the
+          evidence step never aborts the release. true = ENFORCING mode:
+          incomplete evidence fails the release (spec §9.2). Promotion to
+          enforcing is a single human-gated flip of this one default (Task
+          T11) — it also flips the step's continue-on-error automatically.
+        type: boolean
+        default: false
     secrets:
       CARGO_REGISTRY_TOKEN:
         required: false
@@ -73,6 +82,11 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+      # Required so the CI-evidence harvest can list and download the release
+      # PR's ci-evidence-* artifacts from its (separate) CI run (spec §5.2).
+      # The consuming repo's cd.yml must grant this scope too — a reusable
+      # workflow's permissions are capped by the caller.
+      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -106,6 +120,33 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # Evidence-first (spec §9): the CI-evidence gate runs before build/publish
+      # and tag-and-release so that, once enforcing, nothing publishes without
+      # complete attested evidence. Ships in WARNING mode — continue-on-error
+      # tracks the evidence-enforce flag so a rare attest failure (a composite
+      # `uses:` step that the composite's own shell wrapper cannot catch) still
+      # never aborts the release. Promotion (T11) flips evidence-enforce alone.
+      - name: Resolve SBOM path for evidence
+        id: evidence_sbom
+        if: >-
+          steps.tag_check.outputs.exists == 'false' &&
+          inputs.sbom-output-file != ''
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SBOM_OUTPUT_FILE: ${{ inputs.sbom-output-file }}
+        run: |
+          echo "path=${SBOM_OUTPUT_FILE//\$VERSION/$VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Harvest, attest, and attach CI evidence
+        if: steps.tag_check.outputs.exists == 'false'
+        continue-on-error: ${{ !inputs.evidence-enforce }}
+        uses: ./actions/cd/release/ci-evidence
+        with:
+          version: ${{ steps.version.outputs.version }}
+          tag: ${{ steps.version.outputs.tag }}
+          enforce: ${{ inputs.evidence-enforce }}
+          sbom-file: ${{ steps.evidence_sbom.outputs.path }}
 
       - name: Resolve release artifacts
         if: >-
