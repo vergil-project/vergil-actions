@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v2.0.22/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v2.1.15/">
       
       
-        <link rel="prev" href="../v2.0.23/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v2.0.21/">
+        <link rel="next" href="../v2.1.14/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>2.0.22 - Vergil Actions</title>
+        <title>2.1.15 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-2022-2026-05-28" class="md-skip">
+        <a href="#release-2115-2026-07-13" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              2.0.22
+              2.1.15
             
           </span>
         </div>
@@ -803,10 +803,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.15/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.15
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -822,6 +849,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1447,37 +1516,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    2.0.22
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v2.0.22/" class="md-nav__link">
         
   
   
@@ -1493,37 +1535,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bug fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4431,6 +4442,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4448,12 +4470,33 @@
 
 
 
-<h1 id="release-2022-2026-05-28">Release 2.0.22 (2026-05-28)<a class="headerlink" href="#release-2022-2026-05-28" title="Permanent link">&para;</a></h1>
+<h1 id="release-2115-2026-07-13">Release 2.1.15 (2026-07-13)<a class="headerlink" href="#release-2115-2026-07-13" title="Permanent link">&para;</a></h1>
 <h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>resolve v2.0.21 breaking changes in release and trivy workflows</strong>
-Move vergil-tooling install before input validation in cd-release.yml, and make the trivy composite action self-contained by installing vergil-tooling when not already on PATH. Ref #631</li>
+<li><strong>pass GH_TOKEN to the docs stage step so evidence links resolve (#772)</strong>
+The 'Stage changelog and release notes' step runs vrg-docs-stage, which links each release page to its CI-evidence bundle via 'gh release view'. Its env block set only MKDOCS_CONFIG, so gh was unauthenticated and the docs job failed. Wire GH_TOKEN: ${{ github.token }} into the same env block; both docs workflows already grant the required contents permission. The nav-patch step (vrg-docs-patch-nav) makes no gh calls and is unchanged. Ref #770</li>
 </ul>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>harvest, attest, and attach CI evidence (warning mode) (#771)</strong>
+Add the actions/cd/release/ci-evidence composite and wire it as the first
+publish step of cd-release.yml (evidence-first, spec §9). Ships in WARNING
+mode (spec §9.2): non-fatal and timeout-bounded so it can never abort a
+release; promotion to enforcing (Task T11) is a single flip of the
+evidence-enforce default.</li>
+</ul>
+<p>The composite runs vrg-ci-evidence bundle (bounded by the coreutils timeout
+command, since composite steps cannot use timeout-minutes), attests the bundle
+digest via actions/attest-build-provenance, and attaches the tarball plus
+manifest with gh release upload --clobber. Bundle and upload are bash steps
+that capture the exit code under set +e and, in warning mode, convert any
+failure or timeout into a ::warning:: and exit 0. The attest step is a uses
+step that a composite cannot wrap, so the call-site continue-on-error tracks
+evidence-enforce, keeping warning mode non-aborting even on a rare attest
+failure.</p>
+<p>Add actions: read to the cd-release job permissions so the harvest can list
+and download the release PR's ci-evidence-* artifacts (spec §5.2); the
+consuming repo's cd.yml must grant the same scope.</p>
 
 
 
