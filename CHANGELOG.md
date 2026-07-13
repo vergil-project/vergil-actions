@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.17] - 2026-07-13
+
+### Refactoring
+
+- share one harvest across evidence gate and attach (#782)
+
 ## [2.1.16] - 2026-07-13
 
 ### Bug fixes
