@@ -45,28 +45,27 @@ runs:
         GH_TOKEN: ${{ github.token }}
         REPO: ${{ github.repository }}
         MERGE_SHA: ${{ github.sha }}
-        VERSION: ${{ inputs.version }}
+        STAGING: ${{ github.workspace }}/.ci-evidence-staging
       run: |
         # Non-fatal by construction: capture the exit code explicitly instead of
         # letting `set -e` (GitHub's default for composite bash) abort the step,
         # so warning mode can convert any failure into a ::warning:: and exit 0.
         #
-        # `vrg-ci-evidence bundle` resolves the release PR, harvests the required
-        # gate artifacts, and validates completeness (raising a non-zero exit on
-        # a missing required gate). We run it here purely as the pre-publish
-        # completeness GATE — the tarball it assembles into the scratch out-dir
-        # is intentionally discarded: the SBOM is not built yet, so the complete,
-        # attested bundle is assembled and attached later by ci-evidence-attach.
-        # No --sbom-file is passed for the same reason.
+        # `vrg-ci-evidence harvest` resolves the release PR, downloads the required
+        # gate artifacts, and validates completeness (raising a non-zero exit on a
+        # missing required gate) — the pre-publish completeness GATE. It persists
+        # the downloaded evidence plus harvest-state.json into the shared STAGING
+        # dir on the job workspace; ci-evidence-attach later reads that SAME dir
+        # and assembles the tarball offline (network-free), so the release's
+        # artifacts are downloaded exactly once. The SBOM is not built yet, so no
+        # bundle is produced here.
         set +e
-        generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        mkdir -p "$STAGING"
 
-        timeout "${TIMEOUT_MINUTES}m" vrg-ci-evidence bundle \
+        timeout "${TIMEOUT_MINUTES}m" vrg-ci-evidence harvest \
           --repo "$REPO" \
-          --version "$VERSION" \
           --merge-sha "$MERGE_SHA" \
-          --generated-at "$generated_at" \
-          --out-dir evidence-gate
+          --out-dir "$STAGING"
         rc=$?
 
         if [ "$rc" -eq 0 ]; then
