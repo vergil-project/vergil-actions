@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.16] - 2026-07-13
+
+### Bug fixes
+
+- split cd-release evidence into pre-publish gate + post-release attach (#777)
+
 ## [2.1.15] - 2026-07-13
 
 ### Bug fixes
