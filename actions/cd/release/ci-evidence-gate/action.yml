@@ -1,0 +1,87 @@
+name: CI evidence gate
+description: >-
+  Pre-publish CI-evidence gate: resolve the release PR, harvest the required
+  gate evidence artifacts, and validate completeness — BEFORE anything is
+  published. Runs FIRST in cd-release (evidence-first, spec §9) so that, once
+  enforcing, no package, tag, or Release is created without complete evidence.
+  This step does NOT attest or attach anything: the GitHub Release does not yet
+  exist and the SBOM is not yet built at this point in the pipeline — the
+  ci-evidence-attach composite does that AFTER tag-and-release. Ships in WARNING
+  mode: with enforce=false any failure or timeout is non-fatal and the release
+  always proceeds. Promotion to enforcing (enforce=true) is a single human-gated
+  flag flip. See epic vergil-project/.github#140 spec §9, §9.2, §10.
+
+inputs:
+  version:
+    description: Semver version string (e.g. 2.1.129).
+    required: true
+  enforce:
+    description: >-
+      Fatality mode. "false" (default, WARNING) — an incomplete/failed harvest
+      emits a loud warning and the job succeeds; the release is never aborted.
+      "true" (ENFORCING) — a non-zero vrg-ci-evidence exit (substantive
+      incompleteness) fails the job here, before publish, gating the release
+      (spec §9.2).
+    required: false
+    default: "false"
+  timeout-minutes:
+    description: >-
+      Upper bound (minutes) on the harvest+validate step. Composite steps cannot
+      use the step-level timeout-minutes key, so the bound is enforced with the
+      coreutils `timeout` command; a timeout is treated as a gate failure
+      (non-fatal in warning mode, fatal in enforcing mode).
+    required: false
+    default: "15"
+
+runs:
+  using: composite
+  steps:
+    - name: Harvest and validate CI evidence (pre-publish gate)
+      id: gate
+      shell: bash
+      env:
+        ENFORCE: ${{ inputs.enforce }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        MERGE_SHA: ${{ github.sha }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        # Non-fatal by construction: capture the exit code explicitly instead of
+        # letting `set -e` (GitHub's default for composite bash) abort the step,
+        # so warning mode can convert any failure into a ::warning:: and exit 0.
+        #
+        # `vrg-ci-evidence bundle` resolves the release PR, harvests the required
+        # gate artifacts, and validates completeness (raising a non-zero exit on
+        # a missing required gate). We run it here purely as the pre-publish
+        # completeness GATE — the tarball it assembles into the scratch out-dir
+        # is intentionally discarded: the SBOM is not built yet, so the complete,
+        # attested bundle is assembled and attached later by ci-evidence-attach.
+        # No --sbom-file is passed for the same reason.
+        set +e
+        generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+        timeout "${TIMEOUT_MINUTES}m" vrg-ci-evidence bundle \
+          --repo "$REPO" \
+          --version "$VERSION" \
+          --merge-sha "$MERGE_SHA" \
+          --generated-at "$generated_at" \
+          --out-dir evidence-gate
+        rc=$?
+
+        if [ "$rc" -eq 0 ]; then
+          exit 0
+        fi
+
+        if [ "$rc" -eq 124 ]; then
+          reason="timed out after ${TIMEOUT_MINUTES}m"
+        else
+          reason="failed (exit $rc)"
+        fi
+
+        if [ "$ENFORCE" = "true" ]; then
+          echo "::error::CI evidence gate $reason — enforcing mode: failing the release before publish" >&2
+          exit "$rc"
+        fi
+        echo "::warning::CI evidence gate $reason — warning mode: release proceeds without a validated evidence gate" >&2
+        exit 0

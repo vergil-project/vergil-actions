@@ -1,12 +1,15 @@
-name: CI evidence bundle
+name: CI evidence attach
 description: >-
-  Harvest, validate, attest, and attach the CI evidence bundle for a release.
-  Runs FIRST in cd-release (evidence-first) so that, once enforcing, no package,
-  tag, or Release is created without complete attested evidence. Ships in
-  WARNING mode: with enforce=false any failure or timeout is non-fatal and the
-  release always proceeds. Promotion to enforcing (enforce=true) is a single
-  human-gated flag flip — the step's position and steps are identical in both
-  modes. See epic vergil-project/.github#140 spec §9, §9.2, §10.
+  Post-publish CI-evidence attach: assemble the complete evidence bundle — now
+  including the already-built SBOM — attest it to the pipeline and released
+  commit, and attach it to the GitHub Release that tag-and-release just created.
+  Runs AFTER tag-and-release (spec §9): the pre-publish completeness gate is done
+  by ci-evidence-gate, and by this point both the Release (upload target) and the
+  SBOM (bundle content) exist. Ships in WARNING mode: with enforce=false any
+  failure or timeout is non-fatal and the release always proceeds. Promotion to
+  enforcing (enforce=true) is a single human-gated flag flip — the step's
+  position and steps are identical in both modes. See epic
+  vergil-project/.github#140 spec §9, §9.2, §10.
 
 inputs:
   version:
@@ -20,7 +23,7 @@ inputs:
       Fatality mode. "false" (default, WARNING) — any bundle/attest/upload
       failure or timeout emits a loud warning and the job succeeds; the release
       is never aborted. "true" (ENFORCING) — a non-zero vrg-ci-evidence exit
-      (substantive incompleteness) fails the job, gating publish.
+      (substantive incompleteness) or a failed attach fails the job.
     required: false
     default: "false"
   timeout-minutes:
@@ -33,9 +36,9 @@ inputs:
     default: "15"
   sbom-file:
     description: >-
-      Path to an already-built SBOM in the CD workspace. Included in the bundle
-      when present so the bundle is self-contained; silently skipped when empty
-      or not yet materialized at this point in the pipeline.
+      Path to the SBOM built earlier in the CD job (by registry-publish).
+      Included in the bundle when present so the bundle is self-contained;
+      silently skipped when empty or not materialized.
     required: false
     default: ""
 
@@ -65,7 +68,7 @@ runs:
           if [ -f "$SBOM_FILE" ]; then
             sbom_args+=(--sbom-file "$SBOM_FILE")
           else
-            echo "::notice::SBOM $SBOM_FILE not present yet; bundling without it"
+            echo "::notice::SBOM $SBOM_FILE not present; bundling without it"
           fi
         fi
 
