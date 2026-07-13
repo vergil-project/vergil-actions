@@ -86,6 +86,7 @@ nav:
       - ci-version-bump: workflows/ci-version-bump.md
   - CI Gate Requirements:
       - Overview: ci-gates/index.md
+      - The All-Hard-Gates Principle: ci-gates/all-hard-gates.md
       - Required Checks: ci-gates/required-checks.md
       - Repository Rulesets: ci-gates/repository-rulesets.md
       - Security Scanning: ci-gates/security-scanning.md
