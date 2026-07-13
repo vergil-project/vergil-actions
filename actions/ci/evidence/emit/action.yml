@@ -1,0 +1,97 @@
+name: Emit CI evidence artifact
+description: >-
+  Writes an evidence.json fragment and uploads a gate's report files as a
+  ci-evidence-<gate> workflow-run artifact, so the release-time harvester
+  (vrg-ci-evidence) can bundle durable, attested per-gate evidence. Additive
+  and harmless: the artifact is always produced (evidence.json is always
+  present) and missing report files are skipped, never fatal.
+
+inputs:
+  gate:
+    description: >-
+      Evidence gate name — one of "security", "test", "audit", "quality".
+      Determines the artifact name (ci-evidence-<gate>) and the evidence.json
+      "gate" field.
+    required: true
+  files:
+    description: >-
+      Newline- or space-separated list of report file paths or globs to include
+      in the artifact alongside evidence.json (e.g. SARIF, coverage XML, JUnit
+      XML). Entries that match no file are skipped — never fatal — so a gate
+      that does not yet emit report files still produces a valid artifact.
+    required: false
+    default: ""
+  tools:
+    description: >-
+      JSON array of tool descriptors for the evidence.json "tools" field
+      (e.g. '[{"name":"codeql","version":"2.17.0"}]'). Defaults to an empty
+      array; enrich as gates learn to report their tool versions.
+    required: false
+    default: "[]"
+  metrics:
+    description: >-
+      JSON object for the evidence.json "metrics" field (e.g. coverage percent,
+      finding counts). Defaults to an empty object.
+    required: false
+    default: "{}"
+
+runs:
+  using: composite
+  steps:
+    - name: Stage evidence fragment and report files
+      id: stage
+      shell: bash
+      env:
+        GATE: ${{ inputs.gate }}
+        FILES: ${{ inputs.files }}
+        TOOLS: ${{ inputs.tools }}
+        METRICS: ${{ inputs.metrics }}
+      run: |
+        set -euo pipefail
+
+        staging="${RUNNER_TEMP}/ci-evidence-${GATE}"
+        rm -rf "$staging"
+        mkdir -p "$staging"
+
+        # Collect report files. FILES may be newline- or space-separated and
+        # may contain globs; entries matching no file are silently skipped so a
+        # gate without report files still yields a valid (evidence.json-only)
+        # artifact.
+        collected=()
+        while IFS= read -r pattern; do
+          [ -z "$pattern" ] && continue
+          # Intentional word-splitting + globbing of the pattern.
+          # shellcheck disable=SC2086
+          for match in $pattern; do
+            if [ -f "$match" ]; then
+              cp "$match" "$staging/"
+              collected+=("$(basename "$match")")
+            fi
+          done
+        done <<< "${FILES//$'\t'/ }"
+
+        # Build the evidence.json "files" array from the collected basenames.
+        if [ "${#collected[@]}" -gt 0 ]; then
+          files_json="$(printf '%s\n' "${collected[@]}" | jq -R . | jq -cs .)"
+        else
+          files_json="[]"
+        fi
+
+        jq -n \
+          --arg gate "$GATE" \
+          --argjson tools "$TOOLS" \
+          --argjson metrics "$METRICS" \
+          --argjson files "$files_json" \
+          '{gate: $gate, tools: $tools, metrics: $metrics, files: $files}' \
+          > "$staging/evidence.json"
+
+        echo "staging=$staging" >> "$GITHUB_OUTPUT"
+        echo "Staged ci-evidence-${GATE}:"
+        ls -la "$staging"
+
+    - name: Upload evidence artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ci-evidence-${{ inputs.gate }}
+        path: ${{ steps.stage.outputs.staging }}
+        if-no-files-found: error

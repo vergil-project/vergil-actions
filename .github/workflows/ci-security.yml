@@ -92,6 +92,17 @@ jobs:
         with:
           language: ${{ inputs.language }}
 
+      # Upload the CodeQL SARIF as an evidence partial UNCONDITIONALLY —
+      # independent of the code-scanning upload — so the release harvester
+      # reads artifacts only and never touches the code-scanning API (spec §7).
+      - name: Upload CodeQL SARIF evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-security-part-codeql
+          path: ${{ runner.temp }}/codeql-sarif
+          if-no-files-found: warn
+
   trivy:
     name: trivy
     if: ${{ inputs.run-security }}
@@ -109,6 +120,16 @@ jobs:
         with:
           scan-type: fs
           upload-sarif: ${{ inputs.upload-sarif }}
+
+      # Upload the Trivy SARIF as an evidence partial UNCONDITIONALLY, whether
+      # or not it was also pushed to code scanning (spec §7).
+      - name: Upload Trivy SARIF evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-security-part-trivy
+          path: trivy-results.sarif
+          if-no-files-found: warn
 
   semgrep:
     name: semgrep
@@ -131,3 +152,47 @@ jobs:
         with:
           language: ${{ inputs.language }}
           upload-sarif: ${{ inputs.upload-sarif }}
+
+      # Upload the Semgrep SARIF as an evidence partial UNCONDITIONALLY, whether
+      # or not it was also pushed to code scanning (spec §7).
+      - name: Upload Semgrep SARIF evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-security-part-semgrep
+          path: semgrep-results.sarif
+          if-no-files-found: warn
+
+  evidence:
+    name: evidence
+    # Consolidate every scanner's SARIF partial into the single
+    # ci-evidence-security artifact the harvester expects. Runs once the
+    # scanners have settled: trivy and semgrep must have passed, and codeql
+    # must have passed or been legitimately skipped (no GHAS / run-codeql
+    # false). A failed scanner means the security gate failed, so no evidence
+    # is emitted and — per the publish invariant — nothing is released.
+    needs: [codeql, trivy, semgrep]
+    if: >-
+      ${{ always() && needs.trivy.result == 'success' &&
+      needs.semgrep.result == 'success' &&
+      (needs.codeql.result == 'success' || needs.codeql.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download scanner SARIF partials
+        uses: actions/download-artifact@v7
+        with:
+          pattern: ci-evidence-security-part-*
+          path: security-sarif
+          merge-multiple: true
+
+      - name: Emit ci-evidence-security artifact
+        uses: ./actions/ci/evidence/emit
+        with:
+          gate: security
+          files: security-sarif/*.sarif

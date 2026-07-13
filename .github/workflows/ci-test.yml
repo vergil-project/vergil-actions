@@ -51,3 +51,23 @@ jobs:
 
       - name: Run unit tests
         run: vrg-validate --check test
+
+  evidence:
+    name: evidence
+    # Runs only after every matrix unit job succeeds, so the artifact's presence
+    # is itself proof the test gate passed. Report files (coverage.xml,
+    # junit.xml) are collected when the test command emits them; until then the
+    # artifact carries evidence.json alone, which is sufficient for completeness.
+    needs: unit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Emit ci-evidence-test artifact
+        uses: ./actions/ci/evidence/emit
+        with:
+          gate: test
+          files: |
+            coverage.xml
+            junit.xml

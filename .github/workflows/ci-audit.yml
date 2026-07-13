@@ -51,3 +51,23 @@ jobs:
 
       - name: Run dependency audit
         run: vrg-validate --check audit
+
+  evidence:
+    name: evidence
+    # Runs only after every matrix audit job succeeds, so the artifact's
+    # presence is itself proof the audit gate passed. Report files (audit /
+    # license JSON) are collected when the audit command emits them; until then
+    # the artifact carries evidence.json alone.
+    needs: dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Emit ci-evidence-audit artifact
+        uses: ./actions/ci/evidence/emit
+        with:
+          gate: audit
+          files: |
+            pip-audit.json
+            licenses.json
