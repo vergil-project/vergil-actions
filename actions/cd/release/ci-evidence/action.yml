@@ -1,0 +1,129 @@
+name: CI evidence bundle
+description: >-
+  Harvest, validate, attest, and attach the CI evidence bundle for a release.
+  Runs FIRST in cd-release (evidence-first) so that, once enforcing, no package,
+  tag, or Release is created without complete attested evidence. Ships in
+  WARNING mode: with enforce=false any failure or timeout is non-fatal and the
+  release always proceeds. Promotion to enforcing (enforce=true) is a single
+  human-gated flag flip — the step's position and steps are identical in both
+  modes. See epic vergil-project/.github#140 spec §9, §9.2, §10.
+
+inputs:
+  version:
+    description: Semver version string (e.g. 2.1.129).
+    required: true
+  tag:
+    description: Release tag the bundle is attached to (e.g. v2.1.129).
+    required: true
+  enforce:
+    description: >-
+      Fatality mode. "false" (default, WARNING) — any bundle/attest/upload
+      failure or timeout emits a loud warning and the job succeeds; the release
+      is never aborted. "true" (ENFORCING) — a non-zero vrg-ci-evidence exit
+      (substantive incompleteness) fails the job, gating publish.
+    required: false
+    default: "false"
+  timeout-minutes:
+    description: >-
+      Upper bound (minutes) on the harvest+bundle step. Composite steps cannot
+      use the step-level timeout-minutes key, so the bound is enforced with the
+      coreutils `timeout` command; a timeout is treated as a bundle failure
+      (non-fatal in warning mode, fatal in enforcing mode).
+    required: false
+    default: "15"
+  sbom-file:
+    description: >-
+      Path to an already-built SBOM in the CD workspace. Included in the bundle
+      when present so the bundle is self-contained; silently skipped when empty
+      or not yet materialized at this point in the pipeline.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Harvest and bundle CI evidence
+      id: bundle
+      shell: bash
+      env:
+        ENFORCE: ${{ inputs.enforce }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        MERGE_SHA: ${{ github.sha }}
+        VERSION: ${{ inputs.version }}
+        SBOM_FILE: ${{ inputs.sbom-file }}
+      run: |
+        # Non-fatal by construction: capture the exit code explicitly instead of
+        # letting `set -e` (GitHub's default for composite bash) abort the step,
+        # so warning mode can convert any failure into a ::warning:: and exit 0.
+        set +e
+        generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+        sbom_args=()
+        if [ -n "$SBOM_FILE" ]; then
+          if [ -f "$SBOM_FILE" ]; then
+            sbom_args+=(--sbom-file "$SBOM_FILE")
+          else
+            echo "::notice::SBOM $SBOM_FILE not present yet; bundling without it"
+          fi
+        fi
+
+        timeout "${TIMEOUT_MINUTES}m" vrg-ci-evidence bundle \
+          --repo "$REPO" \
+          --version "$VERSION" \
+          --merge-sha "$MERGE_SHA" \
+          --generated-at "$generated_at" \
+          --out-dir evidence-out \
+          "${sbom_args[@]}"
+        rc=$?
+
+        if [ "$rc" -eq 0 ]; then
+          echo "bundled=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        echo "bundled=false" >> "$GITHUB_OUTPUT"
+        if [ "$rc" -eq 124 ]; then
+          reason="timed out after ${TIMEOUT_MINUTES}m"
+        else
+          reason="failed (exit $rc)"
+        fi
+
+        if [ "$ENFORCE" = "true" ]; then
+          echo "::error::CI evidence bundling $reason — enforcing mode: failing the release" >&2
+          exit "$rc"
+        fi
+        echo "::warning::CI evidence bundling $reason — warning mode: release proceeds without a complete evidence bundle" >&2
+        exit 0
+
+    - name: Attest evidence bundle provenance
+      if: steps.bundle.outputs.bundled == 'true'
+      uses: actions/attest-build-provenance@v4
+      with:
+        subject-path: evidence-out/*.tar.gz
+
+    - name: Attach evidence bundle to release
+      if: steps.bundle.outputs.bundled == 'true'
+      shell: bash
+      env:
+        ENFORCE: ${{ inputs.enforce }}
+        GH_TOKEN: ${{ github.token }}
+        TAG: ${{ inputs.tag }}
+      run: |
+        set +e
+        gh release upload "$TAG" \
+          evidence-out/*.tar.gz \
+          evidence-out/*-manifest.json \
+          --clobber
+        rc=$?
+
+        if [ "$rc" -eq 0 ]; then
+          exit 0
+        fi
+        if [ "$ENFORCE" = "true" ]; then
+          echo "::error::Attaching CI evidence bundle to release $TAG failed (exit $rc) — enforcing mode" >&2
+          exit "$rc"
+        fi
+        echo "::warning::Attaching CI evidence bundle to release $TAG failed (exit $rc) — warning mode: release proceeds" >&2
+        exit 0
