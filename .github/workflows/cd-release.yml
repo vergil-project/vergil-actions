@@ -121,12 +121,20 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Evidence-first (spec §9): the CI-evidence gate runs before build/publish
-      # and tag-and-release so that, once enforcing, nothing publishes without
-      # complete attested evidence. Ships in WARNING mode — continue-on-error
-      # tracks the evidence-enforce flag so a rare attest failure (a composite
-      # `uses:` step that the composite's own shell wrapper cannot catch) still
-      # never aborts the release. Promotion (T11) flips evidence-enforce alone.
+      # Evidence-first (spec §9), split in two so the bundle is both gated before
+      # publish AND self-contained + attachable after it:
+      #   * GATE (here, pre-publish) — resolve the release PR, harvest the
+      #     required gate evidence, and validate completeness. Once enforcing,
+      #     incomplete evidence fails the release here, before anything is built,
+      #     tagged, or released.
+      #   * ATTACH (below, after tag-and-release) — assemble the complete bundle
+      #     (now including the built SBOM), attest it, and upload it to the
+      #     Release that now exists as the upload target.
+      # Both steps ship in WARNING mode: continue-on-error tracks the
+      # evidence-enforce flag so even a failure the composite's shell wrapper
+      # cannot catch (a `uses:` attest step) never aborts the release. Promotion
+      # to enforcing (T11) is a single flip of the evidence-enforce default — it
+      # flips both steps' fatality and both continue-on-error guards at once.
       - name: Resolve SBOM path for evidence
         id: evidence_sbom
         if: >-
@@ -138,15 +146,13 @@ jobs:
         run: |
           echo "path=${SBOM_OUTPUT_FILE//\$VERSION/$VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Harvest, attest, and attach CI evidence
+      - name: CI evidence gate (pre-publish)
         if: steps.tag_check.outputs.exists == 'false'
         continue-on-error: ${{ !inputs.evidence-enforce }}
-        uses: ./actions/cd/release/ci-evidence
+        uses: ./actions/cd/release/ci-evidence-gate
         with:
           version: ${{ steps.version.outputs.version }}
-          tag: ${{ steps.version.outputs.tag }}
           enforce: ${{ inputs.evidence-enforce }}
-          sbom-file: ${{ steps.evidence_sbom.outputs.path }}
 
       - name: Resolve release artifacts
         if: >-
@@ -185,6 +191,20 @@ jobs:
         with:
           version: ${{ steps.version.outputs.version }}
           release-artifacts: ${{ steps.resolved.outputs.release-artifacts }}
+
+      # Post-publish attach (spec §9): the Release now exists (upload target) and
+      # the SBOM has been built by registry-publish (bundle content), so the
+      # bundle the pre-publish gate could only validate can now be assembled in
+      # full, attested, and attached. Same WARNING-mode contract as the gate.
+      - name: Attach CI evidence bundle (post-release)
+        if: steps.tag_check.outputs.exists == 'false'
+        continue-on-error: ${{ !inputs.evidence-enforce }}
+        uses: ./actions/cd/release/ci-evidence-attach
+        with:
+          version: ${{ steps.version.outputs.version }}
+          tag: ${{ steps.version.outputs.tag }}
+          enforce: ${{ inputs.evidence-enforce }}
+          sbom-file: ${{ steps.evidence_sbom.outputs.path }}
 
       - name: Verify tag is resolvable from remote
         if: steps.tag_check.outputs.exists == 'false'
