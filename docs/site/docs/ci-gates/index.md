@@ -31,6 +31,8 @@ organized by category using job name prefixes:
 
 ## Pages in this section
 
+- [The All-Hard-Gates Principle](all-hard-gates.md) — Why every check that
+  matters is a hard, asserting gate and there are no report-only/warning gates
 - [Required Checks](required-checks.md) — Matrix of checks by repository
   category
 - [Repository Rulesets](repository-rulesets.md) — Branch protection, CI gates,

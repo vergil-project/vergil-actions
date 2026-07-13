@@ -85,3 +85,20 @@ jobs:
 
       - name: Run typecheck
         run: vrg-validate --check typecheck
+
+  evidence:
+    name: evidence
+    # Runs only after the common, lint, and typecheck jobs all succeed, so the
+    # artifact's presence is itself proof the quality gate passed. Lint and
+    # typecheck report to stdout and emit no files today; the artifact carries
+    # evidence.json alone, which is sufficient for completeness.
+    needs: [common, lint, typecheck]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Emit ci-evidence-quality artifact
+        uses: ./actions/ci/evidence/emit
+        with:
+          gate: quality
