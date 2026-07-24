@@ -96,7 +96,33 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
-    secrets: inherit
+    # Python publishes via OIDC trusted publishing — no secret to pass.
+```
+
+### Release publishing secrets
+
+Callers must forward only the publishing credentials the target ecosystem
+needs, never a blanket `secrets: inherit`. The generated `cd.yml` emits an
+explicit `secrets:` block (or none at all) matching the language:
+
+| Ecosystem | Secrets to forward |
+| --------- | ------------------ |
+| `python` | None — OIDC trusted publishing (requires `id-token: write`) |
+| `go` | None |
+| `rust` | `CARGO_REGISTRY_TOKEN` |
+| `ruby` | `RUBYGEMS_API_KEY` |
+| `java` | `CENTRAL_USERNAME`, `CENTRAL_TOKEN`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` |
+
+For example, a Rust release job forwards a single least-privilege secret:
+
+```yaml
+  release:
+    if: github.ref == 'refs/heads/main'
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
+    with:
+      language: rust
+    secrets:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 ```
 
 See [Reusable Workflows](workflows/index.md) for the full list and
