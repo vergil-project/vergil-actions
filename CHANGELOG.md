@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.18] - 2026-07-24
+
+### Documentation
+
+- explicit CD secrets and semgrep rule-exclusion docs (#788)
+
 ## [2.1.17] - 2026-07-13
 
 ### Refactoring
