@@ -54,6 +54,28 @@ rulesets.
    `upload-sarif` is `false`, the SARIF file is attached to the workflow run
    as a build artifact (`semgrep-sarif`) instead.
 
+## Rule exclusions
+
+The underlying `vrg-semgrep-scan` supports a repeatable `--exclude-rule
+<full-rule-id>` flag that drops individual findings by their full Semgrep rule
+ID. Caller-supplied `--exclude-rule` values are **added on top of** the fleet
+`DEFAULT_EXCLUDED_RULES` — they never replace the defaults, so the fleet
+baseline always applies.
+
+### Fleet default: `github-actions-mutable-action-tag`
+
+`github-actions-mutable-action-tag` is currently exempted fleet-wide (it lives
+in `DEFAULT_EXCLUDED_RULES`). This rule flags third-party actions pinned to a
+mutable tag (e.g. `@v4`) rather than a full commit SHA. The exemption is
+**temporary**, pending backlog
+[vergil-project/.github#194](https://github.com/vergil-project/.github/issues/194)
+— once pin-advancement tooling exists to keep SHA pins current, third-party
+action SHAs will be pinned and the exemption lifted.
+
+Our own `vergil-project/vergil-actions/…@v2.1` references are a **permanent**
+exception: they track our controlled release line and are never SHA-pinned, so
+the rule does not apply to them regardless of the backlog above.
+
 ## Examples
 
 ### Python Semgrep scan
