@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -739,6 +739,8 @@
       
         
       
+        
+      
     
     
     
@@ -791,6 +793,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.18
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -3610,6 +3640,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rule-exclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule exclusions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rule exclusions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fleet-default-github-actions-mutable-action-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fleet default: github-actions-mutable-action-tag
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4625,6 +4683,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rule-exclusions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule exclusions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rule exclusions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fleet-default-github-actions-mutable-action-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fleet default: github-actions-mutable-action-tag
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4780,6 +4866,23 @@ rulesets.</p>
    <code>upload-sarif</code> is <code>false</code>, the SARIF file is attached to the workflow run
    as a build artifact (<code>semgrep-sarif</code>) instead.</li>
 </ol>
+<h2 id="rule-exclusions">Rule exclusions<a class="headerlink" href="#rule-exclusions" title="Permanent link">&para;</a></h2>
+<p>The underlying <code>vrg-semgrep-scan</code> supports a repeatable <code>--exclude-rule
+&lt;full-rule-id&gt;</code> flag that drops individual findings by their full Semgrep rule
+ID. Caller-supplied <code>--exclude-rule</code> values are <strong>added on top of</strong> the fleet
+<code>DEFAULT_EXCLUDED_RULES</code> — they never replace the defaults, so the fleet
+baseline always applies.</p>
+<h3 id="fleet-default-github-actions-mutable-action-tag">Fleet default: <code>github-actions-mutable-action-tag</code><a class="headerlink" href="#fleet-default-github-actions-mutable-action-tag" title="Permanent link">&para;</a></h3>
+<p><code>github-actions-mutable-action-tag</code> is currently exempted fleet-wide (it lives
+in <code>DEFAULT_EXCLUDED_RULES</code>). This rule flags third-party actions pinned to a
+mutable tag (e.g. <code>@v4</code>) rather than a full commit SHA. The exemption is
+<strong>temporary</strong>, pending backlog
+<a href="https://github.com/vergil-project/.github/issues/194">vergil-project/.github#194</a>
+— once pin-advancement tooling exists to keep SHA pins current, third-party
+action SHAs will be pinned and the exemption lifted.</p>
+<p>Our own <code>vergil-project/vergil-actions/…@v2.1</code> references are a <strong>permanent</strong>
+exception: they track our controlled release line and are never SHA-pinned, so
+the rule does not apply to them regardless of the backlog above.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="python-semgrep-scan">Python Semgrep scan<a class="headerlink" href="#python-semgrep-scan" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">jobs</span><span class="p">:</span>
@@ -4872,7 +4975,7 @@ not all repos in the fleet share.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

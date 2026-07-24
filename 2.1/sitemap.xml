@@ -2,466 +2,470 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/changelog/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/configuration/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/getting-started/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/cd-docs-deploy/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/cd-release-tag-and-release/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-security-codeql/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-security-semgrep/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-security-standards-compliance/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-version-bump-version-divergence/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/shared-security-trivy/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/ci-gates/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/ci-gates/all-hard-gates/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/ci-gates/repository-rulesets/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/ci-gates/required-checks/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/ci-gates/security-scanning/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/development/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/development/contributing/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/development/environment-and-tooling/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/development/validation/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.1.0/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.1.2/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.1.3/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.2.0/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.2.1/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.3.0/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.3.1/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.3.2/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.3.3/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.0/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.1/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.2/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.3/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.4/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.5/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.6/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.7/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.8/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.0/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.1/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.10/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.11/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.12/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.13/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.14/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.15/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.16/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.17/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.18/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.19/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.2/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.20/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.21/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.22/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.23/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.3/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.4/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.5/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.6/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.7/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.8/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.9/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.10/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.11/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.12/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.13/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.14/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.15/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.16/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.17/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.18/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.19/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.2/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.20/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.21/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.22/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.23/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.24/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.25/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.26/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.27/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.28/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.29/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.3/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.4/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.5/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.7/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.8/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.9/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.0/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.1/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.10/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.11/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.12/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.13/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.14/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.15/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.16/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.17/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.18/</loc>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.2/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.3/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.4/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.5/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.6/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.7/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.8/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.9/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ci-audit/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ci-docs/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ci-quality/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ci-security/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ci-test/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ci-version-bump/</loc>
-         <lastmod>2026-07-13</lastmod>
+         <lastmod>2026-07-24</lastmod>
     </url>
 </urlset>
