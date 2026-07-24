@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -3366,6 +3366,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#release-publishing-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release publishing secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4598,6 +4609,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#release-publishing-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release publishing secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4724,7 +4746,50 @@ Reference workflows using the full path to the workflow file:</p>
 <a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1</span>
 <a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">    </span><span class="c1"># Python publishes via OIDC trusted publishing — no secret to pass.</span>
+</code></pre></div>
+<h3 id="release-publishing-secrets">Release publishing secrets<a class="headerlink" href="#release-publishing-secrets" title="Permanent link">&para;</a></h3>
+<p>Callers must forward only the publishing credentials the target ecosystem
+needs, never a blanket <code>secrets: inherit</code>. The generated <code>cd.yml</code> emits an
+explicit <code>secrets:</code> block (or none at all) matching the language:</p>
+<table>
+<thead>
+<tr>
+<th>Ecosystem</th>
+<th>Secrets to forward</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>python</code></td>
+<td>None — OIDC trusted publishing (requires <code>id-token: write</code>)</td>
+</tr>
+<tr>
+<td><code>go</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>CARGO_REGISTRY_TOKEN</code></td>
+</tr>
+<tr>
+<td><code>ruby</code></td>
+<td><code>RUBYGEMS_API_KEY</code></td>
+</tr>
+<tr>
+<td><code>java</code></td>
+<td><code>CENTRAL_USERNAME</code>, <code>CENTRAL_TOKEN</code>, <code>GPG_PRIVATE_KEY</code>, <code>GPG_PASSPHRASE</code></td>
+</tr>
+</tbody>
+</table>
+<p>For example, a Rust release job forwards a single least-privilege secret:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="w">  </span><span class="nt">release</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">github.ref == &#39;refs/heads/main&#39;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rust</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">      </span><span class="nt">CARGO_REGISTRY_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.CARGO_REGISTRY_TOKEN }}</span>
 </code></pre></div>
 <p>See <a href="../workflows/">Reusable Workflows</a> for the full list and
 detailed documentation.</p>
@@ -4817,7 +4882,7 @@ needed.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "search.highlight", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
