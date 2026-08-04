@@ -151,6 +151,11 @@ jobs:
         uses: ./actions/ci/security/semgrep
         with:
           language: ${{ inputs.language }}
+          # C++ has no single `p/<language>` ruleset — its coverage is split
+          # across the C and C++ registries, so wire both explicitly (epic
+          # vergil-project/.github#207 §4). Other languages resolve their
+          # ruleset from the language input alone.
+          extra-config: ${{ inputs.language == 'cpp' && 'p/c p/cpp' || '' }}
           upload-sarif: ${{ inputs.upload-sarif }}
 
       # Upload the Semgrep SARIF as an evidence partial UNCONDITIONALLY, whether

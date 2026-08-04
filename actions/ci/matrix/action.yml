@@ -1,0 +1,101 @@
+name: Resolve CI matrix
+description: >-
+  Resolve the per-version job matrix for a reusable CI workflow. Each entry
+  carries the version label (used in the job/gate name) and the fully
+  qualified container image to run it in.
+
+  Two behaviors are folded in:
+
+    1. C++ compiler-family image routing. C++ carries its compiler family on
+       the version token (`clang-20`, `gcc-14`) rather than a separate suffix,
+       so the token is split into family + numeric tag and routed to the
+       matching image — `clang-20` -> `prod-cpp-clang:20`,
+       `gcc-14` -> `prod-cpp-gcc:14` (epic vergil-project/.github#207 §6).
+       Every other language keeps the single-suffix scheme
+       `<prefix>-<suffix>:<version>`.
+
+    2. Per-kind cardinality. The `once` output collapses the matrix to the
+       primary (first) version for C++ so run-once kinds (LINT, AUDIT) emit a
+       single job/gate instead of one per compiler x version — matching the
+       run-once gates that `github_config.desired_ci_gates_ruleset` emits. For
+       every other language `once` equals `all`, so their run-once kinds stay
+       per-version exactly as before.
+
+inputs:
+  language:
+    description: Primary language of the calling repo (e.g. python, cpp, shell).
+    required: true
+  versions:
+    description: JSON array string of version tokens (e.g. '["clang-20","gcc-14"]').
+    required: true
+  container-prefix:
+    description: Container image name prefix (prod or dev).
+    required: false
+    default: prod
+  container-suffix:
+    description: >-
+      Container image name suffix for non-C++ languages (e.g. python, go,
+      base). Ignored for C++, whose suffix is derived from the version token.
+    required: false
+    default: ""
+
+outputs:
+  all:
+    description: >-
+      JSON array of {version, image} objects, one per configured version.
+      Consumed by per-version kinds (TYPECHECK, TEST).
+    value: ${{ steps.resolve.outputs.all }}
+  once:
+    description: >-
+      JSON array of {version, image} objects collapsed to the primary version
+      for C++, else identical to `all`. Consumed by run-once kinds (LINT,
+      AUDIT).
+    value: ${{ steps.resolve.outputs.once }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve matrix
+      id: resolve
+      shell: bash
+      env:
+        LANGUAGE: ${{ inputs.language }}
+        VERSIONS: ${{ inputs.versions }}
+        PREFIX: ${{ inputs.container-prefix }}
+        SUFFIX: ${{ inputs.container-suffix }}
+      run: |
+        set -euo pipefail
+
+        registry="ghcr.io/vergil-project"
+        prefix="${PREFIX:-prod}"
+
+        all=$(jq -cn \
+          --argjson versions "$VERSIONS" \
+          --arg lang "$LANGUAGE" \
+          --arg prefix "$prefix" \
+          --arg suffix "$SUFFIX" \
+          --arg reg "$registry" '
+          $versions | map(
+            if $lang == "cpp" then
+              (. | split("-")) as $p
+              | { version: .,
+                  image: ($reg + "/" + $prefix + "-cpp-" + $p[0]
+                          + ":" + ($p[1:] | join("-"))) }
+            else
+              (if $suffix == "" then $lang else $suffix end) as $sfx
+              | { version: ., image: ($reg + "/" + $prefix + "-" + $sfx + ":" + .) }
+            end)')
+
+        if [ "$LANGUAGE" = "cpp" ]; then
+          once=$(printf '%s' "$all" | jq -c '.[:1]')
+        else
+          once="$all"
+        fi
+
+        {
+          echo "all=$all"
+          echo "once=$once"
+        } >> "$GITHUB_OUTPUT"
+
+        echo "Resolved matrix (all): $all"
+        echo "Resolved matrix (once): $once"

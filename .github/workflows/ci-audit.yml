@@ -13,16 +13,16 @@ on:
         type: string
         required: false
         description: >-
-          Container image name suffix (e.g. python, go, base). Defaults
-          to "base". Callers should pass their language-specific suffix
-          (e.g. "python", "go") when needed.
+          Container image name suffix (e.g. python, go, base). Callers should
+          pass their language-specific suffix. Ignored for cpp, whose suffix
+          (cpp-clang / cpp-gcc) is derived per-version from the version token.
       container-tag:
         type: string
         required: false
         description: >-
           Container image tag. Accepted for interface consistency with
-          other CI workflows; matrix jobs use the versions input for
-          their container tag.
+          other CI workflows; matrix jobs resolve their image (and tag) from
+          the versions input via the ci/matrix action.
       container-prefix:
         type: string
         required: false
@@ -31,13 +31,37 @@ on:
           Container image name prefix (prod or dev). Defaults to "prod".
 
 jobs:
+  # Resolve the per-version job matrix (version label + container image),
+  # applying C++ compiler-family image routing and per-kind cardinality. AUDIT
+  # is a run-once kind, so dependencies consumes the `once` output (primary
+  # version only for C++, every version otherwise).
+  matrix:
+    name: matrix
+    runs-on: ubuntu-latest
+    outputs:
+      all: ${{ steps.resolve.outputs.all }}
+      once: ${{ steps.resolve.outputs.once }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve CI matrix
+        id: resolve
+        uses: ./actions/ci/matrix
+        with:
+          language: ${{ inputs.language }}
+          versions: ${{ inputs.versions }}
+          container-prefix: ${{ inputs.container-prefix }}
+          container-suffix: ${{ inputs.container-suffix }}
+
   dependencies:
     name: dependencies / ${{ matrix.version }}
+    needs: matrix
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ matrix.version }}
+    container: ${{ matrix.image }}
     strategy:
       matrix:
-        version: ${{ fromJSON(inputs.versions) }}
+        include: ${{ fromJSON(needs.matrix.outputs.once) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

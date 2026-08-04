@@ -13,9 +13,11 @@ on:
         type: string
         required: false
         description: >-
-          Container image name suffix (e.g. python, go, base). Defaults
-          to the language input. Callers whose language is "shell" or
-          "none" should pass "base".
+          Container image name suffix (e.g. python, go, base). Used by the
+          common job and by the matrix-resolved per-version jobs. Callers
+          whose language is "shell" or "none" should pass "base". Ignored for
+          the per-version cpp jobs, whose suffix (cpp-clang / cpp-gcc) is
+          derived from the version token.
       container-tag:
         type: string
         required: false
@@ -30,6 +32,30 @@ on:
           Container image name prefix (prod or dev). Defaults to "prod".
 
 jobs:
+  # Resolve the per-version job matrix (version label + container image),
+  # applying C++ compiler-family image routing and per-kind cardinality.
+  # LINT is a run-once kind, so it consumes the `once` output (primary version
+  # only for C++, every version otherwise); TYPECHECK is per-version and
+  # consumes `all`.
+  matrix:
+    name: matrix
+    runs-on: ubuntu-latest
+    outputs:
+      all: ${{ steps.resolve.outputs.all }}
+      once: ${{ steps.resolve.outputs.once }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve CI matrix
+        id: resolve
+        uses: ./actions/ci/matrix
+        with:
+          language: ${{ inputs.language }}
+          versions: ${{ inputs.versions }}
+          container-prefix: ${{ inputs.container-prefix }}
+          container-suffix: ${{ inputs.container-suffix }}
+
   common:
     name: common
     runs-on: ubuntu-latest
@@ -46,11 +72,12 @@ jobs:
 
   lint:
     name: lint / ${{ matrix.version }}
+    needs: matrix
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || inputs.language }}:${{ matrix.version }}
+    container: ${{ matrix.image }}
     strategy:
       matrix:
-        version: ${{ fromJSON(inputs.versions) }}
+        include: ${{ fromJSON(needs.matrix.outputs.once) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -67,11 +94,12 @@ jobs:
 
   typecheck:
     name: typecheck / ${{ matrix.version }}
+    needs: matrix
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || inputs.language }}:${{ matrix.version }}
+    container: ${{ matrix.image }}
     strategy:
       matrix:
-        version: ${{ fromJSON(inputs.versions) }}
+        include: ${{ fromJSON(needs.matrix.outputs.all) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
