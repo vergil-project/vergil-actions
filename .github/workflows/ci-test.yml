@@ -46,7 +46,7 @@ jobs:
 
       - name: Resolve CI matrix
         id: resolve
-        uses: ./actions/ci/matrix
+        uses: vergil-project/vergil-actions/actions/ci/matrix@v2.1.19
         with:
           language: ${{ inputs.language }}
           versions: ${{ inputs.versions }}
@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.19
 
       - name: Install dependencies
         if: inputs.language == 'python'
@@ -88,7 +88,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Emit ci-evidence-test artifact
-        uses: ./actions/ci/evidence/emit
+        uses: vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1.19
         with:
           gate: test
           files: |
