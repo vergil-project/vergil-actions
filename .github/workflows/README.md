@@ -191,6 +191,81 @@ jobs:
       container-suffix: python
 ```
 
+### ci.yml — C++ (compiler-family matrix)
+
+C++ carries its compiler family × version axis on the single `versions` input
+as `clang-`/`gcc-` prefixed tokens. The reusable workflows split each token and
+route it to the matching image — `clang-20` → `prod-cpp-clang:20`,
+`gcc-14` → `prod-cpp-gcc:14` — via the `actions/ci/matrix` resolver. The
+top-level `container-suffix`/`container-tag` are the primary (first) token's
+resolution, used by the non-matrix `common` job.
+
+Per-kind cardinality follows the gate model: `typecheck` and `unit` run
+per compiler×version (one job/gate each), while `lint` and `dependencies` run
+once on the primary (Clang) image. The emitted gate names line up with
+`github_config.desired_ci_gates_ruleset` for a cpp repo — e.g.
+`quality / lint / clang-20` (once), `quality / typecheck / clang-20`,
+`quality / typecheck / gcc-14`, `test / unit / gcc-13`,
+`audit / dependencies / clang-20` (once).
+
+```yaml
+# https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    uses: vergil-project/vergil-actions/.github/workflows/ci-audit.yml@v2.1
+    with:
+      language: cpp
+      versions: '["clang-20", "clang-19", "gcc-14", "gcc-13"]'
+      container-tag: '20'
+      container-suffix: cpp-clang
+
+  quality:
+    uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
+    with:
+      language: cpp
+      versions: '["clang-20", "clang-19", "gcc-14", "gcc-13"]'
+      container-tag: '20'
+      container-suffix: cpp-clang
+
+  security:
+    uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      language: cpp
+      container-tag: '20'
+      container-suffix: cpp-clang
+
+  test:
+    uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
+    with:
+      language: cpp
+      versions: '["clang-20", "clang-19", "gcc-14", "gcc-13"]'
+      container-tag: '20'
+      container-suffix: cpp-clang
+
+  version:
+    uses: vergil-project/vergil-actions/.github/workflows/ci-version-bump.yml@v2.1
+    with:
+      language: cpp
+      container-tag: '20'
+      container-suffix: cpp-clang
+```
+
 ### cd.yml — Release + Docs
 
 ```yaml
