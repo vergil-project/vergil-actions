@@ -231,6 +231,11 @@ jobs:
       versions: '["clang-20", "clang-19", "gcc-14", "gcc-13"]'
       container-tag: '20'
       container-suffix: cpp-clang
+    # Explicit-secret chain (never `secrets: inherit`): forward the ConanCenter
+    # provider token so `conan audit` can authenticate. Optional — omit it and
+    # the cpp audit command skips the conan gate with a notice.
+    secrets:
+      CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER: ${{ secrets.CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER }}
 
   quality:
     uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
