@@ -29,6 +29,16 @@ on:
         default: prod
         description: >-
           Container image name prefix (prod or dev). Defaults to "prod".
+    secrets:
+      CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER:
+        required: false
+        description: >-
+          ConanCenter provider token for `conan audit`. Only meaningful for
+          cpp repos; other ecosystems ignore it. Optional — callers without
+          the org/repo secret configured leave it unset, in which case the
+          cpp audit command degrades to a notice-and-skip for the conan gate
+          (see the audit step below). Passed explicitly by the caller — never
+          via `secrets: inherit` (epics vergil-project/.github#189, #197).
 
 jobs:
   # Resolve the per-version job matrix (version label + container image),
@@ -73,7 +83,19 @@ jobs:
         if: inputs.language == 'python'
         run: uv sync --group dev --frozen
 
+      # The job runs INSIDE the language container, so this step-level env:
+      # lands inside the container directly — no [container].env-prefixes
+      # passthrough is needed as it would be for a host->container hop. The
+      # token is only consumed by the cpp `conan audit` path; other ecosystems
+      # ignore it. When the caller leaves the secret unset (repos without it),
+      # this expands to an empty string and the cpp audit command skips the
+      # conan gate with a notice rather than failing auth — a per-language
+      # decision that lives in vrg-validate, not here, because only it knows
+      # whether the current run actually uses conan. A workflow-level skip is
+      # deliberately avoided: it would wrongly skip python/go audits too.
       - name: Run dependency audit
+        env:
+          CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER: ${{ secrets.CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER }}
         run: vrg-validate --check audit
 
   evidence:
