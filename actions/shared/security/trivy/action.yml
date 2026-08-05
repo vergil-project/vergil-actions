@@ -119,11 +119,11 @@ runs:
           "$TRIVY_IMAGE" \
           -c '
             set -e
-            # Skip pip's vendored CycloneDX SBOM (pip/_vendor/bom.cdx.json).
-            # pip 26.x ships it to describe pip's vendored dependencies; Trivy
+            # Skip the pip-vendored CycloneDX SBOM (pip/_vendor/bom.cdx.json).
+            # pip 26.x ships it to describe the packages pip vendors; Trivy
             # would otherwise ingest it and report those vendored packages
             # (e.g. setuptools, msgpack) as findings, though they are pip
-            # internals, not the scan target's attack surface. See #796.
+            # internals, not part of the scan target attack surface. See #796.
             trivy fs \
               --scanners "$SCANNERS" \
               --severity "$SEVERITY" \
@@ -183,11 +183,11 @@ runs:
           "$TRIVY_IMAGE" \
           -c '
             set -e
-            # Skip pip's vendored CycloneDX SBOM (pip/_vendor/bom.cdx.json).
-            # pip 26.x ships it to describe pip's vendored dependencies; Trivy
+            # Skip the pip-vendored CycloneDX SBOM (pip/_vendor/bom.cdx.json).
+            # pip 26.x ships it to describe the packages pip vendors; Trivy
             # would otherwise ingest it and report those vendored packages
             # (e.g. setuptools, msgpack) as findings, though they are pip
-            # internals, not the scan target's attack surface. See #796.
+            # internals, not part of the scan target attack surface. See #796.
             trivy image \
               --scanners "$SCANNERS" \
               --severity "$SEVERITY" \
