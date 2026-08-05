@@ -743,6 +743,8 @@
       
         
       
+        
+      
     
     
     
@@ -795,6 +797,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.20/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.20
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4982,6 +5012,12 @@
 session that scans once to JSON, then converts to both table output (stdout) and
 SARIF (file). The <code>trivy convert</code> step operates on cached JSON with no re-scan
 or extra DB download.</p>
+<p>The <code>fs</code> and <code>image</code> vuln scans skip pip's vendored CycloneDX SBOM
+(<code>**/pip/_vendor/bom.cdx.json</code>, shipped by pip 26.x). Trivy would otherwise
+ingest that SBOM and report pip's <strong>vendored</strong> dependencies (e.g. <code>setuptools</code>,
+<code>msgpack</code>) as findings even though they are pip internals, not the scan target's
+attack surface. The <code>sbom</code> mode does <strong>not</strong> skip it — an SBOM should describe
+everything present.</p>
 <h3 id="filesystem-scan-fs">Filesystem scan (<code>fs</code>)<a class="headerlink" href="#filesystem-scan-fs" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Runs <code>trivy fs</code> inside the Trivy Docker container against the specified
