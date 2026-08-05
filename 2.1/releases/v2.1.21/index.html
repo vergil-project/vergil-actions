@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.6/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.21/">
       
       
-        <link rel="prev" href="../v1.4.7/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v1.4.5/">
+        <link rel="next" href="../v2.1.20/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>1.4.6 - Vergil Actions</title>
+        <title>2.1.21 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-146-2026-04-30" class="md-skip">
+        <a href="#release-2121-2026-08-05" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              1.4.6
+              2.1.21
             
           </span>
         </div>
@@ -815,10 +815,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.21/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.21
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -834,6 +861,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2915,19 +2973,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v1.4.6/" class="md-nav__link">
         
   
   
@@ -2943,7 +2992,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -4546,6 +4594,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4561,7 +4628,13 @@
 
 
 
-<h1 id="release-146-2026-04-30">Release 1.4.6 (2026-04-30)<a class="headerlink" href="#release-146-2026-04-30" title="Permanent link">&para;</a></h1>
+<h1 id="release-2121-2026-08-05">Release 2.1.21 (2026-08-05)<a class="headerlink" href="#release-2121-2026-08-05" title="Permanent link">&para;</a></h1>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>wire CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER into ci-audit workflow (#803)</strong>
+Declare the ConanCenter provider token as an optional workflow_call secret in ci-audit.yml and inject it into the dependency-audit step's env: so conan audit can authenticate inside the container. Threaded via the explicit-secret chain (never secrets: inherit, per epics #189/#197).</li>
+</ul>
+<p>The token is cpp-only; when the caller leaves it unset the cpp audit path skips the conan gate with a notice rather than failing auth. Documents the caller-side secret passing for cpp repos in the workflows README and ci-audit docs page.</p>
 
 
 
