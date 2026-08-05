@@ -45,6 +45,13 @@ session that scans once to JSON, then converts to both table output (stdout) and
 SARIF (file). The `trivy convert` step operates on cached JSON with no re-scan
 or extra DB download.
 
+The `fs` and `image` vuln scans skip pip's vendored CycloneDX SBOM
+(`**/pip/_vendor/bom.cdx.json`, shipped by pip 26.x). Trivy would otherwise
+ingest that SBOM and report pip's **vendored** dependencies (e.g. `setuptools`,
+`msgpack`) as findings even though they are pip internals, not the scan target's
+attack surface. The `sbom` mode does **not** skip it — an SBOM should describe
+everything present.
+
 ### Filesystem scan (`fs`)
 
 1. Runs `trivy fs` inside the Trivy Docker container against the specified
