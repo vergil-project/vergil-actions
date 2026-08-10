@@ -28,3 +28,6 @@ definition and optional supporting scripts.
 
 - **[shared/security/trivy](shared-security-trivy.md)** — Runs Trivy
   vulnerability scanning, SBOM generation, or container image scanning.
+- **[shared/setup/system-packages](shared-setup-system-packages.md)** — Installs
+  a repository's declared `[container].system-packages` on CI test jobs
+  (test-runtime only; auto-wired into `ci-test`).

@@ -76,6 +76,7 @@ nav:
           - cd/docs/deploy: actions/cd-docs-deploy.md
       - Shared:
           - shared/security/trivy: actions/shared-security-trivy.md
+          - shared/setup/system-packages: actions/shared-setup-system-packages.md
   - Reusable Workflows:
       - Overview: workflows/index.md
       - ci-docs: workflows/ci-docs.md
