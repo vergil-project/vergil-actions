@@ -68,6 +68,12 @@ jobs:
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
+      # Test-runtime dependency only (spec §3.3): the declared
+      # [container].system-packages install onto jobs that execute the repo's
+      # tests, never onto lint/typecheck. Bounded retry + fail-closed inside.
+      - name: Install repo system packages
+        uses: ./actions/shared/setup/system-packages
+
       - name: Install dependencies
         if: inputs.language == 'python'
         run: uv sync --group dev --frozen

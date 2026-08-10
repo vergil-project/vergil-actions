@@ -1,0 +1,15 @@
+name: Install repo system packages
+description: >-
+  Install the Debian packages a repo declares in [container].system-packages,
+  read through vrg-container-system-packages. Test-runtime dependency: this runs
+  only on jobs that execute the repo's tests. Bounded retry around apt (mirror
+  flake); fail-closed with a package + platform message on a missing candidate.
+  The retry/fail-closed logic lives in install.sh so it is unit-testable
+  (tests/install.test.sh).
+
+runs:
+  using: composite
+  steps:
+    - name: Install declared system packages
+      shell: bash
+      run: bash "${GITHUB_ACTION_PATH}/install.sh"
