@@ -3847,6 +3847,8 @@
       
         
       
+        
+      
     
     
     
@@ -3910,6 +3912,34 @@
     
   
     shared/security/trivy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="shared-setup-system-packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/system-packages
   
 
     
@@ -4670,6 +4700,9 @@ definition and optional supporting scripts.</p>
 <ul>
 <li><strong><a href="shared-security-trivy/">shared/security/trivy</a></strong> — Runs Trivy
   vulnerability scanning, SBOM generation, or container image scanning.</li>
+<li><strong><a href="shared-setup-system-packages/">shared/setup/system-packages</a></strong> — Installs
+  a repository's declared <code>[container].system-packages</code> on CI test jobs
+  (test-runtime only; auto-wired into <code>ci-test</code>).</li>
 </ul>
 
 

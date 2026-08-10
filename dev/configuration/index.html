@@ -3527,6 +3527,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#container-system-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container system packages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#github-project-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4088,6 +4099,8 @@
       
         
       
+        
+      
     
     
     
@@ -4148,6 +4161,34 @@
     
   
     shared/security/trivy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/shared-setup-system-packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/system-packages
   
 
     
@@ -4854,6 +4895,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#container-system-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container system packages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#github-project-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5157,6 +5209,14 @@ trigger CI normally and can auto-merge.</p>
 <p><strong>Key rotation:</strong> Generate a new private key from the app's settings page, update
 the <code>APP_PRIVATE_KEY</code> secret in all library repositories, then revoke the old
 key.</p>
+<h2 id="container-system-packages">Container system packages<a class="headerlink" href="#container-system-packages" title="Permanent link">&para;</a></h2>
+<p>A repository can declare extra Debian packages under <code>[container].system-packages</code>
+in its <code>vergil.toml</code>. On CI, the <a href="../workflows/ci-test/"><code>ci-test</code></a> workflow
+installs those packages on its <strong>test jobs</strong> (via the
+<a href="../actions/shared-setup-system-packages/"><code>shared/setup/system-packages</code></a>
+action), so tests run against the same system dependencies as the local dev
+container. The key's schema and semantics are documented on the vergil-tooling
+side: <a href="https://vergil-project.github.io/vergil-tooling/reference/container-config/"><code>container-config</code> reference</a>.</p>
 <h2 id="github-project-integration">GitHub Project integration<a class="headerlink" href="#github-project-integration" title="Permanent link">&para;</a></h2>
 <p>The <code>add-to-project</code> workflow automatically adds new issues to a GitHub Project
 when they are opened. Each repository has an <code>add-to-project.yml</code> workflow that
