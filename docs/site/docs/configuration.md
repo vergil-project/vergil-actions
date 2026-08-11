@@ -91,6 +91,16 @@ gh secret set APP_PRIVATE_KEY --repo vergil-project/<repo> --body "$(cat <path-t
 the `APP_PRIVATE_KEY` secret in all library repositories, then revoke the old
 key.
 
+## Container system packages
+
+A repository can declare extra Debian packages under `[container].system-packages`
+in its `vergil.toml`. On CI, the [`ci-test`](workflows/ci-test.md) workflow
+installs those packages on its **test jobs** (via the
+[`shared/setup/system-packages`](actions/shared-setup-system-packages.md)
+action), so tests run against the same system dependencies as the local dev
+container. The key's schema and semantics are documented on the vergil-tooling
+side: [`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/).
+
 ## GitHub Project integration
 
 The `add-to-project` workflow automatically adds new issues to a GitHub Project
