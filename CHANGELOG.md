@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.23] - 2026-08-11
+
+### Documentation
+
+- document CI system-packages setup step (#813)
+
+### Features
+
+- TypeScript support in reusable workflows (#815)
+
 ## [2.1.22] - 2026-08-10
 
 ### Features
