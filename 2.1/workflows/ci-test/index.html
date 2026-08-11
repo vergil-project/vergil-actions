@@ -749,6 +749,8 @@
       
         
       
+        
+      
     
     
     
@@ -801,6 +803,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.23/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.23
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -3836,6 +3866,8 @@
       
         
       
+        
+      
     
     
     
@@ -3896,6 +3928,34 @@
     
   
     shared/security/trivy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/shared-setup-system-packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/system-packages
   
 
     
@@ -4213,6 +4273,17 @@
     <span class="md-ellipsis">
       
         Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System packages
       
     </span>
   </a>
@@ -4692,6 +4763,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#system-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System packages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#extension-points" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4781,6 +4863,22 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">versions</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;[&quot;3.12&quot;,</span><span class="nv"> </span><span class="s">&quot;3.13&quot;,</span><span class="nv"> </span><span class="s">&quot;3.14&quot;]&#39;</span>
 </code></pre></div>
+<h2 id="system-packages">System packages<a class="headerlink" href="#system-packages" title="Permanent link">&para;</a></h2>
+<p>Each <code>unit</code> job installs the system packages the repository declares under
+<code>[container].system-packages</code> in its <code>vergil.toml</code>, via the
+<a href="../../actions/shared-setup-system-packages/"><code>shared/setup/system-packages</code></a>
+action. This runs on <strong>test jobs only</strong> — lint and typecheck jobs do not
+exercise the code and are deliberately excluded, so the packages are installed
+exactly where the tests need them and nowhere else.</p>
+<p>The install is a no-op when a repository declares no system packages. When it
+does declare them, the step installs with a bounded retry (to absorb transient
+apt mirror flakes) and <strong>fails closed</strong> if a declared package has no install
+candidate — the offending package and platform are named in the log and the
+test job fails rather than running against a missing dependency. See the
+<a href="../../actions/shared-setup-system-packages/">action reference</a> for the full
+behavior, and the
+<a href="https://vergil-project.github.io/vergil-tooling/reference/container-config/"><code>container-config</code> reference</a>
+on the vergil-tooling side for the <code>[container].system-packages</code> key itself.</p>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
 <p>The <code>unit</code> job provides a version matrix scaffold. Consuming repositories
 customize it by forking the workflow or by running language-specific test
