@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v2.1.4/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v2.1.23/">
       
       
-        <link rel="prev" href="../v2.1.5/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v2.1.3/">
+        <link rel="next" href="../v2.1.22/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>2.1.4 - Vergil Actions</title>
+        <title>2.1.23 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-214-2026-06-06" class="md-skip">
+        <a href="#release-2123-2026-08-11" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              2.1.4
+              2.1.23
             
           </span>
         </div>
@@ -819,10 +819,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.23/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.23
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -838,6 +865,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1351,37 +1420,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    2.1.4
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v2.1.4/" class="md-nav__link">
         
   
   
@@ -1397,37 +1439,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4701,6 +4712,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4718,10 +4740,40 @@
 
 
 
-<h1 id="release-214-2026-06-06">Release 2.1.4 (2026-06-06)<a class="headerlink" href="#release-214-2026-06-06" title="Permanent link">&para;</a></h1>
+<h1 id="release-2123-2026-08-11">Release 2.1.23 (2026-08-11)<a class="headerlink" href="#release-2123-2026-08-11" title="Permanent link">&para;</a></h1>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>document the actions: read caller contract and rollout policy (#701)</strong></li>
+<li>
+<p><strong>document CI system-packages setup step (#813)</strong>
+Add operator-facing docs for the shared/setup/system-packages composite action and its auto-wiring into the ci-test reusable workflow.</p>
+</li>
+<li>
+<p>New Action Reference page (actions/shared-setup-system-packages.md) with behavior, single-speller apt install, bounded retry, fail-closed on a missing candidate, and test-runtime-only scope; added to the mkdocs nav and the actions index.</p>
+</li>
+<li>ci-test workflow reference: note the declared system-packages install on test jobs only (lint/typecheck excluded).</li>
+<li>configuration.md: cross-reference pointer to the [container].system-packages key's CI effect.</li>
+</ul>
+<p>Cross-links to the consuming-repo key docs in vergil-tooling (#2724) rather than restating them. Operator-side companion to vergil-tooling#2724.</p>
+<p>Refs vergil-project/.github#272; action #808 (issue #807); issue #812</p>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><strong>TypeScript support in reusable workflows (#815)</strong>
+Accept language: typescript in the reusable CI workflows.</p>
+</li>
+<li>
+<p>Matrix routing: node-<major> version tokens resolve to prod-ts-node:<major>
+  images (ts-node suffix + numeric tag), mirroring C++ token routing. Extracted
+  the resolver to actions/ci/matrix/resolve.sh with a unit test.</p>
+</li>
+<li>Cardinality: TYPECHECK/LINT/AUDIT run once (collapsed to the primary Node
+  version via the matrix once output); only TEST fans out per Node version. The
+  typecheck job now consumes once for TypeScript, matching the run-once gates
+  desired_ci_gates_ruleset keys to ci.versions[0].</li>
+<li>CodeQL mapping: primary-language typescript maps to javascript-typescript and
+  cpp maps to c-cpp via one table in actions/ci/security/codeql/resolve-language.sh
+  (bare typescript is not a valid CodeQL analysis language). Unit-tested.</li>
+<li>Semgrep: wire p/typescript for TypeScript repos.</li>
 </ul>
 
 
