@@ -3,9 +3,18 @@ description: >-
   Runs GitHub CodeQL static analysis (init + analyze) for a single language.
   The calling workflow must grant security-events: write permission.
 
+  The `language` input is the repo's primary-language name (carried end-to-end
+  for container resolution). A few primary-language names are not valid CodeQL
+  analysis languages, so this action maps them via resolve-language.sh before
+  handing them to codeql-action: typescript -> javascript-typescript, cpp ->
+  c-cpp (epic vergil-project/.github#284 §6 point 8a). Every other language
+  passes through unchanged.
+
 inputs:
   language:
-    description: CodeQL language to analyze (e.g. "python", "javascript").
+    description: >-
+      The repo's primary-language name (e.g. "python", "typescript", "cpp").
+      Mapped to the CodeQL analysis-language identifier by resolve-language.sh.
     required: true
   queries:
     description: Query suite to run.
@@ -15,10 +24,17 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Resolve CodeQL analysis language
+      id: map
+      shell: bash
+      env:
+        LANGUAGE: ${{ inputs.language }}
+      run: bash "${GITHUB_ACTION_PATH}/resolve-language.sh"
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
       with:
-        languages: ${{ inputs.language }}
+        languages: ${{ steps.map.outputs.codeql_language }}
         queries: ${{ inputs.queries }}
 
     - name: Autobuild
@@ -27,7 +43,7 @@ runs:
     - name: Run CodeQL analysis
       uses: github/codeql-action/analyze@v4
       with:
-        category: "/language:${{ inputs.language }}"
+        category: "/language:${{ steps.map.outputs.codeql_language }}"
         output: ${{ runner.temp }}/codeql-sarif
 
     - name: Fail on CodeQL findings

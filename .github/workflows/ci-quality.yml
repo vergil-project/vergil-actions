@@ -99,7 +99,14 @@ jobs:
     container: ${{ matrix.image }}
     strategy:
       matrix:
-        include: ${{ fromJSON(needs.matrix.outputs.all) }}
+        # TYPECHECK cardinality is per-language. Matrix languages whose
+        # typecheck runs per Node/compiler version (e.g. C++) consume `all`;
+        # TypeScript runs a single canonical `tsc --noEmit` once (spec §3.6), so
+        # it consumes the collapsed `once` output — emitting one
+        # `quality / typecheck / <primary>` job that matches the single run-once
+        # gate github_config.desired_ci_gates_ruleset keys to ci.versions[0]
+        # (Cardinality.ONCE). This is the inverse of C++'s per-version typecheck.
+        include: ${{ fromJSON(inputs.language == 'typescript' && needs.matrix.outputs.once || needs.matrix.outputs.all) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
