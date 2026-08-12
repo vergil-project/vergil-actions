@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.26] - 2026-08-12
+
+### Documentation
+
+- document build-command step at parity with system-packages (#830)
+
+### Features
+
+- promote CI evidence gate to enforcing (#832)
+
 ## [2.1.25] - 2026-08-12
 
 ### Features

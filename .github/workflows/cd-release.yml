@@ -45,13 +45,16 @@ on:
         default: ""
       evidence-enforce:
         description: >-
-          CI-evidence gate fatality. false (default) = WARNING mode: the
-          evidence step never aborts the release. true = ENFORCING mode:
-          incomplete evidence fails the release (spec §9.2). Promotion to
-          enforcing is a single human-gated flip of this one default (Task
-          T11) — it also flips the step's continue-on-error automatically.
+          CI-evidence gate fatality. true (default) = ENFORCING mode: incomplete
+          or failed evidence fails the release before publish (the spec §9
+          publish invariant). false = WARNING mode: the evidence step emits a
+          loud warning and never aborts the release — a temporary per-repo
+          opt-out, not a permanent soft gate (spec §9.2). This one default drives
+          both composites' enforce input and the steps' continue-on-error.
+          Promoted from warning to enforcing after the T11 bake (epic
+          vergil-project/.github#140).
         type: boolean
-        default: false
+        default: true
     secrets:
       CARGO_REGISTRY_TOKEN:
         required: false
@@ -130,11 +133,14 @@ jobs:
       #   * ATTACH (below, after tag-and-release) — assemble the complete bundle
       #     (now including the built SBOM), attest it, and upload it to the
       #     Release that now exists as the upload target.
-      # Both steps ship in WARNING mode: continue-on-error tracks the
-      # evidence-enforce flag so even a failure the composite's shell wrapper
-      # cannot catch (a `uses:` attest step) never aborts the release. Promotion
-      # to enforcing (T11) is a single flip of the evidence-enforce default — it
-      # flips both steps' fatality and both continue-on-error guards at once.
+      # Both steps ENFORCE by default (evidence-enforce=true): continue-on-error
+      # tracks the evidence-enforce flag, so incomplete/failed evidence aborts the
+      # release — even a failure the composite's shell wrapper cannot catch (a
+      # `uses:` attest step) is caught by the continue-on-error guard. Passing
+      # evidence-enforce=false demotes both steps to WARNING mode — a temporary
+      # per-repo opt-out, not a permanent soft gate. Enforcing is the T11
+      # promotion (epic .github#140): a single flip of the one default that flips
+      # both steps' fatality and both continue-on-error guards at once.
       - name: Resolve SBOM path for evidence
         id: evidence_sbom
         if: >-
@@ -195,7 +201,8 @@ jobs:
       # Post-publish attach (spec §9): the Release now exists (upload target) and
       # the SBOM has been built by registry-publish (bundle content), so the
       # bundle the pre-publish gate could only validate can now be assembled in
-      # full, attested, and attached. Same WARNING-mode contract as the gate.
+      # full, attested, and attached. Same enforce-mode contract as the gate
+      # (honors the evidence-enforce flag; enforcing by default).
       - name: Attach CI evidence bundle (post-release)
         if: steps.tag_check.outputs.exists == 'false'
         continue-on-error: ${{ !inputs.evidence-enforce }}
