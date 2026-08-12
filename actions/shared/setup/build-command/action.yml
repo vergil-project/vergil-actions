@@ -1,0 +1,12 @@
+name: Run repo build-command
+description: >-
+  Run the command a repo declares in [container].build-command, read through
+  vrg-container-build-command. Test-runtime dependency: runs only on jobs that
+  execute the repo's tests, after Install vergil-tooling. Fail-closed, no retry
+  (epic vergil-project/.github#291). Logic lives in install.sh (tests/install.test.sh).
+runs:
+  using: composite
+  steps:
+    - name: Run declared build-command
+      shell: bash
+      run: bash "${GITHUB_ACTION_PATH}/install.sh"
