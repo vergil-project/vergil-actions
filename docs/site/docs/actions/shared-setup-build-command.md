@@ -35,6 +35,20 @@ The action runs a single step, `install.sh`, which:
    `No [container].build-command declared; skipping.` and exits `0`. The step is
    a no-op for repositories that need no build step.
 3. Otherwise it runs the command via `bash -c`.
+4. After the command runs, it exports `NODE_PATH` (the npm global root, from
+   `npm root -g`) to `$GITHUB_ENV` so the subsequent CI test steps can resolve a
+   node library the build-command baked out-of-workspace (e.g. `npm install -g
+   <lib>`). This mirrors the `NODE_PATH` the local dev image injects
+   ([vergil-tooling#2781](https://github.com/vergil-project/vergil-tooling/pull/2781)),
+   so a baked library resolves identically **locally and in CI** — the local/CI
+   drift this epic exists to prevent. The export is guarded on CI context
+   (`$GITHUB_ENV` present) and `npm` being installed, so it is a clean no-op on a
+   non-CI or non-node run.
+
+   > **`require`-only caveat.** `NODE_PATH` is honoured by CommonJS `require`
+   > resolution only; ESM `import` ignores it. A baked library consumed via
+   > `import` will not resolve through `NODE_PATH` — this is a documented Node
+   > limitation, not an action bug.
 
 ### Fail-closed, no retry
 
