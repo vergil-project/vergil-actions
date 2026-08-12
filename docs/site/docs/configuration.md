@@ -101,6 +101,21 @@ action), so tests run against the same system dependencies as the local dev
 container. The key's schema and semantics are documented on the vergil-tooling
 side: [`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/).
 
+## Container build command
+
+A repository can declare a build step under `[container].build-command` in its
+`vergil.toml`. On CI, the [`ci-test`](workflows/ci-test.md) workflow runs that
+command on its **test jobs** (via the
+[`shared/setup/build-command`](actions/shared-setup-build-command.md) action,
+after the system-packages install and before the tests), so tests run against
+the same build output as the local dev container. The step **fails closed with
+no retry** — a failing build command fails the test job immediately rather than
+being retried. After it runs, the action exports `NODE_PATH` so a node library
+the build baked out-of-workspace resolves; note that `NODE_PATH` is honoured by
+CommonJS `require` only and ignored by ESM `import`. The key's schema and
+semantics are documented on the vergil-tooling side:
+[`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/).
+
 ## GitHub Project integration
 
 The `add-to-project` workflow automatically adds new issues to a GitHub Project
