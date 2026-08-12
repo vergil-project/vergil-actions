@@ -87,22 +87,57 @@ jobs:
       - name: Run unit tests
         run: vrg-validate --check test
 
+      # Bridge this matrix leg's report files across the job boundary (#836).
+      # The unit job and the evidence job run on separate runners with separate
+      # filesystems, so the reports produced here are stranded unless uploaded.
+      # Rename to version-suffixed basenames so each interpreter's report stays
+      # distinct after the evidence job's emit step, which flattens by basename.
+      - name: Stage test reports for evidence
+        if: always()
+        shell: bash
+        env:
+          VERSION: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-reports
+          for f in coverage.xml junit.xml; do
+            [ -f "$f" ] || continue
+            cp "$f" "ci-reports/${f%.xml}-${VERSION}.xml"
+          done
+
+      - name: Upload test report evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-test-reports-${{ matrix.version }}
+          path: ci-reports/
+          if-no-files-found: warn
+
   evidence:
     name: evidence
     # Runs only after every matrix unit job succeeds, so the artifact's presence
-    # is itself proof the test gate passed. Report files (coverage.xml,
-    # junit.xml) are collected when the test command emits them; until then the
-    # artifact carries evidence.json alone, which is sufficient for completeness.
+    # is itself proof the test gate passed. Each unit leg uploads its
+    # version-suffixed coverage.xml / junit.xml as a per-version partial; the
+    # step below pulls every leg's reports back onto one runner so the emitted
+    # bundle carries each interpreter's reports, not a single merged one (#836).
     needs: unit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Download per-matrix test reports
+        uses: actions/download-artifact@v7
+        with:
+          pattern: ci-evidence-test-reports-*
+          path: evidence-reports
+          merge-multiple: true
+
       - name: Emit ci-evidence-test artifact
         uses: ./actions/ci/evidence/emit
         with:
           gate: test
           files: |
-            coverage.xml
-            junit.xml
+            evidence-reports/coverage-*.xml
+            evidence-reports/junit-*.xml
+          tools: '[{"name": "pytest"}, {"name": "coverage.py"}]'

@@ -92,6 +92,33 @@ jobs:
       - name: Run lint
         run: vrg-validate --check lint
 
+      # Bridge this leg's lint report across the job boundary (#836). The lint
+      # job and the evidence job run on separate runners with separate
+      # filesystems, so the report produced here is stranded unless uploaded.
+      # quality-ruff.json is a locked filename contract with vergil-tooling#2811
+      # (which adds its emission); until #2811 releases the file is absent and
+      # if-no-files-found: warn keeps this non-fatal. Version-suffix the basename
+      # so each leg stays distinct after the evidence emit step.
+      - name: Stage lint report for evidence
+        if: always()
+        shell: bash
+        env:
+          VERSION: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-reports
+          if [ -f quality-ruff.json ]; then
+            cp quality-ruff.json "ci-reports/quality-ruff-${VERSION}.json"
+          fi
+
+      - name: Upload lint report evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-quality-reports-lint-${{ matrix.version }}
+          path: ci-reports/
+          if-no-files-found: warn
+
   typecheck:
     name: typecheck / ${{ matrix.version }}
     needs: matrix
@@ -121,19 +148,61 @@ jobs:
       - name: Run typecheck
         run: vrg-validate --check typecheck
 
+      # Bridge this leg's typecheck report across the job boundary (#836). The
+      # typecheck job and the evidence job run on separate runners with separate
+      # filesystems, so the report produced here is stranded unless uploaded.
+      # quality-mypy.xml is a locked filename contract with vergil-tooling#2811
+      # (which adds its emission); until #2811 releases the file is absent and
+      # if-no-files-found: warn keeps this non-fatal. Version-suffix the basename
+      # so each leg stays distinct after the evidence emit step.
+      - name: Stage typecheck report for evidence
+        if: always()
+        shell: bash
+        env:
+          VERSION: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-reports
+          if [ -f quality-mypy.xml ]; then
+            cp quality-mypy.xml "ci-reports/quality-mypy-${VERSION}.xml"
+          fi
+
+      - name: Upload typecheck report evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-quality-reports-typecheck-${{ matrix.version }}
+          path: ci-reports/
+          if-no-files-found: warn
+
   evidence:
     name: evidence
     # Runs only after the common, lint, and typecheck jobs all succeed, so the
-    # artifact's presence is itself proof the quality gate passed. Lint and
-    # typecheck report to stdout and emit no files today; the artifact carries
-    # evidence.json alone, which is sufficient for completeness.
+    # artifact's presence is itself proof the quality gate passed. Each lint /
+    # typecheck leg uploads its version-suffixed quality-ruff.json /
+    # quality-mypy.xml as a per-version partial; the step below pulls every
+    # leg's reports back onto one runner so the emitted bundle carries each
+    # version's reports. Those filenames are a locked contract with
+    # vergil-tooling#2811 — until it releases the globs match nothing and emit
+    # skips them, so the artifact carries evidence.json alone (#836).
     needs: [common, lint, typecheck]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Download per-matrix quality reports
+        uses: actions/download-artifact@v7
+        with:
+          pattern: ci-evidence-quality-reports-*
+          path: evidence-reports
+          merge-multiple: true
+
       - name: Emit ci-evidence-quality artifact
         uses: ./actions/ci/evidence/emit
         with:
           gate: quality
+          files: |
+            evidence-reports/quality-ruff-*.json
+            evidence-reports/quality-mypy-*.xml
+          tools: '[{"name": "ruff"}, {"name": "mypy"}]'
