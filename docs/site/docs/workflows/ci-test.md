@@ -46,6 +46,35 @@ behavior, and the
 [`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/)
 on the vergil-tooling side for the `[container].system-packages` key itself.
 
+## Build command
+
+After the system-packages install, each `unit` job runs the command the
+repository declares under `[container].build-command` in its `vergil.toml`, via
+the [`shared/setup/build-command`](../actions/shared-setup-build-command.md)
+action. Like the system-packages install, this runs on **test jobs only** — lint
+and typecheck jobs do not exercise the code and are deliberately excluded — and
+it runs after the packages are installed, before the tests.
+
+The step is a no-op when a repository declares no build command. When it does
+declare one, the step **fails closed with no retry**: an arbitrary build command
+that fails is a real failure, not a transient one, so — in deliberate contrast
+to the system-packages install's bounded retry — a non-zero exit fails the test
+job immediately rather than being retried and masking a genuine break.
+
+After the command runs, the action exports `NODE_PATH` (the npm global root,
+from `npm root -g`) so subsequent test steps can resolve a node library the
+build baked out-of-workspace (e.g. `npm install -g <lib>`).
+
+> **`require`-only caveat.** `NODE_PATH` is honoured by CommonJS `require`
+> resolution only; ESM `import` ignores it. A baked library consumed via
+> `import` will not resolve through `NODE_PATH` — a documented Node limitation,
+> not an action bug.
+
+See the [action reference](../actions/shared-setup-build-command.md) for the
+full behavior, and the
+[`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/)
+on the vergil-tooling side for the `[container].build-command` key itself.
+
 ## Extension points
 
 The `unit` job provides a version matrix scaffold. Consuming repositories

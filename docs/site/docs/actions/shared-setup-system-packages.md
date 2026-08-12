@@ -72,5 +72,7 @@ step and how the step behaves.
 
 - [`ci-test` reusable workflow](../workflows/ci-test.md) — installs declared
   system packages on test jobs only.
+- [`shared/setup/build-command`](shared-setup-build-command.md) — the sibling
+  build step (fail-closed, no retry) that runs immediately after this one.
 - [Repository Configuration](../configuration.md) — repository-level GitHub
   configuration overview.

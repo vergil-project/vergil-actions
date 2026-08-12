@@ -31,3 +31,7 @@ definition and optional supporting scripts.
 - **[shared/setup/system-packages](shared-setup-system-packages.md)** — Installs
   a repository's declared `[container].system-packages` on CI test jobs
   (test-runtime only; auto-wired into `ci-test`).
+- **[shared/setup/build-command](shared-setup-build-command.md)** — Runs a
+  repository's declared `[container].build-command` on CI test jobs
+  (test-runtime only; auto-wired into `ci-test`; fail-closed with no retry;
+  exports `NODE_PATH` so a baked out-of-workspace node library resolves).
