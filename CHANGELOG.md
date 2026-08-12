@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.27] - 2026-08-12
+
+### Bug fixes
+
+- bridge per-matrix report files into test/audit/quality evidence artifacts (#837)
+
 ## [2.1.26] - 2026-08-12
 
 ### Documentation
