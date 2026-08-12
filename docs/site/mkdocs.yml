@@ -77,6 +77,7 @@ nav:
       - Shared:
           - shared/security/trivy: actions/shared-security-trivy.md
           - shared/setup/system-packages: actions/shared-setup-system-packages.md
+          - shared/setup/build-command: actions/shared-setup-build-command.md
   - Reusable Workflows:
       - Overview: workflows/index.md
       - ci-docs: workflows/ci-docs.md

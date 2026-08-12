@@ -74,6 +74,12 @@ jobs:
       - name: Install repo system packages
         uses: ./actions/shared/setup/system-packages
 
+      # Test-runtime dependency only (epic #291): run the declared
+      # [container].build-command after vergil-tooling + system-packages, before
+      # tests. Fail-closed, no retry.
+      - name: Run repo build-command
+        uses: ./actions/shared/setup/build-command
+
       - name: Install dependencies
         if: inputs.language == 'python'
         run: uv sync --group dev --frozen
