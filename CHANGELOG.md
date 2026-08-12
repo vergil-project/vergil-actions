@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.25] - 2026-08-12
+
+### Features
+
+- export NODE_PATH in the build-command step for CI resolution parity (#825)
+
 ## [2.1.24] - 2026-08-12
 
 ### Features
