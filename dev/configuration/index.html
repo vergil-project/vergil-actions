@@ -3628,6 +3628,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#container-build-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container build command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#github-project-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5026,6 +5037,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#container-build-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container build command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#github-project-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5337,6 +5359,19 @@ installs those packages on its <strong>test jobs</strong> (via the
 action), so tests run against the same system dependencies as the local dev
 container. The key's schema and semantics are documented on the vergil-tooling
 side: <a href="https://vergil-project.github.io/vergil-tooling/reference/container-config/"><code>container-config</code> reference</a>.</p>
+<h2 id="container-build-command">Container build command<a class="headerlink" href="#container-build-command" title="Permanent link">&para;</a></h2>
+<p>A repository can declare a build step under <code>[container].build-command</code> in its
+<code>vergil.toml</code>. On CI, the <a href="../workflows/ci-test/"><code>ci-test</code></a> workflow runs that
+command on its <strong>test jobs</strong> (via the
+<a href="../actions/shared-setup-build-command/"><code>shared/setup/build-command</code></a> action,
+after the system-packages install and before the tests), so tests run against
+the same build output as the local dev container. The step <strong>fails closed with
+no retry</strong> — a failing build command fails the test job immediately rather than
+being retried. After it runs, the action exports <code>NODE_PATH</code> so a node library
+the build baked out-of-workspace resolves; note that <code>NODE_PATH</code> is honoured by
+CommonJS <code>require</code> only and ignored by ESM <code>import</code>. The key's schema and
+semantics are documented on the vergil-tooling side:
+<a href="https://vergil-project.github.io/vergil-tooling/reference/container-config/"><code>container-config</code> reference</a>.</p>
 <h2 id="github-project-integration">GitHub Project integration<a class="headerlink" href="#github-project-integration" title="Permanent link">&para;</a></h2>
 <p>The <code>add-to-project</code> workflow automatically adds new issues to a GitHub Project
 when they are opened. Each repository has an <code>add-to-project.yml</code> workflow that

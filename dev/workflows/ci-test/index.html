@@ -4381,6 +4381,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#build-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#extension-points" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4864,6 +4875,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#build-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build command
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#extension-points" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4969,6 +4991,31 @@ test job fails rather than running against a missing dependency. See the
 behavior, and the
 <a href="https://vergil-project.github.io/vergil-tooling/reference/container-config/"><code>container-config</code> reference</a>
 on the vergil-tooling side for the <code>[container].system-packages</code> key itself.</p>
+<h2 id="build-command">Build command<a class="headerlink" href="#build-command" title="Permanent link">&para;</a></h2>
+<p>After the system-packages install, each <code>unit</code> job runs the command the
+repository declares under <code>[container].build-command</code> in its <code>vergil.toml</code>, via
+the <a href="../../actions/shared-setup-build-command/"><code>shared/setup/build-command</code></a>
+action. Like the system-packages install, this runs on <strong>test jobs only</strong> — lint
+and typecheck jobs do not exercise the code and are deliberately excluded — and
+it runs after the packages are installed, before the tests.</p>
+<p>The step is a no-op when a repository declares no build command. When it does
+declare one, the step <strong>fails closed with no retry</strong>: an arbitrary build command
+that fails is a real failure, not a transient one, so — in deliberate contrast
+to the system-packages install's bounded retry — a non-zero exit fails the test
+job immediately rather than being retried and masking a genuine break.</p>
+<p>After the command runs, the action exports <code>NODE_PATH</code> (the npm global root,
+from <code>npm root -g</code>) so subsequent test steps can resolve a node library the
+build baked out-of-workspace (e.g. <code>npm install -g &lt;lib&gt;</code>).</p>
+<blockquote>
+<p><strong><code>require</code>-only caveat.</strong> <code>NODE_PATH</code> is honoured by CommonJS <code>require</code>
+resolution only; ESM <code>import</code> ignores it. A baked library consumed via
+<code>import</code> will not resolve through <code>NODE_PATH</code> — a documented Node limitation,
+not an action bug.</p>
+</blockquote>
+<p>See the <a href="../../actions/shared-setup-build-command/">action reference</a> for the
+full behavior, and the
+<a href="https://vergil-project.github.io/vergil-tooling/reference/container-config/"><code>container-config</code> reference</a>
+on the vergil-tooling side for the <code>[container].build-command</code> key itself.</p>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
 <p>The <code>unit</code> job provides a version matrix scaffold. Consuming repositories
 customize it by forking the workflow or by running language-specific test
