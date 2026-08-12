@@ -128,16 +128,20 @@ trigger safely.
 
 ### Example: the CI-evidence gate
 
-The CI-evidence completeness gate (epic [vergil-project/.github#140]) is
-deployed exactly this way. It is introduced in warning mode: every release
-runs the evidence harvest and completeness check and reports the result, but
-a shortfall does not yet block the release. It bakes across the normal
-release cadence while its robustness — retry/backoff, idempotency, harvest
-completeness — is validated against real releases. When it has proven
-stable, a **single flag flip** promotes it to enforcing, at which point an
-incomplete evidence bundle becomes a terminal, publish-blocking failure. At
-no point is it a permanent soft gate; warning mode is only the on-ramp to
-its enforcing end state.
+The CI-evidence completeness gate (epic [vergil-project/.github#140]) is the
+worked example of this lifecycle run to completion. It was introduced in
+warning mode: every release ran the evidence harvest and completeness check
+and reported the result, but a shortfall did not yet block the release. It
+baked across the normal release cadence — roughly four weeks — while its
+robustness (retry/backoff, idempotency, harvest completeness) was validated
+against real releases. Once it had proven stable, a **single flag flip**
+(`evidence-enforce` false→true) promoted it to enforcing.
+
+That promotion is now live. The gate is enforcing in its steady state: an
+incomplete or failed evidence bundle is a terminal, publish-blocking
+failure, exactly like every other hard gate. It was never a permanent soft
+gate — warning mode was only the on-ramp, and the lifecycle has reached its
+enforcing end state.
 
 ## Why this makes public evidence bundles safe
 
@@ -160,7 +164,20 @@ on this model:
     revisited. The all-hard-gates principle is therefore not just a code-
     quality stance — it is a precondition of safely publishing CI evidence.
 
+Completeness is now measured against report **payload**, not merely artifact
+or envelope presence. A required gate that carries only an `evidence.json`
+envelope with no report payload fails the completeness check — envelope
+presence alone is no longer proof the gate ran (ref
+[vergil-project/vergil-tooling#2812]). The authoritative wire format for the
+bundle lives in vergil-tooling and is not duplicated here.
+
+!!! note "Current residuals"
+    Two known gaps remain open, tracked as limitations rather than done: the
+    manifest `metrics` object is currently empty (`{}`), and the security
+    `evidence.json` `tools` array is currently empty (`[]`).
+
 [vergil-project/.github#140]: https://github.com/vergil-project/.github/issues/140
+[vergil-project/vergil-tooling#2812]: https://github.com/vergil-project/vergil-tooling/issues/2812
 
 ## See also
 
