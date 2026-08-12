@@ -753,6 +753,8 @@
       
         
       
+        
+      
     
     
     
@@ -805,6 +807,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.25
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4955,7 +4985,22 @@ workflow), because it reads the command through <code>vrg-container-build-comman
    <code>No [container].build-command declared; skipping.</code> and exits <code>0</code>. The step is
    a no-op for repositories that need no build step.</li>
 <li>Otherwise it runs the command via <code>bash -c</code>.</li>
+<li>After the command runs, it exports <code>NODE_PATH</code> (the npm global root, from
+   <code>npm root -g</code>) to <code>$GITHUB_ENV</code> so the subsequent CI test steps can resolve a
+   node library the build-command baked out-of-workspace (e.g. <code>npm install -g
+   &lt;lib&gt;</code>). This mirrors the <code>NODE_PATH</code> the local dev image injects
+   (<a href="https://github.com/vergil-project/vergil-tooling/pull/2781">vergil-tooling#2781</a>),
+   so a baked library resolves identically <strong>locally and in CI</strong> — the local/CI
+   drift this epic exists to prevent. The export is guarded on CI context
+   (<code>$GITHUB_ENV</code> present) and <code>npm</code> being installed, so it is a clean no-op on a
+   non-CI or non-node run.</li>
 </ol>
+<blockquote>
+<p><strong><code>require</code>-only caveat.</strong> <code>NODE_PATH</code> is honoured by CommonJS <code>require</code>
+resolution only; ESM <code>import</code> ignores it. A baked library consumed via
+<code>import</code> will not resolve through <code>NODE_PATH</code> — this is a documented Node
+limitation, not an action bug.</p>
+</blockquote>
 <h3 id="fail-closed-no-retry">Fail-closed, no retry<a class="headerlink" href="#fail-closed-no-retry" title="Permanent link">&para;</a></h3>
 <p>Unlike the sibling <a href="../shared-setup-system-packages/"><code>shared/setup/system-packages</code></a>
 action — whose bounded retry absorbs a transient apt mirror flake — this action
