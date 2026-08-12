@@ -5,10 +5,10 @@ description: >-
   commit, and attach it to the GitHub Release that tag-and-release just created.
   Runs AFTER tag-and-release (spec §9): the pre-publish completeness gate is done
   by ci-evidence-gate, and by this point both the Release (upload target) and the
-  SBOM (bundle content) exist. Ships in WARNING mode: with enforce=false any
-  failure or timeout is non-fatal and the release always proceeds. Promotion to
-  enforcing (enforce=true) is a single human-gated flag flip — the step's
-  position and steps are identical in both modes. See epic
+  SBOM (bundle content) exist. ENFORCES by default (enforce=true): any failure or
+  timeout aborts the release. Passing enforce=false demotes it to a non-fatal
+  WARNING — a temporary opt-out, never a permanent soft gate; the step's position
+  and steps are identical in both modes. See epic
   vergil-project/.github#140 spec §9, §9.2, §10.
 
 inputs:
@@ -20,12 +20,13 @@ inputs:
     required: true
   enforce:
     description: >-
-      Fatality mode. "false" (default, WARNING) — any bundle/attest/upload
-      failure or timeout emits a loud warning and the job succeeds; the release
-      is never aborted. "true" (ENFORCING) — a non-zero vrg-ci-evidence exit
-      (substantive incompleteness) or a failed attach fails the job.
+      Fatality mode. "true" (default, ENFORCING) — a non-zero vrg-ci-evidence
+      exit (substantive incompleteness) or a failed attach fails the job.
+      "false" (WARNING) — any bundle/attest/upload failure or timeout emits a
+      loud warning and the job succeeds; the release is never aborted (a
+      temporary opt-out).
     required: false
-    default: "false"
+    default: "true"
   timeout-minutes:
     description: >-
       Upper bound (minutes) on the offline assemble step. Composite steps cannot
