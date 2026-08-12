@@ -6,10 +6,11 @@ description: >-
   enforcing, no package, tag, or Release is created without complete evidence.
   This step does NOT attest or attach anything: the GitHub Release does not yet
   exist and the SBOM is not yet built at this point in the pipeline — the
-  ci-evidence-attach composite does that AFTER tag-and-release. Ships in WARNING
-  mode: with enforce=false any failure or timeout is non-fatal and the release
-  always proceeds. Promotion to enforcing (enforce=true) is a single human-gated
-  flag flip. See epic vergil-project/.github#140 spec §9, §9.2, §10.
+  ci-evidence-attach composite does that AFTER tag-and-release. ENFORCES by
+  default (enforce=true): any failure or timeout aborts the release before
+  publish. Passing enforce=false demotes it to a non-fatal WARNING — a temporary
+  opt-out, never a permanent soft gate. See epic vergil-project/.github#140
+  spec §9, §9.2, §10.
 
 inputs:
   version:
@@ -17,13 +18,13 @@ inputs:
     required: true
   enforce:
     description: >-
-      Fatality mode. "false" (default, WARNING) — an incomplete/failed harvest
-      emits a loud warning and the job succeeds; the release is never aborted.
-      "true" (ENFORCING) — a non-zero vrg-ci-evidence exit (substantive
-      incompleteness) fails the job here, before publish, gating the release
-      (spec §9.2).
+      Fatality mode. "true" (default, ENFORCING) — a non-zero vrg-ci-evidence
+      exit (substantive incompleteness) fails the job here, before publish,
+      gating the release (the spec §9 publish invariant). "false" (WARNING) — an
+      incomplete/failed harvest emits a loud warning and the job succeeds; the
+      release is never aborted (a temporary opt-out, spec §9.2).
     required: false
-    default: "false"
+    default: "true"
   timeout-minutes:
     description: >-
       Upper bound (minutes) on the harvest+validate step. Composite steps cannot
