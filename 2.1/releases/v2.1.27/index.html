@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.0.26/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.27/">
       
       
-        <link rel="prev" href="../v2.0.27/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v2.0.25/">
+        <link rel="next" href="../v2.1.26/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>2.0.26 - Vergil Actions</title>
+        <title>2.1.27 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-2026-2026-05-28" class="md-skip">
+        <a href="#release-2127-2026-08-12" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              2.0.26
+              2.1.27
             
           </span>
         </div>
@@ -827,10 +827,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.27/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.27
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -846,6 +873,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1695,37 +1753,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    2.0.26
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v2.0.26/" class="md-nav__link">
         
   
   
@@ -1741,37 +1772,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bug fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4868,11 +4868,11 @@
 
 
 
-<h1 id="release-2026-2026-05-28">Release 2.0.26 (2026-05-28)<a class="headerlink" href="#release-2026-2026-05-28" title="Permanent link">&para;</a></h1>
+<h1 id="release-2127-2026-08-12">Release 2.1.27 (2026-08-12)<a class="headerlink" href="#release-2127-2026-08-12" title="Permanent link">&para;</a></h1>
 <h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>separate language and container-suffix inputs in cd-release.yml</strong>
-Add dedicated container-suffix input so non-language projects no longer misuse language: base. The container image line falls back through container-suffix, language, then 'base'. The validate-inputs action now treats language as optional and only passes it to the CLI when non-empty. Ref #653</li>
+<li><strong>bridge per-matrix report files into test/audit/quality evidence artifacts (#837)</strong>
+In GitHub Actions each job runs on its own runner with its own filesystem. The test/audit/quality exec (matrix) jobs produced their report files, but the separate evidence job did a clean checkout and called evidence/emit against globs that matched an empty tree, stranding every report and shipping empty payloads for those three gates while only security carried real files. Mirror the working ci-security.yml pattern: each matrix leg uploads its version-suffixed reports as a per-version partial artifact, and the evidence job downloads every leg's partials (merge-multiple) before emit, so the bundle carries each interpreter version's reports. quality-ruff.json / quality-mypy.xml are a locked filename contract with vergil-tooling#2811 and stay skipped-empty (non-fatal) until it releases.</li>
 </ul>
 
 
