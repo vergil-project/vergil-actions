@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.27
 
       - name: Detect docs
         id: detect
@@ -46,7 +46,7 @@ jobs:
 
       - name: Stage documentation sources
         if: steps.detect.outputs.present == 'true'
-        uses: ./actions/shared/docs/stage
+        uses: vergil-project/vergil-actions/actions/shared/docs/stage@v2.1.27
         with:
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
 
