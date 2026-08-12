@@ -755,6 +755,8 @@
       
         
       
+        
+      
     
     
     
@@ -807,6 +809,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.26/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.26
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4823,6 +4853,10 @@ definition and optional supporting scripts.</p>
 <li><strong><a href="shared-setup-system-packages/">shared/setup/system-packages</a></strong> — Installs
   a repository's declared <code>[container].system-packages</code> on CI test jobs
   (test-runtime only; auto-wired into <code>ci-test</code>).</li>
+<li><strong><a href="shared-setup-build-command/">shared/setup/build-command</a></strong> — Runs a
+  repository's declared <code>[container].build-command</code> on CI test jobs
+  (test-runtime only; auto-wired into <code>ci-test</code>; fail-closed with no retry;
+  exports <code>NODE_PATH</code> so a baked out-of-workspace node library resolves).</li>
 </ul>
 
 
