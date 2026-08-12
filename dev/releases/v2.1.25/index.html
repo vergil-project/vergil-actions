@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v2.0.29/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/releases/v2.1.25/">
       
       
-        <link rel="prev" href="../v2.1.0/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v2.0.28/">
+        <link rel="next" href="../v2.1.24/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>2.0.29 - Vergil Actions</title>
+        <title>2.1.25 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-2029-2026-06-02" class="md-skip">
+        <a href="#release-2125-2026-08-12" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              2.0.29
+              2.1.25
             
           </span>
         </div>
@@ -823,10 +823,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.25/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.25
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -842,6 +869,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1551,19 +1609,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v2.0.29/" class="md-nav__link">
         
   
   
@@ -1579,7 +1628,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -4726,6 +4774,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4741,7 +4808,23 @@
 
 
 
-<h1 id="release-2029-2026-06-02">Release 2.0.29 (2026-06-02)<a class="headerlink" href="#release-2029-2026-06-02" title="Permanent link">&para;</a></h1>
+<h1 id="release-2125-2026-08-12">Release 2.1.25 (2026-08-12)<a class="headerlink" href="#release-2125-2026-08-12" title="Permanent link">&para;</a></h1>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>export NODE_PATH in the build-command step for CI resolution parity (#825)</strong>
+After the declared [container].build-command runs, export NODE_PATH (the npm
+global root from <code>npm root -g</code>) to $GITHUB_ENV so subsequent CI test steps can
+resolve a node library baked out-of-workspace by the build-command (npm install
+-g <lib>) via CommonJS require. This mirrors the NODE_PATH the local dev image
+injects (vergil-project/vergil-tooling#2781), keeping baked-library resolution
+identical locally and in CI — the drift epic vergil-project/.github#291 prevents.</li>
+</ul>
+<p>The export is guarded on CI context ($GITHUB_ENV present) and npm being on PATH,
+so a non-CI or non-node run is a clean no-op; the step stays fail-closed and
+retry-free. NODE_PATH is honoured by require only (ESM import ignores it).</p>
+<p>Extends the install.test.sh harness with two cases (NODE_PATH appended when a
+command ran with a stub npm on PATH; nothing appended on the skip path) and
+documents the behavior and the require-only caveat.</p>
 
 
 
