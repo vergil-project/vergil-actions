@@ -97,10 +97,10 @@ jobs:
           fetch-depth: 0
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.28
 
       - name: Validate inputs
-        uses: ./actions/cd/release/validate-inputs
+        uses: vergil-project/vergil-actions/actions/cd/release/validate-inputs@v2.1.28
         with:
           language: ${{ inputs.language }}
           container-tag: ${{ inputs.container-tag }}
@@ -155,7 +155,7 @@ jobs:
       - name: CI evidence gate (pre-publish)
         if: steps.tag_check.outputs.exists == 'false'
         continue-on-error: ${{ !inputs.evidence-enforce }}
-        uses: ./actions/cd/release/ci-evidence-gate
+        uses: vergil-project/vergil-actions/actions/cd/release/ci-evidence-gate@v2.1.28
         with:
           version: ${{ steps.version.outputs.version }}
           enforce: ${{ inputs.evidence-enforce }}
@@ -175,7 +175,7 @@ jobs:
         if: >-
           contains(fromJSON('["python","java","ruby","rust","go"]'), inputs.language) &&
           steps.tag_check.outputs.exists == 'false'
-        uses: ./actions/cd/release/registry-publish
+        uses: vergil-project/vergil-actions/actions/cd/release/registry-publish@v2.1.28
         with:
           language: ${{ inputs.language }}
           version: ${{ steps.version.outputs.version }}
@@ -193,7 +193,7 @@ jobs:
 
       - name: Tag and release
         if: steps.tag_check.outputs.exists == 'false'
-        uses: ./actions/cd/release/tag-and-release
+        uses: vergil-project/vergil-actions/actions/cd/release/tag-and-release@v2.1.28
         with:
           version: ${{ steps.version.outputs.version }}
           release-artifacts: ${{ steps.resolved.outputs.release-artifacts }}
@@ -206,7 +206,7 @@ jobs:
       - name: Attach CI evidence bundle (post-release)
         if: steps.tag_check.outputs.exists == 'false'
         continue-on-error: ${{ !inputs.evidence-enforce }}
-        uses: ./actions/cd/release/ci-evidence-attach
+        uses: vergil-project/vergil-actions/actions/cd/release/ci-evidence-attach@v2.1.28
         with:
           version: ${{ steps.version.outputs.version }}
           tag: ${{ steps.version.outputs.tag }}
