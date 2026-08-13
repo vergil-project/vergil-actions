@@ -42,6 +42,12 @@ jobs:
         shell: bash
         env:
           PRE_DEPLOY_COMMAND: ${{ inputs.pre-deploy-command }}
+          # The default pre-deploy command runs vrg-roadmap / vrg-activity-log,
+          # which shell out to `gh` to read the org `.github` epics. In an
+          # Actions runner `gh` refuses to run without a token, so a token must
+          # be in the env. The org `.github` epic home is public, so the
+          # repo-scoped default token suffices — no App-token minting needed.
+          GH_TOKEN: ${{ github.token }}
         run: eval "$PRE_DEPLOY_COMMAND"
 
       - name: Stage documentation sources
