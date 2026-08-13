@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.28] - 2026-08-13
+
+### Bug fixes
+
+- provide GH_TOKEN to cd-docs pre-deploy step (#845)
+
+### Documentation
+
+- capture OpenSSF Scorecard as point-in-time snapshot doc (#841)
+- update the all-hard-gates CI-evidence example to enforcing (#843)
+
 ## [2.1.27] - 2026-08-12
 
 ### Bug fixes
