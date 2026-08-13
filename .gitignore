@@ -1,22 +1,60 @@
 # OS/editor noise
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
 *.swp
 *.swo
+*~
+*.bak
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 
 # Env/secrets
 .env
 .env.*
 *.log
 
-# Temp/build artifacts (only if created)
-dist/
-build/
-
-# Parallel AI agent worktrees (see CLAUDE.md)
+# Agent/tooling scratch dirs
+.venv/
 .worktrees/
-
-# Vergil tooling scratch dir
 .vergil/
+.superpowers/
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+junit.xml
+pip-audit.json
+licenses.json
+quality-ruff.json
+quality-mypy.xml
+
+# Docs site
+docs/site/site/
+
+# Node/JS
+node_modules/
+*.tsbuildinfo
+*.test
+*.out
+
+# Ruby
+.bundle/
+vendor/bundle/
+
+# Compiled objects
+*.o
+*.obj
+*.a
+*.so
