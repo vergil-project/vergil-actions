@@ -5367,7 +5367,7 @@ unprotected. Always use explicit <code>refs/heads/</code> references for both br
 <p>Rulesets can be updated programmatically using the GitHub API:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># List rulesets for a repository</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>gh<span class="w"> </span>api<span class="w"> </span>repos/vergil-project/<span class="o">{</span>repo<span class="o">}</span>/rulesets<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--jq<span class="w"> </span><span class="s1">&#39;.[] | {id: .id, name: .name}&#39;</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--jq<span class="w"> </span><span class="s1">'.[] | {id: .id, name: .name}'</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># View a specific ruleset</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>gh<span class="w"> </span>api<span class="w"> </span>repos/vergil-project/<span class="o">{</span>repo<span class="o">}</span>/rulesets/<span class="o">{</span>id<span class="o">}</span>
