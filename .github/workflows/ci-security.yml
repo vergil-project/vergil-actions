@@ -153,22 +153,30 @@ jobs:
           language: ${{ inputs.language }}
           # Some languages need their Semgrep ruleset wired explicitly because
           # vrg-semgrep-scan does not resolve one from the language name alone:
-          #   cpp        — there is no `p/cpp` ruleset; the registry 404s on it
-          #                (and on `p/c-plus-plus` / `p/cplusplus`). `p/c` is
-          #                real but applies rules to `.c` ONLY — it scans no
-          #                C++ at all — so it cannot stand alone here.
-          #                `extra-config` IS the whole C++ ruleset: there is no
-          #                `cpp` key in vrg-semgrep-scan's _LANGUAGE_RULESETS,
-          #                so anything omitted here is simply not scanned.
-          #                `p/security-audit` is what restores C++ rule
-          #                applicability. See vergil-project/vergil-actions#851
-          #                for the measured per-pack coverage table.
+          #   cpp        — READ THIS BEFORE "FIXING" IT. Semgrep contributes
+          #                NO C++ coverage here, and cannot be made to from the
+          #                community registry: `p/cpp` 404s (never published),
+          #                and `https://semgrep.dev/c/r/cpp` returns `rules: []`
+          #                — the C++ namespace exists and is empty. No community
+          #                pack declares a single `cpp` rule (measured: p/c 0,
+          #                p/security-audit 0, p/default 0, p/cwe-top-25 0).
+          #                `p/c` is wired because it is real and correct for any
+          #                `.c` file, but it applies to `.c` ONLY. Do not add
+          #                `p/security-audit` or `p/default` hoping to cover
+          #                C++: they appear to scan `.cpp` only via their
+          #                generic/regex rules, which is not C++ analysis.
+          #                C++ static analysis comes from the quality stage
+          #                instead — clang-format, run-clang-tidy and cppcheck,
+          #                plus the -Werror typecheck build. Real semgrep C++
+          #                rules exist only in Semgrep Code (Pro engine, needs
+          #                SEMGREP_APP_TOKEN), which this pipeline does not use.
+          #                See vergil-project/vergil-actions#853.
           #   typescript — the `typescript` primary-language name has no
           #                registry entry in vrg-semgrep-scan, so wire the
           #                `p/typescript` JS/TS ruleset (epic
           #                vergil-project/.github#284 T7).
           # Other languages resolve their ruleset from the language input alone.
-          extra-config: ${{ inputs.language == 'cpp' && 'p/c p/security-audit' || inputs.language == 'typescript' && 'p/typescript' || '' }}
+          extra-config: ${{ inputs.language == 'cpp' && 'p/c' || inputs.language == 'typescript' && 'p/typescript' || '' }}
           upload-sarif: ${{ inputs.upload-sarif }}
 
       # Upload the Semgrep SARIF as an evidence partial UNCONDITIONALLY, whether
