@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v1.4.6/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.29/">
       
       
-        <link rel="prev" href="../v1.4.7/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v1.4.5/">
+        <link rel="next" href="../v2.1.28/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>1.4.6 - Vergil Actions</title>
+        <title>2.1.29 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-146-2026-04-30" class="md-skip">
+        <a href="#release-2129-2026-08-24" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              1.4.6
+              2.1.29
             
           </span>
         </div>
@@ -831,10 +831,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.29/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.29
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -850,6 +877,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chores
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3155,19 +3224,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v1.4.6/" class="md-nav__link">
         
   
   
@@ -3183,7 +3243,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -4846,6 +4905,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chores
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4861,7 +4950,33 @@
 
 
 
-<h1 id="release-146-2026-04-30">Release 1.4.6 (2026-04-30)<a class="headerlink" href="#release-146-2026-04-30" title="Permanent link">&para;</a></h1>
+<h1 id="release-2129-2026-08-24">Release 2.1.29 (2026-08-24)<a class="headerlink" href="#release-2129-2026-08-24" title="Permanent link">&para;</a></h1>
+<h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>wire a C++ semgrep ruleset that exists (#851) (#852)</strong>
+p/cpp is not a Semgrep registry ruleset - it 404s, so the semgrep gate failed with exit 7 on every cpp repo. p/c-plus-plus and p/cplusplus 404 as well.</li>
+</ul>
+<p>p/c alone is not a fix. extra-config is the entire C++ ruleset here, because vrg-semgrep-scan's _LANGUAGE_RULESETS has no cpp key, and p/c applies rules to .c only - it scans no C++ whatsoever. Dropping to p/c would have turned a hard failure into silent zero coverage.</p>
+<p>Measured with an identical probe.c/probe.cpp pair on semgrep 1.173.0, reading paths.scanned: p/c scans only the .c file, while p/security-audit, p/default and p/cwe-top-25 all apply rules to the .cpp file. p/security-audit also fired a real finding on the C probe (insecure-use-string-copy-fn, CWE-676). Full table in the issue.</p>
+<p>Surfaced by logical-minds-foundry/mq-protocol-gateway, the fleet's first cpp repo.</p>
+<ul>
+<li><strong>state plainly that semgrep gives no C++ coverage (#853) (#854)</strong>
+Follow-up to #851/#852, which stopped the p/cpp 404 but documented p/security-audit as restoring C++ rule applicability. That claim is false and the config did not do it.</li>
+</ul>
+<p>No community Semgrep pack declares a single cpp rule - measured p/c 0, p/security-audit 0, p/default 0, p/cwe-top-25 0. https://semgrep.dev/c/r/cpp returns 200 with a body of 'rules: []': the C++ namespace exists and is empty, which is also why p/cpp was never published.</p>
+<p>The earlier conclusion came from reading semgrep's paths.scanned, where p/security-audit appeared to scan a .cpp probe. That was its 14 generic/regex rules matching any file, not C++ analysis. Direct check with gets(buf) duplicated across t.c/t.cpp/t.cc/t.hpp under --config p/c: 'Scanning 4 files tracked by git with 2 Code rules: Scanning 1 file with 2 c rules', one finding, on t.c only.</p>
+<p>Semgrep's GA C/C++ support is Semgrep Code - Pro engine and Pro rules behind SEMGREP_APP_TOKEN - not the unauthenticated community registry this pipeline scans.</p>
+<h2 id="chores">Chores<a class="headerlink" href="#chores" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><strong>reconcile .gitignore to baseline + add ops.yml (#849) (#850)</strong>
+Rollout for epic #311: bring vergil-actions to a superset of the centralized .gitignore baseline and add a self-policing scheduled ops.yml (staggered per-repo cron).</p>
+</li>
+<li>
+<p><strong>ignore Conan 2 generator output for baseline compliance (#856)</strong>
+Add the Conan 2 generator-output block (CMake presets + conan*.sh scripts) to bring vergil-actions into compliance with the baseline .gitignore. These patterns were added to the baseline in vergil-tooling#2891 but vergil-actions had not caught up, so vrg-github-repo-config audit reported 11 missing patterns. Mirrors the baseline block; conan.lock stays committed for reproducible resolution.</p>
+</li>
+</ul>
 
 
 

@@ -761,6 +761,8 @@
       
         
       
+        
+      
     
     
     
@@ -813,6 +815,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.29/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.29
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5012,7 +5042,7 @@ stay green.</p>
 <p>Repos that don't release (e.g., infrastructure or documentation repos)
 declare it in <code>vergil.toml</code> instead of passing <code>run-release: false</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[project]</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">release-model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;none&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">release-model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span>
 </code></pre></div>
 <p>The version-bump job then passes without running the gate, and the
 tooling-derived required-check set omits it entirely.</p>
