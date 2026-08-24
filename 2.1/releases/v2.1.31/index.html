@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v1.5.0/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.31/">
       
       
-        <link rel="prev" href="../v1.5.1/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v1.4.8/">
+        <link rel="next" href="../v2.1.30/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>1.5.0 - Vergil Actions</title>
+        <title>2.1.31 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-150-2026-05-04" class="md-skip">
+        <a href="#release-2131-2026-08-24" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              1.5.0
+              2.1.31
             
           </span>
         </div>
@@ -835,10 +835,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.31/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.31
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -854,6 +881,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3131,37 +3189,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    1.5.0
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v1.5.0/" class="md-nav__link">
         
   
   
@@ -3177,37 +3208,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Features
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4961,10 +4961,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
+  <a href="#bug-fixes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Features
+        Bug fixes
       
     </span>
   </a>
@@ -4988,12 +4988,14 @@
 
 
 
-<h1 id="release-150-2026-05-04">Release 1.5.0 (2026-05-04)<a class="headerlink" href="#release-150-2026-05-04" title="Permanent link">&para;</a></h1>
-<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<h1 id="release-2131-2026-08-24">Release 2.1.31 (2026-08-24)<a class="headerlink" href="#release-2131-2026-08-24" title="Permanent link">&para;</a></h1>
+<h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>add five reusable CI workflows for canonical check names</strong>
-ci-quality.yml, ci-test.yml, ci-audit.yml (new), ci-security.yml (refactored), ci-release.yml (new). Job names produce the canonical {category} / {name} / {version} check names when called via uses:. Bumps version to 1.5.0. Ref wphillipmoore/standard-tooling#173. Closes #309</li>
+<li><strong>use python3 from PATH, not /usr/local/bin (#863) (#864)</strong>
+The 'Detect release model' step invoked /usr/local/bin/python3. That path exists in the base/python images - where this workflow's own ci.yml self-test runs (container-suffix: base) - but NOT in prod-cpp-clang:20, where python3 is at /usr/bin/python3. So the version-bump job hard-failed for any cpp repo with 'No such file or directory', before evaluating any version.</li>
 </ul>
+<p>Confirmed in the cpp image: /usr/local/bin/python3 is absent; python3 from PATH is /usr/bin/python3 (3.13.5, tomllib present) and reads release-model correctly. Using python3 from PATH resolves to the right interpreter in every image and makes the step image-agnostic - the workflow should not assume a python location.</p>
+<p>Surfaced by logical-minds-foundry/mq-protocol-gateway#1 (first cpp repo): PR #12 was green on every job except version/version-bump, purely because of this path.</p>
 
 
 
