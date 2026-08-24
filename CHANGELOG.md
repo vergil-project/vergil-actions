@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.29] - 2026-08-24
+
+### Bug fixes
+
+- wire a C++ semgrep ruleset that exists (#851) (#852)
+- state plainly that semgrep gives no C++ coverage (#853) (#854)
+
+### Chores
+
+- reconcile .gitignore to baseline + add ops.yml (#849) (#850)
+- ignore Conan 2 generator output for baseline compliance (#856)
+
 ## [2.1.28] - 2026-08-13
 
 ### Bug fixes
