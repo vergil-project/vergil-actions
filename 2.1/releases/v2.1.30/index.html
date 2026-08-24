@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.12/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.30/">
       
       
-        <link rel="prev" href="../v2.1.13/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v2.1.11/">
+        <link rel="next" href="../v2.1.29/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>2.1.12 - Vergil Actions</title>
+        <title>2.1.30 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-2112-2026-07-07" class="md-skip">
+        <a href="#release-2130-2026-08-24" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              2.1.12
+              2.1.30
             
           </span>
         </div>
@@ -833,10 +833,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.30/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -852,6 +861,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -1337,37 +1347,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    2.1.12
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v2.1.12/" class="md-nav__link">
         
   
   
@@ -1383,37 +1366,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bug fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4924,25 +4876,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bug fixes
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -4958,12 +4891,7 @@
 
 
 
-<h1 id="release-2112-2026-07-07">Release 2.1.12 (2026-07-07)<a class="headerlink" href="#release-2112-2026-07-07" title="Permanent link">&para;</a></h1>
-<h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>fully-qualify the nested cd-docs reusable ref (#751) (#752)</strong>
-cd-docs-refresh is a reusable workflow called cross-repo, but it nested cd-docs.yml via a relative './.github/workflows/cd-docs.yml' — which does not resolve when the outer workflow is invoked from another repo via a tag (GitHub reports 'workflow was not found'), and which vrg-freeze-refs never pins. Make it a fully-qualified '@develop' ref so it resolves cross-repo and the release freeze rewrites it to the release tag. Fixes the org docs repos' daily cd-docs-refresh startup failure.</li>
-</ul>
+<h1 id="release-2130-2026-08-24">Release 2.1.30 (2026-08-24)<a class="headerlink" href="#release-2130-2026-08-24" title="Permanent link">&para;</a></h1>
 
 
 
