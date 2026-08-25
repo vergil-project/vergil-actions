@@ -74,3 +74,6 @@ conanbuildenv-*.sh
 conanrunenv-*.sh
 deactivate_conanbuild*.sh
 deactivate_conanrun*.sh
+
+# --- Vergil baseline sync (vergil-project/.github#322): lines added to match gitignore.baseline ---
+build-sanitize/
