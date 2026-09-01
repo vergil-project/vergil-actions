@@ -1,0 +1,81 @@
+name: Smoke - setup/vergil outputs
+
+# Smoke test for the shared setup/vergil action's `versions` and
+# `primary-version` outputs (epic vergil-project/.github#338, Task 6).
+#
+#   * fixtures — runs the framework-free derive.sh harness, asserting the
+#     derivation across multi-version, unsorted, single-version, explicit
+#     primary-version override, and numeric-run fixtures. Fast, no install.
+#   * action-e2e — calls the action itself against a multi-version fixture
+#     vergil.toml and asserts the two outputs are wired through action.yml.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - actions/shared/setup/vergil/**
+      - .github/workflows/smoke-setup-vergil.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: derive.sh fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run derive.sh harness
+        shell: bash
+        run: bash actions/shared/setup/vergil/tests/derive.test.sh
+
+  action-e2e:
+    name: action outputs (multi-version fixture)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Write a multi-version fixture vergil.toml
+        shell: bash
+        run: |
+          cat > vergil.toml <<'TOML'
+          [project]
+          repository-type = "library"
+          versioning-scheme = "semver"
+          branching-model = "library-release"
+          release-model = "tagged-release"
+
+          [ci]
+          versions = ["3.12", "3.13", "3.14"]
+          integration-tests = false
+
+          [dependencies]
+          vergil = "v2.1"
+          TOML
+
+      - name: Run the setup action against the fixture
+        id: setup
+        uses: ./actions/shared/setup/vergil
+
+      - name: Assert versions and primary-version outputs
+        shell: bash
+        env:
+          VERSIONS: ${{ steps.setup.outputs.versions }}
+          PRIMARY: ${{ steps.setup.outputs.primary-version }}
+        run: |
+          set -euo pipefail
+          echo "versions=$VERSIONS"
+          echo "primary-version=$PRIMARY"
+          expected_versions='["3.12","3.13","3.14"]'
+          expected_primary="3.14"
+          if [ "$VERSIONS" != "$expected_versions" ]; then
+            echo "::error::versions mismatch: expected $expected_versions, got $VERSIONS"
+            exit 1
+          fi
+          if [ "$PRIMARY" != "$expected_primary" ]; then
+            echo "::error::primary-version mismatch: expected $expected_primary, got $PRIMARY"
+            exit 1
+          fi
+          echo "Both outputs correct."
