@@ -57,7 +57,7 @@ jobs:
 
       - name: Run the setup action against the fixture
         id: setup
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.32
 
       - name: Assert versions and primary-version outputs
         shell: bash
