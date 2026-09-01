@@ -19,6 +19,15 @@ jobs:
   build:
     name: docs
     runs-on: ubuntu-latest
+    # Single-container job, language-agnostic. It runs the mkdocs build (via
+    # `uv run mkdocs` for python repos), which needs no pinned language runtime,
+    # so it uses the shared prod-base image. That image is published ONLY with
+    # the `:latest` tag (no per-version tags — see vergil-containers
+    # docker/build.sh and cd-docker-publish.yml), so the epic #338
+    # `primary-version` (e.g. "3.14") deliberately does NOT feed this tag: a
+    # `prod-base:3.14` does not exist. The job takes no version/container-tag
+    # input, so it is already vergil.toml-independent — no change was needed for
+    # the "inputs optional" goal (epic vergil-project/.github#338, Task 7).
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Checkout code
