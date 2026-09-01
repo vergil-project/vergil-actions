@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.33] - 2026-09-01
+
+### Features
+
+- reusable workflows read [ci].versions from vergil.toml (inputs optional) (#338) (#882)
+
 ## [2.1.32] - 2026-09-01
 
 ### Bug fixes
