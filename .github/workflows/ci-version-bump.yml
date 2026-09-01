@@ -54,7 +54,7 @@ jobs:
 
       - name: Resolve primary-version from vergil.toml
         id: derive
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.34
 
   version-bump:
     name: version-bump
@@ -103,11 +103,11 @@ jobs:
 
       - name: Install vergil-tooling
         if: steps.release-model.outputs.releases == 'true'
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.34
 
       - name: Verify version bump
         if: steps.release-model.outputs.releases == 'true'
-        uses: ./actions/ci/version-bump/version-divergence
+        uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.1.34
         with:
           head-version-command: vrg-version show
           main-version-command: vrg-version show --ref origin/main
