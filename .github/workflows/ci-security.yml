@@ -135,6 +135,16 @@ jobs:
     name: semgrep
     if: ${{ inputs.run-security }}
     runs-on: ubuntu-latest
+    # Single-container job, language-agnostic. Semgrep is a static analyzer that
+    # never executes the target code, so it needs no pinned language runtime and
+    # runs in the shared prod-base image. That image is published ONLY with the
+    # `:latest` tag (no per-version tags — see vergil-containers docker/build.sh
+    # and cd-docker-publish.yml), so the epic #338 `primary-version` (e.g.
+    # "3.14") deliberately does NOT feed this tag: a `prod-base:3.14` does not
+    # exist. The `container-tag`/`container-suffix` inputs are already
+    # deprecated no-ops here, so this job is already vergil.toml-independent — no
+    # change was needed for the "inputs optional" goal (epic
+    # vergil-project/.github#338, Task 7).
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     permissions:
       contents: read

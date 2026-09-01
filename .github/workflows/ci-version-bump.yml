@@ -24,8 +24,10 @@ on:
         type: string
         required: false
         description: >-
-          Container image tag for the version-bump job.
-          Defaults to "latest".
+          Container image tag for the version-bump job. Optional: when omitted,
+          the tag is the `primary-version` derived from [ci].versions in
+          vergil.toml via the setup action (epic vergil-project/.github#338). A
+          supplied value is honored verbatim (back-compat).
       container-prefix:
         type: string
         required: false
@@ -34,10 +36,31 @@ on:
           Container image name prefix (prod or dev). Defaults to "prod".
 
 jobs:
+  # Derive `primary-version` from [ci].versions in vergil.toml so the
+  # single-container version-bump job can resolve its image tag without a
+  # hand-set `container-tag` input (epic vergil-project/.github#338, Task 7).
+  # The job's `container:` is evaluated before any step runs, so the value must
+  # come from a preceding job — mirroring how the matrix workflows resolve their
+  # image in a separate `matrix` job. Runs unconditionally; when the caller
+  # supplies `container-tag` the output is simply unused.
+  setup:
+    name: setup
+    runs-on: ubuntu-latest
+    outputs:
+      primary-version: ${{ steps.derive.outputs.primary-version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve primary-version from vergil.toml
+        id: derive
+        uses: ./actions/shared/setup/vergil
+
   version-bump:
     name: version-bump
+    needs: setup
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ inputs.container-tag || 'latest' }}
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ inputs.container-tag || needs.setup.outputs.primary-version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
