@@ -186,8 +186,41 @@ jobs:
     # vergil-tooling#2811 — until it releases the globs match nothing and emit
     # skips them, so the artifact carries evidence.json alone (#836).
     needs: [common, lint, typecheck]
+    # Run even when a required leg fails or is skipped (default would skip this
+    # job, leaving the gate green-by-absence). The assert step below then turns
+    # any non-success upstream result into a FAILED evidence job (#873, epic
+    # vergil-project/.github#338).
+    if: always()
     runs-on: ubuntu-latest
     steps:
+      # Fail red (not skip) when any required matrix leg did not succeed. Uses
+      # needs.<job>.result — for a matrix job that is 'success' only when every
+      # leg succeeded, and 'failure'/'skipped'/'cancelled' otherwise. This is
+      # the first step, so a non-success result fails the job before any report
+      # is emitted, making a red/skipped leg surface as a red evidence gate.
+      - name: Assert all required legs succeeded
+        shell: bash
+        env:
+          RESULTS: |
+            common=${{ needs.common.result }}
+            lint=${{ needs.lint.result }}
+            typecheck=${{ needs.typecheck.result }}
+        run: |
+          set -euo pipefail
+          failed=0
+          while IFS='=' read -r job result; do
+            [ -n "$job" ] || continue
+            if [ "$result" != "success" ]; then
+              echo "::error::required job '$job' did not succeed (result: '$result')"
+              failed=1
+            fi
+          done <<< "$RESULTS"
+          if [ "$failed" -ne 0 ]; then
+            echo "evidence gate FAILED: one or more required legs did not succeed"
+            exit 1
+          fi
+          echo "all required legs succeeded"
+
       - name: Checkout code
         uses: actions/checkout@v6
 

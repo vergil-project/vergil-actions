@@ -5,6 +5,25 @@ description: >-
   vergil-tooling itself, runs uv sync to install from source so CI
   validates the PR's code instead of the released version.
 
+  Also derives the CI version set from vergil.toml and exposes it as the
+  `versions` (JSON array) and `primary-version` outputs, so reusable
+  workflows read their matrix from vergil.toml rather than hardcoded inputs
+  (epic vergil-project/.github#338).
+
+outputs:
+  versions:
+    description: >-
+      The `[ci].versions` list from vergil.toml as a compact JSON array
+      string (e.g. '["3.12","3.13","3.14"]'). Consumed by the `matrix` job to
+      fan out per-version legs.
+    value: ${{ steps.derive.outputs.versions }}
+  primary-version:
+    description: >-
+      The single primary version: `[ci].primary-version` when set explicitly,
+      otherwise the highest entry in `[ci].versions` by natural/semantic sort.
+      Consumed by single-container jobs and as the run-once container tag.
+    value: ${{ steps.derive.outputs.primary-version }}
+
 runs:
   using: composite
   steps:
@@ -47,3 +66,8 @@ runs:
           exit 1
         fi
         uv tool install "vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@${TAG}"
+
+    - name: Derive CI versions from vergil.toml
+      id: derive
+      shell: bash
+      run: bash "${GITHUB_ACTION_PATH}/derive.sh"

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.32] - 2026-09-01
+
+### Bug fixes
+
+- evidence gate fails red on a failed/skipped leg (#338) (#878)
+
+### Chores
+
+- sync .gitignore to the canonical baseline (#869)
+- sync the vergil-managed .gitignore block (#871)
+
+### Features
+
+- setup action outputs versions + primary-version from vergil.toml (#338) (#877)
+
 ## [2.1.31] - 2026-08-24
 
 ### Bug fixes
