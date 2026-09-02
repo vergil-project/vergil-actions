@@ -12,7 +12,7 @@ Standards compliance and security scanning workflow.
 | `run-codeql` | boolean | no | `true` | Run CodeQL analysis (disable for unsupported languages like `shell`) |
 | `upload-sarif` | boolean | no | `true` | Upload scanner SARIF to GitHub code scanning (disable on private repos without GHAS; see below) |
 | `container-suffix` | string | no | `base` | Container image name suffix for the standards job |
-| `container-tag` | string | no | `latest` | Container image tag for the standards job |
+| `container-tag` | string | no | — | **Deprecated** — fed the removed standards job and no longer has any effect. Retained so consumers passing it do not error; slated for removal in [#876](https://github.com/vergil-project/vergil-actions/issues/876) |
 
 ## Required permissions
 
