@@ -1,13 +1,15 @@
 name: Smoke - setup/vergil outputs
 
-# Smoke test for the shared setup/vergil action's `versions` and
-# `primary-version` outputs (epic vergil-project/.github#338, Task 6).
+# Smoke test for the shared setup/vergil action's `versions`,
+# `primary-version`, and `primary-container-tag` outputs (epic
+# vergil-project/.github#338, Tasks 6 and #893).
 #
 #   * fixtures — runs the framework-free derive.sh harness, asserting the
 #     derivation across multi-version, unsorted, single-version, explicit
-#     primary-version override, and numeric-run fixtures. Fast, no install.
+#     primary-version override, numeric-run, and family-routed
+#     primary-container-tag fixtures. Fast, no install.
 #   * action-e2e — calls the action itself against a multi-version fixture
-#     vergil.toml and asserts the two outputs are wired through action.yml.
+#     vergil.toml and asserts the three outputs are wired through action.yml.
 
 on:
   workflow_dispatch:
@@ -59,17 +61,22 @@ jobs:
         id: setup
         uses: ./actions/shared/setup/vergil
 
-      - name: Assert versions and primary-version outputs
+      - name: Assert versions, primary-version, primary-container-tag outputs
         shell: bash
         env:
           VERSIONS: ${{ steps.setup.outputs.versions }}
           PRIMARY: ${{ steps.setup.outputs.primary-version }}
+          PRIMARY_TAG: ${{ steps.setup.outputs.primary-container-tag }}
         run: |
           set -euo pipefail
           echo "versions=$VERSIONS"
           echo "primary-version=$PRIMARY"
+          echo "primary-container-tag=$PRIMARY_TAG"
           expected_versions='["3.12","3.13","3.14"]'
           expected_primary="3.14"
+          # No language input here, so the tag falls through to the verbatim
+          # primary version (python is not family-on-token).
+          expected_tag="3.14"
           if [ "$VERSIONS" != "$expected_versions" ]; then
             echo "::error::versions mismatch: expected $expected_versions, got $VERSIONS"
             exit 1
@@ -78,4 +85,8 @@ jobs:
             echo "::error::primary-version mismatch: expected $expected_primary, got $PRIMARY"
             exit 1
           fi
-          echo "Both outputs correct."
+          if [ "$PRIMARY_TAG" != "$expected_tag" ]; then
+            echo "::error::primary-container-tag mismatch: expected $expected_tag, got $PRIMARY_TAG"
+            exit 1
+          fi
+          echo "All three outputs correct."
