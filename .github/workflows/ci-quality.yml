@@ -29,10 +29,10 @@ on:
         required: false
         description: >-
           Container image tag for the single-container common job. Optional:
-          when omitted, the tag is the `primary-version` derived from
-          [ci].versions in vergil.toml via the setup action (epic
-          vergil-project/.github#338). A supplied value is honored verbatim
-          (back-compat).
+          when omitted, the tag is the family-routed `primary-container-tag`
+          derived from [ci].versions in vergil.toml via the setup action (epic
+          vergil-project/.github#338, issue #893). A supplied value is honored
+          verbatim (back-compat).
       container-prefix:
         type: string
         required: false
@@ -75,35 +75,44 @@ jobs:
           container-prefix: ${{ inputs.container-prefix }}
           container-suffix: ${{ inputs.container-suffix }}
 
-  # Derive `primary-version` from [ci].versions in vergil.toml so the
+  # Derive `primary-container-tag` from [ci].versions in vergil.toml so the
   # single-container common job can resolve its image tag without a hand-set
-  # `container-tag` input (epic vergil-project/.github#338). The common job runs
-  # on a language image (prod-<lang>:<tag>), which publishes only `:${version}`
-  # and never `:latest` (only prod-base publishes `:latest`), so the old
-  # `container-tag || 'latest'` fallback breaks the moment a caller stops
-  # passing `container-tag`. The job's `container:` is evaluated before any step
-  # runs, so the value must come from a preceding job — mirroring how the matrix
-  # job and ci-version-bump's setup job resolve their image. Runs
+  # `container-tag` input (epic vergil-project/.github#338). The tag is
+  # family-routed: for family-on-token languages (cpp, typescript) the version
+  # carries the compiler/runtime family (clang-20), but the published image tag
+  # is the numeric part (20) with the family riding container-suffix (cpp-clang)
+  # — so using the raw `primary-version` here resolved the nonexistent
+  # prod-cpp-clang:clang-20 (issue #893). `primary-container-tag` applies the
+  # same split as actions/ci/matrix/resolve.sh (the source of truth) so this job
+  # resolves the same tag the matrix legs do; every other language keeps the
+  # version verbatim. The common job runs on a language image (prod-<lang>:<tag>),
+  # which publishes only `:${tag}` and never `:latest` (only prod-base publishes
+  # `:latest`), so the old `container-tag || 'latest'` fallback broke the moment
+  # a caller stopped passing `container-tag`. The job's `container:` is evaluated
+  # before any step runs, so the value must come from a preceding job — mirroring
+  # how the matrix job and ci-version-bump's setup job resolve their image. Runs
   # unconditionally; when the caller supplies `container-tag` the output is
   # simply unused.
   setup:
     name: setup
     runs-on: ubuntu-latest
     outputs:
-      primary-version: ${{ steps.derive.outputs.primary-version }}
+      primary-container-tag: ${{ steps.derive.outputs.primary-container-tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Resolve primary-version from vergil.toml
+      - name: Resolve primary-container-tag from vergil.toml
         id: derive
         uses: ./actions/shared/setup/vergil
+        with:
+          language: ${{ inputs.language }}
 
   common:
     name: common
     needs: setup
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ inputs.container-tag || needs.setup.outputs.primary-version }}
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ inputs.container-tag || needs.setup.outputs.primary-container-tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

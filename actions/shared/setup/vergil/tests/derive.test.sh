@@ -42,6 +42,22 @@ run_derive() {
   printf '%s\t%s' "$versions" "$primary"
 }
 
+# run_derive_tag <vergil.toml body> [language]
+# Echoes the resolved `primary-container-tag` output. The optional LANGUAGE
+# mirrors the workflow's `inputs.language` (the setup action plumbs it into
+# derive.sh); an empty language falls through to the verbatim tag.
+run_derive_tag() {
+  local dir out tag
+  dir="$(mktemp -d)"
+  out="$(mktemp)"
+  printf '%s\n' "$1" >"${dir}/vergil.toml"
+  GITHUB_OUTPUT="$out" VERGIL_CONFIG_DIR="$dir" LANGUAGE="${2:-}" \
+    bash "$derive_sh" >/dev/null
+  tag="$(sed -n 's/^primary-container-tag=//p' "$out")"
+  rm -rf "$dir" "$out"
+  printf '%s' "$tag"
+}
+
 # assert_eq <name> <actual> <expected>
 assert_eq() {
   local name="$1" actual="$2" expected="$3"
@@ -123,11 +139,66 @@ versions = ["clang-9", "clang-20"]')"
   pass_case "$name"
 }
 
+# ---------------------------------------------------------------------------
+# Case 6: primary-container-tag — C++ clang family. The version token carries
+# the compiler family (clang-20); the published image tag is the NUMERIC part
+# (20), which rides in the tag while the family rides container-suffix
+# (cpp-clang). Mirrors actions/ci/matrix/resolve.sh's cpp routing so the
+# single-container jobs resolve prod-cpp-clang:20, not the nonexistent
+# prod-cpp-clang:clang-20 (issue #893).
+# ---------------------------------------------------------------------------
+case_container_tag_cpp_clang() {
+  local name="container-tag-cpp-clang" tag
+  tag="$(run_derive_tag '[ci]
+versions = ["clang-20"]' cpp)"
+  assert_eq "$name" "$tag" "20" || return
+  pass_case "$name"
+}
+
+# ---------------------------------------------------------------------------
+# Case 7: primary-container-tag — C++ gcc family. Same split, family-agnostic:
+# gcc-14 -> 14 (the family is carried by container-suffix cpp-gcc).
+# ---------------------------------------------------------------------------
+case_container_tag_cpp_gcc() {
+  local name="container-tag-cpp-gcc" tag
+  tag="$(run_derive_tag '[ci]
+versions = ["gcc-14"]' cpp)"
+  assert_eq "$name" "$tag" "14" || return
+  pass_case "$name"
+}
+
+# ---------------------------------------------------------------------------
+# Case 8: primary-container-tag — python. Not family-prefixed, so the tag is
+# the primary version verbatim (3.14 from the multi-version set).
+# ---------------------------------------------------------------------------
+case_container_tag_python() {
+  local name="container-tag-python" tag
+  tag="$(run_derive_tag '[ci]
+versions = ["3.12", "3.13", "3.14"]' python)"
+  assert_eq "$name" "$tag" "3.14" || return
+  pass_case "$name"
+}
+
+# ---------------------------------------------------------------------------
+# Case 9: primary-container-tag — shell. Single "latest" version, verbatim.
+# ---------------------------------------------------------------------------
+case_container_tag_shell() {
+  local name="container-tag-shell" tag
+  tag="$(run_derive_tag '[ci]
+versions = ["latest"]' shell)"
+  assert_eq "$name" "$tag" "latest" || return
+  pass_case "$name"
+}
+
 case_multi_version
 case_unsorted
 case_single_version
 case_explicit_primary
 case_numeric_run
+case_container_tag_cpp_clang
+case_container_tag_cpp_gcc
+case_container_tag_python
+case_container_tag_shell
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
