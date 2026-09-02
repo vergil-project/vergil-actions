@@ -6,9 +6,19 @@ description: >-
   validates the PR's code instead of the released version.
 
   Also derives the CI version set from vergil.toml and exposes it as the
-  `versions` (JSON array) and `primary-version` outputs, so reusable
-  workflows read their matrix from vergil.toml rather than hardcoded inputs
-  (epic vergil-project/.github#338).
+  `versions` (JSON array), `primary-version`, and `primary-container-tag`
+  outputs, so reusable workflows read their matrix from vergil.toml rather than
+  hardcoded inputs (epic vergil-project/.github#338).
+
+inputs:
+  language:
+    description: >-
+      Primary language of the calling repo (e.g. python, cpp, shell). Optional:
+      used only to family-route `primary-container-tag` for family-on-token
+      languages (cpp, typescript), mirroring actions/ci/matrix/resolve.sh. When
+      omitted, `primary-container-tag` is the primary version verbatim.
+    required: false
+    default: ""
 
 outputs:
   versions:
@@ -23,6 +33,16 @@ outputs:
       otherwise the highest entry in `[ci].versions` by natural/semantic sort.
       Consumed by single-container jobs and as the run-once container tag.
     value: ${{ steps.derive.outputs.primary-version }}
+  primary-container-tag:
+    description: >-
+      The family-routed container tag of the primary version: for
+      family-on-token languages (cpp, typescript) the part after the family
+      prefix (clang-20 -> 20), mirroring actions/ci/matrix/resolve.sh; every
+      other language keeps the version verbatim (3.14 -> 3.14, latest ->
+      latest). Consumed by the single-container jobs `common` (ci-quality) and
+      `version-bump` (ci-version-bump) so they resolve prod-cpp-clang:20, not
+      the nonexistent prod-cpp-clang:clang-20 (issue #893).
+    value: ${{ steps.derive.outputs.primary-container-tag }}
 
 runs:
   using: composite
@@ -70,4 +90,6 @@ runs:
     - name: Derive CI versions from vergil.toml
       id: derive
       shell: bash
+      env:
+        LANGUAGE: ${{ inputs.language }}
       run: bash "${GITHUB_ACTION_PATH}/derive.sh"
