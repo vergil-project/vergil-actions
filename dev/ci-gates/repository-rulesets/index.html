@@ -5483,21 +5483,26 @@ checks that must pass before a PR can merge.</p>
 <a href="../required-checks/#check-matrix">check matrix</a> for the full list.</p>
 <h3 id="library-repositories-go-python-ruby-java">Library repositories (Go, Python, Ruby, Java)<a class="headerlink" href="#library-repositories-go-python-ruby-java" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ci: standards-compliance
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>ci: dependency-audit
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>release: gates
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>test: unit (per matrix version)
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>test: integration (per matrix version)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>audit / evidence
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>quality / evidence
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>test / evidence
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>release: gates
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>security: codeql
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>security: semgrep
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>security: trivy
 </code></pre></div>
 <div class="admonition note">
-<p class="admonition-title">Matrix-expanded check names</p>
-<p>Both <code>test: unit</code> and <code>test: integration</code> appear once per matrix version.
-For example, mq-rest-admin-go requires <code>test: unit (1.25)</code>,
-<code>test: unit (1.26)</code>, <code>test: integration (1.25)</code>, and
-<code>test: integration (1.26)</code>. Each matrix expansion is a separate required
-check.</p>
+<p class="admonition-title">Version-agnostic evidence gates</p>
+<p>The matrixed workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) derive their
+version matrix from <code>[ci].versions</code> in <code>vergil.toml</code>, so the per-version
+legs (<code>unit / 3.14</code>, <code>lint / 3.13</code>, …) change with that set. Branch
+protection therefore requires the stable <code>&lt;kind&gt; / evidence</code> <strong>aggregate</strong>
+gates — <code>audit / evidence</code>, <code>quality / evidence</code>, <code>test / evidence</code> — not
+the per-version legs. Each evidence job runs with <code>if: always()</code> and
+asserts every leg succeeded, so a failed or skipped leg fails the aggregate
+red. Adding or dropping a version in <code>[ci].versions</code> changes the legs but
+not the required-check set. See
+<a href="../required-checks/#evidence-gates-are-the-required-checks">Evidence gates are the required checks</a>.</p>
 </div>
 <h3 id="infrastructure-repositories">Infrastructure repositories<a class="headerlink" href="#infrastructure-repositories" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ci: standards-compliance
@@ -5563,8 +5568,10 @@ rolling tags fall outside the <code>v*.*.*</code> pattern.</p>
 <li>Open a PR and verify the check runs and passes.</li>
 <li>After the PR merges, add the exact check name to the CI gates ruleset via
    <strong>Settings &gt; Rules &gt; Rulesets &gt; CI gates</strong>.</li>
-<li>Verify the check name matches exactly — matrix-expanded names like
-   <code>test: unit (3.14)</code> must be added individually.</li>
+<li>Verify the check name matches exactly. For the matrixed workflows, require
+   the stable <code>&lt;kind&gt; / evidence</code> aggregate (e.g. <code>test / evidence</code>), <strong>not</strong> the
+   per-version legs — the legs change with <code>[ci].versions</code>, the aggregate does
+   not.</li>
 </ol>
 <h2 id="branch-targeting">Branch targeting<a class="headerlink" href="#branch-targeting" title="Permanent link">&para;</a></h2>
 <p>All rulesets use explicit branch references (<code>refs/heads/main</code>,

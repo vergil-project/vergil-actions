@@ -5190,8 +5190,8 @@ stay green.</p>
 <td><code>container-tag</code></td>
 <td>string</td>
 <td>no</td>
-<td><code>latest</code></td>
-<td>Container image tag (e.g. <code>3.14</code>, <code>1.26</code>)</td>
+<td>family-routed <code>primary-container-tag</code> from <code>[ci]</code></td>
+<td>Container image tag for the single-container version-bump job. <strong>Deprecated</strong> — omit it; when unset the tag is derived from <code>[ci].primary-version</code> (default: the highest <code>[ci].versions</code> entry), family-routed to the published container tag. Still accepted for back-compat, slated for removal in <a href="https://github.com/vergil-project/vergil-actions/issues/876">#876</a></td>
 </tr>
 </tbody>
 </table>
