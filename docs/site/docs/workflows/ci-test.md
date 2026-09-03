@@ -7,14 +7,22 @@ Unit and integration test workflow.
 | Input | Type | Required | Default | Description |
 | ------- | ------ | ---------- | --------- | ------------- |
 | `language` | string | yes | — | Primary language of the repository |
-| `versions` | string | yes | — | JSON array of language versions (e.g., `'["3.12", "3.13"]'`) |
+| `versions` | string | no | `[ci].versions` from `vergil.toml` | JSON array of language versions (e.g., `'["3.12", "3.13"]'`). **Deprecated** — omit it; the matrix is derived from `[ci].versions` in the consumer's `vergil.toml`. Still accepted for back-compat (a supplied value is honored verbatim), slated for removal in [#876](https://github.com/vergil-project/vergil-actions/issues/876) |
 | `container-suffix` | string | no | `<language>` | Container image name suffix (e.g. `python`, `base`) |
+
+## Version matrix
+
+The matrix is derived from `[ci].versions` in the consumer's `vergil.toml` at
+run time — the workflow's `matrix` job runs the shared setup action for its
+`versions` output whenever the caller omits the `versions:` input. Callers are
+thin: they pass only `language:` and `container-suffix:`.
 
 ## Jobs and check names
 
 | Job | Check name | Condition |
 | ----- | ------------ | ----------- |
-| `unit / <version>` | `CI Test / unit / <version>` | Always runs |
+| `unit / <version>` | `<caller> / unit / <version>` | Matrix-expanded per version — informational, not a required check |
+| `evidence` | `test / evidence` | Aggregate gate — `needs` every `unit` leg, runs `if: always()`, and asserts each leg succeeded; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
 
 ## Usage
 
@@ -24,7 +32,7 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
+      container-suffix: python
 ```
 
 ## System packages

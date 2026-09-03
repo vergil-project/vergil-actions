@@ -51,21 +51,26 @@ The required checks vary by repository category. See the
 
 ```text
 ci: standards-compliance
-ci: dependency-audit
+audit / evidence
+quality / evidence
+test / evidence
 release: gates
-test: unit (per matrix version)
-test: integration (per matrix version)
 security: codeql
 security: semgrep
 security: trivy
 ```
 
-!!! note "Matrix-expanded check names"
-    Both `test: unit` and `test: integration` appear once per matrix version.
-    For example, mq-rest-admin-go requires `test: unit (1.25)`,
-    `test: unit (1.26)`, `test: integration (1.25)`, and
-    `test: integration (1.26)`. Each matrix expansion is a separate required
-    check.
+!!! note "Version-agnostic evidence gates"
+    The matrixed workflows (`ci-audit`, `ci-quality`, `ci-test`) derive their
+    version matrix from `[ci].versions` in `vergil.toml`, so the per-version
+    legs (`unit / 3.14`, `lint / 3.13`, …) change with that set. Branch
+    protection therefore requires the stable `<kind> / evidence` **aggregate**
+    gates — `audit / evidence`, `quality / evidence`, `test / evidence` — not
+    the per-version legs. Each evidence job runs with `if: always()` and
+    asserts every leg succeeded, so a failed or skipped leg fails the aggregate
+    red. Adding or dropping a version in `[ci].versions` changes the legs but
+    not the required-check set. See
+    [Evidence gates are the required checks](required-checks.md#evidence-gates-are-the-required-checks).
 
 ### Infrastructure repositories
 
@@ -124,8 +129,10 @@ When adding a new CI job that should block merges:
 2. Open a PR and verify the check runs and passes.
 3. After the PR merges, add the exact check name to the CI gates ruleset via
    **Settings > Rules > Rulesets > CI gates**.
-4. Verify the check name matches exactly — matrix-expanded names like
-   `test: unit (3.14)` must be added individually.
+4. Verify the check name matches exactly. For the matrixed workflows, require
+   the stable `<kind> / evidence` aggregate (e.g. `test / evidence`), **not** the
+   per-version legs — the legs change with `[ci].versions`, the aggregate does
+   not.
 
 ## Branch targeting
 

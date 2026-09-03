@@ -31,6 +31,30 @@ rulesets.
 | CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump) |
 | CD Docs | `cd-docs.yml` | MkDocs documentation deployment |
 
+## Dynamic version matrix and evidence gates
+
+The matrixed CI workflows (`ci-audit`, `ci-quality`, `ci-test`) derive their
+version matrix from `[ci].versions` in the consumer's `vergil.toml` at run time,
+via the shared setup action's `versions` / `primary-version` outputs. A
+consumer's `ci.yml` is therefore a **thin caller** that passes only `language:`
+and `container-suffix:` — it no longer passes `versions:` or `container-tag:`.
+Those two inputs are still accepted for back-compat but are deprecated and
+slated for removal (see each workflow's inputs table and
+[#876](https://github.com/vergil-project/vergil-actions/issues/876)).
+
+Single-container workflows (`ci-security`, `ci-version-bump`, `ci-docs`) run on
+the primary version = `[ci].primary-version` if set, else the highest
+`[ci].versions` entry (family-routed to the published container tag for `cpp`).
+
+Each matrixed workflow emits a stable, version-agnostic aggregate gate named
+`<kind> / evidence` — `audit / evidence`, `quality / evidence`, and
+`test / evidence`. The evidence job `needs` every matrix leg and runs with
+`if: always()`, asserting each leg's result is `success`, so a failed or skipped
+leg makes the aggregate **fail red** rather than skip green. Branch protection
+requires these stable evidence gates, not the per-version legs, so the
+required-check set does not churn when `[ci].versions` changes. See
+[Required Checks](../ci-gates/required-checks.md).
+
 ## Consuming a reusable workflow
 
 Reference workflows using the full path to the workflow file with a rolling
@@ -98,7 +122,7 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
+      container-suffix: python
       container-prefix: dev
 ```
 
@@ -110,7 +134,7 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
+      container-suffix: python
       container-prefix: dev
 
   security:
@@ -123,7 +147,7 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
+      container-suffix: python
       container-prefix: dev
 ```
 
