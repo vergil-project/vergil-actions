@@ -6,15 +6,6 @@ on:
       language:
         type: string
         required: true
-      versions:
-        type: string
-        required: false
-        description: >-
-          JSON array of version tokens for the matrix (e.g.
-          '["3.12","3.13","3.14"]'). Optional: when omitted (empty), the matrix
-          is sourced from [ci].versions in vergil.toml via the setup action's
-          `versions` output. A supplied value is honored verbatim (back-compat,
-          epic vergil-project/.github#338).
       container-suffix:
         type: string
         required: false
@@ -24,15 +15,6 @@ on:
           whose language is "shell" or "none" should pass "base". Ignored for
           the per-version cpp jobs, whose suffix (cpp-clang / cpp-gcc) is
           derived from the version token.
-      container-tag:
-        type: string
-        required: false
-        description: >-
-          Container image tag for the single-container common job. Optional:
-          when omitted, the tag is the family-routed `primary-container-tag`
-          derived from [ci].versions in vergil.toml via the setup action (epic
-          vergil-project/.github#338, issue #893). A supplied value is honored
-          verbatim (back-compat).
       container-prefix:
         type: string
         required: false
@@ -56,14 +38,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      # Source the version set from vergil.toml only when the caller did not
-      # supply `inputs.versions`. Runs the shared setup action for its
-      # `versions` output (epic vergil-project/.github#338, Task 6). Skipped
-      # when `inputs.versions` is provided so the back-compat path pays no
-      # install cost and does not require a [ci] section.
+      # Source the version set from vergil.toml. Runs the shared setup action
+      # for its `versions` output (epic vergil-project/.github#338, Task 6):
+      # [ci].versions in vergil.toml is the sole source for the matrix.
       - name: Resolve versions from vergil.toml
         id: setup
-        if: inputs.versions == ''
         uses: ./actions/shared/setup/vergil
 
       - name: Resolve CI matrix
@@ -71,7 +50,7 @@ jobs:
         uses: ./actions/ci/matrix
         with:
           language: ${{ inputs.language }}
-          versions: ${{ inputs.versions != '' && inputs.versions || steps.setup.outputs.versions }}
+          versions: ${{ steps.setup.outputs.versions }}
           container-prefix: ${{ inputs.container-prefix }}
           container-suffix: ${{ inputs.container-suffix }}
 
@@ -90,9 +69,7 @@ jobs:
   # `:latest`), so the old `container-tag || 'latest'` fallback broke the moment
   # a caller stopped passing `container-tag`. The job's `container:` is evaluated
   # before any step runs, so the value must come from a preceding job — mirroring
-  # how the matrix job and ci-version-bump's setup job resolve their image. Runs
-  # unconditionally; when the caller supplies `container-tag` the output is
-  # simply unused.
+  # how the matrix job and ci-version-bump's setup job resolve their image.
   setup:
     name: setup
     runs-on: ubuntu-latest
@@ -112,7 +89,7 @@ jobs:
     name: common
     needs: setup
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ inputs.container-tag || needs.setup.outputs.primary-container-tag }}
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ needs.setup.outputs.primary-container-tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
