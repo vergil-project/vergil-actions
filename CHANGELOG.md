@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.36] - 2026-09-03
+
+### Documentation
+
+- reflect dynamic version-agnostic CI gates in reusable-workflow docs (#338) (#900)
+
+### Refactoring
+
+- drop deprecated versions/container-tag inputs; vergil.toml is sole source (#338) (#899)
+
 ## [2.1.35] - 2026-09-02
 
 ### Bug fixes
