@@ -83,6 +83,40 @@ Rules:
 - Boolean toggles use `type: boolean` (not `type: string`).
 - Version matrix input is always named `versions` (not `go-versions`,
   `ruby-versions`, etc.).
+- **`versions` and `container-tag` are optional and no longer the way to
+  set the matrix or the single-container tag.** The matrixed workflows
+  (`ci-audit`, `ci-quality`, `ci-test`) derive the version matrix from
+  `[ci].versions` in the consumer's `vergil.toml`, and the single-container
+  jobs resolve their image tag from `[ci].primary-version` (default: the
+  highest `[ci].versions` entry). Both inputs are still **accepted** for
+  back-compat — a supplied value is honored verbatim — but they are
+  deprecated and slated for removal once no consumer passes them (epic
+  [vergil-project/.github#338](https://github.com/vergil-project/.github/issues/338),
+  removal tracked in
+  [#876](https://github.com/vergil-project/vergil-actions/issues/876)). New
+  and updated `ci.yml` callers should omit them.
+
+## Dynamic version matrix and evidence gates
+
+The matrixed reusable workflows (`ci-audit`, `ci-quality`, `ci-test`) read
+`[ci].versions` from the consumer's `vergil.toml` at run time — via the shared
+setup action's `versions` / `primary-version` outputs — and derive the job
+matrix themselves. A consumer's `ci.yml` is therefore a **thin caller** that
+passes only `language:` and `container-suffix:`; it no longer passes
+`versions:` or `container-tag:`.
+
+Each matrixed workflow emits a stable, version-agnostic aggregate gate named
+`<kind> / evidence` — `audit / evidence`, `quality / evidence`, and
+`test / evidence`. The evidence job `needs` every matrix leg and runs with
+`if: always()`, asserting `needs.<leg>.result == 'success'`, so a failed or
+skipped leg makes the aggregate **fail red** rather than skip green. Branch
+protection requires these stable evidence gates, not the per-version legs —
+so the required-check set does not churn when `[ci].versions` changes.
+
+Single-container workflows (`ci-security`, `ci-version-bump`, `ci-docs`) run on
+the primary version = `[ci].primary-version` if set, else the highest
+`[ci].versions` entry (family-routed to the published container tag for
+`cpp`).
 
 ## Examples
 
@@ -108,7 +142,6 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: shell
-      versions: '["latest"]'
       container-suffix: base
 
   security:
@@ -126,6 +159,17 @@ jobs:
 ```
 
 ### ci.yml — Versioned language (full)
+
+The matrix and the single-container image tag both come from `[ci]` in the
+consumer's `vergil.toml`, so the caller passes only `language:` and
+`container-suffix:` — no `versions:` or `container-tag:`:
+
+```toml
+# vergil.toml
+[ci]
+versions = ["3.12", "3.13", "3.14"]
+# primary-version defaults to the highest entry (3.14) when unset
+```
 
 ```yaml
 # https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
@@ -155,14 +199,12 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-audit.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
+      container-suffix: python
 
   quality:
     uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
-      container-tag: '3.14'
       container-suffix: python
 
   security:
@@ -173,32 +215,32 @@ jobs:
     with:
       language: python
       run-security: ${{ inputs.run-security != false }}
-      container-tag: '3.14'
       container-suffix: python
 
   test:
     uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
+      container-suffix: python
 
   version:
     uses: vergil-project/vergil-actions/.github/workflows/ci-version-bump.yml@v2.1
     with:
       language: python
       run-release: ${{ inputs.run-release != false }}
-      container-tag: '3.14'
       container-suffix: python
 ```
 
 ### ci.yml — C++ (compiler-family matrix)
 
-C++ carries its compiler family × version axis on the single `versions` input
-as `clang-`/`gcc-` prefixed tokens. The reusable workflows split each token and
-route it to the matching image — `clang-20` → `prod-cpp-clang:20`,
-`gcc-14` → `prod-cpp-gcc:14` — via the `actions/ci/matrix` resolver. The
-top-level `container-suffix`/`container-tag` are the primary (first) token's
-resolution, used by the non-matrix `common` job.
+C++ carries its compiler family × version axis on `[ci].versions` in
+`vergil.toml` as `clang-`/`gcc-` prefixed tokens. The reusable workflows read
+that set, split each token, and route it to the matching image —
+`clang-20` → `prod-cpp-clang:20`, `gcc-14` → `prod-cpp-gcc:14` — via the
+`actions/ci/matrix` resolver. The caller still passes `container-suffix:`
+(`cpp-clang`) for the non-matrix `common` job; it no longer passes `versions:`
+or `container-tag:`, which the workflows derive from `[ci]` (the single-container
+tag is the family-routed `primary-container-tag` from `[ci].primary-version`).
 
 Per-kind cardinality follows the gate model: `typecheck` and `unit` run
 per compiler×version (one job/gate each), while `lint` and `dependencies` run
@@ -207,6 +249,15 @@ once on the primary (Clang) image. The emitted gate names line up with
 `quality / lint / clang-20` (once), `quality / typecheck / clang-20`,
 `quality / typecheck / gcc-14`, `test / unit / gcc-13`,
 `audit / dependencies / clang-20` (once).
+
+The compiler-family × version tokens live in `vergil.toml`:
+
+```toml
+# vergil.toml
+[ci]
+versions = ["clang-20", "clang-19", "gcc-14", "gcc-13"]
+# primary-version defaults to the highest entry (clang-20) when unset
+```
 
 ```yaml
 # https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
@@ -228,8 +279,6 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-audit.yml@v2.1
     with:
       language: cpp
-      versions: '["clang-20", "clang-19", "gcc-14", "gcc-13"]'
-      container-tag: '20'
       container-suffix: cpp-clang
     # Explicit-secret chain (never `secrets: inherit`): forward the ConanCenter
     # provider token so `conan audit` can authenticate. Optional — omit it and
@@ -241,8 +290,6 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: cpp
-      versions: '["clang-20", "clang-19", "gcc-14", "gcc-13"]'
-      container-tag: '20'
       container-suffix: cpp-clang
 
   security:
@@ -252,22 +299,18 @@ jobs:
       security-events: write
     with:
       language: cpp
-      container-tag: '20'
       container-suffix: cpp-clang
 
   test:
     uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
     with:
       language: cpp
-      versions: '["clang-20", "clang-19", "gcc-14", "gcc-13"]'
-      container-tag: '20'
       container-suffix: cpp-clang
 
   version:
     uses: vergil-project/vergil-actions/.github/workflows/ci-version-bump.yml@v2.1
     with:
       language: cpp
-      container-tag: '20'
       container-suffix: cpp-clang
 ```
 

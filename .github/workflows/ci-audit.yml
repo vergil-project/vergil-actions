@@ -6,15 +6,6 @@ on:
       language:
         type: string
         required: true
-      versions:
-        type: string
-        required: false
-        description: >-
-          JSON array of version tokens for the matrix (e.g.
-          '["3.12","3.13","3.14"]'). Optional: when omitted (empty), the matrix
-          is sourced from [ci].versions in vergil.toml via the setup action's
-          `versions` output. A supplied value is honored verbatim (back-compat,
-          epic vergil-project/.github#338).
       container-suffix:
         type: string
         required: false
@@ -22,13 +13,6 @@ on:
           Container image name suffix (e.g. python, go, base). Callers should
           pass their language-specific suffix. Ignored for cpp, whose suffix
           (cpp-clang / cpp-gcc) is derived per-version from the version token.
-      container-tag:
-        type: string
-        required: false
-        description: >-
-          Container image tag. Accepted for interface consistency with
-          other CI workflows; matrix jobs resolve their image (and tag) from
-          the versions input via the ci/matrix action.
       container-prefix:
         type: string
         required: false
@@ -61,14 +45,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      # Source the version set from vergil.toml only when the caller did not
-      # supply `inputs.versions`. Runs the shared setup action for its
-      # `versions` output (epic vergil-project/.github#338, Task 6). Skipped
-      # when `inputs.versions` is provided so the back-compat path pays no
-      # install cost and does not require a [ci] section.
+      # Source the version set from vergil.toml. Runs the shared setup action
+      # for its `versions` output (epic vergil-project/.github#338, Task 6):
+      # [ci].versions in vergil.toml is the sole source for the matrix.
       - name: Resolve versions from vergil.toml
         id: setup
-        if: inputs.versions == ''
         uses: ./actions/shared/setup/vergil
 
       - name: Resolve CI matrix
@@ -76,7 +57,7 @@ jobs:
         uses: ./actions/ci/matrix
         with:
           language: ${{ inputs.language }}
-          versions: ${{ inputs.versions != '' && inputs.versions || steps.setup.outputs.versions }}
+          versions: ${{ steps.setup.outputs.versions }}
           container-prefix: ${{ inputs.container-prefix }}
           container-suffix: ${{ inputs.container-suffix }}
 
