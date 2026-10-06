@@ -113,6 +113,11 @@ explicit `secrets:` block (or none at all) matching the language:
 | `ruby` | `RUBYGEMS_API_KEY` |
 | `java` | `CENTRAL_USERNAME`, `CENTRAL_TOKEN`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` |
 
+A repo that publishes binary packages (a `[package]` section in
+`vergil.toml`) also forwards `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, and it
+needs a main-only `package-signing` environment. See
+[CD Release: binary packages](workflows/index.md#cd-release-binary-packages).
+
 For example, a Rust release job forwards a single least-privilege secret:
 
 ```yaml

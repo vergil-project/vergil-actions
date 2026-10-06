@@ -68,14 +68,235 @@ on:
         required: false
       GPG_PASSPHRASE:
         required: false
+      # The org GitHub App, used only to dispatch `package-released` to
+      # <owner>/packages after a packaged release (spec §8.2). Repos without
+      # [package] need not pass them.
+      APP_CLIENT_ID:
+        required: false
+      APP_PRIVATE_KEY:
+        required: false
+      # Declared only so the secrets context types correctly: package-sign
+      # reads these from its `package-signing` environment, whose secrets take
+      # precedence over anything a caller passes. Callers do not pass them.
+      PACKAGE_SIGNING_KEY:
+        description: Do not pass; read from the package-signing environment.
+        required: false
+      PACKAGE_SIGNING_PASSPHRASE:
+        description: Do not pass; read from the package-signing environment.
+        required: false
 
 concurrency:
   group: cd
   cancel-in-progress: false
 
+# Binary OS packages (epic vergil-project/.github#356, spec §8.2). Repos whose
+# vergil.toml has [package] build their .deb/.rpm packages here, sign the rpms
+# in the main-only `package-signing` environment, and attach them (plus
+# packages-manifest.json) to the Release. `package-matrix` always runs; for a
+# repo without [package] it reports enabled=false, the other package jobs are
+# skipped, and `release` runs exactly as before. Any package failure stops
+# `release` before anything is published or tagged.
 jobs:
+  package-matrix:
+    name: package-matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.resolve.outputs.enabled }}
+      build: ${{ steps.resolve.outputs.build }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Resolve package matrix
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          vrg-package matrix --github-output --manifest packages-manifest.json
+
+      - name: Upload package manifest
+        if: steps.resolve.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-manifest
+          path: packages-manifest.json
+          if-no-files-found: error
+
+  # Same build cells and toolchain as ci-package.yml's `build` job: the cell's
+  # runner and build OS image, unsigned artifacts, one artifact per cell.
+  package-build:
+    name: package-build / ${{ matrix.id }}
+    needs: package-matrix
+    if: needs.package-matrix.outputs.enabled == 'true'
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
+    permissions:
+      contents: read
+    strategy:
+      # A release needs every cell; stop the rest as soon as one fails.
+      fail-fast: true
+      matrix:
+        include: ${{ fromJSON(needs.package-matrix.outputs.build) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up package toolchain
+        uses: ./actions/package/setup
+        with:
+          nfpm: "true"
+
+      - name: Build packages
+        shell: bash
+        env:
+          CELL: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          vrg-package build --cell "$CELL" --version "$(vrg-version show)" --out dist/packages
+
+      - name: Upload unsigned packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-unsigned-${{ matrix.id }}
+          path: dist/packages/
+          if-no-files-found: error
+
+  # A separate job so that only packaged repos ever reference (and so never
+  # auto-create) the `package-signing` environment, whose deployment-branch
+  # policy admits only `main` (spec §7.4). Skipped whenever any build cell
+  # fails, which in turn keeps `release` from running.
+  package-sign:
+    name: package-sign
+    needs: [package-matrix, package-build]
+    if: needs.package-matrix.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    environment: package-signing
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Download unsigned packages
+        uses: actions/download-artifact@v7
+        with:
+          pattern: package-unsigned-*
+          path: dist/packages
+          merge-multiple: true
+
+      - name: Install rpm signing tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rpm gnupg
+
+      - name: Sign and verify rpms
+        env:
+          PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
+          PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PACKAGE_SIGNING_KEY" ]; then
+            echo "::error::the package-signing environment has no PACKAGE_SIGNING_KEY secret (it must exist, admit only main, and hold PACKAGE_SIGNING_KEY and PACKAGE_SIGNING_PASSPHRASE)"
+            exit 1
+          fi
+          shopt -s nullglob
+          packages=(dist/packages/*.deb dist/packages/*.rpm)
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo "::error::no .deb or .rpm packages were downloaded from the build cells"
+            exit 1
+          fi
+
+          export GNUPGHOME="${RUNNER_TEMP}/package-gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          printf '%s\n' "$PACKAGE_SIGNING_KEY" | gpg --batch --import
+
+          # Sign with the signing subkey: the usable ([S]-capable, not
+          # expired/revoked/disabled, secret present) ssb. Its fingerprint with
+          # a trailing `!` forces gpg to use exactly that subkey.
+          mapfile -t signing < <(
+            gpg --batch --list-secret-keys --with-colons | awk -F: '
+              $1 == "sec" || $1 == "ssb" {
+                want = ($1 == "ssb" && $12 ~ /s/ && $2 !~ /[eridn]/ && $15 != "#")
+                next
+              }
+              $1 == "fpr" && want { print $10; want = 0 }'
+          )
+          if [ "${#signing[@]}" -ne 1 ]; then
+            echo "::error::PACKAGE_SIGNING_KEY must hold exactly one usable signing subkey; found ${#signing[@]}"
+            exit 1
+          fi
+          subkey="${signing[0]}"
+          echo "Signing with subkey ${subkey}"
+
+          passfile="${RUNNER_TEMP}/package-signing-passphrase"
+          trap 'rm -f "$passfile"' EXIT
+          (umask 077 && printf '%s' "$PACKAGE_SIGNING_PASSPHRASE" > "$passfile")
+
+          rpms=(dist/packages/*.rpm)
+          for f in "${rpms[@]}"; do
+            rpmsign --addsign \
+              --define "_gpg_name ${subkey}!" \
+              --define "_gpg_sign_cmd_extra_args --batch --pinentry-mode loopback --passphrase-file ${passfile}" \
+              "$f"
+          done
+          rm -f "$passfile"
+
+          # Verify against a private rpm database (no root, no system keyring).
+          if [ "${#rpms[@]}" -gt 0 ]; then
+            rpmdb="${RUNNER_TEMP}/package-rpmdb"
+            mkdir -p "$rpmdb"
+            gpg --batch --armor --export > "${RUNNER_TEMP}/package-signing.asc"
+            rpmkeys --dbpath "$rpmdb" --import "${RUNNER_TEMP}/package-signing.asc"
+            for f in "${rpms[@]}"; do
+              out="$(rpmkeys --dbpath "$rpmdb" --checksig "$f")"
+              echo "$out"
+              case "$out" in
+                *"NOT OK"*|*"not OK"*)
+                  echo "::error::rpm signature check failed for $f"
+                  exit 1
+                  ;;
+                *"signatures OK"*) ;;
+                *)
+                  echo "::error::rpm signature check did not report 'signatures OK' for $f"
+                  exit 1
+                  ;;
+              esac
+            done
+          fi
+          echo "Signed ${#rpms[@]} rpm(s); ${#packages[@]} package(s) ready to attest."
+
+      - name: Attest package provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/packages/*
+
+      - name: Upload signed packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-signed
+          path: dist/packages/
+          if-no-files-found: error
+
   release:
     name: release
+    needs: [package-matrix, package-sign]
+    # `!cancelled()` lets `release` run while the package jobs are skipped
+    # (no [package]). When packaging is enabled it runs only if `package-sign`
+    # succeeded: a failed build cell leaves `package-sign` skipped, and skipped
+    # is not success, so nothing is tagged or published.
+    if: >-
+      ${{ !cancelled() &&
+          needs.package-matrix.result == 'success' &&
+          (needs.package-matrix.outputs.enabled != 'true' ||
+           needs.package-sign.result == 'success') }}
     runs-on: ubuntu-latest
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || inputs.language || 'base' }}:${{ inputs.container-tag }}
     defaults:
@@ -160,6 +381,51 @@ jobs:
           version: ${{ steps.version.outputs.version }}
           enforce: ${{ inputs.evidence-enforce }}
 
+      # Packaged repos only: the signed packages and packages-manifest.json
+      # become Release assets. They are downloaded into the workspace and then
+      # moved under $RUNNER_TEMP, so a later registry build (e.g. an sdist that
+      # sweeps untracked files) never picks them up.
+      - name: Download signed packages
+        if: >-
+          needs.package-matrix.outputs.enabled == 'true' &&
+          steps.tag_check.outputs.exists == 'false'
+        uses: actions/download-artifact@v7
+        with:
+          name: package-signed
+          path: .vergil-release-packages
+
+      - name: Download package manifest
+        if: >-
+          needs.package-matrix.outputs.enabled == 'true' &&
+          steps.tag_check.outputs.exists == 'false'
+        uses: actions/download-artifact@v7
+        with:
+          name: package-manifest
+          path: .vergil-release-packages
+
+      - name: Stage package release assets
+        if: >-
+          needs.package-matrix.outputs.enabled == 'true' &&
+          steps.tag_check.outputs.exists == 'false'
+        id: packages
+        run: |
+          set -euo pipefail
+          dir="${RUNNER_TEMP}/vergil-release-packages"
+          rm -rf "$dir"
+          mv .vergil-release-packages "$dir"
+          if [ ! -f "$dir/packages-manifest.json" ]; then
+            echo "::error::packages-manifest.json is missing from the package release assets"
+            exit 1
+          fi
+          shopt -s nullglob
+          packages=("$dir"/*.deb "$dir"/*.rpm)
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo "::error::no signed .deb or .rpm packages to attach"
+            exit 1
+          fi
+          ls -l "$dir"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+
       - name: Resolve release artifacts
         if: >-
           steps.tag_check.outputs.exists == 'false'
@@ -167,9 +433,13 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
           RELEASE_ARTIFACTS: ${{ inputs.release-artifacts }}
+          PACKAGE_DIR: ${{ steps.packages.outputs.dir }}
         run: |
-          echo "release-artifacts=${RELEASE_ARTIFACTS//\$VERSION/$VERSION}" \
-            >> "$GITHUB_OUTPUT"
+          artifacts="${RELEASE_ARTIFACTS//\$VERSION/$VERSION}"
+          if [ -n "$PACKAGE_DIR" ]; then
+            artifacts="${artifacts:+$artifacts }${PACKAGE_DIR}/*"
+          fi
+          echo "release-artifacts=${artifacts}" >> "$GITHUB_OUTPUT"
 
       - name: Build and publish
         if: >-
@@ -229,3 +499,35 @@ jobs:
           git push --no-thin origin "$TAG" --force
           git clone --depth 1 --branch "$TAG" "$repo_url" "$tmp"
           rm -rf "$tmp"
+
+      # Packaged repos only, and only for a newly created release: ask
+      # <owner>/packages to re-index (spec §8.2). Both steps are deferred
+      # (continue-on-error): the release stands, the index's weekly reconcile
+      # self-heals a missed dispatch, and vrg-release's package-index stage
+      # reports the miss.
+      - name: Mint package-index dispatch token
+        id: dispatch_token
+        if: >-
+          needs.package-matrix.outputs.enabled == 'true' &&
+          steps.tag_check.outputs.exists == 'false'
+        continue-on-error: true
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: packages
+
+      - name: Dispatch package index
+        if: steps.dispatch_token.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.dispatch_token.outputs.token }}
+          OWNER: ${{ github.repository_owner }}
+          PRODUCT: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/${OWNER}/packages/dispatches" \
+            -f event_type=package-released \
+            -f "client_payload[product]=${PRODUCT}"
+          echo "Dispatched package-released (${PRODUCT}) to ${OWNER}/packages"
