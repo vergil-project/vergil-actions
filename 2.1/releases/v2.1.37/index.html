@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.17/">
+        <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.37/">
       
       
-        <link rel="prev" href="../v2.1.18/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../v2.1.16/">
+        <link rel="next" href="../v2.1.36/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>2.1.17 - Vergil Actions</title>
+        <title>2.1.37 - Vergil Actions</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-2117-2026-07-13" class="md-skip">
+        <a href="#release-2137-2026-10-06" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              2.1.17
+              2.1.37
             
           </span>
         </div>
@@ -847,10 +847,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../v2.1.37/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.37
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -866,6 +893,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1407,37 +1465,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    2.1.17
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../v2.1.17/" class="md-nav__link">
         
   
   
@@ -1453,37 +1484,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#refactoring" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Refactoring
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -5141,10 +5141,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#refactoring" class="md-nav__link">
+  <a href="#features" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Refactoring
+        Features
       
     </span>
   </a>
@@ -5168,14 +5168,22 @@
 
 
 
-<h1 id="release-2117-2026-07-13">Release 2.1.17 (2026-07-13)<a class="headerlink" href="#release-2117-2026-07-13" title="Permanent link">&para;</a></h1>
-<h2 id="refactoring">Refactoring<a class="headerlink" href="#refactoring" title="Permanent link">&para;</a></h2>
+<h1 id="release-2137-2026-10-06">Release 2.1.37 (2026-10-06)<a class="headerlink" href="#release-2137-2026-10-06" title="Permanent link">&para;</a></h1>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>share one harvest across evidence gate and attach (#782)</strong>
-Rewire the cd-release CI-evidence gate and attach composites to share a single artifact harvest instead of each running the atomic <code>bundle</code> (which re-downloaded the release PR's artifacts).</li>
+<li>
+<p><strong>ci-package reusable workflow and package toolchain setup (#904) (#907)</strong>
+Add actions/package/setup (OS prerequisites via apt-get or dnf, sha256-pinned uv 0.12.23 installer, vergil-tooling from the checkout or [dependencies].vergil, sha256-pinned nFPM 2.47.0) with a detect.sh harness wired into the smoke workflow, and .github/workflows/ci-package.yml (matrix, build and install-test per cell, package evidence gate). Document the package gate in the emit action. Epic vergil-project/.github#356, plan task A1.</p>
+</li>
+<li>
+<p><strong>publish-index reusable workflow (#906) (#908)</strong>
+Add the publish-index reusable workflow: build-index (index-signing environment, vrg-package index) then deploy to GitHub Pages, serialized by the publish-index concurrency group. Document it in the reusable workflows overview.</p>
+</li>
+<li>
+<p><strong>cd-release: package build, main-only signing job, attach, dispatch (#905) (#909)</strong>
+Packaged repos build their .deb/.rpm cells, sign the rpms in the main-only package-signing environment, attest and attach them with packages-manifest.json, and dispatch package-released to <owner>/packages. Repos without [package] keep today's release behavior.</p>
+</li>
 </ul>
-<p>The gate now calls <code>vrg-ci-evidence harvest</code> (network download + validate_completeness gate), persisting the downloaded evidence and harvest-state.json into a shared staging dir on the job workspace (${{ github.workspace }}/.ci-evidence-staging). The attach now calls <code>vrg-ci-evidence assemble --staging &lt;same-dir&gt;</code>, which is fully network-free and produces the tarball + standalone manifest offline. Both composites run in the same cd-release job, so the workspace filesystem persists between them and the release's artifacts are downloaded exactly once.</p>
-<p>Warning-mode wrappers and the enforce flag are preserved exactly in both steps; the attest and gh release upload steps are unchanged. Part 2 of the double-harvest fix (Part 1 is the vergil-tooling CLI split, #2330).</p>
 
 
 
