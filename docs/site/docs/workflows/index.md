@@ -55,13 +55,18 @@ A packaged repo needs:
 
 - **A `package-signing` environment.** Its deployment-branch policy must admit
   only `main`. It holds the `PACKAGE_SIGNING_KEY` secret (the ASCII-armored
-  export of the signing subkey) and `PACKAGE_SIGNING_PASSPHRASE`. These are
-  environment secrets, so the caller does not pass them. If the key is
-  missing, `package-sign` fails. Never declare them under the reusable
-  workflow's `on.workflow_call.secrets`: a declared-but-unpassed secret
-  shadows the environment secret with an empty value (vergil-actions#913).
-- **The org GitHub App secrets.** Forward `APP_CLIENT_ID` and
-  `APP_PRIVATE_KEY` for the index dispatch. The App must be installed on
+  export of the signing subkey) and `PACKAGE_SIGNING_PASSPHRASE`. If the key
+  is missing or empty, `package-sign` fails.
+- **`secrets: inherit` on the caller (required).** Environment secrets reach
+  a job in a cross-repo reusable workflow **only** when the caller passes
+  `secrets: inherit`. An explicit `secrets:` map, or passing nothing, delivers
+  an empty value; declaring the secret in the callee makes no difference
+  (verified by a controlled probe, vergil-project/packages#6). Semgrep's
+  `secrets-inherit` rule flags this, so suppress it on that line with a
+  justification (`# nosemgrep: …`; honored by the SARIF gate since
+  vergil-project/vergil-tooling#3107). `inherit` also forwards the org App
+  secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which the index dispatch
+  needs. The App must be installed on
   `<owner>/packages` with permission to create repository dispatches
   (`contents: write`).
 - **The same permissions the release job already needs.** The package jobs
@@ -79,9 +84,8 @@ jobs:
       actions: read
     with:
       language: python
-    secrets:
-      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+    # Required: environment secrets only reach the reusable workflow with inherit.
+    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 ```
 
 ### Publish package index
@@ -96,9 +100,10 @@ concurrency group. Unlike the other reusable workflows, it runs directly on
 
 The signing key comes from the caller repository's `index-signing`
 environment, which must admit only `develop` and hold `PACKAGE_SIGNING_KEY`
-and `PACKAGE_SIGNING_PASSPHRASE`. These are environment secrets, so the
-caller does not pass them. The caller must grant the scopes the two jobs
-request:
+and `PACKAGE_SIGNING_PASSPHRASE`. As with `cd-release`, those environment
+secrets reach the reusable workflow only when the caller passes
+`secrets: inherit` (see above). The caller must also grant the scopes the two
+jobs request:
 
 ```yaml
 jobs:
@@ -109,6 +114,8 @@ jobs:
       attestations: read
       pages: write
       id-token: write
+    # Required: environment secrets only reach the reusable workflow with inherit.
+    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 ```
 
 ## Dynamic version matrix and evidence gates
