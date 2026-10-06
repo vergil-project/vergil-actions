@@ -7,7 +7,9 @@ name: Smoke - setup/vergil outputs
 #   * fixtures — runs the framework-free derive.sh harness, asserting the
 #     derivation across multi-version, unsorted, single-version, explicit
 #     primary-version override, numeric-run, and family-routed
-#     primary-container-tag fixtures. Fast, no install.
+#     primary-container-tag fixtures. Fast, no install. It also runs the
+#     package setup action's detect.sh harness (self-repo vs.
+#     [dependencies].vergil install spec; epic vergil-project/.github#356).
 #   * action-e2e — calls the action itself against a multi-version fixture
 #     vergil.toml and asserts the three outputs are wired through action.yml.
 
@@ -16,6 +18,7 @@ on:
   pull_request:
     paths:
       - actions/shared/setup/vergil/**
+      - actions/package/setup/**
       - .github/workflows/smoke-setup-vergil.yml
 
 permissions:
@@ -31,6 +34,9 @@ jobs:
       - name: Run derive.sh harness
         shell: bash
         run: bash actions/shared/setup/vergil/tests/derive.test.sh
+      - name: Run package setup detect.sh harness
+        shell: bash
+        run: bash actions/package/setup/tests/detect.test.sh
 
   action-e2e:
     name: action outputs (multi-version fixture)

@@ -1,0 +1,94 @@
+name: Package toolchain setup
+description: >-
+  Install OS prerequisites, a pinned uv, vergil-tooling and (for build cells) a
+  checksum-pinned nFPM inside an arbitrary package build or install-test
+  container — raw ubuntu or UBI images that ship neither Python nor
+  vergil-tooling (epic vergil-project/.github#356, spec §8.1). The container
+  must run as root (the GitHub Actions container default). vergil-tooling is
+  installed from the checkout in vergil-tooling itself, otherwise from
+  [dependencies].vergil in vergil.toml. Run it after actions/checkout.
+
+inputs:
+  nfpm:
+    description: >-
+      Install nFPM ("true" in build cells; install-test cells leave it off).
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install OS prerequisites
+      shell: bash
+      run: |
+        set -euo pipefail
+        if command -v apt-get >/dev/null 2>&1; then
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl git tar gzip
+        elif command -v dnf >/dev/null 2>&1; then
+          # UBI ships curl-minimal, which conflicts with the full curl package.
+          dnf install -y --setopt=install_weak_deps=False \
+            ca-certificates curl-minimal git tar gzip
+        else
+          echo "::error::package setup needs apt-get or dnf; found neither in this image"
+          exit 1
+        fi
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    # The installer is pinned by sha256 and embeds the sha256 of every uv
+    # archive it downloads, so the uv binary is pinned transitively. Bump both
+    # values together from the release's uv-installer.sh.
+    - name: Install uv
+      shell: bash
+      env:
+        UV_VERSION: "0.12.23"
+        UV_INSTALLER_SHA256: b8e6c43099ee9f9a550984d3ad56948457c689e7a99c090b35377234ac241491
+      run: |
+        set -euo pipefail
+        installer="${RUNNER_TEMP}/uv-installer.sh"
+        curl -fsSLo "$installer" \
+          "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-installer.sh"
+        echo "${UV_INSTALLER_SHA256}  ${installer}" | sha256sum -c -
+        env UV_INSTALL_DIR=/usr/local/bin UV_NO_MODIFY_PATH=1 sh "$installer"
+        uv --version
+
+    # vergil-tooling lands in uv's tool bin dir (under $HOME), never
+    # /usr/local/bin: install-test runs smoke checks with a system-only PATH
+    # that must not resolve this copy of vergil-tooling (spec §8.1).
+    - name: Install vergil-tooling
+      shell: bash
+      run: |
+        set -euo pipefail
+        spec="$(bash "${GITHUB_ACTION_PATH}/detect.sh" .)"
+        echo "Installing vergil-tooling: ${spec}"
+        uv tool install --python 3.14 "$spec"
+        bin_dir="$(uv tool dir --bin)"
+        echo "$bin_dir" >> "$GITHUB_PATH"
+        "${bin_dir}/vrg-package" --help >/dev/null
+
+    # Bump NFPM_VERSION and both sums together, from the release's
+    # checksums.txt (https://github.com/goreleaser/nfpm/releases).
+    - name: Install nFPM
+      if: inputs.nfpm == 'true'
+      shell: bash
+      env:
+        NFPM_VERSION: "2.47.0"
+        NFPM_SHA256_X86_64: 0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783
+        NFPM_SHA256_ARM64: 1c0f5f2999b9a974bfb04fdb0cc3306096de530ac5dbb25d739cc5f5219c919c
+      run: |
+        set -euo pipefail
+        case "$(uname -m)" in
+          x86_64) arch=x86_64; sum="$NFPM_SHA256_X86_64" ;;
+          aarch64) arch=arm64; sum="$NFPM_SHA256_ARM64" ;;
+          *)
+            echo "::error::nFPM: unsupported architecture $(uname -m)"
+            exit 1
+            ;;
+        esac
+        tarball="${RUNNER_TEMP}/nfpm_${NFPM_VERSION}_Linux_${arch}.tar.gz"
+        curl -fsSLo "$tarball" \
+          "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/$(basename "$tarball")"
+        echo "${sum}  ${tarball}" | sha256sum -c -
+        tar -xzf "$tarball" -C /usr/local/bin nfpm
+        nfpm --version
