@@ -1,0 +1,164 @@
+name: CI Package
+
+# Build and install-test a repo's binary OS packages (.deb/.rpm) from its
+# [package] section (epic vergil-project/.github#356, spec §8.1). Called only by
+# repos whose vergil.toml has [package]; calling it without one fails the run.
+# The gate job `evidence` surfaces as `package / evidence` under a caller job
+# keyed `package`.
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build / ${{ matrix.id }}
+    needs: matrix
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.build) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up package toolchain
+        uses: ./actions/package/setup
+        with:
+          nfpm: "true"
+
+      - name: Build packages
+        shell: bash
+        env:
+          CELL: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          vrg-package build --cell "$CELL" --version "$(vrg-version show)" --out dist/packages
+
+      # One artifact per build cell holding every format it built, so both the
+      # .deb and the .rpm reach install-test. A cell that built nothing is an
+      # error, never an empty upload.
+      - name: Upload built packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-build-${{ matrix.id }}
+          path: dist/packages/
+          if-no-files-found: error
+
+  evidence:
+    name: evidence
+    needs: [matrix, build, install-test]
+    # Run even when a required leg fails or is skipped, so the assert step
+    # below turns it into a red gate instead of a green-by-absence skip.
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert all required legs succeeded
+        shell: bash
+        env:
+          RESULTS: |
+            matrix=${{ needs.matrix.result }}
+            build=${{ needs.build.result }}
+            install-test=${{ needs.install-test.result }}
+        run: |
+          set -euo pipefail
+          failed=0
+          while IFS='=' read -r job result; do
+            [ -n "$job" ] || continue
+            if [ "$result" != "success" ]; then
+              echo "::error::required job '$job' did not succeed (result: '$result')"
+              failed=1
+            fi
+          done <<< "$RESULTS"
+          if [ "$failed" -ne 0 ]; then
+            echo "evidence gate FAILED: one or more required legs did not succeed"
+            exit 1
+          fi
+          echo "all required legs succeeded"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download per-cell install-test reports
+        uses: actions/download-artifact@v7
+        with:
+          pattern: ci-evidence-package-reports-*
+          path: evidence-reports
+          merge-multiple: true
+
+      - name: Emit ci-evidence-package artifact
+        uses: ./actions/ci/evidence/emit
+        with:
+          gate: package
+          files: evidence-reports/*.json
+          tools: '[{"name": "nfpm"}, {"name": "vrg-package"}]'
+
+  install-test:
+    name: install-test / ${{ matrix.id }}
+    needs: [matrix, build]
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.test) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up package toolchain
+        uses: ./actions/package/setup
+
+      - name: Download built packages
+        uses: actions/download-artifact@v7
+        with:
+          pattern: package-build-*
+          path: dist/packages
+          merge-multiple: true
+
+      - name: Install-test packages
+        shell: bash
+        env:
+          CELL: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci-reports
+          vrg-package install-test --cell "$CELL" --artifacts dist/packages \
+            --report "ci-reports/${CELL}.json"
+
+      - name: Upload install-test report evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-package-reports-${{ matrix.id }}
+          path: ci-reports/
+          if-no-files-found: warn
+
+  matrix:
+    name: matrix
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.resolve.outputs.build }}
+      test: ${{ steps.resolve.outputs.test }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Resolve package matrix
+        id: resolve
+        shell: bash
+        run: vrg-package matrix --github-output
+
+      - name: Require a [package] section
+        if: steps.resolve.outputs.enabled != 'true'
+        shell: bash
+        run: |
+          echo "::error::ci-package.yml was called but vergil.toml has no [package] section; only repos with [package] may call it"
+          exit 1
