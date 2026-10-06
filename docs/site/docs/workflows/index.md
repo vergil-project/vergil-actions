@@ -30,6 +30,34 @@ rulesets.
 | ---------- | ------ | --------- |
 | CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump) |
 | CD Docs | `cd-docs.yml` | MkDocs documentation deployment |
+| Publish package index | `publish-index.yml` | Signed apt/dnf package-repository site, deployed to Pages |
+
+### Publish package index
+
+`publish-index.yml` is called from an `<org>/packages` repository. Its
+`build-index` job runs `vrg-package index --config packages.toml --keys keys
+--out _site`, which verifies, retains, indexes and signs the product releases.
+Its `deploy` job then publishes the site with the Actions-based Pages deploy.
+The workflow takes no inputs. Runs are serialized by the `publish-index`
+concurrency group. Unlike the other reusable workflows, it runs directly on
+`ubuntu-latest` rather than in a vergil container image.
+
+The signing key comes from the caller repository's `index-signing`
+environment, which must admit only `develop` and hold `PACKAGE_SIGNING_KEY`
+and `PACKAGE_SIGNING_PASSPHRASE`. These are environment secrets, so the
+caller does not pass them. The caller must grant the scopes the two jobs
+request:
+
+```yaml
+jobs:
+  publish-index:
+    uses: vergil-project/vergil-actions/.github/workflows/publish-index.yml@v2.1
+    permissions:
+      contents: read
+      attestations: read
+      pages: write
+      id-token: write
+```
 
 ## Dynamic version matrix and evidence gates
 
