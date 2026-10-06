@@ -1,0 +1,83 @@
+name: Publish package index
+
+# Reusable workflow for an `<org>/packages` repository (epic
+# vergil-project/.github#356, spec §7.2). It rebuilds the signed apt/dnf
+# package-repository site from the product releases listed in the caller's
+# `packages.toml` and deploys it to GitHub Pages.
+#
+#   * build-index — `vrg-package index` collects each product's releases,
+#     verifies every asset's build attestation (and every .rpm's org
+#     signature), applies retention, writes the apt and dnf metadata, signs it,
+#     and enforces the size guard. All logic lives in vergil-tooling.
+#   * deploy — publishes the site through the Actions-based Pages deploy.
+#
+# The signing subkey lives in the caller's `index-signing` environment, which
+# admits only `develop`: `repository_dispatch` and `schedule` always run on the
+# default branch, so this is not `package-signing` (main-only) — spec §7.4.
+#
+# Callers must grant: contents: read, attestations: read, pages: write,
+# id-token: write.
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+# Serialize index rebuilds; never cancel one mid-deploy.
+concurrency:
+  group: publish-index
+  cancel-in-progress: false
+
+jobs:
+  build-index:
+    name: build-index
+    runs-on: ubuntu-latest
+    # develop-only: dispatch/schedule run on the default branch (spec §7.4).
+    environment: index-signing
+    permissions:
+      contents: read
+      attestations: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Install index tools
+        shell: bash
+        # dpkg-deb (dpkg-dev), rpm/rpmkeys (rpm), createrepo_c (createrepo-c),
+        # gpg (gnupg). `gh` ships on the runner image.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y createrepo-c rpm dpkg-dev gnupg
+
+      - name: Build, verify and sign the index
+        shell: bash
+        env:
+          # Release download and `gh attestation verify`.
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
+          PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
+        run: vrg-package index --config packages.toml --keys keys --out _site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    name: deploy
+    needs: build-index
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
