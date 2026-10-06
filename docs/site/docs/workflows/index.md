@@ -30,6 +30,84 @@ rulesets.
 | ---------- | ------ | --------- |
 | CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump) |
 | CD Docs | `cd-docs.yml` | MkDocs documentation deployment |
+| Publish package index | `publish-index.yml` | Signed apt/dnf package-repository site, deployed to Pages |
+
+### CD Release: binary packages
+
+When the caller's `vergil.toml` has a `[package]` section, `cd-release.yml`
+also builds, signs and attaches the repo's `.deb`/`.rpm` packages:
+
+| Job | Behavior |
+| --- | -------- |
+| `package-matrix` | Always runs. `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest. |
+| `package-build / <cell>` | One job per build cell, on the cell's runner inside its build OS image, with the same toolchain as `ci-package.yml`. The packages are unsigned. |
+| `package-sign` | Declares the `package-signing` environment. It signs every `.rpm` with the org signing subkey and verifies each signature, then attests the provenance of every package. |
+| `release` | Runs only if `package-sign` succeeded. It attaches the signed packages and `packages-manifest.json` to the Release, then dispatches `package-released` to `<owner>/packages`. |
+
+A failed build cell or signing step stops `release` before anything is
+published or tagged. The dispatch is deferred: if minting the App token or the
+dispatch fails, the release still stands. The index's weekly reconcile picks
+it up, and `vrg-release` reports the miss. Repos without `[package]` see only
+the extra `package-matrix` job. The other package jobs are skipped, and they
+never reference the `package-signing` environment.
+
+A packaged repo needs:
+
+- **A `package-signing` environment.** Its deployment-branch policy must admit
+  only `main`. It holds the `PACKAGE_SIGNING_KEY` secret (the ASCII-armored
+  export of the signing subkey) and `PACKAGE_SIGNING_PASSPHRASE`. These are
+  environment secrets, so the caller does not pass them. If the key is
+  missing, `package-sign` fails.
+- **The org GitHub App secrets.** Forward `APP_CLIENT_ID` and
+  `APP_PRIVATE_KEY` for the index dispatch. The App must be installed on
+  `<owner>/packages` with permission to create repository dispatches
+  (`contents: write`).
+- **The same permissions the release job already needs.** The package jobs
+  request only `contents: read`, `id-token: write` and `attestations: write`:
+
+```yaml
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      actions: read
+    with:
+      language: python
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+```
+
+### Publish package index
+
+`publish-index.yml` is called from an `<org>/packages` repository. Its
+`build-index` job runs `vrg-package index --config packages.toml --keys keys
+--out _site`, which verifies, retains, indexes and signs the product releases.
+Its `deploy` job then publishes the site with the Actions-based Pages deploy.
+The workflow takes no inputs. Runs are serialized by the `publish-index`
+concurrency group. Unlike the other reusable workflows, it runs directly on
+`ubuntu-latest` rather than in a vergil container image.
+
+The signing key comes from the caller repository's `index-signing`
+environment, which must admit only `develop` and hold `PACKAGE_SIGNING_KEY`
+and `PACKAGE_SIGNING_PASSPHRASE`. These are environment secrets, so the
+caller does not pass them. The caller must grant the scopes the two jobs
+request:
+
+```yaml
+jobs:
+  publish-index:
+    uses: vergil-project/vergil-actions/.github/workflows/publish-index.yml@v2.1
+    permissions:
+      contents: read
+      attestations: read
+      pages: write
+      id-token: write
+```
 
 ## Dynamic version matrix and evidence gates
 
