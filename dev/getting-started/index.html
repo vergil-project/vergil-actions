@@ -5412,6 +5412,10 @@ explicit <code>secrets:</code> block (or none at all) matching the language:</p>
 </tr>
 </tbody>
 </table>
+<p>A repo that publishes binary packages (a <code>[package]</code> section in
+<code>vergil.toml</code>) also forwards <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>, and it
+needs a main-only <code>package-signing</code> environment. See
+<a href="../workflows/#cd-release-binary-packages">CD Release: binary packages</a>.</p>
 <p>For example, a Rust release job forwards a single least-privilege secret:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="w">  </span><span class="nt">release</span><span class="p">:</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">github.ref == 'refs/heads/main'</span>
