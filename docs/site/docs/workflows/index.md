@@ -57,7 +57,9 @@ A packaged repo needs:
   only `main`. It holds the `PACKAGE_SIGNING_KEY` secret (the ASCII-armored
   export of the signing subkey) and `PACKAGE_SIGNING_PASSPHRASE`. These are
   environment secrets, so the caller does not pass them. If the key is
-  missing, `package-sign` fails.
+  missing, `package-sign` fails. Never declare them under the reusable
+  workflow's `on.workflow_call.secrets`: a declared-but-unpassed secret
+  shadows the environment secret with an empty value (vergil-actions#913).
 - **The org GitHub App secrets.** Forward `APP_CLIENT_ID` and
   `APP_PRIVATE_KEY` for the index dispatch. The App must be installed on
   `<owner>/packages` with permission to create repository dispatches

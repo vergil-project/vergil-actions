@@ -75,15 +75,12 @@ on:
         required: false
       APP_PRIVATE_KEY:
         required: false
-      # Declared only so the secrets context types correctly: package-sign
-      # reads these from its `package-signing` environment, whose secrets take
-      # precedence over anything a caller passes. Callers do not pass them.
-      PACKAGE_SIGNING_KEY:
-        description: Do not pass; read from the package-signing environment.
-        required: false
-      PACKAGE_SIGNING_PASSPHRASE:
-        description: Do not pass; read from the package-signing environment.
-        required: false
+      # PACKAGE_SIGNING_KEY / PACKAGE_SIGNING_PASSPHRASE are deliberately NOT
+      # declared here. package-sign reads them from its `package-signing`
+      # environment; declaring them (even optional and never passed) shadowed
+      # the environment secrets with empty values (vergil-actions#913). The
+      # resulting actionlint "undeclared secret" finding is ignored narrowly in
+      # .github/actionlint.yaml.
 
 concurrency:
   group: cd
