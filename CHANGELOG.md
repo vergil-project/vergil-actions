@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.38] - 2026-10-06
+
+### Bug fixes
+
+- stop declaring signing secrets that shadow the package-signing environment (#913) (#914)
+
 ## [2.1.37] - 2026-10-06
 
 ### Features
