@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.37] - 2026-10-06
+
+### Features
+
+- ci-package reusable workflow and package toolchain setup (#904) (#907)
+- publish-index reusable workflow (#906) (#908)
+- cd-release: package build, main-only signing job, attach, dispatch (#905) (#909)
+
 ## [2.1.36] - 2026-09-03
 
 ### Documentation
