@@ -114,6 +114,11 @@ skipped leg makes the aggregate **fail red** rather than skip green. Branch
 protection requires these stable evidence gates, not the per-version legs —
 so the required-check set does not churn when `[ci].versions` changes.
 
+`quality / evidence` always bundles the `common` job's transcript
+(`quality-common.log`), so a language-less repo (no lint/typecheck reports)
+still ships a real quality report rather than an `evidence.json`-only payload
+that release-time harvest would reject (#925).
+
 Single-container workflows (`ci-security`, `ci-version-bump`, `ci-docs`) run on
 the primary version = `[ci].primary-version` if set, else the highest
 `[ci].versions` entry (family-routed to the published container tag for

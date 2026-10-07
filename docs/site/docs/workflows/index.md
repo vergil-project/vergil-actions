@@ -142,6 +142,15 @@ requires these stable evidence gates, not the per-version legs, so the
 required-check set does not churn when `[ci].versions` changes. See
 [Required Checks](../ci-gates/required-checks.md).
 
+`quality / evidence` always bundles the `common` job's transcript
+(`quality-common.log`, the full `vrg-validate --check common` output)
+alongside any lint/typecheck reports. That transcript gives a language-less
+repo (`container-suffix: base`), which has no lint/typecheck reports, a real
+quality report. Release-time harvest rejects an `evidence.json`-only payload
+as incomplete, and `cd-release` follows each evidence step with an explicit
+enforcement guard, so an incomplete gate blocks the release in enforcing mode
+(see [All Hard Gates](../ci-gates/all-hard-gates.md#example-the-ci-evidence-gate)).
+
 ## Consuming a reusable workflow
 
 Reference workflows using the full path to the workflow file with a rolling

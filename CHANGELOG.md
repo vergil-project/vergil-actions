@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.40] - 2026-10-07
+
+### Bug fixes
+
+- enforce CI-evidence gate explicitly and give language-less quality gates real evidence (#926)
+
 ## [2.1.39] - 2026-10-07
 
 ### Bug fixes

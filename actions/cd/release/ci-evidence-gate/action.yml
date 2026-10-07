@@ -34,6 +34,15 @@ inputs:
     required: false
     default: "15"
 
+outputs:
+  passed:
+    description: >-
+      "true" only when the harvest+validate step exited 0 (complete evidence).
+      Empty on any failure or timeout, in either mode. cd-release's explicit
+      enforcement guard checks this positive signal in addition to the step
+      outcome, so a gate failure cannot be masked into a green step (#925).
+    value: ${{ steps.gate.outputs.passed }}
+
 runs:
   using: composite
   steps:
@@ -70,6 +79,7 @@ runs:
         rc=$?
 
         if [ "$rc" -eq 0 ]; then
+          echo "passed=true" >> "$GITHUB_OUTPUT"
           exit 0
         fi
 
