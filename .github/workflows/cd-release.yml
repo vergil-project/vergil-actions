@@ -359,7 +359,10 @@ jobs:
       # evidence-enforce=false demotes both steps to WARNING mode — a temporary
       # per-repo opt-out, not a permanent soft gate. Enforcing is the T11
       # promotion (epic .github#140): a single flip of the one default that flips
-      # both steps' fatality and both continue-on-error guards at once.
+      # both steps' fatality and both continue-on-error guards at once. Each
+      # step is followed by an explicit "Enforce …" guard step (#925) that
+      # re-checks the outcome and the composite's positive success output, so
+      # an enforcing failure fails the job even if it is masked upstream.
       - name: Resolve SBOM path for evidence
         id: evidence_sbom
         if: >-
@@ -372,12 +375,39 @@ jobs:
           echo "path=${SBOM_OUTPUT_FILE//\$VERSION/$VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: CI evidence gate (pre-publish)
+        id: evidence_gate
         if: steps.tag_check.outputs.exists == 'false'
         continue-on-error: ${{ !inputs.evidence-enforce }}
         uses: ./actions/cd/release/ci-evidence-gate
         with:
           version: ${{ steps.version.outputs.version }}
           enforce: ${{ inputs.evidence-enforce }}
+
+      # Explicit enforcement guard (#925). In the vergil-project/packages v1.1.1
+      # release (CD run 37621521706) the gate composite's inner step ended
+      # outcome=failure in enforcing mode, yet the outer step reported success
+      # and the package download / Tag and release steps ran — the release
+      # published without validated evidence. Rather than trust the failure to
+      # propagate through continue-on-error and the composite boundary, this
+      # plain step re-checks it independently: it fails the job when the gate
+      # step's outcome is failure OR when the step "succeeded" without the
+      # composite's positive `passed=true` signal. It has no continue-on-error,
+      # and every later step uses an implicit success() condition, so nothing
+      # is downloaded, built, tagged, or released after it fires.
+      - name: Enforce CI evidence gate
+        if: >-
+          ${{ always() &&
+              inputs.evidence-enforce &&
+              steps.tag_check.outputs.exists == 'false' &&
+              (steps.evidence_gate.outcome == 'failure' ||
+               (steps.evidence_gate.outcome == 'success' &&
+                steps.evidence_gate.outputs.passed != 'true')) }}
+        env:
+          GATE_OUTCOME: ${{ steps.evidence_gate.outcome }}
+          GATE_PASSED: ${{ steps.evidence_gate.outputs.passed }}
+        run: |
+          echo "::error::CI evidence gate failed in enforcing mode — refusing to tag or publish (gate outcome='${GATE_OUTCOME}', passed='${GATE_PASSED}')"
+          exit 1
 
       # Packaged repos only: the signed packages and packages-manifest.json
       # become Release assets. They are downloaded into the workspace and then
@@ -472,6 +502,7 @@ jobs:
       # full, attested, and attached. Same enforce-mode contract as the gate
       # (honors the evidence-enforce flag; enforcing by default).
       - name: Attach CI evidence bundle (post-release)
+        id: evidence_attach
         if: steps.tag_check.outputs.exists == 'false'
         continue-on-error: ${{ !inputs.evidence-enforce }}
         uses: ./actions/cd/release/ci-evidence-attach
@@ -480,6 +511,29 @@ jobs:
           tag: ${{ steps.version.outputs.tag }}
           enforce: ${{ inputs.evidence-enforce }}
           sbom-file: ${{ steps.evidence_sbom.outputs.path }}
+
+      # Explicit enforcement guard for the attach (#925), mirroring the
+      # pre-publish guard above: fail the job when the attach step's outcome is
+      # failure OR it "succeeded" without the composite's positive
+      # `attached=true` signal. By this point the tag and GitHub Release
+      # already exist, so the error says so plainly — the release is published
+      # but carries no (or an incomplete) evidence bundle and needs operator
+      # attention.
+      - name: Enforce CI evidence attach
+        if: >-
+          ${{ always() &&
+              inputs.evidence-enforce &&
+              steps.tag_check.outputs.exists == 'false' &&
+              (steps.evidence_attach.outcome == 'failure' ||
+               (steps.evidence_attach.outcome == 'success' &&
+                steps.evidence_attach.outputs.attached != 'true')) }}
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          ATTACH_OUTCOME: ${{ steps.evidence_attach.outcome }}
+          ATTACHED: ${{ steps.evidence_attach.outputs.attached }}
+        run: |
+          echo "::error::CI evidence bundle was NOT attached in enforcing mode, but release ${TAG} has ALREADY been tagged and published — the release is missing its evidence bundle and needs operator attention (attach outcome='${ATTACH_OUTCOME}', attached='${ATTACHED}')"
+          exit 1
 
       - name: Verify tag is resolvable from remote
         if: steps.tag_check.outputs.exists == 'false'

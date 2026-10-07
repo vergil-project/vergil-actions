@@ -97,8 +97,29 @@ jobs:
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
+      # Capture the common checks' full transcript as a quality report (#925).
+      # For a language-less repo (container-suffix base, no lint/typecheck
+      # tooling) the common checks — repo-profile, markdownlint, shellcheck,
+      # yamllint, hadolint, actionlint, ansible-lint — ARE the quality gate, but
+      # they emit no structured report file. Without this transcript the
+      # ci-evidence-quality artifact carried only evidence.json, which the
+      # release-time harvester (correctly) rejects as an empty payload. The
+      # transcript is genuine evidence of what ran and passed; pipefail keeps
+      # vrg-validate's exit code authoritative for the job result.
       - name: Run common quality checks
-        run: vrg-validate --check common
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-reports
+          vrg-validate --check common 2>&1 | tee ci-reports/quality-common.log
+
+      - name: Upload common report evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-quality-reports-common
+          path: ci-reports/
+          if-no-files-found: warn
 
   lint:
     name: lint / ${{ matrix.version }}
@@ -208,7 +229,11 @@ jobs:
   evidence:
     name: evidence
     # Runs only after the common, lint, and typecheck jobs all succeed, so the
-    # artifact's presence is itself proof the quality gate passed. Each lint /
+    # artifact's presence is itself proof the quality gate passed. The common
+    # job uploads its transcript (quality-common.log) as a partial, so every
+    # repo — including a language-less one with no lint/typecheck reports —
+    # emits at least one real report file, never an evidence.json-only
+    # payload (#925). Each lint /
     # typecheck leg uploads its version-suffixed quality-ruff.json /
     # quality-mypy.xml as a per-version partial; the step below pulls every
     # leg's reports back onto one runner so the emitted bundle carries each
@@ -266,6 +291,7 @@ jobs:
         with:
           gate: quality
           files: |
+            evidence-reports/quality-common.log
             evidence-reports/quality-ruff-*.json
             evidence-reports/quality-mypy-*.xml
-          tools: '[{"name": "ruff"}, {"name": "mypy"}]'
+          tools: '[{"name": "vrg-validate-common"}, {"name": "ruff"}, {"name": "mypy"}]'

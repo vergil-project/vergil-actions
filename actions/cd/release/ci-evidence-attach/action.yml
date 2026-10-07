@@ -43,6 +43,15 @@ inputs:
     required: false
     default: ""
 
+outputs:
+  attached:
+    description: >-
+      "true" only when the bundle was assembled, attested, and uploaded to the
+      Release. Empty on any failure, in either mode. cd-release's explicit
+      enforcement guard checks this positive signal in addition to the step
+      outcome, so an attach failure cannot be masked into a green step (#925).
+    value: ${{ steps.upload.outputs.attached }}
+
 runs:
   using: composite
   steps:
@@ -112,6 +121,7 @@ runs:
         subject-path: evidence-out/*.tar.gz
 
     - name: Attach evidence bundle to release
+      id: upload
       if: steps.bundle.outputs.bundled == 'true'
       shell: bash
       env:
@@ -127,6 +137,7 @@ runs:
         rc=$?
 
         if [ "$rc" -eq 0 ]; then
+          echo "attached=true" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         if [ "$ENFORCE" = "true" ]; then

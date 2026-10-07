@@ -143,6 +143,19 @@ failure, exactly like every other hard gate. It was never a permanent soft
 gate — warning mode was only the on-ramp, and the lifecycle has reached its
 enforcing end state.
 
+Enforcement does not rely on the gate step's own failure propagating. In
+`cd-release`, the pre-publish `CI evidence gate` step and the post-release
+`Attach CI evidence bundle` step are each followed by an explicit
+**enforcement guard** step. In enforcing mode the guard fails the job when
+the evidence step's outcome is `failure`, **or** when the step reports
+success without the composite's positive output (`passed=true` for the gate,
+`attached=true` for the attach). The guard on the gate runs before anything
+is downloaded, built, tagged, or released. The guard on the attach runs after
+the Release exists, so its error states plainly that the release has already
+been published without its evidence bundle. Both guards were added after a
+release in which an enforcing gate failure was masked into a green step and
+the release published anyway ([vergil-project/vergil-actions#925]).
+
 ## Why this makes public evidence bundles safe
 
 This principle is load-bearing for the CI-evidence archival work (epic
@@ -171,6 +184,16 @@ presence alone is no longer proof the gate ran (ref
 [vergil-project/vergil-tooling#2812]). The authoritative wire format for the
 bundle lives in vergil-tooling and is not duplicated here.
 
+Every gate must therefore produce a real report file, including the
+`quality` gate of a **language-less** repo (`container-suffix: base`), whose
+lint and typecheck legs produce no reports. For those repos, the `common`
+job's transcript is the quality evidence. `ci-quality` captures the full
+output of `vrg-validate --check common` as `quality-common.log` (repo-profile,
+markdownlint, shellcheck, yamllint, hadolint, actionlint, ansible-lint),
+uploads it as the `ci-evidence-quality-reports-common` partial, and bundles
+it into `ci-evidence-quality` for every repo. As a result, the quality gate
+is never an `evidence.json`-only payload ([vergil-project/vergil-actions#925]).
+
 !!! note "Current residuals"
     Two known gaps remain open, tracked as limitations rather than done: the
     manifest `metrics` object is currently empty (`{}`), and the security
@@ -178,6 +201,7 @@ bundle lives in vergil-tooling and is not duplicated here.
 
 [vergil-project/.github#140]: https://github.com/vergil-project/.github/issues/140
 [vergil-project/vergil-tooling#2812]: https://github.com/vergil-project/vergil-tooling/issues/2812
+[vergil-project/vergil-actions#925]: https://github.com/vergil-project/vergil-actions/issues/925
 
 ## See also
 
