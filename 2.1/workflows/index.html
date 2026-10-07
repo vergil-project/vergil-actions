@@ -783,6 +783,8 @@
       
         
       
+        
+      
     
     
     
@@ -835,6 +837,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.40/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.40
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5482,6 +5512,14 @@ leg makes the aggregate <strong>fail red</strong> rather than skip green. Branch
 requires these stable evidence gates, not the per-version legs, so the
 required-check set does not churn when <code>[ci].versions</code> changes. See
 <a href="../ci-gates/required-checks/">Required Checks</a>.</p>
+<p><code>quality / evidence</code> always bundles the <code>common</code> job's transcript
+(<code>quality-common.log</code>, the full <code>vrg-validate --check common</code> output)
+alongside any lint/typecheck reports. That transcript gives a language-less
+repo (<code>container-suffix: base</code>), which has no lint/typecheck reports, a real
+quality report. Release-time harvest rejects an <code>evidence.json</code>-only payload
+as incomplete, and <code>cd-release</code> follows each evidence step with an explicit
+enforcement guard, so an incomplete gate blocks the release in enforcing mode
+(see <a href="../ci-gates/all-hard-gates/#example-the-ci-evidence-gate">All Hard Gates</a>).</p>
 <h2 id="consuming-a-reusable-workflow">Consuming a reusable workflow<a class="headerlink" href="#consuming-a-reusable-workflow" title="Permanent link">&para;</a></h2>
 <p>Reference workflows using the full path to the workflow file with a rolling
 minor tag pin:</p>

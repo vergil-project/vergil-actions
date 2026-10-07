@@ -783,6 +783,8 @@
       
         
       
+        
+      
     
     
     
@@ -835,6 +837,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.40/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.40
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5513,6 +5543,18 @@ incomplete or failed evidence bundle is a terminal, publish-blocking
 failure, exactly like every other hard gate. It was never a permanent soft
 gate — warning mode was only the on-ramp, and the lifecycle has reached its
 enforcing end state.</p>
+<p>Enforcement does not rely on the gate step's own failure propagating. In
+<code>cd-release</code>, the pre-publish <code>CI evidence gate</code> step and the post-release
+<code>Attach CI evidence bundle</code> step are each followed by an explicit
+<strong>enforcement guard</strong> step. In enforcing mode the guard fails the job when
+the evidence step's outcome is <code>failure</code>, <strong>or</strong> when the step reports
+success without the composite's positive output (<code>passed=true</code> for the gate,
+<code>attached=true</code> for the attach). The guard on the gate runs before anything
+is downloaded, built, tagged, or released. The guard on the attach runs after
+the Release exists, so its error states plainly that the release has already
+been published without its evidence bundle. Both guards were added after a
+release in which an enforcing gate failure was masked into a green step and
+the release published anyway (<a href="https://github.com/vergil-project/vergil-actions/issues/925">vergil-project/vergil-actions#925</a>).</p>
 <h2 id="why-this-makes-public-evidence-bundles-safe">Why this makes public evidence bundles safe<a class="headerlink" href="#why-this-makes-public-evidence-bundles-safe" title="Permanent link">&para;</a></h2>
 <p>This principle is load-bearing for the CI-evidence archival work (epic
 <a href="https://github.com/vergil-project/.github/issues/140">vergil-project/.github#140</a>). That epic publishes a complete, attested
@@ -5538,6 +5580,15 @@ envelope with no report payload fails the completeness check — envelope
 presence alone is no longer proof the gate ran (ref
 <a href="https://github.com/vergil-project/vergil-tooling/issues/2812">vergil-project/vergil-tooling#2812</a>). The authoritative wire format for the
 bundle lives in vergil-tooling and is not duplicated here.</p>
+<p>Every gate must therefore produce a real report file, including the
+<code>quality</code> gate of a <strong>language-less</strong> repo (<code>container-suffix: base</code>), whose
+lint and typecheck legs produce no reports. For those repos, the <code>common</code>
+job's transcript is the quality evidence. <code>ci-quality</code> captures the full
+output of <code>vrg-validate --check common</code> as <code>quality-common.log</code> (repo-profile,
+markdownlint, shellcheck, yamllint, hadolint, actionlint, ansible-lint),
+uploads it as the <code>ci-evidence-quality-reports-common</code> partial, and bundles
+it into <code>ci-evidence-quality</code> for every repo. As a result, the quality gate
+is never an <code>evidence.json</code>-only payload (<a href="https://github.com/vergil-project/vergil-actions/issues/925">vergil-project/vergil-actions#925</a>).</p>
 <div class="admonition note">
 <p class="admonition-title">Current residuals</p>
 <p>Two known gaps remain open, tracked as limitations rather than done: the
