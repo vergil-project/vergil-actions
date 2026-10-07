@@ -5484,7 +5484,7 @@ rulesets.</p>
 <td><code>upload-sarif</code></td>
 <td>No</td>
 <td><code>true</code></td>
-<td>Upload SARIF to GitHub code scanning. Set to <code>false</code> on private repos without GHAS; results are attached as a build artifact instead.</td>
+<td>Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by <code>vrg-sarif-filter</code>; requires vergil-tooling on <code>PATH</code>). Set to <code>false</code> on private repos without GHAS; results are attached as a build artifact instead.</td>
 </tr>
 </tbody>
 </table>
@@ -5520,9 +5520,13 @@ rulesets.</p>
 <li>Any additional rulesets from <code>extra-config</code></li>
 </ul>
 </li>
-<li><strong>Upload SARIF</strong> — Uploads the SARIF output file to GitHub code scanning
-   using <code>github/codeql-action/upload-sarif@v4</code>, categorized as <code>semgrep</code>.
-   This step runs even if the scan finds issues (<code>if: always()</code>). When
+<li><strong>Filter and upload SARIF</strong> — Runs <code>vrg-sarif-filter</code> to write
+   <code>semgrep-results.upload.sarif</code>, a copy with accepted-suppressed results
+   (e.g. justified <code>nosemgrep</code>) removed, and uploads that copy to GitHub code
+   scanning using <code>github/codeql-action/upload-sarif@v4</code>, categorized as
+   <code>semgrep</code>. The unfiltered <code>semgrep-results.sarif</code> is left in place for the
+   evidence bundle. These steps run even if the scan finds issues
+   (<code>if: always()</code>) and need vergil-tooling on <code>PATH</code>. When
    <code>upload-sarif</code> is <code>false</code>, the SARIF file is attached to the workflow run
    as a build artifact (<code>semgrep-sarif</code>) instead.</li>
 </ol>
