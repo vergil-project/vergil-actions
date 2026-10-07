@@ -51,9 +51,12 @@ inputs:
     default: "ghcr.io/aquasecurity/trivy:0.71.0"
   upload-sarif:
     description: >-
-      Upload SARIF results to GitHub code scanning. Set to "false" on
-      private repos without GitHub Advanced Security; results are
-      attached as a build artifact instead.
+      Upload SARIF results to GitHub code scanning. The uploaded copy
+      omits accepted-suppressed results (via vrg-sarif-filter, so
+      vergil-tooling must be on PATH); the unfiltered output-file is left
+      in the workspace for evidence. Set to "false" on private repos
+      without GitHub Advanced Security; results are attached as a build
+      artifact instead.
     required: false
     default: "true"
 
@@ -146,13 +149,6 @@ runs:
               /tmp/trivy-raw.json
           '
 
-    - name: Upload SARIF (filesystem scan)
-      if: inputs.scan-type == 'fs' && inputs.upload-sarif == 'true' && always()
-      uses: github/codeql-action/upload-sarif@v4
-      with:
-        sarif_file: ${{ inputs.output-file }}
-        category: ${{ inputs.sarif-category || 'trivy-fs' }}
-
     - name: Run Trivy image scan
       if: inputs.scan-type == 'image'
       shell: bash
@@ -210,12 +206,37 @@ runs:
               /tmp/trivy-raw.json
           '
 
-    - name: Upload SARIF (image scan)
-      if: inputs.scan-type == 'image' && inputs.upload-sarif == 'true' && always()
+    # Code scanning does not honor SARIF `suppressions`, so upload a filtered
+    # copy with accepted-suppressed results removed (same semantics as the
+    # SARIF gate). The unfiltered output-file stays on disk for the evidence
+    # bundle so suppressions remain auditable (issue #920). The filesystem
+    # and image scans are mutually exclusive, so one filter + upload pair
+    # serves both.
+    - name: Filter accepted-suppressed results for upload
+      id: filter
+      if: >-
+        (inputs.scan-type == 'fs' || inputs.scan-type == 'image') &&
+        inputs.upload-sarif == 'true' && always()
+      shell: bash
+      env:
+        OUTPUT_FILE: ${{ inputs.output-file }}
+      run: |
+        upload_file="${OUTPUT_FILE%.sarif}.upload.sarif"
+        echo "upload-file=$upload_file" >> "$GITHUB_OUTPUT"
+        if [ ! -f "$OUTPUT_FILE" ]; then
+          echo "::warning::$OUTPUT_FILE not found; nothing to filter (the upload step will report the missing file)"
+          exit 0
+        fi
+        vrg-sarif-filter "$OUTPUT_FILE" "$upload_file"
+
+    - name: Upload SARIF
+      if: >-
+        (inputs.scan-type == 'fs' || inputs.scan-type == 'image') &&
+        inputs.upload-sarif == 'true' && always()
       uses: github/codeql-action/upload-sarif@v4
       with:
-        sarif_file: ${{ inputs.output-file }}
-        category: ${{ inputs.sarif-category || 'trivy-image' }}
+        sarif_file: ${{ steps.filter.outputs.upload-file }}
+        category: ${{ inputs.sarif-category || format('trivy-{0}', inputs.scan-type) }}
 
     - name: Attach SARIF as build artifact
       if: >-

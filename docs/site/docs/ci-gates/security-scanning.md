@@ -26,6 +26,23 @@ artifacts instead of uploading to code scanning, and the CodeQL job is
 skipped (CodeQL cannot run on private repos without GHAS at all). See
 [Private repos without GitHub Advanced Security](../workflows/ci-security.md#private-repos-without-github-advanced-security).
 
+## Accepted suppressions: uploaded SARIF vs. evidence
+
+The SARIF gate passes a finding that has been accepted in source (for
+example a justified `# nosemgrep: …`), but GitHub code scanning does not
+honor SARIF `suppressions` and would still fail the scanner's SARIF analysis
+check (e.g. `Semgrep OSS`) on it. To keep the two in agreement, the Semgrep
+and Trivy actions run `vrg-sarif-filter` before uploading and send code
+scanning a filtered copy (`*.upload.sarif`) with accepted-suppressed results
+removed, using the same semantics as the gate.
+
+The **unfiltered** SARIF (`semgrep-results.sarif`, `trivy-results.sarif`) is
+what the `security / evidence` job collects into the `ci-evidence-security`
+bundle, so every accepted suppression remains auditable there.
+
+CodeQL is not filtered: `github/codeql-action/analyze` uploads its results
+itself, so there is no separate upload step to hand a filtered file to.
+
 ## Check names in the PR status area
 
 Each security scanner produces **two** check runs on a pull request:

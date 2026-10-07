@@ -18,7 +18,7 @@ rulesets.
 | ------ | ---------- | --------- | ------------- |
 | `language` | **Yes** | — | Language ruleset to enable (maps to `p/<language>`, e.g. `python`, `java`, `golang`). |
 | `extra-config` | No | `""` | Additional Semgrep config strings, space-separated (e.g. `p/owasp-top-ten`). |
-| `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning. Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
+| `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by `vrg-sarif-filter`; requires vergil-tooling on `PATH`). Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
 
 ## Permissions
 
@@ -48,9 +48,13 @@ rulesets.
     - `p/github-actions` — GitHub Actions injection patterns (if workflow files
       detected)
     - Any additional rulesets from `extra-config`
-4. **Upload SARIF** — Uploads the SARIF output file to GitHub code scanning
-   using `github/codeql-action/upload-sarif@v4`, categorized as `semgrep`.
-   This step runs even if the scan finds issues (`if: always()`). When
+4. **Filter and upload SARIF** — Runs `vrg-sarif-filter` to write
+   `semgrep-results.upload.sarif`, a copy with accepted-suppressed results
+   (e.g. justified `nosemgrep`) removed, and uploads that copy to GitHub code
+   scanning using `github/codeql-action/upload-sarif@v4`, categorized as
+   `semgrep`. The unfiltered `semgrep-results.sarif` is left in place for the
+   evidence bundle. These steps run even if the scan finds issues
+   (`if: always()`) and need vergil-tooling on `PATH`. When
    `upload-sarif` is `false`, the SARIF file is attached to the workflow run
    as a build artifact (`semgrep-sarif`) instead.
 
