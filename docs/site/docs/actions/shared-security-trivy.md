@@ -28,7 +28,7 @@ Runs Trivy vulnerability scanning, SBOM generation, or container image scanning.
 | `sarif-category` | No | `""` | Category for SARIF upload. Use unique values when multiple matrix entries upload SARIF to avoid overwrites. Defaults to `trivy-fs` or `trivy-image` based on scan-type. |
 | `trivyignores` | No | `""` | Comma-separated list of `.trivyignore` file paths. |
 | `trivy-image` | No | `aquasec/trivy:0.70.0` | Docker image to use for Trivy. Override to pin a specific version. |
-| `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning. Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
+| `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by `vrg-sarif-filter`; requires vergil-tooling on `PATH`; the unfiltered `output-file` is kept). Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
 
 ## Permissions
 
@@ -57,16 +57,19 @@ everything present.
 1. Runs `trivy fs` inside the Trivy Docker container against the specified
    `scan-ref`.
 2. Outputs results as a table to stdout and in SARIF format to the output file.
-3. Uploads the SARIF file to GitHub code scanning (category: `trivy-fs` or
-   custom `sarif-category`).
+3. Filters accepted-suppressed results into a `*.upload.sarif` copy with
+   `vrg-sarif-filter` and uploads that copy to GitHub code scanning
+   (category: `trivy-fs` or custom `sarif-category`).
 
 ### Image scan (`image`)
 
 1. Runs `trivy image` inside the Trivy Docker container against the specified
    image reference (with Docker socket mounted).
 2. Outputs results as a table to stdout and in SARIF format to the output file.
-3. Uploads the SARIF file to GitHub code scanning (category: `trivy-image` or
-   custom `sarif-category`).
+3. Filters accepted-suppressed results into a `*.upload.sarif` copy with
+   `vrg-sarif-filter` and uploads that copy to GitHub code scanning
+   (category: `trivy-image` or custom
+   `sarif-category`).
 
 ### SBOM generation (`sbom`)
 

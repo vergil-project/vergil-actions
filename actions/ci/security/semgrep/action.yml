@@ -19,9 +19,12 @@ inputs:
     default: ""
   upload-sarif:
     description: >-
-      Upload SARIF results to GitHub code scanning. Set to "false" on
-      private repos without GitHub Advanced Security; results are
-      attached as a build artifact instead.
+      Upload SARIF results to GitHub code scanning. The uploaded copy
+      omits accepted-suppressed results (via vrg-sarif-filter, so
+      vergil-tooling must be on PATH); the unfiltered
+      semgrep-results.sarif is left in the workspace for evidence. Set to
+      "false" on private repos without GitHub Advanced Security; results
+      are attached as a build artifact instead.
     required: false
     default: "true"
 
@@ -52,11 +55,27 @@ runs:
 
         vrg-semgrep-scan "${args[@]}"
 
+    # Code scanning does not honor SARIF `suppressions`, so an accepted
+    # (nosemgrep) finding that the gate passes would still fail GitHub's
+    # "Semgrep OSS" check. Upload a filtered copy with accepted-suppressed
+    # results removed (same semantics as the gate); the unfiltered
+    # semgrep-results.sarif stays on disk for the evidence bundle so the
+    # suppressions remain auditable (issue #920).
+    - name: Filter accepted-suppressed results for upload
+      if: inputs.upload-sarif == 'true' && always()
+      shell: bash
+      run: |
+        if [ ! -f semgrep-results.sarif ]; then
+          echo "::warning::semgrep-results.sarif not found; nothing to filter (the upload step will report the missing file)"
+          exit 0
+        fi
+        vrg-sarif-filter semgrep-results.sarif semgrep-results.upload.sarif
+
     - name: Upload SARIF
       if: inputs.upload-sarif == 'true' && always()
       uses: github/codeql-action/upload-sarif@v4
       with:
-        sarif_file: semgrep-results.sarif
+        sarif_file: semgrep-results.upload.sarif
         category: semgrep
 
     - name: Attach SARIF as build artifact

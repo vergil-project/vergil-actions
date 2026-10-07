@@ -109,6 +109,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      # Provides vrg-sarif-filter, which the trivy action uses to strip
+      # accepted-suppressed results from the copy uploaded to code scanning
+      # (issue #920). trivy-results.sarif itself stays unfiltered.
+      - name: Install vergil-tooling
+        if: ${{ inputs.upload-sarif }}
+        uses: ./actions/shared/setup/vergil
+
       - name: Run Trivy vulnerability scan
         uses: ./actions/shared/security/trivy
         with:
@@ -116,7 +123,9 @@ jobs:
           upload-sarif: ${{ inputs.upload-sarif }}
 
       # Upload the Trivy SARIF as an evidence partial UNCONDITIONALLY, whether
-      # or not it was also pushed to code scanning (spec §7).
+      # or not it was also pushed to code scanning (spec §7). This is the
+      # UNFILTERED file: accepted-suppressed results are kept here for audit;
+      # only the code-scanning upload copy omits them (issue #920).
       - name: Upload Trivy SARIF evidence partial
         if: always()
         uses: actions/upload-artifact@v7
@@ -183,7 +192,9 @@ jobs:
           upload-sarif: ${{ inputs.upload-sarif }}
 
       # Upload the Semgrep SARIF as an evidence partial UNCONDITIONALLY, whether
-      # or not it was also pushed to code scanning (spec §7).
+      # or not it was also pushed to code scanning (spec §7). This is the
+      # UNFILTERED file: accepted-suppressed results are kept here for audit;
+      # only the code-scanning upload copy omits them (issue #920).
       - name: Upload Semgrep SARIF evidence partial
         if: always()
         uses: actions/upload-artifact@v7
