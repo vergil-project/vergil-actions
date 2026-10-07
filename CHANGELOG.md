@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.39] - 2026-10-07
+
+### Bug fixes
+
+- upload SARIF without accepted-suppressed results (#921)
+
+### Documentation
+
+- callers must pass secrets: inherit for environment secrets (#918) (#919)
+
 ## [2.1.38] - 2026-10-06
 
 ### Bug fixes
