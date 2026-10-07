@@ -781,6 +781,8 @@
       
         
       
+        
+      
     
     
     
@@ -833,6 +835,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.39/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.39
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5595,7 +5625,7 @@
 <td><code>upload-sarif</code></td>
 <td>No</td>
 <td><code>true</code></td>
-<td>Upload SARIF to GitHub code scanning. Set to <code>false</code> on private repos without GHAS; results are attached as a build artifact instead.</td>
+<td>Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by <code>vrg-sarif-filter</code>; requires vergil-tooling on <code>PATH</code>; the unfiltered <code>output-file</code> is kept). Set to <code>false</code> on private repos without GHAS; results are attached as a build artifact instead.</td>
 </tr>
 </tbody>
 </table>
@@ -5623,16 +5653,19 @@ everything present.</p>
 <li>Runs <code>trivy fs</code> inside the Trivy Docker container against the specified
    <code>scan-ref</code>.</li>
 <li>Outputs results as a table to stdout and in SARIF format to the output file.</li>
-<li>Uploads the SARIF file to GitHub code scanning (category: <code>trivy-fs</code> or
-   custom <code>sarif-category</code>).</li>
+<li>Filters accepted-suppressed results into a <code>*.upload.sarif</code> copy with
+   <code>vrg-sarif-filter</code> and uploads that copy to GitHub code scanning
+   (category: <code>trivy-fs</code> or custom <code>sarif-category</code>).</li>
 </ol>
 <h3 id="image-scan-image">Image scan (<code>image</code>)<a class="headerlink" href="#image-scan-image" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Runs <code>trivy image</code> inside the Trivy Docker container against the specified
    image reference (with Docker socket mounted).</li>
 <li>Outputs results as a table to stdout and in SARIF format to the output file.</li>
-<li>Uploads the SARIF file to GitHub code scanning (category: <code>trivy-image</code> or
-   custom <code>sarif-category</code>).</li>
+<li>Filters accepted-suppressed results into a <code>*.upload.sarif</code> copy with
+   <code>vrg-sarif-filter</code> and uploads that copy to GitHub code scanning
+   (category: <code>trivy-image</code> or custom
+   <code>sarif-category</code>).</li>
 </ol>
 <h3 id="sbom-generation-sbom">SBOM generation (<code>sbom</code>)<a class="headerlink" href="#sbom-generation-sbom" title="Permanent link">&para;</a></h3>
 <ol>

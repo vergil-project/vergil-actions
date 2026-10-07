@@ -781,6 +781,8 @@
       
         
       
+        
+      
     
     
     
@@ -833,6 +835,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.39/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.39
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4971,6 +5001,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#accepted-suppressions-uploaded-sarif-vs-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accepted suppressions: uploaded SARIF vs. evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#check-names-in-the-pr-status-area" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5304,6 +5345,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#accepted-suppressions-uploaded-sarif-vs-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accepted suppressions: uploaded SARIF vs. evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#check-names-in-the-pr-status-area" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5468,6 +5520,19 @@ run (and still fail on findings) but attach their SARIF results as build
 artifacts instead of uploading to code scanning, and the CodeQL job is
 skipped (CodeQL cannot run on private repos without GHAS at all). See
 <a href="../../workflows/ci-security/#private-repos-without-github-advanced-security">Private repos without GitHub Advanced Security</a>.</p>
+<h2 id="accepted-suppressions-uploaded-sarif-vs-evidence">Accepted suppressions: uploaded SARIF vs. evidence<a class="headerlink" href="#accepted-suppressions-uploaded-sarif-vs-evidence" title="Permanent link">&para;</a></h2>
+<p>The SARIF gate passes a finding that has been accepted in source (for
+example a justified <code># nosemgrep: …</code>), but GitHub code scanning does not
+honor SARIF <code>suppressions</code> and would still fail the scanner's SARIF analysis
+check (e.g. <code>Semgrep OSS</code>) on it. To keep the two in agreement, the Semgrep
+and Trivy actions run <code>vrg-sarif-filter</code> before uploading and send code
+scanning a filtered copy (<code>*.upload.sarif</code>) with accepted-suppressed results
+removed, using the same semantics as the gate.</p>
+<p>The <strong>unfiltered</strong> SARIF (<code>semgrep-results.sarif</code>, <code>trivy-results.sarif</code>) is
+what the <code>security / evidence</code> job collects into the <code>ci-evidence-security</code>
+bundle, so every accepted suppression remains auditable there.</p>
+<p>CodeQL is not filtered: <code>github/codeql-action/analyze</code> uploads its results
+itself, so there is no separate upload step to hand a filtered file to.</p>
 <h2 id="check-names-in-the-pr-status-area">Check names in the PR status area<a class="headerlink" href="#check-names-in-the-pr-status-area" title="Permanent link">&para;</a></h2>
 <p>Each security scanner produces <strong>two</strong> check runs on a pull request:</p>
 <table>
