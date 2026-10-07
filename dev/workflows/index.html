@@ -5376,13 +5376,18 @@ never reference the <code>package-signing</code> environment.</p>
 <ul>
 <li><strong>A <code>package-signing</code> environment.</strong> Its deployment-branch policy must admit
   only <code>main</code>. It holds the <code>PACKAGE_SIGNING_KEY</code> secret (the ASCII-armored
-  export of the signing subkey) and <code>PACKAGE_SIGNING_PASSPHRASE</code>. These are
-  environment secrets, so the caller does not pass them. If the key is
-  missing, <code>package-sign</code> fails. Never declare them under the reusable
-  workflow's <code>on.workflow_call.secrets</code>: a declared-but-unpassed secret
-  shadows the environment secret with an empty value (vergil-actions#913).</li>
-<li><strong>The org GitHub App secrets.</strong> Forward <code>APP_CLIENT_ID</code> and
-  <code>APP_PRIVATE_KEY</code> for the index dispatch. The App must be installed on
+  export of the signing subkey) and <code>PACKAGE_SIGNING_PASSPHRASE</code>. If the key
+  is missing or empty, <code>package-sign</code> fails.</li>
+<li><strong><code>secrets: inherit</code> on the caller (required).</strong> Environment secrets reach
+  a job in a cross-repo reusable workflow <strong>only</strong> when the caller passes
+  <code>secrets: inherit</code>. An explicit <code>secrets:</code> map, or passing nothing, delivers
+  an empty value; declaring the secret in the callee makes no difference
+  (verified by a controlled probe, vergil-project/packages#6). Semgrep's
+  <code>secrets-inherit</code> rule flags this, so suppress it on that line with a
+  justification (<code># nosemgrep: …</code>; honored by the SARIF gate since
+  vergil-project/vergil-tooling#3107). <code>inherit</code> also forwards the org App
+  secrets <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>, which the index dispatch
+  needs. The App must be installed on
   <code>&lt;owner&gt;/packages</code> with permission to create repository dispatches
   (<code>contents: write</code>).</li>
 <li><strong>The same permissions the release job already needs.</strong> The package jobs
@@ -5399,9 +5404,8 @@ never reference the <code>package-signing</code> environment.</p>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="c1"># Required: environment secrets only reach the reusable workflow with inherit.</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span><span class="w">  </span><span class="c1"># nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</span>
 </code></pre></div>
 <h3 id="publish-package-index">Publish package index<a class="headerlink" href="#publish-package-index" title="Permanent link">&para;</a></h3>
 <p><code>publish-index.yml</code> is called from an <code>&lt;org&gt;/packages</code> repository. Its
@@ -5413,9 +5417,10 @@ concurrency group. Unlike the other reusable workflows, it runs directly on
 <code>ubuntu-latest</code> rather than in a vergil container image.</p>
 <p>The signing key comes from the caller repository's <code>index-signing</code>
 environment, which must admit only <code>develop</code> and hold <code>PACKAGE_SIGNING_KEY</code>
-and <code>PACKAGE_SIGNING_PASSPHRASE</code>. These are environment secrets, so the
-caller does not pass them. The caller must grant the scopes the two jobs
-request:</p>
+and <code>PACKAGE_SIGNING_PASSPHRASE</code>. As with <code>cd-release</code>, those environment
+secrets reach the reusable workflow only when the caller passes
+<code>secrets: inherit</code> (see above). The caller must also grant the scopes the two
+jobs request:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">publish-index</span><span class="p">:</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/publish-index.yml@v2.1</span>
@@ -5424,6 +5429,8 @@ request:</p>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">attestations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">pages</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">id-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="c1"># Required: environment secrets only reach the reusable workflow with inherit.</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span><span class="w">  </span><span class="c1"># nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</span>
 </code></pre></div>
 <h2 id="dynamic-version-matrix-and-evidence-gates">Dynamic version matrix and evidence gates<a class="headerlink" href="#dynamic-version-matrix-and-evidence-gates" title="Permanent link">&para;</a></h2>
 <p>The matrixed CI workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) derive their
