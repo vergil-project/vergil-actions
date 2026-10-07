@@ -3,8 +3,8 @@ paths:
   .github/workflows/cd-release.yml:
     ignore:
       # package-sign reads PACKAGE_SIGNING_KEY / PACKAGE_SIGNING_PASSPHRASE from
-      # its `package-signing` environment. They must NOT be declared under
-      # on.workflow_call.secrets: a declared-but-unpassed secret shadows the
-      # environment secret with an empty value (vergil-actions#913). actionlint
-      # cannot see environment secrets, so ignore exactly these two references.
+      # its `package-signing` environment (delivered because the caller passes
+      # `secrets: inherit`; vergil-project/packages#6). They are not declared
+      # under on.workflow_call.secrets, and actionlint cannot see environment
+      # secrets, so ignore exactly these two references.
       - 'property "package_signing_(key|passphrase)" is not defined in object type'
