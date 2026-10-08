@@ -23,6 +23,42 @@ rulesets.
 | [CI Audit](ci-audit.md) | `ci-audit.yml` | Dependency audit |
 | [CI Test](ci-test.md) | `ci-test.yml` | Unit and integration tests |
 | [CI Version Bump](ci-version-bump.md) | `ci-version-bump.yml` | Version divergence gate |
+| CI Package | `ci-package.yml` | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only) |
+
+### CI Package: tiered matrix
+
+`ci-package.yml` is called only by repos whose `vergil.toml` has a `[package]`
+section. Calling it without one fails the run. Its gate job surfaces as
+`package / evidence` under a caller job keyed `package`.
+
+The `matrix` job picks a tier and passes it to
+`vrg-package matrix --github-output --tier <tier>`:
+
+| Event | Tier |
+| ----- | ---- |
+| Pull request from `release/*` into `main` | `full` |
+| Any other pull request | `reduced` |
+| Any non-PR event (`push`, `workflow_dispatch`, …) | `full` |
+
+The `reduced` tier runs fewer `install-test` legs, so feature PRs get feedback
+sooner. Release PRs always run the `full` tier, and the release evidence
+harvest reads the release PR's CI. A caller can override the automatic choice
+with the optional `package-tier` input (`auto`, `full` or `reduced`; default
+`auto`). Any other value fails the `matrix` job.
+
+```yaml
+jobs:
+  package:
+    uses: vergil-project/vergil-actions/.github/workflows/ci-package.yml@v2.1
+    with:
+      package-tier: full  # optional; omit for auto
+```
+
+`package / evidence` runs in both tiers. It fails unless the `matrix`, `build`
+and `install-test` jobs all succeeded, and it records the tier that ran as
+`metrics.tier` in the `ci-evidence-package` artifact.
+
+This needs a vergil-tooling release whose `vrg-package matrix` accepts `--tier`.
 
 ## CD workflows (post-merge)
 
