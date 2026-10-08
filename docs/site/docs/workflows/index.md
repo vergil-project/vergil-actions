@@ -61,6 +61,7 @@ and `install-test` jobs all succeeded, and it records the tier that ran as
 This needs a vergil-tooling release whose `vrg-package matrix` accepts `--tier`.
 
 ### CI Package: toolchain setup
+
 Each `build / <cell>` and `install-test / <cell>` job runs inside the cell's
 OS image and sets it up with
 [`package/setup`](../actions/package-setup.md). On x86_64 Ubuntu images
