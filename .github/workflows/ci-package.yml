@@ -5,9 +5,24 @@ name: CI Package
 # repos whose vergil.toml has [package]; calling it without one fails the run.
 # The gate job `evidence` surfaces as `package / evidence` under a caller job
 # keyed `package`.
+#
+# Tiered matrix (vergil-project/vergil-actions#930): release PRs (head
+# `release/*` into `main`) and non-PR events (push, workflow_dispatch) run the
+# `full` matrix; every other pull request runs the `reduced` matrix. The
+# `package-tier` input overrides the automatic choice. The tier that ran is
+# recorded in the gate's evidence (`metrics.tier`). Requires a vergil-tooling
+# release whose `vrg-package matrix` accepts `--tier`.
 
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      package-tier:
+        description: >-
+          Package matrix tier: "auto" (default; full for release PRs into main
+          and for non-PR events, reduced for other PRs), "full", or "reduced".
+        type: string
+        required: false
+        default: auto
 
 permissions:
   contents: read
@@ -18,6 +33,9 @@ jobs:
     needs: matrix
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.image }}
+    # A normal build takes about 45 s; this bounds a stalled mirror or tool
+    # (issue #931; one slow-mirror amd64 build once took 26 min).
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -56,6 +74,7 @@ jobs:
     # below turns it into a red gate instead of a green-by-absence skip.
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Assert all required legs succeeded
         shell: bash
@@ -96,12 +115,15 @@ jobs:
           gate: package
           files: evidence-reports/*.json
           tools: '[{"name": "nfpm"}, {"name": "vrg-package"}]'
+          # tier is only ever "full" or "reduced" (validated in the matrix job).
+          metrics: '{"tier": "${{ needs.matrix.outputs.tier }}"}'
 
   install-test:
     name: install-test / ${{ matrix.id }}
     needs: [matrix, build]
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.image }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -141,10 +163,45 @@ jobs:
   matrix:
     name: matrix
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       build: ${{ steps.resolve.outputs.build }}
       test: ${{ steps.resolve.outputs.test }}
+      tier: ${{ steps.tier.outputs.tier }}
     steps:
+      # Decide the matrix tier. Event context arrives via env and is never
+      # interpolated into the script: head_ref is attacker-controllable.
+      - name: Decide package tier
+        id: tier
+        shell: bash
+        env:
+          REQUESTED: ${{ inputs.package-tier }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          case "$REQUESTED" in
+            full|reduced)
+              tier="$REQUESTED"
+              ;;
+            auto)
+              if [ "$EVENT_NAME" != "pull_request" ]; then
+                tier=full
+              elif [ "$BASE_REF" = "main" ] && [[ "$HEAD_REF" == release/* ]]; then
+                tier=full
+              else
+                tier=reduced
+              fi
+              ;;
+            *)
+              echo "::error::invalid package-tier input '${REQUESTED}' (expected auto, full or reduced)"
+              exit 1
+              ;;
+          esac
+          echo "package tier: ${tier} (requested: ${REQUESTED}, event: ${EVENT_NAME})"
+          echo "tier=${tier}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout code
         uses: actions/checkout@v6
 
@@ -154,7 +211,9 @@ jobs:
       - name: Resolve package matrix
         id: resolve
         shell: bash
-        run: vrg-package matrix --github-output
+        env:
+          TIER: ${{ steps.tier.outputs.tier }}
+        run: vrg-package matrix --github-output --tier "$TIER"
 
       - name: Require a [package] section
         if: steps.resolve.outputs.enabled != 'true'

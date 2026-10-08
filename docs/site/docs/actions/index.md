@@ -35,3 +35,10 @@ definition and optional supporting scripts.
   repository's declared `[container].build-command` on CI test jobs
   (test-runtime only; auto-wired into `ci-test`; fail-closed with no retry;
   exports `NODE_PATH` so a baked out-of-workspace node library resolves).
+
+### Package
+
+- **[package/setup](package-setup.md)** — Installs the package toolchain in a
+  package build or install-test container: OS prerequisites (apt mirror list
+  on x86_64 Ubuntu, fail-fast apt, a single `apt-get update`), a pinned `uv`,
+  `vergil-tooling`, and nFPM.

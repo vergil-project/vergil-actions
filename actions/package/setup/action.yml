@@ -18,22 +18,16 @@ inputs:
 runs:
   using: composite
   steps:
+    # os-prereqs.sh points x86_64 Ubuntu containers at an apt mirror list
+    # (Azure first, then archive.ubuntu.com), writes a fail-fast apt config
+    # every later apt call in the job inherits, and runs one apt-get update /
+    # one install (bounded dnf on UBI). Logic lives in the script so
+    # tests/os-prereqs.test.sh can exercise it.
     - name: Install OS prerequisites
       shell: bash
       run: |
         set -euo pipefail
-        if command -v apt-get >/dev/null 2>&1; then
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl git tar gzip
-        elif command -v dnf >/dev/null 2>&1; then
-          # UBI ships curl-minimal, which conflicts with the full curl package.
-          dnf install -y --setopt=install_weak_deps=False \
-            ca-certificates curl-minimal git tar gzip
-        else
-          echo "::error::package setup needs apt-get or dnf; found neither in this image"
-          exit 1
-        fi
+        bash "${GITHUB_ACTION_PATH}/os-prereqs.sh"
         git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     # The installer is pinned by sha256 and embeds the sha256 of every uv
