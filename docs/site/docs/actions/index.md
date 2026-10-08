@@ -39,6 +39,6 @@ definition and optional supporting scripts.
 ### Package
 
 - **[package/setup](package-setup.md)** — Installs the package toolchain in a
-  package build or install-test container: OS prerequisites (Azure apt mirror
+  package build or install-test container: OS prerequisites (apt mirror list
   on x86_64 Ubuntu, fail-fast apt, a single `apt-get update`), a pinned `uv`,
   `vergil-tooling`, and nFPM.

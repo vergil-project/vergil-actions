@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Behavioural test for os-prereqs.sh — the package setup action's OS
-# prerequisites installer (Azure apt mirror on x86_64, fail-fast apt, one
+# prerequisites installer (apt mirror list on x86_64, fail-fast apt, one
 # apt-get update; bounded dnf on UBI).
 #
 # This repo declares `language = shell` (vergil.toml), which runs no test gate,
@@ -59,6 +59,21 @@ Components: main universe restricted multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg'
 
 NOBLE_AMD64_EXPECTED='Types: deb
+URIs: mirror+file:/etc/apt/apt-mirrors.txt
+Suites: noble noble-updates noble-backports
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+Types: deb
+URIs: mirror+file:/etc/apt/apt-mirrors.txt
+Suites: noble-security
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg'
+
+# The same sources as left by this script's earlier hard rewrite to the Azure
+# mirror (and as GitHub's own runner images ship them): Azure URIs must move to
+# the mirror list too.
+NOBLE_AZURE_SOURCES='Types: deb
 URIs: http://azure.archive.ubuntu.com/ubuntu/
 Suites: noble noble-updates noble-backports
 Components: main universe restricted multiverse
@@ -90,14 +105,23 @@ deb http://archive.ubuntu.com/ubuntu jammy-updates main restricted
 deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted
 deb https://example.com/apt stable main'
 
-JAMMY_EXPECTED='deb http://azure.archive.ubuntu.com/ubuntu/ jammy main restricted
-deb http://azure.archive.ubuntu.com/ubuntu/ jammy-updates main restricted
-deb http://azure.archive.ubuntu.com/ubuntu/ jammy-security main restricted
+JAMMY_EXPECTED='deb mirror+file:/etc/apt/apt-mirrors.txt jammy main restricted
+deb mirror+file:/etc/apt/apt-mirrors.txt jammy-updates main restricted
+deb mirror+file:/etc/apt/apt-mirrors.txt jammy-security main restricted
 deb https://example.com/apt stable main'
 
+# GitHub runner-images configure-apt-sources.sh format, "<uri><TAB>priority:<n>",
+# with http (not https) fallbacks: a fresh container has no CA certificates yet.
+TAB="$(printf '\t')"
+MIRROR_LIST_EXPECTED="http://azure.archive.ubuntu.com/ubuntu/${TAB}priority:1
+http://archive.ubuntu.com/ubuntu/${TAB}priority:2
+http://security.ubuntu.com/ubuntu/${TAB}priority:3"
+
 FAST_FAIL_EXPECTED='Acquire::Retries "3";
+Acquire::Retries::Delay "false";
 Acquire::http::Timeout "20";
-Acquire::https::Timeout "20";'
+Acquire::https::Timeout "20";
+DPkg::Lock::Timeout "60";'
 
 APT_LOG_EXPECTED='apt-get update DEBIAN_FRONTEND=noninteractive fast-fail=present
 apt-get install -y --no-install-recommends ca-certificates curl git tar gzip gnupg DEBIAN_FRONTEND=noninteractive fast-fail=present'
@@ -148,9 +172,28 @@ assert_apt_tail() {
   assert_eq "$name" "apt calls" "$(cat "${dir}/calls.log")" "$APT_LOG_EXPECTED"
 }
 
+# assert_mirror_list <name> <env dir> — the mirror list exists, byte-exact.
+assert_mirror_list() {
+  local file="${2}/root/etc/apt/apt-mirrors.txt"
+  if [ ! -f "$file" ]; then
+    fail_case "$1" "apt-mirrors.txt was not written"
+    return 1
+  fi
+  assert_eq "$1" "apt-mirrors.txt" "$(cat "$file")" "$MIRROR_LIST_EXPECTED"
+}
+
+# assert_no_mirror_list <name> <env dir> — no mirror list was written.
+assert_no_mirror_list() {
+  if [ -e "${2}/root/etc/apt/apt-mirrors.txt" ]; then
+    fail_case "$1" "apt-mirrors.txt was written but no sources were rewritten"
+    return 1
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Case 1: deb822 ubuntu.sources on x86_64 -> archive and security URIs both
-# move to the Azure mirror; one update, one install, fail-fast first.
+# move to the mirror list, which is written; one update, one install,
+# fail-fast first.
 # ---------------------------------------------------------------------------
 case_deb822_x86_64() {
   local name="deb822-x86_64" dir src
@@ -159,7 +202,23 @@ case_deb822_x86_64() {
   printf '%s\n' "$NOBLE_AMD64_SOURCES" >"$src"
   run_script "$dir" x86_64 apt
   assert_eq "$name" "ubuntu.sources" "$(cat "$src")" "$NOBLE_AMD64_EXPECTED" &&
+    assert_mirror_list "$name" "$dir" &&
     assert_apt_tail "$name" "$dir" && pass_case "$name"
+  rm -rf "$dir"
+}
+
+# ---------------------------------------------------------------------------
+# Case 1b: sources already hard-pointed at the Azure mirror (this script's
+# earlier behaviour, and GitHub's runner-image default) -> mirror list too.
+# ---------------------------------------------------------------------------
+case_azure_to_mirror_list() {
+  local name="azure-to-mirror-list" dir src
+  dir="$(make_env)"
+  src="${dir}/root/etc/apt/sources.list.d/ubuntu.sources"
+  printf '%s\n' "$NOBLE_AZURE_SOURCES" >"$src"
+  run_script "$dir" x86_64 apt
+  assert_eq "$name" "ubuntu.sources" "$(cat "$src")" "$NOBLE_AMD64_EXPECTED" &&
+    assert_mirror_list "$name" "$dir" && pass_case "$name"
   rm -rf "$dir"
 }
 
@@ -174,6 +233,7 @@ case_deb822_aarch64() {
   printf '%s\n' "$NOBLE_ARM64_SOURCES" >"$src"
   run_script "$dir" aarch64 apt
   assert_eq "$name" "ubuntu.sources" "$(cat "$src")" "$NOBLE_ARM64_SOURCES" &&
+    assert_no_mirror_list "$name" "$dir" &&
     assert_apt_tail "$name" "$dir" && pass_case "$name"
   rm -rf "$dir"
 }
@@ -189,7 +249,7 @@ case_non_x86_64_never_rewrites() {
   printf '%s\n' "$NOBLE_AMD64_SOURCES" >"$src"
   run_script "$dir" aarch64 apt
   assert_eq "$name" "ubuntu.sources" "$(cat "$src")" "$NOBLE_AMD64_SOURCES" &&
-    pass_case "$name"
+    assert_no_mirror_list "$name" "$dir" && pass_case "$name"
   rm -rf "$dir"
 }
 
@@ -204,21 +264,37 @@ case_legacy_x86_64() {
   printf '%s\n' "$JAMMY_SOURCES" >"$src"
   run_script "$dir" x86_64 apt
   assert_eq "$name" "sources.list" "$(cat "$src")" "$JAMMY_EXPECTED" &&
+    assert_mirror_list "$name" "$dir" &&
     assert_apt_tail "$name" "$dir" && pass_case "$name"
   rm -rf "$dir"
 }
 
 # ---------------------------------------------------------------------------
-# Case 5: re-running over already-rewritten sources is a no-op.
+# Case 5: running twice leaves the rewritten sources unchanged and the mirror
+# list with exactly one copy of each entry (overwritten, not appended).
 # ---------------------------------------------------------------------------
 case_idempotent() {
   local name="idempotent" dir src
   dir="$(make_env)"
   src="${dir}/root/etc/apt/sources.list.d/ubuntu.sources"
-  printf '%s\n' "$NOBLE_AMD64_EXPECTED" >"$src"
+  printf '%s\n' "$NOBLE_AMD64_SOURCES" >"$src"
+  run_script "$dir" x86_64 apt
   run_script "$dir" x86_64 apt
   assert_eq "$name" "ubuntu.sources" "$(cat "$src")" "$NOBLE_AMD64_EXPECTED" &&
-    pass_case "$name"
+    assert_mirror_list "$name" "$dir" && pass_case "$name"
+  rm -rf "$dir"
+}
+
+# ---------------------------------------------------------------------------
+# Case 5b: x86_64 with no Ubuntu sources file (e.g. a Debian image) -> no
+# mirror list is written; fail-fast and the single update/install still apply.
+# ---------------------------------------------------------------------------
+case_no_sources_x86_64() {
+  local name="no-sources-x86_64" dir
+  dir="$(make_env)"
+  run_script "$dir" x86_64 apt
+  assert_no_mirror_list "$name" "$dir" &&
+    assert_apt_tail "$name" "$dir" && pass_case "$name"
   rm -rf "$dir"
 }
 
@@ -267,10 +343,12 @@ case_detection() {
 }
 
 case_deb822_x86_64
+case_azure_to_mirror_list
 case_deb822_aarch64
 case_non_x86_64_never_rewrites
 case_legacy_x86_64
 case_idempotent
+case_no_sources_x86_64
 case_dnf
 case_detection
 

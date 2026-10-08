@@ -10,7 +10,7 @@ name: Smoke - setup/vergil outputs
 #     primary-container-tag fixtures. Fast, no install. It also runs the
 #     package setup action's detect.sh harness (self-repo vs.
 #     [dependencies].vergil install spec; epic vergil-project/.github#356)
-#     and its os-prereqs.sh harness (Azure apt mirror on x86_64, fail-fast
+#     and its os-prereqs.sh harness (apt mirror list on x86_64, fail-fast
 #     apt, one apt-get update, bounded dnf; issue #931).
 #   * action-e2e — calls the action itself against a multi-version fixture
 #     vergil.toml and asserts the three outputs are wired through action.yml.

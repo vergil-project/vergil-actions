@@ -5,17 +5,38 @@
 # vergil-project/vergil-actions#931).
 #
 # apt images (ubuntu, debian):
-#   1. On x86_64 only, point the Ubuntu archive and security URIs at the Azure
-#      mirror GitHub's hosted runner images use
-#      (http://azure.archive.ubuntu.com/ubuntu/). The default archive.ubuntu.com
-#      can stall for many minutes from GitHub's runners; the Azure mirror is
-#      in-region. Both the deb822 file (24.04+,
-#      /etc/apt/sources.list.d/ubuntu.sources) and the legacy one-line file
-#      (/etc/apt/sources.list) are rewritten. arm64 uses ports.ubuntu.com, which
-#      the Azure mirror does not serve, so non-x86_64 sources are left untouched.
+#   1. On x86_64 only, point the Ubuntu archive and security URIs at an apt
+#      mirror list, as GitHub's hosted runner images do in
+#      images/ubuntu/scripts/build/configure-apt-sources.sh
+#      (https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/configure-apt-sources.sh):
+#      the URIs become mirror+file:/etc/apt/apt-mirrors.txt, and that file
+#      lists, one "<uri><TAB>priority:<n>" entry per line, the same three
+#      hosts in the same order and priorities:
+#        http://azure.archive.ubuntu.com/ubuntu/    priority:1
+#        http://archive.ubuntu.com/ubuntu/          priority:2
+#        http://security.ubuntu.com/ubuntu/         priority:3
+#      One deliberate difference: runner-images lists the two fallbacks as
+#      https://, but a fresh container has no CA certificates until this very
+#      script installs ca-certificates, so an https fallback fails with "No
+#      system certificates available". http is the image's own default and apt
+#      still verifies every index against the archive's signed InRelease.
+#      apt tries the in-region Azure mirror first and falls back down the list
+#      when it fails, so a failing Azure mirror no longer fails the job, as a
+#      hard rewrite to Azure would. The default archive.ubuntu.com alone can
+#      stall for many minutes from GitHub's runners. Both the deb822 file
+#      (24.04+, /etc/apt/sources.list.d/ubuntu.sources) and the legacy one-line
+#      file (/etc/apt/sources.list) are rewritten. arm64 uses ports.ubuntu.com,
+#      which none of these mirrors serve, so non-x86_64 sources are left
+#      untouched.
 #   2. Write /etc/apt/apt.conf.d/80-vergil-fast-fail (3 retries, 20 s
-#      timeouts) so this and every later apt call in the job fails fast
-#      instead of hanging on a stalled mirror.
+#      timeouts, 60 s dpkg lock wait) so this and every later apt call in the
+#      job fails fast instead of hanging on a stalled mirror. It also sets
+#      Acquire::Retries::Delay "false": with delayed retries, apt 2.4-2.8
+#      (jammy, noble) deadlocks after a mirror-list failover — the fallback's
+#      InRelease files arrive and then apt waits forever, timeouts never
+#      firing (https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2003851;
+#      reproduced deterministically in ubuntu:24.04 with the Azure mirror
+#      unreachable, and the signature of vergil-tooling CD run 37678748594).
 #   3. Run exactly one `apt-get update` and install every prerequisite the
 #      package tooling needs in one call, so vergil-tooling finds them present.
 #
@@ -32,7 +53,10 @@
 #   VRG_OS_PKG_MGR   apt or dnf (default: detected from PATH)
 set -euo pipefail
 
-AZURE_MIRROR="http://azure.archive.ubuntu.com/ubuntu/"
+# The path apt reads (always the real /etc, whatever VRG_OS_ROOT is) and the
+# source URI that points at it.
+MIRROR_LIST="/etc/apt/apt-mirrors.txt"
+MIRROR_URI="mirror+file:${MIRROR_LIST}"
 APT_PACKAGES=(ca-certificates curl git tar gzip gnupg)
 DNF_PACKAGES=(ca-certificates /usr/bin/curl /usr/bin/gpg git tar gzip)
 
@@ -51,21 +75,36 @@ if [ -z "$pkg_mgr" ]; then
   fi
 fi
 
+# write_mirror_list
+# Write the mirror list in runner-images' format and priorities, with http
+# fallbacks (see the header). Overwritten, never appended, so a re-run leaves one copy of each
+# entry.
+write_mirror_list() {
+  local file="${root}${MIRROR_LIST}"
+  mkdir -p "$(dirname "$file")"
+  printf '%s\tpriority:%s\n' \
+    'http://azure.archive.ubuntu.com/ubuntu/' 1 \
+    'http://archive.ubuntu.com/ubuntu/' 2 \
+    'http://security.ubuntu.com/ubuntu/' 3 \
+    >"$file"
+  echo "os-prereqs: wrote ${file}"
+}
+
 # rewrite_sources <file>
-# Rewrite archive.ubuntu.com and security.ubuntu.com URIs (http or https, with
-# or without the trailing slash) to the Azure mirror. Idempotent: the Azure
-# host itself never matches, since the pattern requires "://" directly before
-# "archive" or "security". Other hosts (ports.ubuntu.com, third-party repos)
-# are left alone.
+# Rewrite archive.ubuntu.com, security.ubuntu.com and azure.archive.ubuntu.com
+# URIs (http or https, with or without the trailing slash) to the mirror list.
+# Idempotent: mirror+file:/etc/apt/apt-mirrors.txt never matches, since the
+# pattern requires an http(s) Ubuntu host. Other hosts (ports.ubuntu.com,
+# third-party repos) are left alone.
 rewrite_sources() {
   local file="$1" tmp
   tmp="${file}.vergil-tmp"
   sed -E \
-    "s#https?://(archive|security)\\.ubuntu\\.com/ubuntu/?([[:space:]]|\$)#${AZURE_MIRROR}\\2#g" \
+    "s#https?://((azure\\.)?archive|security)\\.ubuntu\\.com/ubuntu/?([[:space:]]|\$)#${MIRROR_URI}\\3#g" \
     "$file" >"$tmp"
   cat "$tmp" >"$file"
   rm -f "$tmp"
-  echo "os-prereqs: pointed ${file} at ${AZURE_MIRROR}"
+  echo "os-prereqs: pointed ${file} at ${MIRROR_URI}"
 }
 
 configure_apt() {
@@ -75,16 +114,21 @@ configure_apt() {
 
   if [ "$arch" = "x86_64" ]; then
     # 24.04+ keeps a comment-only sources.list beside ubuntu.sources, so
-    # rewrite whichever files exist rather than picking one.
-    local found=0 file
+    # rewrite whichever files exist rather than picking one. The mirror list
+    # is written first, so no source ever points at a missing file.
+    local files=() file
     for file in "$deb822" "$legacy"; do
       if [ -f "$file" ]; then
-        rewrite_sources "$file"
-        found=1
+        files+=("$file")
       fi
     done
-    if [ "$found" -eq 0 ]; then
+    if [ "${#files[@]}" -eq 0 ]; then
       echo "os-prereqs: no Ubuntu apt sources file found; mirror left unchanged"
+    else
+      write_mirror_list
+      for file in "${files[@]}"; do
+        rewrite_sources "$file"
+      done
     fi
   else
     echo "os-prereqs: ${arch} is not x86_64; apt sources left unchanged"
@@ -93,8 +137,10 @@ configure_apt() {
   mkdir -p "$conf_dir"
   printf '%s\n' \
     'Acquire::Retries "3";' \
+    'Acquire::Retries::Delay "false";' \
     'Acquire::http::Timeout "20";' \
     'Acquire::https::Timeout "20";' \
+    'DPkg::Lock::Timeout "60";' \
     >"${conf_dir}/80-vergil-fast-fail"
   echo "os-prereqs: wrote ${conf_dir}/80-vergil-fast-fail"
 }

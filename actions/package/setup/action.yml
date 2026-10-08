@@ -18,10 +18,11 @@ inputs:
 runs:
   using: composite
   steps:
-    # os-prereqs.sh points x86_64 Ubuntu containers at the Azure apt mirror,
-    # writes a fail-fast apt config every later apt call in the job inherits,
-    # and runs one apt-get update / one install (bounded dnf on UBI). Logic
-    # lives in the script so tests/os-prereqs.test.sh can exercise it.
+    # os-prereqs.sh points x86_64 Ubuntu containers at an apt mirror list
+    # (Azure first, then archive.ubuntu.com), writes a fail-fast apt config
+    # every later apt call in the job inherits, and runs one apt-get update /
+    # one install (bounded dnf on UBI). Logic lives in the script so
+    # tests/os-prereqs.test.sh can exercise it.
     - name: Install OS prerequisites
       shell: bash
       run: |

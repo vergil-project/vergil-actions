@@ -64,11 +64,18 @@ This needs a vergil-tooling release whose `vrg-package matrix` accepts `--tier`.
 Each `build / <cell>` and `install-test / <cell>` job runs inside the cell's
 OS image and sets it up with
 [`package/setup`](../actions/package-setup.md). On x86_64 Ubuntu images
-that action points apt at the Azure mirror GitHub's hosted runners use. On
-every apt image it writes a fail-fast apt config (3 retries, 20-second
-timeouts) that all later apt calls in the job inherit, and it runs a single
-`apt-get update`. arm64 cells keep `ports.ubuntu.com`. UBI cells install
-through one bounded `dnf` call.
+that action points apt at a mirror list, as GitHub's hosted runners do: the
+Azure mirror first, then `archive.ubuntu.com` and `security.ubuntu.com` as
+fallbacks. On every apt image it writes a fail-fast apt config (3 undelayed
+retries, 20-second timeouts, a 60-second dpkg lock wait) that all later apt
+calls in the job inherit, and it runs a single `apt-get update`. arm64 cells
+keep `ports.ubuntu.com`. UBI cells install through one bounded `dnf` call.
+
+Every package job sets `timeout-minutes`, in both `ci-package.yml` (`matrix`
+5, `build` 30, `install-test` 15, `evidence` 5) and `cd-release.yml`
+(`package-matrix` 5, `package-build` 30, `package-sign` 15). A normal build
+takes about 45 seconds, so a stall fails the job in minutes rather than
+running to GitHub's 6-hour limit.
 
 ## CD workflows (post-merge)
 
