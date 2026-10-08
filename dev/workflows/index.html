@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/dev/workflows/">
       
       
-        <link rel="prev" href="../actions/shared-setup-build-command/">
+        <link rel="prev" href="../actions/package-setup/">
       
       
         <link rel="next" href="ci-docs/">
@@ -4007,6 +4007,8 @@
       
         
       
+        
+      
     
     
     
@@ -4496,6 +4498,98 @@
     
   
     shared/setup/build-command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Package
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/package-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    package/setup
   
 
     
@@ -5201,6 +5295,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#ci-package-toolchain-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI Package: toolchain setup
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5435,6 +5540,21 @@ with the optional <code>package-tier</code> input (<code>auto</code>, <code>full
 and <code>install-test</code> jobs all succeeded, and it records the tier that ran as
 <code>metrics.tier</code> in the <code>ci-evidence-package</code> artifact.</p>
 <p>This needs a vergil-tooling release whose <code>vrg-package matrix</code> accepts <code>--tier</code>.</p>
+<h3 id="ci-package-toolchain-setup">CI Package: toolchain setup<a class="headerlink" href="#ci-package-toolchain-setup" title="Permanent link">&para;</a></h3>
+<p>Each <code>build / &lt;cell&gt;</code> and <code>install-test / &lt;cell&gt;</code> job runs inside the cell's
+OS image and sets it up with
+<a href="../actions/package-setup/"><code>package/setup</code></a>. On x86_64 Ubuntu images
+that action points apt at a mirror list, as GitHub's hosted runners do: the
+Azure mirror first, then <code>archive.ubuntu.com</code> and <code>security.ubuntu.com</code> as
+fallbacks. On every apt image it writes a fail-fast apt config (3 undelayed
+retries, 20-second timeouts, a 60-second dpkg lock wait) that all later apt
+calls in the job inherit, and it runs a single <code>apt-get update</code>. arm64 cells
+keep <code>ports.ubuntu.com</code>. UBI cells install through one bounded <code>dnf</code> call.</p>
+<p>Every package job sets <code>timeout-minutes</code>, in both <code>ci-package.yml</code> (<code>matrix</code>
+5, <code>build</code> 30, <code>install-test</code> 15, <code>evidence</code> 5) and <code>cd-release.yml</code>
+(<code>package-matrix</code> 5, <code>package-build</code> 30, <code>package-sign</code> 15). A normal build
+takes about 45 seconds, so a stall fails the job in minutes rather than
+running to GitHub's 6-hour limit.</p>
 <h2 id="cd-workflows-post-merge">CD workflows (post-merge)<a class="headerlink" href="#cd-workflows-post-merge" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
