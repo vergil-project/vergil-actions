@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.41] - 2026-10-08
+
+### Bug fixes
+
+- Azure-first apt mirror list, fail-fast apt and job timeouts for package jobs (#933)
+
+### Features
+
+- tier the package matrix: reduced on feature PRs, full on release PRs (#932)
+
 ## [2.1.40] - 2026-10-07
 
 ### Bug fixes
