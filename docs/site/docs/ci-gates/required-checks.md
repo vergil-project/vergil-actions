@@ -37,15 +37,23 @@ gate** named `<kind> / evidence`:
 | `ci-audit.yml` | `audit / evidence` |
 | `ci-quality.yml` | `quality / evidence` |
 | `ci-test.yml` | `test / evidence` |
+| `ci-package.yml` | `package / evidence` (repos with `[package]` only) |
+
+A repo whose `vergil.toml` has a `[package]` section calls `ci-package.yml`
+under a caller job keyed `package`, and `package / evidence` is a **required**
+check for it. Its build and install-test legs vary with the `[package]`
+targets and the matrix tier, so, as with the version legs, only the aggregate
+gate is required. Repos without `[package]` do not call `ci-package.yml` and
+do not require the gate.
 
 The evidence job `needs` every matrix leg for its kind and runs with
 `if: always()`, then asserts each leg's result is `success` before emitting.
 A failed or skipped leg therefore makes the aggregate gate **fail red** rather
 than skip green — closing the "green by absence" hole where a skipped leg would
 otherwise leave the gate unset and non-blocking. Branch protection requires
-these three stable gates; the per-version legs run and appear in the checks UI
-but are informational, so the required-check set does not churn when
-`[ci].versions` changes.
+these stable gates (plus `package / evidence` for `[package]` repos); the
+per-version legs run and appear in the checks UI but are informational, so the
+required-check set does not churn when `[ci].versions` changes.
 
 ## Job name prefix convention
 
@@ -81,6 +89,7 @@ required checks](#evidence-gates-are-the-required-checks) above).
 | `ci-audit.yml` | `dependencies / <version>` legs + `audit / evidence` aggregate | `audit / evidence` |
 | `ci-test.yml` | `unit / <version>` legs + `test / evidence` aggregate | `test / evidence` |
 | `ci-version-bump.yml` | `CI Version Bump / version-bump` | `CI Version Bump / version-bump` |
+| `ci-package.yml` (`[package]` repos only) | `matrix`, `build / <cell>`, `install-test / <cell>` legs + `package / evidence` aggregate | `package / evidence` |
 
 ## Reusable workflow flags
 

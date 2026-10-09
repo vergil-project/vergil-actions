@@ -34,13 +34,15 @@ repositories. See [Reusable Workflows](workflows/index.md) for details.
 | [ci-audit](workflows/ci-audit.md) | Dependency audit |
 | [ci-test](workflows/ci-test.md) | Unit and integration tests |
 | [ci-version-bump](workflows/ci-version-bump.md) | Version divergence gate |
+| [ci-package](workflows/ci-package.md) | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only) |
 
 ### CD (post-merge)
 
 | Workflow | Purpose |
 | ---------- | --------- |
-| cd-release | Full release pipeline (tag, build, publish, version bump) |
+| [cd-release](workflows/cd-release-packages.md) | Full release pipeline (tag, build, publish, version bump), plus signed `.deb`/`.rpm` packages for repos with `[package]` |
 | cd-docs | MkDocs documentation deployment |
+| [publish-index](workflows/publish-index.md) | Signed apt/dnf package-repository site for an `<org>/packages` repo, deployed to GitHub Pages |
 
 ## Design principles
 
