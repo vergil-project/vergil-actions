@@ -4833,6 +4833,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5042,6 +5048,90 @@
     
   
     ci-version-bump
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/ci-package/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/cd-release-packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release packages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/publish-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    publish-index
   
 
     
@@ -5665,7 +5755,9 @@ fixture <code>/etc</code> trees with recording <code>apt-get</code>/<code>dnf</c
 root nor a container. It covers the deb822 x86_64 rewrite and the exact
 mirror-list contents, migrating Azure-pinned sources to the list, arm64 left
 untouched, the legacy <code>sources.list</code>, idempotence across two runs, an x86_64
-image with no Ubuntu sources, the dnf path, and package-manager detection.</p>
+image with no Ubuntu sources, the dnf path, and package-manager detection.
+The <code>Smoke - setup/vergil outputs</code> workflow runs it on every PR that touches
+this action.</p>
 <h3 id="job-timeouts-and-the-runner-host">Job timeouts and the runner host<a class="headerlink" href="#job-timeouts-and-the-runner-host" title="Permanent link">&para;</a></h3>
 <p><code>package-sign</code> in <code>cd-release.yml</code> installs <code>rpm</code> and <code>gnupg</code> on the runner
 host itself, not in a container. It passes the same fail-fast options on the
@@ -5674,8 +5766,7 @@ command line (<code>-o Acquire::Retries=3 -o Acquire::Retries::Delay=false
 -o DPkg::Lock::Timeout=60</code>). Every package job also sets <code>timeout-minutes</code>
 as a backstop: <code>matrix</code> 5, <code>build</code> 30, <code>install-test</code> 15 and <code>evidence</code> 5
 in <code>ci-package.yml</code>, and <code>package-matrix</code> 5, <code>package-build</code> 30 and
-<code>package-sign</code> 15 in <code>cd-release.yml</code>. The <code>Smoke - setup/vergil outputs</code> workflow runs it
-on every PR that touches this action.</p>
+<code>package-sign</code> 15 in <code>cd-release.yml</code>.</p>
 <h2 id="other-steps">Other steps<a class="headerlink" href="#other-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Install uv.</strong> Downloads the release's <code>uv-installer.sh</code>, verifies it

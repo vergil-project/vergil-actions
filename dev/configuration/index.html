@@ -4097,6 +4097,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#binary-package-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Binary package environments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#container-system-packages" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4240,6 +4251,17 @@
     <span class="md-ellipsis">
       
         4. GitHub App installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4a-binary-packages-package-repositories-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4a. Binary packages ([package] repositories only)
       
     </span>
   </a>
@@ -4947,6 +4969,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5156,6 +5184,90 @@
     
   
     ci-version-bump
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/ci-package/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/cd-release-packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release packages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/publish-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    publish-index
   
 
     
@@ -5600,6 +5712,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#binary-package-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Binary package environments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#container-system-packages" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5743,6 +5866,17 @@
     <span class="md-ellipsis">
       
         4. GitHub App installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4a-binary-packages-package-repositories-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4a. Binary packages ([package] repositories only)
       
     </span>
   </a>
@@ -5925,6 +6059,50 @@ trigger CI normally and can auto-merge.</p>
 <p><strong>Key rotation:</strong> Generate a new private key from the app's settings page, update
 the <code>APP_PRIVATE_KEY</code> secret in all library repositories, then revoke the old
 key.</p>
+<h2 id="binary-package-environments">Binary package environments<a class="headerlink" href="#binary-package-environments" title="Permanent link">&para;</a></h2>
+<p>Repositories whose <code>vergil.toml</code> has a <code>[package]</code> section, and the
+organization's <code>&lt;org&gt;/packages</code> index repository, keep their signing key in
+GitHub <strong>environments</strong> (<strong>Settings &gt; Environments</strong>), not in repository
+secrets. Each environment's deployment-branch policy restricts it to a single
+branch.</p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Repository</th>
+<th>Admits</th>
+<th>Secrets</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>package-signing</code></td>
+<td>Each <code>[package]</code> repository</td>
+<td><code>main</code> only</td>
+<td><code>PACKAGE_SIGNING_KEY</code>, <code>PACKAGE_SIGNING_PASSPHRASE</code></td>
+<td>The <code>package-sign</code> job in <a href="../workflows/cd-release-packages/"><code>cd-release.yml</code></a></td>
+</tr>
+<tr>
+<td><code>index-signing</code></td>
+<td><code>&lt;org&gt;/packages</code></td>
+<td><code>develop</code> only</td>
+<td><code>PACKAGE_SIGNING_KEY</code>, <code>PACKAGE_SIGNING_PASSPHRASE</code></td>
+<td>The <code>build-index</code> job in <a href="../workflows/publish-index/"><code>publish-index.yml</code></a></td>
+</tr>
+</tbody>
+</table>
+<p><code>PACKAGE_SIGNING_KEY</code> holds the ASCII-armored export of the org signing
+subkey. <code>index-signing</code> admits <code>develop</code> because <code>repository_dispatch</code> and
+<code>schedule</code> runs always use the default branch.</p>
+<p>Environment secrets reach these cross-repo reusable workflows <strong>only</strong> when
+the caller passes <code>secrets: inherit</code>. An explicit <code>secrets:</code> map leaves them
+empty (vergil-project/packages#6). See
+<a href="../getting-started/#release-publishing-secrets">Release publishing secrets</a>.</p>
+<p>The GitHub App behind <code>APP_CLIENT_ID</code> / <code>APP_PRIVATE_KEY</code> must also be
+installed on <code>&lt;org&gt;/packages</code> with <strong>Contents: Read &amp; write</strong>, so that
+<code>cd-release.yml</code> can dispatch <code>package-released</code> to it after a packaged
+release.</p>
 <h2 id="container-system-packages">Container system packages<a class="headerlink" href="#container-system-packages" title="Permanent link">&para;</a></h2>
 <p>A repository can declare extra Debian packages under <code>[container].system-packages</code>
 in its <code>vergil.toml</code>. On CI, the <a href="../workflows/ci-test/"><code>ci-test</code></a> workflow
@@ -6060,6 +6238,28 @@ silently leaving <code>main</code> unprotected. See
 <ul>
 <li>[ ] Install the GitHub App on the new repository (library repos only)</li>
 <li>[ ] Verify by checking <strong>Settings &gt; GitHub Apps</strong> on the repository</li>
+<li>[ ] <code>[package]</code> repositories: confirm the App is also installed on
+  <code>&lt;org&gt;/packages</code> with <strong>Contents: Read &amp; write</strong>, so the release can
+  dispatch <code>package-released</code> to it</li>
+</ul>
+<h3 id="4a-binary-packages-package-repositories-only">4a. Binary packages (<code>[package]</code> repositories only)<a class="headerlink" href="#4a-binary-packages-package-repositories-only" title="Permanent link">&para;</a></h3>
+<p>See <a href="#binary-package-environments">Binary package environments</a>.</p>
+<ul>
+<li>[ ] Create a <code>package-signing</code> environment whose deployment-branch policy
+  admits only <code>main</code></li>
+<li>[ ] Add <code>PACKAGE_SIGNING_KEY</code> and <code>PACKAGE_SIGNING_PASSPHRASE</code> to it</li>
+<li>[ ] Call <code>cd-release.yml</code> with
+  <code>secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</code></li>
+<li>[ ] Call <code>ci-package.yml</code> under a job keyed <code>package</code> and add
+  <code>package / evidence</code> to the <strong>CI gates</strong> ruleset</li>
+</ul>
+<p>For the <code>&lt;org&gt;/packages</code> index repository itself:</p>
+<ul>
+<li>[ ] Create an <code>index-signing</code> environment that admits only <code>develop</code>,
+  holding <code>PACKAGE_SIGNING_KEY</code> and <code>PACKAGE_SIGNING_PASSPHRASE</code></li>
+<li>[ ] Set <strong>Settings &gt; Pages &gt; Source</strong> to <strong>GitHub Actions</strong></li>
+<li>[ ] Call <code>publish-index.yml</code> with <code>secrets: inherit</code> (same <code>nosemgrep</code>
+  comment)</li>
 </ul>
 <h3 id="5-workflow-files">5. Workflow files<a class="headerlink" href="#5-workflow-files" title="Permanent link">&para;</a></h3>
 <ul>
