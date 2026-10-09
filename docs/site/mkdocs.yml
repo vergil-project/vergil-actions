@@ -88,6 +88,9 @@ nav:
       - ci-audit: workflows/ci-audit.md
       - ci-test: workflows/ci-test.md
       - ci-version-bump: workflows/ci-version-bump.md
+      - ci-package: workflows/ci-package.md
+      - cd-release packages: workflows/cd-release-packages.md
+      - publish-index: workflows/publish-index.md
   - CI Gate Requirements:
       - Overview: ci-gates/index.md
       - The All-Hard-Gates Principle: ci-gates/all-hard-gates.md

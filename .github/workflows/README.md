@@ -33,8 +33,9 @@ across all managed repositories.
 
 | Workflow | Purpose |
 |---|---|
-| `cd-release.yml` | Full release pipeline (tag, build, publish, version bump) |
+| `cd-release.yml` | Full release pipeline (tag, build, publish, version bump). Repos with `[package]` also build their `.deb`/`.rpm` packages, sign the `.rpm`s in the main-only `package-signing` environment, attest them, attach them (plus `packages-manifest.json`) to the Release, and dispatch `package-released` to `<owner>/packages`; such callers must pass `secrets: inherit` |
 | `cd-docs.yml` | MkDocs documentation deployment |
+| `publish-index.yml` | Rebuild, verify and sign the apt/dnf package-repository site from the releases in `packages.toml` and deploy it to GitHub Pages (called only from an `<org>/packages` repo; `index-signing` environment, develop only; caller passes `secrets: inherit`) |
 
 ## Formatting Rules
 
@@ -348,10 +349,16 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
-    secrets: inherit
+    # No [package]: forward only the ecosystem's publishing secrets, never a
+    # blanket inherit. Python publishes via OIDC, so there is none to pass.
 ```
 
-### cd.yml — Release only (no docs)
+### cd.yml — Release only (no docs), packaged repo
+
+A repo with a `[package]` section must pass `secrets: inherit`: the
+`package-signing` environment secrets reach a cross-repo reusable workflow
+only through `inherit`, never through an explicit `secrets:` map
+(vergil-project/packages#6).
 
 ```yaml
 # https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
@@ -373,5 +380,7 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
-    secrets: inherit
+    # Required for [package] repos: environment secrets only reach the
+    # reusable workflow with inherit.
+    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 ```
