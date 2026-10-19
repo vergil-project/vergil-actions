@@ -48,7 +48,7 @@ inputs:
       to avoid Docker Hub's anonymous pull rate limits and transient
       registry timeouts. Override to pin a specific version or registry.
     required: false
-    default: "ghcr.io/aquasecurity/trivy:0.71.0"
+    default: "ghcr.io/aquasecurity/trivy:0.76.0"
   upload-sarif:
     description: >-
       Upload SARIF results to GitHub code scanning. The uploaded copy
