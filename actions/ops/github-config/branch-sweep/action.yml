@@ -1,0 +1,25 @@
+name: Sweep finished branches
+description: >-
+  Run `vrg-branch-sweep --apply` against the repo and list every deleted
+  branch in the job summary. Branches of merged PRs, which mean GitHub skipped
+  its after-merge processing, are flagged in a warning block and as
+  `::warning::` annotations. Fails when the sweep fails or its output cannot be
+  reconciled with its summary line. Needs vergil-tooling on PATH and a
+  GH_TOKEN with contents:write and pull-requests:read on the repo. The
+  reporting logic lives in sweep.sh so it is unit-testable
+  (tests/sweep.test.sh).
+
+inputs:
+  repo:
+    description: Repository to sweep, as OWNER/NAME.
+    required: false
+    default: ${{ github.repository }}
+
+runs:
+  using: composite
+  steps:
+    - name: Sweep finished branches
+      shell: bash
+      env:
+        REPO: ${{ inputs.repo }}
+      run: bash "${GITHUB_ACTION_PATH}/sweep.sh"

@@ -1,0 +1,26 @@
+name: Smoke - ops/github-config/branch-sweep
+
+# Runs the framework-free sweep.sh harness for the branch-sweep action
+# (issue #952): job-summary rendering, merged-PR warnings, escaping, and the
+# fail-closed paths (sweep failure, unparseable output).
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - actions/ops/github-config/branch-sweep/**
+      - .github/workflows/smoke-branch-sweep.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: sweep.sh fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run sweep.sh harness
+        shell: bash
+        run: bash actions/ops/github-config/branch-sweep/tests/sweep.test.sh
