@@ -57,6 +57,14 @@ jobs:
 
       - name: Deploy docs
         uses: ./actions/cd/docs/deploy
+        env:
+          # mkdocs-material 9.7.x prints a MkDocs 2.0 warning banner on every
+          # build unless this is set; it reaches the mkdocs/mike processes the
+          # deploy action starts. Consumers pin mkdocs<2 themselves (risk
+          # assessment: #316). A caller's env does not reach a reusable
+          # workflow, so it is set here.
+          # https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+          NO_MKDOCS_2_WARNING: "1"
         with:
           version-command: vrg-version show --major-minor
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
