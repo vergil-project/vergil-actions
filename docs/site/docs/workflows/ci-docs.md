@@ -40,6 +40,16 @@ For Python repositories the build runs as `uv run mkdocs`; otherwise it runs
 `mkdocs` directly, matching the toolchain resolution in
 `actions/cd/docs/deploy`.
 
+### MkDocs 2.0 banner
+
+The "Build docs" step sets `NO_MKDOCS_2_WARNING=1`. Without it, mkdocs-material
+9.7.x prints a
+[MkDocs 2.0 warning banner](https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/)
+on every build. The workflow has to set the variable itself: a caller's `env`
+does not reach a reusable workflow, so callers cannot set it. The variable only
+hides the banner. Consumers still pin `mkdocs<2` in their own docs
+dependencies. Added in v2.1.43 (#947, PR #948).
+
 ## Usage
 
 ```yaml
