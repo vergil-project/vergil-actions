@@ -101,9 +101,10 @@ jobs:
 
 ### Release publishing secrets
 
-Callers must forward only the publishing credentials the target ecosystem
-needs, never a blanket `secrets: inherit`. The generated `cd.yml` emits an
-explicit `secrets:` block (or none at all) matching the language:
+A repo **without** a `[package]` section in `vergil.toml` must forward only
+the publishing credentials the target ecosystem needs, never a blanket
+`secrets: inherit`. The generated `cd.yml` emits an explicit `secrets:` block
+(or none at all) matching the language:
 
 | Ecosystem | Secrets to forward |
 | --------- | ------------------ |
@@ -112,11 +113,6 @@ explicit `secrets:` block (or none at all) matching the language:
 | `rust` | `CARGO_REGISTRY_TOKEN` |
 | `ruby` | `RUBYGEMS_API_KEY` |
 | `java` | `CENTRAL_USERNAME`, `CENTRAL_TOKEN`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` |
-
-A repo that publishes binary packages (a `[package]` section in
-`vergil.toml`) also forwards `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, and it
-needs a main-only `package-signing` environment. See
-[CD Release: binary packages](workflows/index.md#cd-release-binary-packages).
 
 For example, a Rust release job forwards a single least-privilege secret:
 
@@ -129,6 +125,37 @@ For example, a Rust release job forwards a single least-privilege secret:
     secrets:
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 ```
+
+A repo **with** a `[package]` section (one that publishes `.deb`/`.rpm`
+binary packages) is the exception: it **must** pass `secrets: inherit`. Its
+`package-sign` job reads `PACKAGE_SIGNING_KEY` and
+`PACKAGE_SIGNING_PASSPHRASE` from the repo's main-only `package-signing`
+environment, and environment secrets reach a cross-repo reusable workflow
+only through `secrets: inherit`. An explicit `secrets:` map does not deliver
+them, so the signing key arrives empty and `package-sign` fails (verified by
+a controlled probe, vergil-project/packages#6). `inherit` also forwards
+`APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which the release uses to dispatch
+the package index. Semgrep's `secrets-inherit` rule flags the line, so
+suppress it there with the rule ID:
+
+```yaml
+  release:
+    if: github.ref == 'refs/heads/main'
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      actions: read
+    with:
+      language: rust
+    # Required for [package] repos: environment secrets (package-signing)
+    # only reach the reusable workflow with inherit.
+    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
+```
+
+See [CD Release: binary packages](workflows/cd-release-packages.md)
+for the `package-signing` environment and the GitHub App setup.
 
 See [Reusable Workflows](workflows/index.md) for the full list and
 detailed documentation.

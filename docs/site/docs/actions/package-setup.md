@@ -115,6 +115,8 @@ root nor a container. It covers the deb822 x86_64 rewrite and the exact
 mirror-list contents, migrating Azure-pinned sources to the list, arm64 left
 untouched, the legacy `sources.list`, idempotence across two runs, an x86_64
 image with no Ubuntu sources, the dnf path, and package-manager detection.
+The `Smoke - setup/vergil outputs` workflow runs it on every PR that touches
+this action.
 
 ### Job timeouts and the runner host
 
@@ -125,8 +127,7 @@ command line (`-o Acquire::Retries=3 -o Acquire::Retries::Delay=false
 -o DPkg::Lock::Timeout=60`). Every package job also sets `timeout-minutes`
 as a backstop: `matrix` 5, `build` 30, `install-test` 15 and `evidence` 5
 in `ci-package.yml`, and `package-matrix` 5, `package-build` 30 and
-`package-sign` 15 in `cd-release.yml`. The `Smoke - setup/vergil outputs` workflow runs it
-on every PR that touches this action.
+`package-sign` 15 in `cd-release.yml`.
 
 ## Other steps
 

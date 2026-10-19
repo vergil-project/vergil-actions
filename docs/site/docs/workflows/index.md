@@ -23,154 +23,15 @@ rulesets.
 | [CI Audit](ci-audit.md) | `ci-audit.yml` | Dependency audit |
 | [CI Test](ci-test.md) | `ci-test.yml` | Unit and integration tests |
 | [CI Version Bump](ci-version-bump.md) | `ci-version-bump.yml` | Version divergence gate |
-| CI Package | `ci-package.yml` | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only) |
-
-### CI Package: tiered matrix
-
-`ci-package.yml` is called only by repos whose `vergil.toml` has a `[package]`
-section. Calling it without one fails the run. Its gate job surfaces as
-`package / evidence` under a caller job keyed `package`.
-
-The `matrix` job picks a tier and passes it to
-`vrg-package matrix --github-output --tier <tier>`:
-
-| Event | Tier |
-| ----- | ---- |
-| Pull request from `release/*` into `main` | `full` |
-| Any other pull request | `reduced` |
-| Any non-PR event (`push`, `workflow_dispatch`, …) | `full` |
-
-The `reduced` tier runs fewer `install-test` legs, so feature PRs get feedback
-sooner. Release PRs always run the `full` tier, and the release evidence
-harvest reads the release PR's CI. A caller can override the automatic choice
-with the optional `package-tier` input (`auto`, `full` or `reduced`; default
-`auto`). Any other value fails the `matrix` job.
-
-```yaml
-jobs:
-  package:
-    uses: vergil-project/vergil-actions/.github/workflows/ci-package.yml@v2.1
-    with:
-      package-tier: full  # optional; omit for auto
-```
-
-`package / evidence` runs in both tiers. It fails unless the `matrix`, `build`
-and `install-test` jobs all succeeded, and it records the tier that ran as
-`metrics.tier` in the `ci-evidence-package` artifact.
-
-This needs a vergil-tooling release whose `vrg-package matrix` accepts `--tier`.
-
-### CI Package: toolchain setup
-
-Each `build / <cell>` and `install-test / <cell>` job runs inside the cell's
-OS image and sets it up with
-[`package/setup`](../actions/package-setup.md). On x86_64 Ubuntu images
-that action points apt at a mirror list, as GitHub's hosted runners do: the
-Azure mirror first, then `archive.ubuntu.com` and `security.ubuntu.com` as
-fallbacks. On every apt image it writes a fail-fast apt config (3 undelayed
-retries, 20-second timeouts, a 60-second dpkg lock wait) that all later apt
-calls in the job inherit, and it runs a single `apt-get update`. arm64 cells
-keep `ports.ubuntu.com`. UBI cells install through one bounded `dnf` call.
-
-Every package job sets `timeout-minutes`, in both `ci-package.yml` (`matrix`
-5, `build` 30, `install-test` 15, `evidence` 5) and `cd-release.yml`
-(`package-matrix` 5, `package-build` 30, `package-sign` 15). A normal build
-takes about 45 seconds, so a stall fails the job in minutes rather than
-running to GitHub's 6-hour limit.
+| [CI Package](ci-package.md) | `ci-package.yml` | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only) |
 
 ## CD workflows (post-merge)
 
 | Workflow | File | Purpose |
 | ---------- | ------ | --------- |
-| CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump) |
+| CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump); repos with `[package]` also build, sign and attach `.deb`/`.rpm` packages ([binary packages](cd-release-packages.md)) |
 | CD Docs | `cd-docs.yml` | MkDocs documentation deployment |
-| Publish package index | `publish-index.yml` | Signed apt/dnf package-repository site, deployed to Pages |
-
-### CD Release: binary packages
-
-When the caller's `vergil.toml` has a `[package]` section, `cd-release.yml`
-also builds, signs and attaches the repo's `.deb`/`.rpm` packages:
-
-| Job | Behavior |
-| --- | -------- |
-| `package-matrix` | Always runs. `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest. |
-| `package-build / <cell>` | One job per build cell, on the cell's runner inside its build OS image, with the same toolchain as `ci-package.yml`. The packages are unsigned. |
-| `package-sign` | Declares the `package-signing` environment. It signs every `.rpm` with the org signing subkey and verifies each signature, then attests the provenance of every package. |
-| `release` | Runs only if `package-sign` succeeded. It attaches the signed packages and `packages-manifest.json` to the Release, then dispatches `package-released` to `<owner>/packages`. |
-
-A failed build cell or signing step stops `release` before anything is
-published or tagged. The dispatch is deferred: if minting the App token or the
-dispatch fails, the release still stands. The index's weekly reconcile picks
-it up, and `vrg-release` reports the miss. Repos without `[package]` see only
-the extra `package-matrix` job. The other package jobs are skipped, and they
-never reference the `package-signing` environment.
-
-A packaged repo needs:
-
-- **A `package-signing` environment.** Its deployment-branch policy must admit
-  only `main`. It holds the `PACKAGE_SIGNING_KEY` secret (the ASCII-armored
-  export of the signing subkey) and `PACKAGE_SIGNING_PASSPHRASE`. If the key
-  is missing or empty, `package-sign` fails.
-- **`secrets: inherit` on the caller (required).** Environment secrets reach
-  a job in a cross-repo reusable workflow **only** when the caller passes
-  `secrets: inherit`. An explicit `secrets:` map, or passing nothing, delivers
-  an empty value; declaring the secret in the callee makes no difference
-  (verified by a controlled probe, vergil-project/packages#6). Semgrep's
-  `secrets-inherit` rule flags this, so suppress it on that line with a
-  justification (`# nosemgrep: …`; honored by the SARIF gate since
-  vergil-project/vergil-tooling#3107). `inherit` also forwards the org App
-  secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which the index dispatch
-  needs. The App must be installed on
-  `<owner>/packages` with permission to create repository dispatches
-  (`contents: write`).
-- **The same permissions the release job already needs.** The package jobs
-  request only `contents: read`, `id-token: write` and `attestations: write`:
-
-```yaml
-jobs:
-  release:
-    if: github.ref == 'refs/heads/main'
-    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-      actions: read
-    with:
-      language: python
-    # Required: environment secrets only reach the reusable workflow with inherit.
-    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
-```
-
-### Publish package index
-
-`publish-index.yml` is called from an `<org>/packages` repository. Its
-`build-index` job runs `vrg-package index --config packages.toml --keys keys
---out _site`, which verifies, retains, indexes and signs the product releases.
-Its `deploy` job then publishes the site with the Actions-based Pages deploy.
-The workflow takes no inputs. Runs are serialized by the `publish-index`
-concurrency group. Unlike the other reusable workflows, it runs directly on
-`ubuntu-latest` rather than in a vergil container image.
-
-The signing key comes from the caller repository's `index-signing`
-environment, which must admit only `develop` and hold `PACKAGE_SIGNING_KEY`
-and `PACKAGE_SIGNING_PASSPHRASE`. As with `cd-release`, those environment
-secrets reach the reusable workflow only when the caller passes
-`secrets: inherit` (see above). The caller must also grant the scopes the two
-jobs request:
-
-```yaml
-jobs:
-  publish-index:
-    uses: vergil-project/vergil-actions/.github/workflows/publish-index.yml@v2.1
-    permissions:
-      contents: read
-      attestations: read
-      pages: write
-      id-token: write
-    # Required: environment secrets only reach the reusable workflow with inherit.
-    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
-```
+| [Publish package index](publish-index.md) | `publish-index.yml` | Signed apt/dnf package-repository site, deployed to Pages |
 
 ## Dynamic version matrix and evidence gates
 

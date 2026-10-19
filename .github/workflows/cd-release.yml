@@ -111,6 +111,21 @@ jobs:
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
+      # Backstop for a release that did not go through vrg-release preflight
+      # (vergil-project/vergil-tooling#3309): refuse before anything is built
+      # when this version would re-publish a package an earlier release already
+      # published, which breaks the shared package index for every repo. A repo
+      # without [package] passes; any gh error refuses. Reads releases only, so
+      # the job's contents: read token is enough.
+      - name: Refuse re-publishing a released package version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(vrg-version show)
+          vrg-package check-unpublished --version "$version"
+
       - name: Resolve package matrix
         id: resolve
         shell: bash

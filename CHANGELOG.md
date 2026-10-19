@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.42] - 2026-10-19
+
+### CI
+
+- refuse re-publishing a released package version (#940)
+
+### Documentation
+
+- document secrets: inherit for packaged callers, publish-index and package gates (#938)
+
 ## [2.1.41] - 2026-10-08
 
 ### Bug fixes
@@ -738,11 +748,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+- combine #383 and #387 into single CI/CD workflow convention spec
+- add workflow conventions README (#383)
+- update site docs for CI/CD namespace convention (#383)
+- update documentation for CI/CD workflow convention (#383)
 - add design spec for system Python fix (#418)
 - move spec to docs/specs/ (#418)
 
 ### Features
 
+- rename ci-release.yml to ci-version-bump.yml (#383)
+- update workflow name and ci.yml reference for ci-version-bump.yml (#383)
+- rename publish-release.yml to cd-release.yml (#383)
+- split publish-docs.yml into cd-docs.yml (workflow_call only) (#383)
+- rename publish.yml to cd.yml umbrella with docs job (#383)
 - add fleet-wide CI/CD workflow convention rollout script (#383)
 
 ## [1.5.16] - 2026-05-09
@@ -771,6 +790,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Chores
 
+- shorten issue template header comments to fit yamllint line-length
 - bump version to 1.5.15
 
 ### Documentation
@@ -779,21 +799,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - move spec to docs/specs/ per project convention
 - add CI/CD namespace convention implementation plan (#383)
 - add CI YAML standardization design spec (#387)
-- combine #383 and #387 into single CI/CD workflow convention spec
-- add workflow conventions README (#383)
-- update site docs for CI/CD namespace convention (#383)
-- update documentation for CI/CD workflow convention (#383)
 - add st-* command availability normalization spec (#403)
 - address pushback review for st-* normalization spec (#403)
 - add st-* command normalization implementation plan (#403)
-
-### Features
-
-- rename ci-release.yml to ci-version-bump.yml (#383)
-- update workflow name and ci.yml reference for ci-version-bump.yml (#383)
-- rename publish-release.yml to cd-release.yml (#383)
-- split publish-docs.yml into cd-docs.yml (workflow_call only) (#383)
-- rename publish.yml to cd.yml umbrella with docs job (#383)
 
 ## [1.5.14] - 2026-05-08
 
@@ -809,7 +817,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - bump version to 1.5.12
 - add publish section to standard-tooling.toml
 - fleet-wide config and workflow cleanup
-- shorten issue template header comments to fit yamllint line-length
 
 ### Documentation
 
@@ -944,6 +951,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Documentation
 
+- add design spec for publish and docs workflow rationalization
+- apply pushback review to publish/docs rationalization spec
+- add implementation plan for publish and docs rationalization
+- apply alignment review fixes to publish/docs rationalization plan
 - add design spec for CI workflow reset and unified validation
 - apply pushback review to CI workflow reset design
 - add implementation plan for CI workflow reset
@@ -968,13 +979,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - prepare release 1.5.1
 - bump version to 1.5.2
-
-### Documentation
-
-- add design spec for publish and docs workflow rationalization
-- apply pushback review to publish/docs rationalization spec
-- add implementation plan for publish and docs rationalization
-- apply alignment review fixes to publish/docs rationalization plan
 
 ## [1.5.1] - 2026-05-05
 

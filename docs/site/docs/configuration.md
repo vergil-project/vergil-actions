@@ -91,6 +91,33 @@ gh secret set APP_PRIVATE_KEY --repo vergil-project/<repo> --body "$(cat <path-t
 the `APP_PRIVATE_KEY` secret in all library repositories, then revoke the old
 key.
 
+## Binary package environments
+
+Repositories whose `vergil.toml` has a `[package]` section, and the
+organization's `<org>/packages` index repository, keep their signing key in
+GitHub **environments** (**Settings > Environments**), not in repository
+secrets. Each environment's deployment-branch policy restricts it to a single
+branch.
+
+| Environment | Repository | Admits | Secrets | Used by |
+| ----------- | ---------- | ------ | ------- | ------- |
+| `package-signing` | Each `[package]` repository | `main` only | `PACKAGE_SIGNING_KEY`, `PACKAGE_SIGNING_PASSPHRASE` | The `package-sign` job in [`cd-release.yml`](workflows/cd-release-packages.md) |
+| `index-signing` | `<org>/packages` | `develop` only | `PACKAGE_SIGNING_KEY`, `PACKAGE_SIGNING_PASSPHRASE` | The `build-index` job in [`publish-index.yml`](workflows/publish-index.md) |
+
+`PACKAGE_SIGNING_KEY` holds the ASCII-armored export of the org signing
+subkey. `index-signing` admits `develop` because `repository_dispatch` and
+`schedule` runs always use the default branch.
+
+Environment secrets reach these cross-repo reusable workflows **only** when
+the caller passes `secrets: inherit`. An explicit `secrets:` map leaves them
+empty (vergil-project/packages#6). See
+[Release publishing secrets](getting-started.md#release-publishing-secrets).
+
+The GitHub App behind `APP_CLIENT_ID` / `APP_PRIVATE_KEY` must also be
+installed on `<org>/packages` with **Contents: Read & write**, so that
+`cd-release.yml` can dispatch `package-released` to it after a packaged
+release.
+
 ## Container system packages
 
 A repository can declare extra Debian packages under `[container].system-packages`
@@ -226,6 +253,29 @@ gh secret set APP_PRIVATE_KEY --repo vergil-project/<repo> --body "$(cat <key>.p
 
 - [ ] Install the GitHub App on the new repository (library repos only)
 - [ ] Verify by checking **Settings > GitHub Apps** on the repository
+- [ ] `[package]` repositories: confirm the App is also installed on
+  `<org>/packages` with **Contents: Read & write**, so the release can
+  dispatch `package-released` to it
+
+### 4a. Binary packages (`[package]` repositories only)
+
+See [Binary package environments](#binary-package-environments).
+
+- [ ] Create a `package-signing` environment whose deployment-branch policy
+  admits only `main`
+- [ ] Add `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE` to it
+- [ ] Call `cd-release.yml` with
+  `secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit`
+- [ ] Call `ci-package.yml` under a job keyed `package` and add
+  `package / evidence` to the **CI gates** ruleset
+
+For the `<org>/packages` index repository itself:
+
+- [ ] Create an `index-signing` environment that admits only `develop`,
+  holding `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE`
+- [ ] Set **Settings > Pages > Source** to **GitHub Actions**
+- [ ] Call `publish-index.yml` with `secrets: inherit` (same `nosemgrep`
+  comment)
 
 ### 5. Workflow files
 
