@@ -5,13 +5,17 @@ also builds, signs and attaches the repo's `.deb`/`.rpm` packages:
 
 | Job | Behavior |
 | --- | -------- |
-| `package-matrix` | Always runs. `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest. |
+| `package-matrix` | Always runs. `vrg-package check-unpublished --version <version>` first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without `[package]` passes. Then `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest. |
 | `package-build / <cell>` | One job per build cell, on the cell's runner inside its build OS image, with the same toolchain as `ci-package.yml`. The packages are unsigned. |
 | `package-sign` | Declares the `package-signing` environment. It signs every `.rpm` with the org signing subkey and verifies each signature, then attests the provenance of every package. |
 | `release` | Runs only if `package-sign` succeeded. It attaches the signed packages and `packages-manifest.json` to the Release, then dispatches `package-released` to `<owner>/packages`. |
 
-A failed build cell or signing step stops `release` before anything is
-published or tagged. The dispatch is deferred: if minting the App token or the
+A re-published package version, a failed build cell or a failed signing step
+stops `release` before anything is published or tagged. The re-publish check is
+the CD backstop for a release that did not go through `vrg-release` preflight,
+which runs the same check: a package version published twice breaks the shared
+package index for every repo. Any `gh` error fails the check rather than
+skipping it. The dispatch is deferred: if minting the App token or the
 dispatch fails, the release still stands. The index's weekly reconcile picks
 it up, and `vrg-release` reports the miss. Repos without `[package]` see only
 the extra `package-matrix` job. The other package jobs are skipped, and they
