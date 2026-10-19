@@ -5413,7 +5413,7 @@ also builds, signs and attaches the repo's <code>.deb</code>/<code>.rpm</code> p
 <tbody>
 <tr>
 <td><code>package-matrix</code></td>
-<td>Always runs. <code>vrg-package matrix --github-output --manifest packages-manifest.json</code> resolves the build cells and writes the release manifest.</td>
+<td>Always runs. <code>vrg-package check-unpublished --version &lt;version&gt;</code> first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without <code>[package]</code> passes. Then <code>vrg-package matrix --github-output --manifest packages-manifest.json</code> resolves the build cells and writes the release manifest.</td>
 </tr>
 <tr>
 <td><code>package-build / &lt;cell&gt;</code></td>
@@ -5429,8 +5429,12 @@ also builds, signs and attaches the repo's <code>.deb</code>/<code>.rpm</code> p
 </tr>
 </tbody>
 </table>
-<p>A failed build cell or signing step stops <code>release</code> before anything is
-published or tagged. The dispatch is deferred: if minting the App token or the
+<p>A re-published package version, a failed build cell or a failed signing step
+stops <code>release</code> before anything is published or tagged. The re-publish check is
+the CD backstop for a release that did not go through <code>vrg-release</code> preflight,
+which runs the same check: a package version published twice breaks the shared
+package index for every repo. Any <code>gh</code> error fails the check rather than
+skipping it. The dispatch is deferred: if minting the App token or the
 dispatch fails, the release still stands. The index's weekly reconcile picks
 it up, and <code>vrg-release</code> reports the miss. Repos without <code>[package]</code> see only
 the extra <code>package-matrix</code> job. The other package jobs are skipped, and they
