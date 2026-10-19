@@ -19,6 +19,41 @@ permissions:
   contents: read
 
 jobs:
+  # Safety net behind delete-on-merge and delete-on-close (issue #952): deletes
+  # branches whose PR work is finished. It lives here, not in its own reusable
+  # workflow, because every consumer's ops.yml already calls this workflow on a
+  # schedule (vrg-github-repo-config audits for that wiring), so it reaches every
+  # repo with no consumer change.
+  branch-sweep:
+    name: branch-sweep
+    runs-on: ubuntu-latest
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Narrowest token that can delete a branch: scoped to the calling
+          # repo only (no owner/repositories input), contents:write for the
+          # ref delete, pull-requests:read to decide which branches are
+          # finished. GITHUB_TOKEN cannot be used: a called workflow can only
+          # request what the caller's ops.yml grants, and that is contents:read.
+          permission-contents: write
+          permission-pull-requests: read
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Sweep finished branches
+        uses: ./actions/ops/github-config/branch-sweep
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
   github-config:
     name: github-config
     runs-on: ubuntu-latest
