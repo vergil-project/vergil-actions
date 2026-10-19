@@ -47,10 +47,10 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.44
 
       - name: Sweep finished branches
-        uses: ./actions/ops/github-config/branch-sweep
+        uses: vergil-project/vergil-actions/actions/ops/github-config/branch-sweep@v2.1.44
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
@@ -70,7 +70,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.44
 
       - name: Audit GitHub configuration
         env:
