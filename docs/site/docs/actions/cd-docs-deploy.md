@@ -56,6 +56,18 @@ jobs:
       contents: write
 ```
 
+### MkDocs 2.0 banner
+
+The `cd-docs.yml` workflow sets `NO_MKDOCS_2_WARNING=1` on its "Deploy docs"
+step, which reaches the `mkdocs` and `mike` processes this action starts.
+Without it, mkdocs-material 9.7.x prints a
+[MkDocs 2.0 warning banner](https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/)
+on every build. Callers of `cd-docs.yml` cannot set it, because a caller's `env`
+does not reach a reusable workflow. The workflow sets the variable, not the
+action, so to hide the banner when you call the action directly, set it in that
+step's `env`. The variable only hides the banner. Consumers still pin `mkdocs<2`
+in their own docs dependencies. Added in v2.1.43 (#947, PR #948).
+
 ## Examples
 
 ### Direct usage (standalone)
