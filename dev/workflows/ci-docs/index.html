@@ -5019,6 +5019,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mkdocs-20-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MkDocs 2.0 banner
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5687,6 +5704,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mkdocs-20-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MkDocs 2.0 banner
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5787,6 +5821,14 @@ instead of post-merge in the CD <code>docs</code> deploy.</p>
 <p>For Python repositories the build runs as <code>uv run mkdocs</code>; otherwise it runs
 <code>mkdocs</code> directly, matching the toolchain resolution in
 <code>actions/cd/docs/deploy</code>.</p>
+<h3 id="mkdocs-20-banner">MkDocs 2.0 banner<a class="headerlink" href="#mkdocs-20-banner" title="Permanent link">&para;</a></h3>
+<p>The "Build docs" step sets <code>NO_MKDOCS_2_WARNING=1</code>. Without it, mkdocs-material
+9.7.x prints a
+<a href="https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/">MkDocs 2.0 warning banner</a>
+on every build. The workflow has to set the variable itself: a caller's <code>env</code>
+does not reach a reusable workflow, so callers cannot set it. The variable only
+hides the banner. Consumers still pin <code>mkdocs&lt;2</code> in their own docs
+dependencies. Added in v2.1.43 (#947, PR #948).</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">docs</span><span class="p">:</span>
