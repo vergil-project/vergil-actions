@@ -24,6 +24,12 @@ definition and optional supporting scripts.
 - **[cd/docs/deploy](cd-docs-deploy.md)** — Deploys MkDocs documentation using
   mike for versioned documentation.
 
+### Ops
+
+- **[ops/github-config/branch-sweep](ops-github-config-branch-sweep.md)** —
+  Deletes branches whose PR is merged or closed and lists them in the job
+  summary, flagging merged-PR leftovers (auto-wired into `ops-github-config`).
+
 ### Shared
 
 - **[shared/security/trivy](shared-security-trivy.md)** — Runs Trivy
