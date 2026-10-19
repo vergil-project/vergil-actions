@@ -173,6 +173,9 @@ look in `actions/{phase}/{domain}/`. Cross-phase actions live in
   boundary tags, and GitHub Releases
 - `actions/cd/docs/deploy` — MkDocs Material + mike versioned
   documentation deployment
+- `actions/ops/github-config/branch-sweep` — Deletes finished branches
+  (merged or closed PR) and lists them in the job summary; wired into
+  `ops-github-config.yml`
 - `actions/shared/docs/stage` — Stages changelog/release-notes pages and
   patches mkdocs nav; shared by CI docs verification and CD docs deploy
 - `actions/shared/security/trivy` — Trivy vulnerability scanning
