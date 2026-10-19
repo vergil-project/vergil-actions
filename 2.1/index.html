@@ -915,6 +915,8 @@
       
         
       
+        
+      
     
     
     
@@ -967,6 +969,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="releases/v2.1.42/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.42
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4801,6 +4831,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5010,6 +5046,90 @@
     
   
     ci-version-bump
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflows/ci-package/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflows/cd-release-packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release packages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="workflows/publish-index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    publish-index
   
 
     
@@ -5595,6 +5715,10 @@ repositories. See <a href="workflows/">Reusable Workflows</a> for details.</p>
 <td><a href="workflows/ci-version-bump/">ci-version-bump</a></td>
 <td>Version divergence gate</td>
 </tr>
+<tr>
+<td><a href="workflows/ci-package/">ci-package</a></td>
+<td>Build and install-test <code>.deb</code>/<code>.rpm</code> packages (repos with <code>[package]</code> only)</td>
+</tr>
 </tbody>
 </table>
 <h3 id="cd-post-merge">CD (post-merge)<a class="headerlink" href="#cd-post-merge" title="Permanent link">&para;</a></h3>
@@ -5607,12 +5731,16 @@ repositories. See <a href="workflows/">Reusable Workflows</a> for details.</p>
 </thead>
 <tbody>
 <tr>
-<td>cd-release</td>
-<td>Full release pipeline (tag, build, publish, version bump)</td>
+<td><a href="workflows/cd-release-packages/">cd-release</a></td>
+<td>Full release pipeline (tag, build, publish, version bump), plus signed <code>.deb</code>/<code>.rpm</code> packages for repos with <code>[package]</code></td>
 </tr>
 <tr>
 <td>cd-docs</td>
 <td>MkDocs documentation deployment</td>
+</tr>
+<tr>
+<td><a href="workflows/publish-index/">publish-index</a></td>
+<td>Signed apt/dnf package-repository site for an <code>&lt;org&gt;/packages</code> repo, deployed to GitHub Pages</td>
 </tr>
 </tbody>
 </table>
