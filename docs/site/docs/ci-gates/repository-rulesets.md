@@ -45,7 +45,7 @@ checks that must pass before a PR can merge.
 | Do not enforce on create | No |
 
 The required checks vary by repository category. See the
-[check matrix](required-checks.md#check-matrix) for the full list.
+[required check set](required-checks.md#required-check-set) for the full list.
 
 ### Library repositories (Go, Python, Ruby, Java)
 
@@ -124,8 +124,7 @@ rolling tags fall outside the `v*.*.*` pattern.
 
 When adding a new CI job that should block merges:
 
-1. Add the job to the CI workflow with the appropriate
-   [name prefix](required-checks.md#job-name-prefix-convention).
+1. Add the job to the CI workflow.
 2. Open a PR and verify the check runs and passes.
 3. After the PR merges, add the exact check name to the CI gates ruleset via
    **Settings > Rules > Rulesets > CI gates**.
