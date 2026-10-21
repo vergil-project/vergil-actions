@@ -1,4 +1,4 @@
-# publish/tag-and-release
+# cd/release/tag-and-release
 
 Creates an annotated git tag, a develop changelog boundary tag, and a GitHub
 Release. All mutating steps are skipped when the tag already exists, making the
