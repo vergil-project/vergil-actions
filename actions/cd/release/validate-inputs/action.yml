@@ -5,7 +5,7 @@ description: >-
 
 inputs:
   language:
-    description: Programming language (go, java, python, ruby, rust). Empty for non-language projects.
+    description: Programming language (go, java, python, rust). Empty for non-language projects.
     required: false
     default: ""
   container-tag:

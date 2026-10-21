@@ -6,7 +6,7 @@ description: >-
 
 inputs:
   language:
-    description: Primary language (python, rust, ruby, java, go).
+    description: Primary language (python, rust, java, go).
     required: true
   version:
     description: Semver version string (e.g. 1.2.3).
@@ -32,11 +32,7 @@ inputs:
     required: false
     default: ""
   cargo-registry-token:
-    description: "Rust: crates.io token."
-    required: false
-    default: ""
-  rubygems-api-key:
-    description: "Ruby: RubyGems API key."
+    description: "Rust: crates.io token, exported as CARGO_REGISTRY_TOKEN."
     required: false
     default: ""
   central-username:
@@ -52,7 +48,7 @@ inputs:
     required: false
     default: ""
   gpg-passphrase:
-    description: "Java: GPG passphrase."
+    description: "Java: GPG passphrase, exported as MAVEN_GPG_PASSPHRASE."
     required: false
     default: ""
 
@@ -152,16 +148,8 @@ runs:
         PUBLISH_CMD: ${{ steps.commands.outputs.publish }}
         CREDENTIAL_SECRET: ${{ steps.commands.outputs.credential-secret }}
         CARGO_REGISTRY_TOKEN: ${{ inputs.cargo-registry-token }}
-        GEM_HOST_API_KEY: ${{ inputs.rubygems-api-key }}
         MAVEN_USERNAME: ${{ inputs.central-username }}
         MAVEN_PASSWORD: ${{ inputs.central-token }}
         MAVEN_GPG_PASSPHRASE: ${{ inputs.gpg-passphrase }}
-      run: |
-        if [ -n "$CREDENTIAL_SECRET" ]; then
-          val=$(printenv "$CREDENTIAL_SECRET" 2>/dev/null || true)
-          if [ -z "$val" ]; then
-            echo "::notice::${CREDENTIAL_SECRET} not configured — skipping publish"
-            exit 0
-          fi
-        fi
-        eval "$PUBLISH_CMD"
+      # Fails when the named credential is empty (publish.sh, issue #980).
+      run: bash "${GITHUB_ACTION_PATH}/publish.sh"

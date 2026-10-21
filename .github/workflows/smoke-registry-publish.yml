@@ -1,0 +1,29 @@
+name: Smoke - cd/release/registry-publish
+
+# Runs the framework-free publish.test.sh harness for the registry-publish
+# action (issue #980): the credential check before publish (a requested
+# publish with an empty or unprovided credential fails with an ::error::
+# naming the secret), and the credential wiring from the cd-release secrets
+# through the action inputs to the env vars the publish tools read.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - actions/cd/release/registry-publish/**
+      - .github/workflows/cd-release.yml
+      - .github/workflows/smoke-registry-publish.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: publish.sh fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run publish.sh harness
+        shell: bash
+        run: bash actions/cd/release/registry-publish/tests/publish.test.sh
