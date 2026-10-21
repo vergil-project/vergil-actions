@@ -3,15 +3,31 @@
 ## Adding a new action
 
 1. Create a directory under `actions/` following the namespace convention:
-   `actions/{phase}/{domain}/{action}/action.yml`. The phase (`ci`, `cd`)
-   and domain (`security`, `release`, etc.) match the workflow filename
-   that will consume the action. Use `shared/` for cross-phase actions
-   and `local/` for actions specific to this repo.
+   `actions/{phase}/{domain}/{action}/action.yml`. The phase is one of:
+
+    | Phase | Use for | Example |
+    | ----- | ------- | ------- |
+    | `ci` | Pre-merge checks, consumed by the `ci-*` workflows | `ci/security/codeql` |
+    | `cd` | Post-merge release and deploy, consumed by the `cd-*` workflows | `cd/release/tag-and-release` |
+    | `ops` | Scheduled repository maintenance, consumed by the `ops-*` workflows | `ops/github-config/branch-sweep` |
+    | `package` | `.deb`/`.rpm` package builds, consumed by `ci-package` and `cd-release` | `package/setup` |
+    | `shared` | Actions used by more than one phase | `shared/setup/vergil` |
+    | `local` | Actions used only by this repository's own workflows | `local/freeze-internal-refs` |
+
+    For `ci`, `cd` and `ops` the domain matches the workflow that consumes the
+    action (`ci/security/*` for `ci-security.yml`, `ops/github-config/*` for
+    `ops-github-config.yml`). An action used by several workflows in one phase
+    takes a descriptive domain instead (`ci/evidence/emit`).
+
+    Two actions sit directly under their phase, with no domain:
+    `package/setup`, the only action in the `package` phase, and `ci/matrix`.
+    New actions use the three-level layout.
 2. Define the action as a **composite action** — no custom JavaScript or Docker
    actions.
 3. Include clear `name`, `description`, `inputs`, and `outputs` in `action.yml`.
-4. Add supporting scripts under the action directory's `scripts/` subdirectory
-   if needed.
+4. Put supporting scripts next to `action.yml` in the action directory (e.g.
+   `actions/shared/setup/vergil/derive.sh`) and call them through
+   `${GITHUB_ACTION_PATH}`. Put their tests in a `tests/` subdirectory.
 5. Add the action to the appropriate workflow using a local path reference
    (`./actions/{phase}/{domain}/{action}`).
 6. Add a documentation page under `docs/site/docs/actions/` and update the nav

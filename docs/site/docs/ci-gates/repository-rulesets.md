@@ -144,8 +144,13 @@ When adding a new CI job that should block merges:
 
 1. Add the job to the CI workflow.
 2. Open a PR and verify the check runs and passes.
-3. After the PR merges, add the exact check name to the CI gates ruleset via
-   **Settings > Rules > Rulesets > CI gates**.
+3. Do not add the check by hand under **Settings > Rules**.
+   `vrg-github-repo-config` derives the required-check set itself (from
+   `desired_ci_gates_ruleset()` in vergil-tooling and the repository's
+   `vergil.toml`), and the nightly `ops-github-config` audit reports a
+   hand-added check as drift. Add the check to that derivation in
+   vergil-tooling, and once that change is released run
+   `vrg-github-repo-config apply` to converge the ruleset.
 4. Verify the check name matches exactly. For the matrixed workflows, require
    the stable `<kind> / evidence` aggregate (e.g. `test / evidence`), **not** the
    per-version legs — the legs change with `[ci].versions`, the aggregate does
@@ -163,17 +168,28 @@ unprotected. Always use explicit `refs/heads/` references for both branches.
 
 ## Modifying rulesets via API
 
-Rulesets can be updated programmatically using the GitHub API:
+Do not edit rulesets with raw `gh api` calls. `vrg-github-repo-config`
+computes the desired rulesets from the repository's `vergil.toml` and converges
+GitHub to them through the API:
 
 ```bash
-# List rulesets for a repository
-gh api repos/vergil-project/{repo}/rulesets \
-  --jq '.[] | {id: .id, name: .name}'
+# Report drift in the local files and the GitHub configuration.
+# Exit 0 = compliant, 1 = drift, 2 = the audit could not complete.
+vrg-github-repo-config audit --repo vergil-project/{repo}
 
-# View a specific ruleset
-gh api repos/vergil-project/{repo}/rulesets/{id}
+# Show the same differences without failing (always exits 0)
+vrg-github-repo-config diff --repo vergil-project/{repo}
 
-# Update required status checks
-gh api --method PUT repos/vergil-project/{repo}/rulesets/{id} \
-  --input payload.json
+# Reconcile the GitHub configuration, including the rulesets
+vrg-github-repo-config apply --repo vergil-project/{repo}
 ```
+
+`--repo` defaults to the current directory's git remote. The local file
+checks run only from inside the repository's own checkout. `vergil.toml` is
+read from the `develop` branch; `--config PATH` uses a local copy instead.
+
+To change a ruleset, change the `vergil.toml` that it is derived from, merge the
+change to `develop`, and run `apply`. A ruleset edited by hand is reported as
+drift by the nightly `ops-github-config` audit. See the vergil-tooling
+[GitHub config audit reference](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/)
+for the full list of checks.

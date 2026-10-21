@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.47] - 2026-10-21
+
+### Bug fixes
+
+- emit a clear error when vergil.toml or [dependencies].vergil is missing (#982)
+
+### Documentation
+
+- complete the action index, contributing layout and setup/vergil page (#981)
+- fix vergil-tooling doc links, the required-check step, and add missing workflow and action pages (#983)
+
 ## [2.1.46] - 2026-10-21
 
 ### Chores

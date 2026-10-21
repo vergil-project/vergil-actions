@@ -77,7 +77,7 @@ The command is declared by the consuming repository in its `vergil.toml` under
 `[container].build-command`. That key — its schema, semantics, and the
 dev-container side of its effect — is documented on the vergil-tooling side:
 
-- [`container-config` reference (`build-command`)](https://vergil-project.github.io/vergil-tooling/reference/container-config/)
+- [`container-config` reference (`build-command`)](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/)
 
 This page covers only the vergil-actions CI side: which jobs run the build step
 and how the step behaves.

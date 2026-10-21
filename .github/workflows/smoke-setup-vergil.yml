@@ -7,7 +7,11 @@ name: Smoke - setup/vergil outputs
 #   * fixtures — runs the framework-free derive.sh harness, asserting the
 #     derivation across multi-version, unsorted, single-version, explicit
 #     primary-version override, numeric-run, and family-routed
-#     primary-container-tag fixtures. Fast, no install. It also runs the
+#     primary-container-tag fixtures, plus a missing or invalid vergil.toml.
+#     It runs the read-pin.sh harness, asserting the pinned
+#     [dependencies].vergil tag is read and that a missing file, missing key,
+#     or empty/invalid value fails with a clean ::error:: annotation instead
+#     of a Python traceback (issue #977). Fast, no install. It also runs the
 #     package setup action's detect.sh harness (self-repo vs.
 #     [dependencies].vergil install spec; epic vergil-project/.github#356)
 #     and its os-prereqs.sh harness (apt mirror list on x86_64, fail-fast
@@ -36,6 +40,9 @@ jobs:
       - name: Run derive.sh harness
         shell: bash
         run: bash actions/shared/setup/vergil/tests/derive.test.sh
+      - name: Run read-pin.sh harness
+        shell: bash
+        run: bash actions/shared/setup/vergil/tests/read-pin.test.sh
       - name: Run package setup detect.sh harness
         shell: bash
         run: bash actions/package/setup/tests/detect.test.sh
