@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.46] - 2026-10-21
+
+### Chores
+
+- bump image tags
+
+### Documentation
+
+- fix stale contributing guide, ruleset check line and setup link (#974)
+
 ## [2.1.45] - 2026-10-21
 
 ### Chores
