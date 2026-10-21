@@ -67,7 +67,6 @@ nav:
   - Action Reference:
       - Overview: actions/index.md
       - CI:
-          - ci/security/standards-compliance: actions/ci-security-standards-compliance.md
           - ci/security/codeql: actions/ci-security-codeql.md
           - ci/security/semgrep: actions/ci-security-semgrep.md
           - ci/version-bump/version-divergence: actions/ci-version-bump-version-divergence.md

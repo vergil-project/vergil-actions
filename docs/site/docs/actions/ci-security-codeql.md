@@ -41,7 +41,6 @@ language.
 ```yaml
 jobs:
   codeql:
-    name: "security: codeql"
     runs-on: ubuntu-latest
     permissions:
       security-events: write

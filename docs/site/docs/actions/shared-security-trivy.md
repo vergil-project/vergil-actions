@@ -83,7 +83,6 @@ everything present.
 ```yaml
 jobs:
   trivy:
-    name: "security: trivy"
     runs-on: ubuntu-latest
     permissions:
       security-events: write
