@@ -16,7 +16,11 @@ instead of post-merge in the CD `docs` deploy.
 
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
-| `build` | `CI Docs / docs` | Stages docs sources and runs a strict mkdocs build |
+| `build` | `<caller> / docs` | Stages docs sources and runs a strict mkdocs build |
+
+With the standard caller job key `docs`, the check is `docs / docs`, which is
+a required check for repositories that publish docs (see
+[Required Checks](../ci-gates/required-checks.md)).
 
 ## Behavior
 
@@ -39,6 +43,16 @@ The `build` job:
 For Python repositories the build runs as `uv run mkdocs`; otherwise it runs
 `mkdocs` directly, matching the toolchain resolution in
 `actions/cd/docs/deploy`.
+
+### MkDocs 2.0 banner
+
+The "Build docs" step sets `NO_MKDOCS_2_WARNING=1`. Without it, mkdocs-material
+9.7.x prints a
+[MkDocs 2.0 warning banner](https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/)
+on every build. The workflow has to set the variable itself: a caller's `env`
+does not reach a reusable workflow, so callers cannot set it. The variable only
+hides the banner. Consumers still pin `mkdocs<2` in their own docs
+dependencies. Added in v2.1.43 (#947, PR #948).
 
 ## Usage
 

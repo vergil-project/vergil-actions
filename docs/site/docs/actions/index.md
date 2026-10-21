@@ -8,8 +8,6 @@ definition and optional supporting scripts.
 
 ### CI
 
-- **[ci/security/standards-compliance](ci-security-standards-compliance.md)** —
-  PR-specific compliance checks: issue linkage and auto-close keyword rejection.
 - **[ci/security/codeql](ci-security-codeql.md)** — Runs GitHub CodeQL static
   analysis for a single language.
 - **[ci/security/semgrep](ci-security-semgrep.md)** — Runs Semgrep SAST scanning

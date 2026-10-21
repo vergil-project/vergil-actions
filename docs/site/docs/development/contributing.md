@@ -59,11 +59,12 @@ Follow-ups
 
 ## Testing via self-referencing CI
 
-This repository tests its own actions by using local path references in the CI
-workflow:
+This repository tests its own actions by using local path references in its CI
+workflow (`uses: ./.github/workflows/ci-quality.yml`) and in the reusable
+workflows that call the composite actions:
 
 ```yaml
-- uses: ./actions/ci/security/standards-compliance   # Not the remote reference
+- uses: ./actions/shared/setup/vergil   # Not the remote reference
 ```
 
 When you modify an action, the PR's CI run uses your modified version. This
@@ -116,8 +117,8 @@ Required flags:
 
 Optional flags:
 
-- `--linkage`: `Ref` (default). `Fixes`, `Closes`, and `Resolves` are rejected
-  by the `standards-compliance` CI gate.
+- `--linkage`: `Ref` (default) or `Closes`. `Fixes` and `Resolves` are
+  rejected.
 - `--title`: PR title (default: most recent commit subject)
 - `--notes`: Additional notes
 - `--dry-run`: Print without executing

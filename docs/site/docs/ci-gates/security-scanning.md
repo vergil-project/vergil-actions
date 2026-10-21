@@ -45,19 +45,30 @@ itself, so there is no separate upload step to hand a filtered file to.
 
 ## Check names in the PR status area
 
-Each security scanner produces **two** check runs on a pull request:
+When SARIF is uploaded to code scanning, each security scanner produces **two**
+check runs on a pull request:
 
 | CI workflow job | SARIF analysis check |
 | ----------------- | ---------------------- |
-| `security: codeql` | `CodeQL` |
-| `security: semgrep` | `Semgrep OSS` |
-| `security: trivy` | `Trivy` |
+| `security / codeql` | `CodeQL` |
+| `security / semgrep` | `Semgrep OSS` |
+| `security / trivy` | `Trivy` |
 
-The first column shows our CI workflow jobs — these are the checks gated in the
-[CI gates ruleset](repository-rulesets.md#ci-gates-ruleset). The second column
-shows checks that GitHub creates automatically when SARIF results are uploaded
-via the `security-events: write` permission. The SARIF analysis checks are
-informational and are **not** included in the required status checks.
+The first column shows the [ci-security](../workflows/ci-security.md) jobs,
+named `<caller job> / <job>` with the standard `security` caller job key. The
+second column shows the checks GitHub code scanning creates when the SARIF
+results are uploaded (this needs the `security-events: write` permission).
+
+Both columns are gated in the
+[CI gates ruleset](repository-rulesets.md#ci-gates-ruleset):
+
+- `security / trivy` and `security / semgrep` are always required.
+- `Trivy` and `Semgrep OSS` are required when GHAS is available. Without GHAS
+  they never report, so requiring them would block every merge.
+- `security / codeql` and `CodeQL` are required when GHAS is available and the
+  repository's primary language is supported by CodeQL.
+
+See [Required Checks](required-checks.md) for the full required set.
 
 ## Viewing results
 

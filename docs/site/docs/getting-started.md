@@ -25,13 +25,17 @@ permissions:
   contents: read
 
 jobs:
-  standards:
+  codeql:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     steps:
       - uses: actions/checkout@v6
+      - uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.1
         with:
-          fetch-depth: 0
-      - uses: vergil-project/vergil-actions/actions/ci/security/standards-compliance@v2.1
+          language: python
 ```
 
 ## Consuming reusable workflows
@@ -166,7 +170,7 @@ Each action documents its required workflow permissions. Common patterns:
 
 | Permission | Actions that require it |
 | ------------ | ---------------------- |
-| `contents: read` | standards-compliance |
+| `contents: read` | All actions (repository checkout) |
 | `contents: write` | docs-deploy, publish/tag-and-release |
 | `security-events: write` | security/codeql, security/semgrep, security/trivy |
 

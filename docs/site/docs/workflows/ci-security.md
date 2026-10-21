@@ -1,18 +1,21 @@
 # ci-security
 
-Standards compliance and security scanning workflow.
+Security scanning workflow: CodeQL, Trivy and Semgrep, plus an evidence job
+that bundles their SARIF results for the release harvester.
 
 ## Inputs
 
 | Input | Type | Required | Default | Description |
 | ------- | ------ | ---------- | --------- | ------------- |
-| `language` | string | yes | — | Language for security scanners (e.g., `python`, `go`, `ruby`) |
-| `run-standards` | boolean | no | `true` | Run the standards-compliance job |
-| `run-security` | boolean | no | `true` | Run security scanner jobs (CodeQL, Semgrep, Trivy) |
-| `run-codeql` | boolean | no | `true` | Run CodeQL analysis (disable for unsupported languages like `shell`) |
+| `language` | string | yes | — | Language for the security scanners (e.g., `python`, `go`, `java`) |
+| `run-security` | boolean | no | `true` | Run the scanner jobs (CodeQL, Trivy, Semgrep) |
+| `run-codeql` | boolean | no | `true` | Run CodeQL analysis (disable for languages CodeQL does not support, such as `shell`) |
 | `upload-sarif` | boolean | no | `true` | Upload scanner SARIF to GitHub code scanning (disable on private repos without GHAS; see below) |
-| `container-suffix` | string | no | `base` | Container image name suffix for the standards job |
-| `container-tag` | string | no | — | **Deprecated** — fed the removed standards job and no longer has any effect. Retained so consumers passing it do not error; slated for removal in [#876](https://github.com/vergil-project/vergil-actions/issues/876) |
+| `container-prefix` | string | no | `prod` | Image name prefix (`prod` or `dev`) for the `semgrep` job's `<prefix>-base:latest` container |
+| `run-standards` | boolean | no | `false` | **Deprecated** — no longer has any effect. The standards job it controlled was removed; the input is still accepted so consumers that pass it do not error |
+| `container-suffix` | string | no | — | **Deprecated** — fed the removed standards job and no longer has any effect. Still accepted so consumers that pass it do not error |
+
+New callers should not pass `run-standards` or `container-suffix`.
 
 ## Required permissions
 
@@ -47,12 +50,25 @@ the incident that motivated this note.
 
 ## Jobs and check names
 
+GitHub names each check `<caller job> / <job>`. With the caller job keyed
+`security` (the standard posture, as in the usage examples below):
+
 | Job | Check name | Condition |
 | ----- | ------------ | ----------- |
-| `standards` | `CI Security / standards` | `run-standards` is true |
-| `codeql` | `CI Security / codeql` | `run-security`, `run-codeql`, and `upload-sarif` are true |
-| `trivy` | `CI Security / trivy` | `run-security` is true |
-| `semgrep` | `CI Security / semgrep` | `run-security` is true |
+| `codeql` | `security / codeql` | `run-security`, `run-codeql`, and `upload-sarif` are all true |
+| `trivy` | `security / trivy` | `run-security` is true |
+| `semgrep` | `security / semgrep` | `run-security` is true |
+| `evidence` | `security / evidence` | `trivy` and `semgrep` succeeded, and `codeql` succeeded or was skipped |
+
+The `evidence` job downloads each scanner's SARIF partial and emits the
+consolidated `ci-evidence-security` artifact. If any scanner fails, it does
+not run, so no security evidence is emitted. It is not a required check; see
+[Required Checks](../ci-gates/required-checks.md) for which of these checks
+branch protection requires.
+
+When SARIF is uploaded to code scanning, GitHub also adds its own SARIF
+analysis checks (`CodeQL`, `Trivy`, `Semgrep OSS`); see
+[Security Scanning](../ci-gates/security-scanning.md).
 
 ## Usage
 
@@ -117,13 +133,19 @@ input degrades the destination, not the scanning.
 
 ## Implementation notes
 
-- The `standards` and `semgrep` jobs run inside the
-  `ghcr.io/vergil-project/dev-base:latest` container.
-- The `standards` job installs `vergil-tooling` from the version pinned in
-  `vergil.toml`.
-- For Python repositories, the `standards` job runs `uv sync --group dev --frozen`
-  to make project-installed tools available on `PATH`.
+- The `semgrep` job runs inside the
+  `ghcr.io/vergil-project/<container-prefix>-base:latest` container
+  (`prod-base` by default). Semgrep never executes the target code, so it
+  needs no language runtime.
+- The `codeql` and `trivy` jobs run directly on `ubuntu-latest`, with no
+  container. CodeQL autobuild for compiled languages needs the language
+  toolchains that the runner provides.
+- Each scanner job uploads its **unfiltered** SARIF as an evidence partial
+  regardless of `upload-sarif`. For Trivy and Semgrep, the copy sent to code
+  scanning omits accepted-suppressed results (via `vrg-sarif-filter`); the
+  evidence copy keeps them so they remain auditable.
 - The Semgrep action auto-detects repository content and enables additional
   rulesets: `p/dockerfile` when Dockerfiles are present, `p/github-actions`
   when workflow files exist under `.github/workflows/`. No configuration is
-  needed from consuming repos.
+  needed from consuming repos. For `cpp` the workflow adds `p/c` (which covers
+  `.c` files only), and for `typescript` it adds `p/typescript`.

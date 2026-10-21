@@ -87,7 +87,6 @@ the rule does not apply to them regardless of the backlog above.
 ```yaml
 jobs:
   semgrep:
-    name: "security: semgrep"
     runs-on: ubuntu-latest
     permissions:
       security-events: write

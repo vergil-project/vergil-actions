@@ -45,20 +45,32 @@ checks that must pass before a PR can merge.
 | Do not enforce on create | No |
 
 The required checks vary by repository category. See the
-[check matrix](required-checks.md#check-matrix) for the full list.
+[required check set](required-checks.md#required-check-set) for the full list.
 
-### Library repositories (Go, Python, Ruby, Java)
+### Example: a public Python library
+
+`vrg-github-repo-config` derives the set from `vergil.toml`, not from a fixed
+repository category. A public Python library that publishes docs and has a
+release model gets:
 
 ```text
-ci: standards-compliance
+quality / common
+security / trivy
+security / semgrep
+docs / docs
+Trivy
+Semgrep OSS
+security / codeql
+CodeQL
 audit / evidence
 quality / evidence
 test / evidence
-release: gates
-security: codeql
-security: semgrep
-security: trivy
+version / version-bump
 ```
+
+`Trivy`, `Semgrep OSS` and `CodeQL` are GitHub code scanning checks, required
+because GHAS is available on a public repository. A repository with a
+`[package]` section also requires `package / evidence`.
 
 !!! note "Version-agnostic evidence gates"
     The matrixed workflows (`ci-audit`, `ci-quality`, `ci-test`) derive their
@@ -72,20 +84,26 @@ security: trivy
     not the required-check set. See
     [Evidence gates are the required checks](required-checks.md#evidence-gates-are-the-required-checks).
 
-### Infrastructure repositories
+### Example: vergil-actions
+
+This repository declares no primary language in `vergil.toml` (its `ci.yml`
+passes `language: shell` to the workflows), so it gets no CodeQL checks and no
+audit, quality or test evidence gates. It requires only the always-required
+checks, the docs gate, the Trivy and Semgrep code scanning checks, and the
+version gate:
 
 ```text
-ci: standards-compliance
-ci: shellcheck
+quality / common
+security / trivy
+security / semgrep
+docs / docs
+Trivy
+Semgrep OSS
+version / version-bump
 ```
 
-The vergil-actions repository additionally requires `ci: actionlint`.
-
-### Documentation repositories
-
-```text
-ci: standards-compliance
-```
+Shell linting (shellcheck, actionlint and the other common linters) runs
+inside `quality / common`.
 
 ## Tag protection ruleset
 
@@ -124,8 +142,7 @@ rolling tags fall outside the `v*.*.*` pattern.
 
 When adding a new CI job that should block merges:
 
-1. Add the job to the CI workflow with the appropriate
-   [name prefix](required-checks.md#job-name-prefix-convention).
+1. Add the job to the CI workflow.
 2. Open a PR and verify the check runs and passes.
 3. After the PR merges, add the exact check name to the CI gates ruleset via
    **Settings > Rules > Rulesets > CI gates**.

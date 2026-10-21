@@ -1,6 +1,6 @@
 # ci-test
 
-Unit and integration test workflow.
+Unit test workflow.
 
 ## Inputs
 

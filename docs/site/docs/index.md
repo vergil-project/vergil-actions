@@ -13,7 +13,7 @@ releases.
 
 | Phase | Actions | Purpose |
 | ---------- | --------- | --------- |
-| CI / Security | [standards-compliance](actions/ci-security-standards-compliance.md), [codeql](actions/ci-security-codeql.md), [semgrep](actions/ci-security-semgrep.md) | Compliance checks and SAST scanning |
+| CI / Security | [codeql](actions/ci-security-codeql.md), [semgrep](actions/ci-security-semgrep.md) | SAST scanning |
 | CI / Version Bump | [version-divergence](actions/ci-version-bump-version-divergence.md) | Pre-merge version validation |
 | CD / Release | [tag-and-release](actions/cd-release-tag-and-release.md) | Release tagging and GitHub Releases |
 | CD / Docs | [deploy](actions/cd-docs-deploy.md) | MkDocs Material + mike versioned deployment |
@@ -29,10 +29,10 @@ repositories. See [Reusable Workflows](workflows/index.md) for details.
 
 | Workflow | Purpose |
 | ---------- | --------- |
-| [ci-security](workflows/ci-security.md) | Standards compliance and security scanning |
+| [ci-security](workflows/ci-security.md) | Security scanning (CodeQL, Trivy, Semgrep) |
 | [ci-quality](workflows/ci-quality.md) | Common linting, language-specific lint and typecheck |
 | [ci-audit](workflows/ci-audit.md) | Dependency audit |
-| [ci-test](workflows/ci-test.md) | Unit and integration tests |
+| [ci-test](workflows/ci-test.md) | Unit tests |
 | [ci-version-bump](workflows/ci-version-bump.md) | Version divergence gate |
 | [ci-package](workflows/ci-package.md) | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only) |
 

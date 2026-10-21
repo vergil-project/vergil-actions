@@ -1,24 +1,33 @@
 # Required Checks
 
-## Check matrix
+## Required check set
 
-The following table shows which CI checks apply to each repository category.
-Checks marked **Required** must be configured as required status checks in the
-[CI gates ruleset](repository-rulesets.md#ci-gates-ruleset).
+The required status checks live in the
+[CI gates ruleset](repository-rulesets.md#ci-gates-ruleset). `vrg-github-repo-config`
+in vergil-tooling derives them from each repository's `vergil.toml`, so the set
+depends on the repository's configuration rather than a fixed category. Check
+names assume the standard caller job keys (`quality`, `security`, `docs`,
+`audit`, `test`, `package`, `version`), because GitHub names a reusable-workflow
+check `<caller job> / <job>`.
 
-| Check | Go Library | Python Library | Ruby Library | Java Library | Rust Library | Infrastructure | Documentation |
-| ------- | ----------- | --------------- | ------------- | ------------- | ------------- | ---------------- | --------------- |
-| `ci: standards-compliance` | Required | Required | Required | Required | Required | Required | Required |
-| `ci: dependency-audit` | Required | Required | Required | Required | Required | — | — |
-| `ci: actionlint` | — | — | — | — | — | Required | — |
-| `ci: shellcheck` | — | — | — | — | — | Required | — |
-| `ci: type-check` | — | Required | Required | — | — | — | — |
-| `test: unit` | Required | Required | Required | Required | Required | — | — |
-| `test: integration` | Required | Required | Required | Required | Required | — | — |
-| `security: codeql` | Required | Required | Required | Required | Required | — | — |
-| `security: semgrep` | Required | Required | Required | Required | Required | — | — |
-| `security: trivy` | Required | Required | Required | Required | Required | — | — |
-| `release: gates` | Required | Required | Required | Required | Required | — | — |
+| Required check | Produced by | Required when |
+| ---------------- | ------------- | --------------- |
+| `quality / common` | `ci-quality.yml` | Always |
+| `security / trivy` | `ci-security.yml` | Always |
+| `security / semgrep` | `ci-security.yml` | Always |
+| `docs / docs` | `ci-docs.yml` | The repo publishes docs (`[publish].docs`) |
+| `Trivy`, `Semgrep OSS` | GitHub code scanning (SARIF upload) | GHAS is available |
+| `security / codeql`, `CodeQL` | `ci-security.yml`, GitHub code scanning | GHAS is available and the primary language is supported by CodeQL |
+| `audit / evidence` | `ci-audit.yml` | The language has a dependency-audit check |
+| `quality / evidence` | `ci-quality.yml` | The language has a lint or typecheck check |
+| `test / evidence` | `ci-test.yml` | The language has a unit-test check |
+| `package / evidence` | `ci-package.yml` | `vergil.toml` has a `[package]` section |
+| `version / version-bump` | `ci-version-bump.yml` | The repo has a release model (not `none`) |
+
+`Trivy`, `Semgrep OSS` and `CodeQL` are the SARIF analysis checks that GitHub
+creates when scanner results are uploaded to code scanning; see
+[Security Scanning](security-scanning.md). Without GHAS they never report, so
+they are required only where GHAS is available.
 
 ### Evidence gates are the required checks
 
@@ -55,73 +64,51 @@ these stable gates (plus `package / evidence` for `[package]` repos); the
 per-version legs run and appear in the checks UI but are informational, so the
 required-check set does not churn when `[ci].versions` changes.
 
-## Job name prefix convention
-
-All CI job names use a category prefix followed by a colon and the job name.
-This convention enables clear identification in the GitHub checks UI and
-supports pattern-based branch protection rules.
-
-```yaml
-jobs:
-  standards:
-    name: "ci: standards-compliance"
-  unit-tests:
-    name: "test: unit"
-  codeql:
-    name: "security: codeql"
-  release-gates:
-    name: "release: gates"
-```
+`ci-security.yml` also has an `evidence` job (`security / evidence`), but it is
+not a required check: the scanner jobs are not matrixed, so they are required
+directly.
 
 ## Reusable workflow check-name mapping
 
-Each reusable workflow produces canonical check names. See
-[Reusable Workflows](../workflows/index.md) for full details. For the matrixed
-workflows the **required** check is the version-agnostic `<kind> / evidence`
-aggregate; the per-version legs are informational (see [Evidence gates are the
-required checks](#evidence-gates-are-the-required-checks) above).
+Each reusable workflow produces the check names below, shown with the standard
+caller job key as the prefix. See [Reusable Workflows](../workflows/index.md)
+for full details. For the matrixed workflows the **required** check is the
+version-agnostic `<kind> / evidence` aggregate; the per-version legs are
+informational (see [Evidence gates are the required
+checks](#evidence-gates-are-the-required-checks) above).
 
 | Workflow | Check names produced | Required check |
 | ---------- | ---------------------- | ---------------- |
-| `ci-docs.yml` | `CI Docs / docs` | `CI Docs / docs` |
-| `ci-security.yml` | `CI Security / standards`, `CI Security / codeql`, `CI Security / trivy`, `CI Security / semgrep` | each job above |
-| `ci-quality.yml` | `common`, `lint / <version>`, `typecheck / <version>` legs + `quality / evidence` aggregate | `quality / evidence` |
-| `ci-audit.yml` | `dependencies / <version>` legs + `audit / evidence` aggregate | `audit / evidence` |
-| `ci-test.yml` | `unit / <version>` legs + `test / evidence` aggregate | `test / evidence` |
-| `ci-version-bump.yml` | `CI Version Bump / version-bump` | `CI Version Bump / version-bump` |
-| `ci-package.yml` (`[package]` repos only) | `matrix`, `build / <cell>`, `install-test / <cell>` legs + `package / evidence` aggregate | `package / evidence` |
+| `ci-docs.yml` | `docs / docs` | `docs / docs` (repos that publish docs) |
+| `ci-security.yml` | `security / codeql`, `security / trivy`, `security / semgrep`, `security / evidence` | `security / trivy`, `security / semgrep`; `security / codeql` with GHAS and a CodeQL-supported language |
+| `ci-quality.yml` | `quality / matrix`, `quality / setup`, `quality / common`, `quality / lint / <version>`, `quality / typecheck / <version>` legs + `quality / evidence` aggregate | `quality / common`, `quality / evidence` |
+| `ci-audit.yml` | `audit / matrix`, `audit / dependencies / <version>` legs + `audit / evidence` aggregate | `audit / evidence` |
+| `ci-test.yml` | `test / matrix`, `test / unit / <version>` legs + `test / evidence` aggregate | `test / evidence` |
+| `ci-version-bump.yml` | `version / setup`, `version / version-bump` | `version / version-bump` (repos with a release model) |
+| `ci-package.yml` (`[package]` repos only) | `package / matrix`, `package / build / <cell>`, `package / install-test / <cell>` legs + `package / evidence` aggregate | `package / evidence` |
 
-## Reusable workflow flags
+## ci-security.yml flags
 
-The `ci-security.yml` reusable workflow accepts independent flags that
-control which inner jobs run:
+The `ci-security.yml` reusable workflow accepts these flags to control which
+scanner jobs run (see [ci-security](../workflows/ci-security.md) for every
+input):
 
 | Flag | Controls | Default |
 | ---- | -------- | ------- |
-| `run-standards` | `CI Security / standards` job | `true` |
-| `run-security` | `CI Security / codeql`, `CI Security / trivy`, `CI Security / semgrep` jobs | `true` |
-| `run-codeql` | `CI Security / codeql` job (requires `run-security` to also be true) | `true` |
-
-Consuming repos must pass both flags explicitly so that push CI (tier 2) can
-skip standards and security while PR CI (tier 3) runs the full suite:
+| `run-security` | `security / codeql`, `security / trivy`, `security / semgrep` jobs | `true` |
+| `run-codeql` | `security / codeql` job (requires `run-security` to also be true) | `true` |
+| `upload-sarif` | Upload of SARIF to code scanning; when false, `security / codeql` is skipped | `true` |
 
 ```yaml
-security-and-standards:
+security:
   uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
-  with:
-    language: <lang>
-    run-standards: ${{ inputs.run-release-gates || 'true' }}
-    run-security: ${{ inputs.run-security || 'true' }}
   permissions:
     contents: read
     security-events: write
     actions: read
+  with:
+    language: <lang>
 ```
-
-Using a job-level `if` on a single flag (e.g., `if: inputs.run-security !=
-'false'`) is **incorrect** because it conflates standards-compliance with
-security scanning. The two-flag pattern allows each concern to be toggled
-independently.
 
 ## Ruleset configuration
 
