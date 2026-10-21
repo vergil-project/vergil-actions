@@ -18,7 +18,7 @@ releases.
 | CD / Release | [tag-and-release](actions/cd-release-tag-and-release.md) | Release tagging and GitHub Releases |
 | CD / Docs | [deploy](actions/cd-docs-deploy.md) | MkDocs Material + mike versioned deployment |
 | Shared / Security | [trivy](actions/shared-security-trivy.md) | Vulnerability scanning and SBOM generation |
-| Shared / Setup | [vergil-tooling](actions/index.md) | Standard-tooling and environment setup |
+| Shared / Setup | [vergil](https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/setup/vergil/action.yml), [system-packages](actions/shared-setup-system-packages.md), [build-command](actions/shared-setup-build-command.md) | vergil-tooling install and CI version set; test-job system packages and build command |
 
 ## Reusable workflows
 
