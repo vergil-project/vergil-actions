@@ -5351,15 +5351,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#check-matrix" class="md-nav__link">
+  <a href="#required-check-set" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Check matrix
+        Required check set
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Check matrix">
+    <nav class="md-nav" aria-label="Required check set">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -5379,17 +5379,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#job-name-prefix-convention" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Job name prefix convention
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#reusable-workflow-check-name-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5401,10 +5390,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reusable-workflow-flags" class="md-nav__link">
+  <a href="#ci-securityyml-flags" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reusable workflow flags
+        ci-security.yml flags
       
     </span>
   </a>
@@ -5685,15 +5674,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#check-matrix" class="md-nav__link">
+  <a href="#required-check-set" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Check matrix
+        Required check set
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Check matrix">
+    <nav class="md-nav" aria-label="Required check set">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -5713,17 +5702,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#job-name-prefix-convention" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Job name prefix convention
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#reusable-workflow-check-name-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5735,10 +5713,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reusable-workflow-flags" class="md-nav__link">
+  <a href="#ci-securityyml-flags" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reusable workflow flags
+        ci-security.yml flags
       
     </span>
   </a>
@@ -5774,136 +5752,84 @@
 
 
 <h1 id="required-checks">Required Checks<a class="headerlink" href="#required-checks" title="Permanent link">&para;</a></h1>
-<h2 id="check-matrix">Check matrix<a class="headerlink" href="#check-matrix" title="Permanent link">&para;</a></h2>
-<p>The following table shows which CI checks apply to each repository category.
-Checks marked <strong>Required</strong> must be configured as required status checks in the
-<a href="../repository-rulesets/#ci-gates-ruleset">CI gates ruleset</a>.</p>
+<h2 id="required-check-set">Required check set<a class="headerlink" href="#required-check-set" title="Permanent link">&para;</a></h2>
+<p>The required status checks live in the
+<a href="../repository-rulesets/#ci-gates-ruleset">CI gates ruleset</a>. <code>vrg-github-repo-config</code>
+in vergil-tooling derives them from each repository's <code>vergil.toml</code>, so the set
+depends on the repository's configuration rather than a fixed category. Check
+names assume the standard caller job keys (<code>quality</code>, <code>security</code>, <code>docs</code>,
+<code>audit</code>, <code>test</code>, <code>package</code>, <code>version</code>), because GitHub names a reusable-workflow
+check <code>&lt;caller job&gt; / &lt;job&gt;</code>.</p>
 <table>
 <thead>
 <tr>
-<th>Check</th>
-<th>Go Library</th>
-<th>Python Library</th>
-<th>Ruby Library</th>
-<th>Java Library</th>
-<th>Rust Library</th>
-<th>Infrastructure</th>
-<th>Documentation</th>
+<th>Required check</th>
+<th>Produced by</th>
+<th>Required when</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ci: standards-compliance</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
+<td><code>quality / common</code></td>
+<td><code>ci-quality.yml</code></td>
+<td>Always</td>
 </tr>
 <tr>
-<td><code>ci: dependency-audit</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
+<td><code>security / trivy</code></td>
+<td><code>ci-security.yml</code></td>
+<td>Always</td>
 </tr>
 <tr>
-<td><code>ci: actionlint</code></td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>Required</td>
-<td>—</td>
+<td><code>security / semgrep</code></td>
+<td><code>ci-security.yml</code></td>
+<td>Always</td>
 </tr>
 <tr>
-<td><code>ci: shellcheck</code></td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>Required</td>
-<td>—</td>
+<td><code>docs / docs</code></td>
+<td><code>ci-docs.yml</code></td>
+<td>The repo publishes docs (<code>[publish].docs</code>)</td>
 </tr>
 <tr>
-<td><code>ci: type-check</code></td>
-<td>—</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
+<td><code>Trivy</code>, <code>Semgrep OSS</code></td>
+<td>GitHub code scanning (SARIF upload)</td>
+<td>GHAS is available</td>
 </tr>
 <tr>
-<td><code>test: unit</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
+<td><code>security / codeql</code>, <code>CodeQL</code></td>
+<td><code>ci-security.yml</code>, GitHub code scanning</td>
+<td>GHAS is available and the primary language is supported by CodeQL</td>
 </tr>
 <tr>
-<td><code>test: integration</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
+<td><code>audit / evidence</code></td>
+<td><code>ci-audit.yml</code></td>
+<td>The language has a dependency-audit check</td>
 </tr>
 <tr>
-<td><code>security: codeql</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
+<td><code>quality / evidence</code></td>
+<td><code>ci-quality.yml</code></td>
+<td>The language has a lint or typecheck check</td>
 </tr>
 <tr>
-<td><code>security: semgrep</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
+<td><code>test / evidence</code></td>
+<td><code>ci-test.yml</code></td>
+<td>The language has a unit-test check</td>
 </tr>
 <tr>
-<td><code>security: trivy</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
+<td><code>package / evidence</code></td>
+<td><code>ci-package.yml</code></td>
+<td><code>vergil.toml</code> has a <code>[package]</code> section</td>
 </tr>
 <tr>
-<td><code>release: gates</code></td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>Required</td>
-<td>—</td>
-<td>—</td>
+<td><code>version / version-bump</code></td>
+<td><code>ci-version-bump.yml</code></td>
+<td>The repo has a release model (not <code>none</code>)</td>
 </tr>
 </tbody>
 </table>
+<p><code>Trivy</code>, <code>Semgrep OSS</code> and <code>CodeQL</code> are the SARIF analysis checks that GitHub
+creates when scanner results are uploaded to code scanning; see
+<a href="../security-scanning/">Security Scanning</a>. Without GHAS they never report, so
+they are required only where GHAS is available.</p>
 <h3 id="evidence-gates-are-the-required-checks">Evidence gates are the required checks<a class="headerlink" href="#evidence-gates-are-the-required-checks" title="Permanent link">&para;</a></h3>
 <p>The matrixed reusable workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) derive
 their version matrix from <code>[ci].versions</code> in the consumer's <code>vergil.toml</code> at run
@@ -5953,26 +5879,16 @@ otherwise leave the gate unset and non-blocking. Branch protection requires
 these stable gates (plus <code>package / evidence</code> for <code>[package]</code> repos); the
 per-version legs run and appear in the checks UI but are informational, so the
 required-check set does not churn when <code>[ci].versions</code> changes.</p>
-<h2 id="job-name-prefix-convention">Job name prefix convention<a class="headerlink" href="#job-name-prefix-convention" title="Permanent link">&para;</a></h2>
-<p>All CI job names use a category prefix followed by a colon and the job name.
-This convention enables clear identification in the GitHub checks UI and
-supports pattern-based branch protection rules.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">standards</span><span class="p">:</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"ci:</span><span class="nv"> </span><span class="s">standards-compliance"</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">unit-tests</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"test:</span><span class="nv"> </span><span class="s">unit"</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">codeql</span><span class="p">:</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"security:</span><span class="nv"> </span><span class="s">codeql"</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">release-gates</span><span class="p">:</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"release:</span><span class="nv"> </span><span class="s">gates"</span>
-</code></pre></div>
+<p><code>ci-security.yml</code> also has an <code>evidence</code> job (<code>security / evidence</code>), but it is
+not a required check: the scanner jobs are not matrixed, so they are required
+directly.</p>
 <h2 id="reusable-workflow-check-name-mapping">Reusable workflow check-name mapping<a class="headerlink" href="#reusable-workflow-check-name-mapping" title="Permanent link">&para;</a></h2>
-<p>Each reusable workflow produces canonical check names. See
-<a href="../../workflows/">Reusable Workflows</a> for full details. For the matrixed
-workflows the <strong>required</strong> check is the version-agnostic <code>&lt;kind&gt; / evidence</code>
-aggregate; the per-version legs are informational (see <a href="#evidence-gates-are-the-required-checks">Evidence gates are the
-required checks</a> above).</p>
+<p>Each reusable workflow produces the check names below, shown with the standard
+caller job key as the prefix. See <a href="../../workflows/">Reusable Workflows</a>
+for full details. For the matrixed workflows the <strong>required</strong> check is the
+version-agnostic <code>&lt;kind&gt; / evidence</code> aggregate; the per-version legs are
+informational (see <a href="#evidence-gates-are-the-required-checks">Evidence gates are the required
+checks</a> above).</p>
 <table>
 <thead>
 <tr>
@@ -5984,44 +5900,45 @@ required checks</a> above).</p>
 <tbody>
 <tr>
 <td><code>ci-docs.yml</code></td>
-<td><code>CI Docs / docs</code></td>
-<td><code>CI Docs / docs</code></td>
+<td><code>docs / docs</code></td>
+<td><code>docs / docs</code> (repos that publish docs)</td>
 </tr>
 <tr>
 <td><code>ci-security.yml</code></td>
-<td><code>CI Security / standards</code>, <code>CI Security / codeql</code>, <code>CI Security / trivy</code>, <code>CI Security / semgrep</code></td>
-<td>each job above</td>
+<td><code>security / codeql</code>, <code>security / trivy</code>, <code>security / semgrep</code>, <code>security / evidence</code></td>
+<td><code>security / trivy</code>, <code>security / semgrep</code>; <code>security / codeql</code> with GHAS and a CodeQL-supported language</td>
 </tr>
 <tr>
 <td><code>ci-quality.yml</code></td>
-<td><code>common</code>, <code>lint / &lt;version&gt;</code>, <code>typecheck / &lt;version&gt;</code> legs + <code>quality / evidence</code> aggregate</td>
-<td><code>quality / evidence</code></td>
+<td><code>quality / matrix</code>, <code>quality / setup</code>, <code>quality / common</code>, <code>quality / lint / &lt;version&gt;</code>, <code>quality / typecheck / &lt;version&gt;</code> legs + <code>quality / evidence</code> aggregate</td>
+<td><code>quality / common</code>, <code>quality / evidence</code></td>
 </tr>
 <tr>
 <td><code>ci-audit.yml</code></td>
-<td><code>dependencies / &lt;version&gt;</code> legs + <code>audit / evidence</code> aggregate</td>
+<td><code>audit / matrix</code>, <code>audit / dependencies / &lt;version&gt;</code> legs + <code>audit / evidence</code> aggregate</td>
 <td><code>audit / evidence</code></td>
 </tr>
 <tr>
 <td><code>ci-test.yml</code></td>
-<td><code>unit / &lt;version&gt;</code> legs + <code>test / evidence</code> aggregate</td>
+<td><code>test / matrix</code>, <code>test / unit / &lt;version&gt;</code> legs + <code>test / evidence</code> aggregate</td>
 <td><code>test / evidence</code></td>
 </tr>
 <tr>
 <td><code>ci-version-bump.yml</code></td>
-<td><code>CI Version Bump / version-bump</code></td>
-<td><code>CI Version Bump / version-bump</code></td>
+<td><code>version / setup</code>, <code>version / version-bump</code></td>
+<td><code>version / version-bump</code> (repos with a release model)</td>
 </tr>
 <tr>
 <td><code>ci-package.yml</code> (<code>[package]</code> repos only)</td>
-<td><code>matrix</code>, <code>build / &lt;cell&gt;</code>, <code>install-test / &lt;cell&gt;</code> legs + <code>package / evidence</code> aggregate</td>
+<td><code>package / matrix</code>, <code>package / build / &lt;cell&gt;</code>, <code>package / install-test / &lt;cell&gt;</code> legs + <code>package / evidence</code> aggregate</td>
 <td><code>package / evidence</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="reusable-workflow-flags">Reusable workflow flags<a class="headerlink" href="#reusable-workflow-flags" title="Permanent link">&para;</a></h2>
-<p>The <code>ci-security.yml</code> reusable workflow accepts independent flags that
-control which inner jobs run:</p>
+<h2 id="ci-securityyml-flags">ci-security.yml flags<a class="headerlink" href="#ci-securityyml-flags" title="Permanent link">&para;</a></h2>
+<p>The <code>ci-security.yml</code> reusable workflow accepts these flags to control which
+scanner jobs run (see <a href="../../workflows/ci-security/">ci-security</a> for every
+input):</p>
 <table>
 <thead>
 <tr>
@@ -6032,39 +5949,31 @@ control which inner jobs run:</p>
 </thead>
 <tbody>
 <tr>
-<td><code>run-standards</code></td>
-<td><code>CI Security / standards</code> job</td>
-<td><code>true</code></td>
-</tr>
-<tr>
 <td><code>run-security</code></td>
-<td><code>CI Security / codeql</code>, <code>CI Security / trivy</code>, <code>CI Security / semgrep</code> jobs</td>
+<td><code>security / codeql</code>, <code>security / trivy</code>, <code>security / semgrep</code> jobs</td>
 <td><code>true</code></td>
 </tr>
 <tr>
 <td><code>run-codeql</code></td>
-<td><code>CI Security / codeql</code> job (requires <code>run-security</code> to also be true)</td>
+<td><code>security / codeql</code> job (requires <code>run-security</code> to also be true)</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td><code>upload-sarif</code></td>
+<td>Upload of SARIF to code scanning; when false, <code>security / codeql</code> is skipped</td>
 <td><code>true</code></td>
 </tr>
 </tbody>
 </table>
-<p>Consuming repos must pass both flags explicitly so that push CI (tier 2) can
-skip standards and security while PR CI (tier 3) runs the full suite:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">security-and-standards</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;lang&gt;</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">run-standards</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ inputs.run-release-gates || 'true' }}</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">run-security</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ inputs.run-security || 'true' }}</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">security</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">permissions</span><span class="p">:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;lang&gt;</span>
 </code></pre></div>
-<p>Using a job-level <code>if</code> on a single flag (e.g., <code>if: inputs.run-security !=
-'false'</code>) is <strong>incorrect</strong> because it conflates standards-compliance with
-security scanning. The two-flag pattern allows each concern to be toggled
-independently.</p>
 <h2 id="ruleset-configuration">Ruleset configuration<a class="headerlink" href="#ruleset-configuration" title="Permanent link">&para;</a></h2>
 <p>All required status checks are enforced via GitHub repository rulesets, not
 legacy branch protection rules. Both <code>main</code> and <code>develop</code> are covered by the

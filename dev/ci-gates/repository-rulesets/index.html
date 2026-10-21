@@ -6028,7 +6028,7 @@ checks that must pass before a PR can merge.</p>
 </tbody>
 </table>
 <p>The required checks vary by repository category. See the
-<a href="../required-checks/#check-matrix">check matrix</a> for the full list.</p>
+<a href="../required-checks/#required-check-set">required check set</a> for the full list.</p>
 <h3 id="library-repositories-go-python-ruby-java">Library repositories (Go, Python, Ruby, Java)<a class="headerlink" href="#library-repositories-go-python-ruby-java" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ci: standards-compliance
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>audit / evidence
@@ -6111,8 +6111,7 @@ rolling tags fall outside the <code>v*.*.*</code> pattern.</p>
 <h2 id="adding-a-new-required-check">Adding a new required check<a class="headerlink" href="#adding-a-new-required-check" title="Permanent link">&para;</a></h2>
 <p>When adding a new CI job that should block merges:</p>
 <ol>
-<li>Add the job to the CI workflow with the appropriate
-   <a href="../required-checks/#job-name-prefix-convention">name prefix</a>.</li>
+<li>Add the job to the CI workflow.</li>
 <li>Open a PR and verify the check runs and passes.</li>
 <li>After the PR merges, add the exact check name to the CI gates ruleset via
    <strong>Settings &gt; Rules &gt; Rulesets &gt; CI gates</strong>.</li>
