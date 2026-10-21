@@ -5805,7 +5805,7 @@
 <li><strong>No secrets access</strong> — Composite actions cannot access secrets directly.
   Callers must pass secrets as inputs.</li>
 <li><strong>Idempotent when possible</strong> — Actions should be safe to re-run (e.g.,
-  <code>publish/tag-and-release</code> skips if the tag exists).</li>
+  <code>cd/release/tag-and-release</code> skips if the tag exists).</li>
 <li><strong>Environment variables for sensitive data</strong> — Use <code>env</code> blocks rather than
   inline interpolation for values that might contain special characters.</li>
 </ul>
@@ -5847,48 +5847,68 @@ provides integration testing without a separate test repository.</p>
 <h2 id="branching-workflow">Branching workflow<a class="headerlink" href="#branching-workflow" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Protected branches</strong>: <code>main</code> and <code>develop</code> — no direct commits.</li>
-<li><strong>Branch naming</strong>: <code>feature/*</code>, <code>bugfix/*</code>, or <code>hotfix/*</code> only.</li>
+<li><strong>Branch naming</strong>: work branches are <code>&lt;type&gt;/&lt;N&gt;-&lt;slug&gt;</code>, where <code>&lt;type&gt;</code> is
+  <code>feature</code>, <code>bugfix</code>, <code>hotfix</code> or <code>chore</code> and <code>&lt;N&gt;</code> is the GitHub issue
+  number (e.g. <code>feature/42-add-check</code>). <code>release/*</code> branches are created by
+  <code>vrg-release</code>.</li>
 <li>Feature and bugfix PRs target <code>develop</code> with squash merge.</li>
 <li>Release PRs target <code>main</code> with regular merge.</li>
 </ul>
 <h2 id="committing">Committing<a class="headerlink" href="#committing" title="Permanent link">&para;</a></h2>
-<p>Always use the commit script:</p>
+<p>Always use <code>vrg-commit</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>vrg-commit<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>--type<span class="w"> </span>feat<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--scope<span class="w"> </span>ci<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>--message<span class="w"> </span><span class="s2">"add new validation check"</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>--agent<span class="w"> </span>claude
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>--message<span class="w"> </span><span class="s2">"add new validation check"</span>
 </code></pre></div>
 <p>Required flags:</p>
 <ul>
-<li><code>--type</code>: <code>feat|fix|docs|style|refactor|test|chore|ci|build</code></li>
+<li><code>--type</code>: <code>feat|fix|docs|style|refactor|test|chore|ci|build|revert</code></li>
+<li><code>--scope</code>: Conventional commit scope</li>
 <li><code>--message</code>: Commit description</li>
-<li><code>--agent</code>: <code>claude</code> or <code>codex</code></li>
 </ul>
 <p>Optional flags:</p>
 <ul>
-<li><code>--scope</code>: Conventional commit scope</li>
 <li><code>--body</code>: Detailed commit body</li>
+<li><code>--allow-empty</code>: Allow a commit with no staged changes (e.g. to re-trigger CI)</li>
 </ul>
 <h2 id="submitting-prs">Submitting PRs<a class="headerlink" href="#submitting-prs" title="Permanent link">&para;</a></h2>
-<p>Always use the PR script:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>st-submit-pr<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--issue<span class="w"> </span><span class="m">42</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--summary<span class="w"> </span><span class="s2">"Add new validation check"</span>
+<p>PR submission is split between the agent and the human. Agents never run
+<code>vrg-submit-pr</code>.</p>
+<ol>
+<li>
+<p><strong>Agent: push the branch, then record the PR metadata.</strong> Push the branch to
+   origin first — <code>report-ready</code> pushes only its metadata ref, not the branch:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>vrg-git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>feature/42-add-check
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>vrg-pr-workflow<span class="w"> </span>report-ready<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--issue<span class="w"> </span><span class="m">42</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--title<span class="w"> </span><span class="s2">"feat(ci): add new validation check"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>--summary<span class="w"> </span><span class="s2">"Add new validation check"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>--notes<span class="w"> </span><span class="s2">"Validated with vrg-validate."</span>
 </code></pre></div>
-<p>Required flags:</p>
-<ul>
-<li><code>--issue</code>: GitHub issue number</li>
-<li><code>--summary</code>: One-line PR summary</li>
-</ul>
-<p>Optional flags:</p>
-<ul>
-<li><code>--linkage</code>: <code>Ref</code> (default) or <code>Closes</code>. <code>Fixes</code> and <code>Resolves</code> are
-  rejected.</li>
-<li><code>--title</code>: PR title (default: most recent commit subject)</li>
-<li><code>--notes</code>: Additional notes</li>
-<li><code>--dry-run</code>: Print without executing</li>
-</ul>
+<p><code>--issue</code>, <code>--title</code>, <code>--summary</code> and <code>--notes</code> are required and must be
+non-empty. <code>--linkage</code> defaults to <code>Ref</code>; leave it there, because
+<code>vrg-submit-pr</code> picks the keyword at submit time. If the change touches
+<code>.github/workflows/**</code>, GitHub refuses the agent's push; the human's
+<code>vrg-submit-pr</code> pushes the branch instead.</p>
+<p><code>report-ready</code> freezes the branch: further commits and pushes are refused.
+Re-running it to correct the title, summary or notes is allowed. More work
+belongs in a new follow-up issue; <code>vrg-pr-workflow unfreeze</code> reopens a
+branch that has not been submitted.</p>
+</li>
+<li>
+<p><strong>Human: submit the PR.</strong> Run <code>vrg-submit-pr</code> with no arguments from the
+   worktree, or <code>vrg-submit-pr &lt;branch&gt; [&lt;branch&gt; …]</code> from the main worktree.
+   It reads the recorded metadata, previews the PR and opens it after
+   confirmation.</p>
+</li>
+<li>
+<p><strong>Human: merge and clean up.</strong> Run <code>vrg-finalize-pr</code>, which waits for checks,
+   merges the PR and removes the merged branch and worktree.</p>
+</li>
+</ol>
+<p>The recorded title, summary and notes are readable by anyone on a public
+repository, so they must not contain secrets.</p>
 
 
 
