@@ -79,8 +79,9 @@ include chain pattern described in the canonical standards.
 
 The repository profile lives in `vergil.toml` under `[project]`.
 Required fields: `repository-type`, `versioning-scheme`, `branching-model`,
-`release-model`, `primary-language`. Co-author identities live under
-`[project.co-authors]`.
+`release-model`, `primary-language`. Commits carry no AI co-author
+trailer; Claude Code attribution is turned off in `.claude/settings.json`
+(vergil-project/vergil-tooling#3200).
 
 Local deviations, if any, belong directly in `CLAUDE.md`.
 
