@@ -144,8 +144,13 @@ When adding a new CI job that should block merges:
 
 1. Add the job to the CI workflow.
 2. Open a PR and verify the check runs and passes.
-3. After the PR merges, add the exact check name to the CI gates ruleset via
-   **Settings > Rules > Rulesets > CI gates**.
+3. Do not add the check by hand under **Settings > Rules**.
+   `vrg-github-repo-config` derives the required-check set itself (from
+   `desired_ci_gates_ruleset()` in vergil-tooling and the repository's
+   `vergil.toml`), and the nightly `ops-github-config` audit reports a
+   hand-added check as drift. Add the check to that derivation in
+   vergil-tooling, and once that change is released run
+   `vrg-github-repo-config apply` to converge the ruleset.
 4. Verify the check name matches exactly. For the matrixed workflows, require
    the stable `<kind> / evidence` aggregate (e.g. `test / evidence`), **not** the
    per-version legs — the legs change with `[ci].versions`, the aggregate does

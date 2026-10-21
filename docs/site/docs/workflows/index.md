@@ -32,6 +32,15 @@ rulesets.
 | CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump); repos with `[package]` also build, sign and attach `.deb`/`.rpm` packages ([binary packages](cd-release-packages.md)) |
 | CD Docs | `cd-docs.yml` | MkDocs documentation deployment |
 | [Publish package index](publish-index.md) | `publish-index.yml` | Signed apt/dnf package-repository site, deployed to Pages |
+| [CD Docs Refresh](cd-docs-refresh.md) | `cd-docs-refresh.yml` | Regenerate the roadmap and activity pages and redeploy the docs site, on a schedule |
+
+## Ops workflows (scheduled and event-driven)
+
+| Workflow | File | Purpose |
+| ---------- | ------ | --------- |
+| Ops GitHub Config | `ops-github-config.yml` | Nightly `vrg-github-repo-config` audit and [branch sweep](../actions/ops-github-config-branch-sweep.md) |
+| [Ops Epic Rollup](ops-epic-rollup.md) | `ops-epic-rollup.yml` | Close a task's parent epic when its last task closes (called on `issues: closed`) |
+| [Ops Epic Sweep](ops-epic-sweep.md) | `ops-epic-sweep.yml` | Daily close of epics and tasks that missed their event-driven close |
 
 ## Dynamic version matrix and evidence gates
 
@@ -168,7 +177,7 @@ the overrides once the dev images have been validated and promoted to
 prod.
 
 For local validation using development containers, see the
-[`vrg-container-run` documentation](https://vergil-project.github.io/vergil-tooling/reference/cli-tools-overview/#vrg-container-run)
+[`vrg-container-run` documentation](https://vergil-project.github.io/vergil-tooling/latest/reference/cli-tools-overview/#vrg-container-run)
 for instructions on specifying the container prefix.
 
 ## Reference freezing

@@ -36,6 +36,7 @@ repositories. See [Reusable Workflows](workflows/index.md) for details.
 
 | Workflow | Purpose |
 | ---------- | --------- |
+| [ci-docs](workflows/ci-docs.md) | Strict MkDocs build of the documentation site |
 | [ci-security](workflows/ci-security.md) | Security scanning (CodeQL, Trivy, Semgrep) |
 | [ci-quality](workflows/ci-quality.md) | Common linting, language-specific lint and typecheck |
 | [ci-audit](workflows/ci-audit.md) | Dependency audit |
