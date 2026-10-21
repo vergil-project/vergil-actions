@@ -793,6 +793,8 @@
       
         
       
+        
+      
     
     
     
@@ -845,6 +847,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.45/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.45
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4200,8 +4230,6 @@
       
         
       
-        
-      
     
     
     
@@ -4246,34 +4274,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../actions/ci-security-standards-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ci/security/standards-compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -5962,7 +5962,8 @@ bundle, so every accepted suppression remains auditable there.</p>
 <p>CodeQL is not filtered: <code>github/codeql-action/analyze</code> uploads its results
 itself, so there is no separate upload step to hand a filtered file to.</p>
 <h2 id="check-names-in-the-pr-status-area">Check names in the PR status area<a class="headerlink" href="#check-names-in-the-pr-status-area" title="Permanent link">&para;</a></h2>
-<p>Each security scanner produces <strong>two</strong> check runs on a pull request:</p>
+<p>When SARIF is uploaded to code scanning, each security scanner produces <strong>two</strong>
+check runs on a pull request:</p>
 <table>
 <thead>
 <tr>
@@ -5972,24 +5973,33 @@ itself, so there is no separate upload step to hand a filtered file to.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>security: codeql</code></td>
+<td><code>security / codeql</code></td>
 <td><code>CodeQL</code></td>
 </tr>
 <tr>
-<td><code>security: semgrep</code></td>
+<td><code>security / semgrep</code></td>
 <td><code>Semgrep OSS</code></td>
 </tr>
 <tr>
-<td><code>security: trivy</code></td>
+<td><code>security / trivy</code></td>
 <td><code>Trivy</code></td>
 </tr>
 </tbody>
 </table>
-<p>The first column shows our CI workflow jobs — these are the checks gated in the
-<a href="../repository-rulesets/#ci-gates-ruleset">CI gates ruleset</a>. The second column
-shows checks that GitHub creates automatically when SARIF results are uploaded
-via the <code>security-events: write</code> permission. The SARIF analysis checks are
-informational and are <strong>not</strong> included in the required status checks.</p>
+<p>The first column shows the <a href="../../workflows/ci-security/">ci-security</a> jobs,
+named <code>&lt;caller job&gt; / &lt;job&gt;</code> with the standard <code>security</code> caller job key. The
+second column shows the checks GitHub code scanning creates when the SARIF
+results are uploaded (this needs the <code>security-events: write</code> permission).</p>
+<p>Both columns are gated in the
+<a href="../repository-rulesets/#ci-gates-ruleset">CI gates ruleset</a>:</p>
+<ul>
+<li><code>security / trivy</code> and <code>security / semgrep</code> are always required.</li>
+<li><code>Trivy</code> and <code>Semgrep OSS</code> are required when GHAS is available. Without GHAS
+  they never report, so requiring them would block every merge.</li>
+<li><code>security / codeql</code> and <code>CodeQL</code> are required when GHAS is available and the
+  repository's primary language is supported by CodeQL.</li>
+</ul>
+<p>See <a href="../required-checks/">Required Checks</a> for the full required set.</p>
 <h2 id="viewing-results">Viewing results<a class="headerlink" href="#viewing-results" title="Permanent link">&para;</a></h2>
 <p>Security scan results appear in the repository's <strong>Security</strong> tab:</p>
 <ol>

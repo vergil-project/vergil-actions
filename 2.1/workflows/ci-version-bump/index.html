@@ -793,6 +793,8 @@
       
         
       
+        
+      
     
     
     
@@ -845,6 +847,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.45/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.45
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4200,8 +4230,6 @@
       
         
       
-        
-      
     
     
     
@@ -4246,34 +4274,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../actions/ci-security-standards-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ci/security/standards-compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -5754,12 +5754,20 @@ stay green.</p>
 </thead>
 <tbody>
 <tr>
+<td><code>setup</code></td>
+<td><code>&lt;caller&gt; / setup</code></td>
+<td>Always runs; resolves the container tag for <code>version-bump</code></td>
+</tr>
+<tr>
 <td><code>version-bump</code></td>
-<td><code>CI Version Bump / version-bump</code></td>
+<td><code>&lt;caller&gt; / version-bump</code></td>
 <td>Always runs; the gate steps run only when <code>release-model</code> is not <code>none</code></td>
 </tr>
 </tbody>
 </table>
+<p>With the standard caller job key <code>version</code> (as in the usage example below),
+the required check is <code>version / version-bump</code>, for repositories whose
+<code>release-model</code> is not <code>none</code>.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">version</span><span class="p">:</span>

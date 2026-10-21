@@ -793,6 +793,8 @@
       
         
       
+        
+      
     
     
     
@@ -845,6 +847,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.45/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.45
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4205,8 +4235,6 @@
       
         
       
-        
-      
     
     
     
@@ -4254,34 +4282,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../ci-security-standards-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ci/security/standards-compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -4584,6 +4584,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Reusable workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mkdocs-20-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MkDocs 2.0 banner
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -5787,6 +5804,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Reusable workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mkdocs-20-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MkDocs 2.0 banner
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5928,6 +5962,16 @@ rather than calling the composite action directly:</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
 </code></pre></div>
+<h3 id="mkdocs-20-banner">MkDocs 2.0 banner<a class="headerlink" href="#mkdocs-20-banner" title="Permanent link">&para;</a></h3>
+<p>The <code>cd-docs.yml</code> workflow sets <code>NO_MKDOCS_2_WARNING=1</code> on its "Deploy docs"
+step, which reaches the <code>mkdocs</code> and <code>mike</code> processes this action starts.
+Without it, mkdocs-material 9.7.x prints a
+<a href="https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/">MkDocs 2.0 warning banner</a>
+on every build. Callers of <code>cd-docs.yml</code> cannot set it, because a caller's <code>env</code>
+does not reach a reusable workflow. The workflow sets the variable, not the
+action, so to hide the banner when you call the action directly, set it in that
+step's <code>env</code>. The variable only hides the banner. Consumers still pin <code>mkdocs&lt;2</code>
+in their own docs dependencies. Added in v2.1.43 (#947, PR #948).</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="direct-usage-standalone">Direct usage (standalone)<a class="headerlink" href="#direct-usage-standalone" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/cd/docs/deploy@v2.1</span>
