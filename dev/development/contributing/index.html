@@ -4198,8 +4198,6 @@
       
         
       
-        
-      
     
     
     
@@ -4244,34 +4242,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../actions/ci-security-standards-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ci/security/standards-compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -5837,9 +5807,10 @@ Follow-ups
 <a href="https://github.com/vergil-project/vergil-actions/issues/700">#700</a>
 (release-gate permissions diff) track automating this policy.</p>
 <h2 id="testing-via-self-referencing-ci">Testing via self-referencing CI<a class="headerlink" href="#testing-via-self-referencing-ci" title="Permanent link">&para;</a></h2>
-<p>This repository tests its own actions by using local path references in the CI
-workflow:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./actions/ci/security/standards-compliance</span><span class="w">   </span><span class="c1"># Not the remote reference</span>
+<p>This repository tests its own actions by using local path references in its CI
+workflow (<code>uses: ./.github/workflows/ci-quality.yml</code>) and in the reusable
+workflows that call the composite actions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./actions/shared/setup/vergil</span><span class="w">   </span><span class="c1"># Not the remote reference</span>
 </code></pre></div>
 <p>When you modify an action, the PR's CI run uses your modified version. This
 provides integration testing without a separate test repository.</p>
@@ -5882,8 +5853,8 @@ provides integration testing without a separate test repository.</p>
 </ul>
 <p>Optional flags:</p>
 <ul>
-<li><code>--linkage</code>: <code>Ref</code> (default). <code>Fixes</code>, <code>Closes</code>, and <code>Resolves</code> are rejected
-  by the <code>standards-compliance</code> CI gate.</li>
+<li><code>--linkage</code>: <code>Ref</code> (default) or <code>Closes</code>. <code>Fixes</code> and <code>Resolves</code> are
+  rejected.</li>
 <li><code>--title</code>: PR title (default: most recent commit subject)</li>
 <li><code>--notes</code>: Additional notes</li>
 <li><code>--dry-run</code>: Print without executing</li>

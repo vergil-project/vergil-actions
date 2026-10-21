@@ -4200,8 +4200,6 @@
       
         
       
-        
-      
     
     
     
@@ -4246,34 +4244,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../actions/ci-security-standards-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ci/security/standards-compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -5622,36 +5592,62 @@ requirements.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>Every managed repository runs a common set of CI checks on pull requests. CI
 workflows trigger on <code>pull_request</code> only — push triggers are not used because
-branch protection enforces that all changes go through PRs. These checks are
-organized by category using job name prefixes:</p>
+branch protection enforces that all changes go through PRs.</p>
+<p>Each check comes from a <a href="../workflows/">reusable workflow</a> called by a
+job in the repository's <code>ci.yml</code>. GitHub names a reusable-workflow check
+<code>&lt;caller job&gt; / &lt;job&gt;</code>, so with the standard caller job keys the checks are
+grouped by workflow:</p>
 <table>
 <thead>
 <tr>
-<th>Prefix</th>
+<th>Caller job</th>
+<th>Workflow</th>
 <th>Purpose</th>
-<th>Example jobs</th>
+<th>Example checks</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ci:</code></td>
-<td>Code quality and standards validation</td>
-<td><code>ci: standards-compliance</code>, <code>ci: actionlint</code></td>
+<td><code>quality</code></td>
+<td><code>ci-quality.yml</code></td>
+<td>Common linting, language lint and typecheck</td>
+<td><code>quality / common</code>, <code>quality / evidence</code></td>
 </tr>
 <tr>
-<td><code>security:</code></td>
+<td><code>security</code></td>
+<td><code>ci-security.yml</code></td>
 <td>SAST and vulnerability scanning</td>
-<td><code>security: codeql</code>, <code>security: semgrep</code></td>
+<td><code>security / codeql</code>, <code>security / trivy</code>, <code>security / semgrep</code></td>
 </tr>
 <tr>
-<td><code>test:</code></td>
-<td>Unit and integration tests</td>
-<td><code>test: unit</code>, <code>test: integration</code></td>
+<td><code>audit</code></td>
+<td><code>ci-audit.yml</code></td>
+<td>Dependency audit</td>
+<td><code>audit / evidence</code></td>
 </tr>
 <tr>
-<td><code>release:</code></td>
-<td>Release gate validations</td>
-<td><code>release: gates</code></td>
+<td><code>test</code></td>
+<td><code>ci-test.yml</code></td>
+<td>Unit tests</td>
+<td><code>test / evidence</code></td>
+</tr>
+<tr>
+<td><code>docs</code></td>
+<td><code>ci-docs.yml</code></td>
+<td>Strict docs build</td>
+<td><code>docs / docs</code></td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td><code>ci-version-bump.yml</code></td>
+<td>Version divergence gate</td>
+<td><code>version / version-bump</code></td>
+</tr>
+<tr>
+<td><code>package</code></td>
+<td><code>ci-package.yml</code></td>
+<td><code>.deb</code>/<code>.rpm</code> build and install-test</td>
+<td><code>package / evidence</code></td>
 </tr>
 </tbody>
 </table>
@@ -5670,8 +5666,8 @@ organized by category using job name prefixes:</p>
 <ul>
 <li><a href="all-hard-gates/">The All-Hard-Gates Principle</a> — Why every check that
   matters is a hard, asserting gate and there are no report-only/warning gates</li>
-<li><a href="required-checks/">Required Checks</a> — Matrix of checks by repository
-  category</li>
+<li><a href="required-checks/">Required Checks</a> — Which checks are required, and
+  the check names each reusable workflow produces</li>
 <li><a href="repository-rulesets/">Repository Rulesets</a> — Branch protection, CI gates,
   and tag protection ruleset configuration</li>
 <li><a href="security-scanning/">Security Scanning</a> — CodeQL, Semgrep, and Trivy

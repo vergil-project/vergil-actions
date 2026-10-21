@@ -4200,8 +4200,6 @@
       
         
       
-        
-      
     
     
     
@@ -4246,34 +4244,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../actions/ci-security-standards-compliance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ci/security/standards-compliance
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -5796,11 +5766,14 @@ instead of post-merge in the CD <code>docs</code> deploy.</p>
 <tbody>
 <tr>
 <td><code>build</code></td>
-<td><code>CI Docs / docs</code></td>
+<td><code>&lt;caller&gt; / docs</code></td>
 <td>Stages docs sources and runs a strict mkdocs build</td>
 </tr>
 </tbody>
 </table>
+<p>With the standard caller job key <code>docs</code>, the check is <code>docs / docs</code>, which is
+a required check for repositories that publish docs (see
+<a href="../../ci-gates/required-checks/">Required Checks</a>).</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <p>The <code>build</code> job:</p>
 <ol>
