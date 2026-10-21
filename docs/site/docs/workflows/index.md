@@ -18,10 +18,10 @@ rulesets.
 | Workflow | File | Purpose |
 | ---------- | ------ | --------- |
 | [CI Docs](ci-docs.md) | `ci-docs.yml` | Build-only MkDocs strict verification (no deploy) |
-| [CI Security](ci-security.md) | `ci-security.yml` | Standards compliance and security scanning |
+| [CI Security](ci-security.md) | `ci-security.yml` | Security scanning (CodeQL, Trivy, Semgrep) |
 | [CI Quality](ci-quality.md) | `ci-quality.yml` | Common linting, language-specific lint and typecheck |
 | [CI Audit](ci-audit.md) | `ci-audit.yml` | Dependency audit |
-| [CI Test](ci-test.md) | `ci-test.yml` | Unit and integration tests |
+| [CI Test](ci-test.md) | `ci-test.yml` | Unit tests |
 | [CI Version Bump](ci-version-bump.md) | `ci-version-bump.yml` | Version divergence gate |
 | [CI Package](ci-package.md) | `ci-package.yml` | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only) |
 

@@ -16,7 +16,11 @@ instead of post-merge in the CD `docs` deploy.
 
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
-| `build` | `CI Docs / docs` | Stages docs sources and runs a strict mkdocs build |
+| `build` | `<caller> / docs` | Stages docs sources and runs a strict mkdocs build |
+
+With the standard caller job key `docs`, the check is `docs / docs`, which is
+a required check for repositories that publish docs (see
+[Required Checks](../ci-gates/required-checks.md)).
 
 ## Behavior
 

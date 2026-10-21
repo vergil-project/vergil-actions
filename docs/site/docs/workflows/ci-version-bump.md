@@ -20,7 +20,12 @@ stay green.
 
 | Job | Check name | Condition |
 | ----- | ------------ | ----------- |
-| `version-bump` | `CI Version Bump / version-bump` | Always runs; the gate steps run only when `release-model` is not `none` |
+| `setup` | `<caller> / setup` | Always runs; resolves the container tag for `version-bump` |
+| `version-bump` | `<caller> / version-bump` | Always runs; the gate steps run only when `release-model` is not `none` |
+
+With the standard caller job key `version` (as in the usage example below),
+the required check is `version / version-bump`, for repositories whose
+`release-model` is not `none`.
 
 ## Usage
 
