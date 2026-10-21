@@ -63,7 +63,7 @@ The package list is declared by the consuming repository in its `vergil.toml`
 under `[container].system-packages`. That key — its schema, semantics, and the
 dev-container side of its effect — is documented on the vergil-tooling side:
 
-- [`container-config` reference (`system-packages`)](https://vergil-project.github.io/vergil-tooling/reference/container-config/)
+- [`container-config` reference (`system-packages`)](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/)
 
 This page covers only the vergil-actions CI side: which jobs run the install
 step and how the step behaves.

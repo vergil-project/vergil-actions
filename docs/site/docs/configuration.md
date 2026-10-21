@@ -126,7 +126,7 @@ installs those packages on its **test jobs** (via the
 [`shared/setup/system-packages`](actions/shared-setup-system-packages.md)
 action), so tests run against the same system dependencies as the local dev
 container. The key's schema and semantics are documented on the vergil-tooling
-side: [`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/).
+side: [`container-config` reference](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/).
 
 ## Container build command
 
@@ -141,7 +141,7 @@ being retried. After it runs, the action exports `NODE_PATH` so a node library
 the build baked out-of-workspace resolves; note that `NODE_PATH` is honoured by
 CommonJS `require` only and ignored by ESM `import`. The key's schema and
 semantics are documented on the vergil-tooling side:
-[`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/).
+[`container-config` reference](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/).
 
 ## GitHub Project integration
 

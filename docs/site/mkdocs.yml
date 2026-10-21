@@ -70,8 +70,14 @@ nav:
           - ci/security/codeql: actions/ci-security-codeql.md
           - ci/security/semgrep: actions/ci-security-semgrep.md
           - ci/version-bump/version-divergence: actions/ci-version-bump-version-divergence.md
+          - ci/matrix: actions/ci-matrix.md
+          - ci/evidence/emit: actions/ci-evidence-emit.md
       - CD:
           - cd/release/tag-and-release: actions/cd-release-tag-and-release.md
+          - cd/release/validate-inputs: actions/cd-release-validate-inputs.md
+          - cd/release/ci-evidence-gate: actions/cd-release-ci-evidence-gate.md
+          - cd/release/registry-publish: actions/cd-release-registry-publish.md
+          - cd/release/ci-evidence-attach: actions/cd-release-ci-evidence-attach.md
           - cd/docs/deploy: actions/cd-docs-deploy.md
       - Ops:
           - ops/github-config/branch-sweep: actions/ops-github-config-branch-sweep.md
@@ -79,8 +85,11 @@ nav:
           - shared/security/trivy: actions/shared-security-trivy.md
           - shared/setup/system-packages: actions/shared-setup-system-packages.md
           - shared/setup/build-command: actions/shared-setup-build-command.md
+          - shared/docs/stage: actions/shared-docs-stage.md
       - Package:
           - package/setup: actions/package-setup.md
+      - Local:
+          - local/freeze-internal-refs: actions/local-freeze-internal-refs.md
   - Reusable Workflows:
       - Overview: workflows/index.md
       - ci-docs: workflows/ci-docs.md
@@ -92,6 +101,9 @@ nav:
       - ci-package: workflows/ci-package.md
       - cd-release packages: workflows/cd-release-packages.md
       - publish-index: workflows/publish-index.md
+      - cd-docs-refresh: workflows/cd-docs-refresh.md
+      - ops-epic-rollup: workflows/ops-epic-rollup.md
+      - ops-epic-sweep: workflows/ops-epic-sweep.md
   - CI Gate Requirements:
       - Overview: ci-gates/index.md
       - The All-Hard-Gates Principle: ci-gates/all-hard-gates.md

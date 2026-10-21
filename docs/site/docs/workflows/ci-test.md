@@ -51,7 +51,7 @@ candidate — the offending package and platform are named in the log and the
 test job fails rather than running against a missing dependency. See the
 [action reference](../actions/shared-setup-system-packages.md) for the full
 behavior, and the
-[`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/)
+[`container-config` reference](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/)
 on the vergil-tooling side for the `[container].system-packages` key itself.
 
 ## Build command
@@ -80,7 +80,7 @@ build baked out-of-workspace (e.g. `npm install -g <lib>`).
 
 See the [action reference](../actions/shared-setup-build-command.md) for the
 full behavior, and the
-[`container-config` reference](https://vergil-project.github.io/vergil-tooling/reference/container-config/)
+[`container-config` reference](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/)
 on the vergil-tooling side for the `[container].build-command` key itself.
 
 ## Extension points
