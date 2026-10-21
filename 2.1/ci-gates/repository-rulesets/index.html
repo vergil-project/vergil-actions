@@ -795,6 +795,8 @@
       
         
       
+        
+      
     
     
     
@@ -847,6 +849,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.46/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.46
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6005,12 +6035,12 @@ checks that must pass before a PR can merge.</p>
 </tr>
 </tbody>
 </table>
-<p>The required checks vary by repository category. See the
-<a href="../required-checks/#required-check-set">required check set</a> for the full list.</p>
+<p><code>vrg-github-repo-config</code> derives the required checks from each repository's
+<code>vergil.toml</code>, so the set depends on the repository's configuration. See the
+<a href="../required-checks/#required-check-set">required check set</a> for the full list
+and the condition under which each check is required.</p>
 <h3 id="example-a-public-python-library">Example: a public Python library<a class="headerlink" href="#example-a-public-python-library" title="Permanent link">&para;</a></h3>
-<p><code>vrg-github-repo-config</code> derives the set from <code>vergil.toml</code>, not from a fixed
-repository category. A public Python library that publishes docs and has a
-release model gets:</p>
+<p>A public Python library that publishes docs and has a release model gets:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>quality / common
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>security / trivy
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>security / semgrep
