@@ -83,6 +83,7 @@ nav:
           - ops/github-config/branch-sweep: actions/ops-github-config-branch-sweep.md
       - Shared:
           - shared/security/trivy: actions/shared-security-trivy.md
+          - shared/setup/vergil: actions/shared-setup-vergil.md
           - shared/setup/system-packages: actions/shared-setup-system-packages.md
           - shared/setup/build-command: actions/shared-setup-build-command.md
           - shared/docs/stage: actions/shared-docs-stage.md

@@ -54,7 +54,22 @@ import sys
 import tomllib
 
 config_dir = pathlib.Path(sys.argv[1])
-cfg = tomllib.loads((config_dir / "vergil.toml").read_text())
+config_path = config_dir / "vergil.toml"
+try:
+    config_text = config_path.read_text()
+except FileNotFoundError:
+    print(
+        f"::error::vergil.toml not found at {config_path}; it declares the CI "
+        "version set. Create vergil.toml at the repository root with a [ci] "
+        'table holding versions = ["..."]',
+        file=sys.stderr,
+    )
+    sys.exit(1)
+try:
+    cfg = tomllib.loads(config_text)
+except tomllib.TOMLDecodeError as exc:
+    print(f"::error::{config_path} is not valid TOML: {exc}", file=sys.stderr)
+    sys.exit(1)
 
 # The calling workflow's `inputs.language` (plumbed in as $LANGUAGE by the setup
 # action). Empty when the setup action is invoked without it, in which case the
