@@ -6316,7 +6316,7 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <tbody>
 <tr>
 <td><code>versions</code></td>
-<td><code>[ci].versions</code> from <code>vergil.toml</code> as a compact JSON array string, e.g. <code>["3.12","3.13","3.14"]</code>. The <code>matrix</code> job passes it to <a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/matrix/action.yml"><code>ci/matrix</code></a> to fan out per-version legs.</td>
+<td><code>[ci].versions</code> from <code>vergil.toml</code> as a compact JSON array string, e.g. <code>["3.12","3.13","3.14"]</code>. The <code>matrix</code> job passes it to <a href="../ci-matrix/"><code>ci/matrix</code></a> to fan out per-version legs.</td>
 </tr>
 <tr>
 <td><code>primary-version</code></td>
@@ -6336,37 +6336,60 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
    a different UID than the user git runs as.</li>
 <li><strong>Install <code>uv</code> if it is missing.</strong> If <code>uv</code> is not on <code>PATH</code>, installs it
    with <code>pip install --break-system-packages uv</code>.</li>
-<li><strong>Install vergil-tooling.</strong><ul>
+<li>
+<p><strong>Install vergil-tooling.</strong></p>
+<ul>
 <li>If <code>pyproject.toml</code> declares <code>name = "vergil-tooling"</code>, the repository is
   vergil-tooling itself. The step runs <code>uv sync --frozen --group dev</code> and
   adds <code>.venv/bin</code> to <code>PATH</code>, so CI tests the PR's own code rather than a
   released version.</li>
 <li>Otherwise it reads <code>[dependencies].vergil</code> from <code>vergil.toml</code> (e.g.
   <code>v2.1</code>) and runs <code>uv tool install</code> for vergil-tooling at that git tag.
-  The step fails if <code>vergil.toml</code> or the <code>vergil</code> version is missing.</li>
+  The tag is read by <code>read-pin.sh</code>, which fails the job with a single
+  <code>::error::</code> annotation naming the file or key, and nothing is installed,
+  when:<ul>
+<li><code>vergil.toml</code> does not exist (usually because the repository was
+  not checked out first);</li>
+<li><code>vergil.toml</code> is not valid TOML (the annotation includes the parse
+  error);</li>
+<li>there is no <code>[dependencies]</code> table, or <code>dependencies</code> is not a
+  table;</li>
+<li><code>[dependencies]</code> has no <code>vergil</code> key;</li>
+<li><code>[dependencies].vergil</code> is not a string, or is empty or blank.</li>
 </ul>
 </li>
-<li><strong>Derive the CI versions.</strong> Runs <code>derive.sh</code>, which reads <code>vergil.toml</code> and
+</ul>
+<p>Apart from the TOML parse error, each annotation says what to add: a pin
+  such as</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[dependencies]</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">vergil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"v2.1"</span>
+</code></pre></div>
+</li>
+<li>
+<p><strong>Derive the CI versions.</strong> Runs <code>derive.sh</code>, which reads <code>vergil.toml</code> and
    writes the three outputs. It fails the job with an <code>::error::</code> annotation
-   when:<ul>
-<li><code>vergil.toml</code> has no <code>[ci]</code> section;</li>
+   when:</p>
+<ul>
+<li><code>vergil.toml</code> does not exist, or is not valid TOML;</li>
+<li><code>vergil.toml</code> has no <code>[ci]</code> table (or <code>ci</code> is not a table);</li>
 <li><code>[ci].versions</code> is not a non-empty list of strings;</li>
 <li><code>[ci].primary-version</code> is set but is not a non-empty string.</li>
 </ul>
 </li>
 </ol>
-<p>The derivation lives in <code>derive.sh</code> rather than inline YAML so it can be unit
-tested; see <code>actions/shared/setup/vergil/tests/derive.test.sh</code>. The
-<code>smoke-setup-vergil</code> workflow runs those tests and checks the action's outputs
-end to end.</p>
+<p>The pin reading and the derivation live in <code>read-pin.sh</code> and <code>derive.sh</code> rather
+than inline YAML so they can be unit tested; see
+<code>actions/shared/setup/vergil/tests/derive.test.sh</code> and
+<code>tests/read-pin.test.sh</code>. The <code>smoke-setup-vergil</code> workflow runs those tests
+and checks the action's outputs end to end.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>The action reads two parts of the consuming repository's <code>vergil.toml</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[dependencies]</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">vergil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"v2.1"</span><span class="w">            </span><span class="c1"># vergil-tooling tag to install</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">[ci]</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">versions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"3.12"</span><span class="p">,</span><span class="w"> </span><span class="s2">"3.13"</span><span class="p">,</span><span class="w"> </span><span class="s2">"3.14"</span><span class="p">]</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># primary-version = "3.13" # optional; defaults to the highest entry</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[dependencies]</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">vergil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"v2.1"</span><span class="w">            </span><span class="c1"># vergil-tooling tag to install</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">[ci]</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">versions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"3.12"</span><span class="p">,</span><span class="w"> </span><span class="s2">"3.13"</span><span class="p">,</span><span class="w"> </span><span class="s2">"3.14"</span><span class="p">]</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># primary-version = "3.13" # optional; defaults to the highest entry</span>
 </code></pre></div>
 <p>Set <code>[ci].primary-version</code> only when the primary version must not be the
 highest entry.</p>

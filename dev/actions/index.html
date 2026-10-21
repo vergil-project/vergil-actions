@@ -6171,8 +6171,6 @@
 <p>All actions are composite GitHub Actions located under the <code>actions/</code> directory,
 organized by pipeline phase. Each action is self-contained with an <code>action.yml</code>
 definition and optional supporting scripts.</p>
-<p>Actions without a page of their own link to their <code>action.yml</code>, whose <code>inputs</code>
-and <code>outputs</code> descriptions are the reference.</p>
 <h2 id="available-actions">Available actions<a class="headerlink" href="#available-actions" title="Permanent link">&para;</a></h2>
 <h3 id="ci">CI<a class="headerlink" href="#ci" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6182,11 +6180,11 @@ and <code>outputs</code> descriptions are the reference.</p>
   with language-specific and cross-cutting security rulesets.</li>
 <li><strong><a href="ci-version-bump-version-divergence/">ci/version-bump/version-divergence</a></strong>
   — Verifies that the PR branch version differs from the main branch version.</li>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/matrix/action.yml">ci/matrix</a></strong>
+<li><strong><a href="ci-matrix/">ci/matrix</a></strong>
   — Resolves the per-version job matrix (version label and container image for
   each entry) from the <code>versions</code> output of <code>shared/setup/vergil</code>; auto-wired
   into <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/evidence/emit/action.yml">ci/evidence/emit</a></strong>
+<li><strong><a href="ci-evidence-emit/">ci/evidence/emit</a></strong>
   — Writes a gate's <code>evidence.json</code> and uploads it with the gate's report files
   as a <code>ci-evidence-&lt;gate&gt;</code> artifact for the release-time evidence bundle.</li>
 </ul>
@@ -6194,15 +6192,15 @@ and <code>outputs</code> descriptions are the reference.</p>
 <ul>
 <li><strong><a href="cd-release-tag-and-release/">cd/release/tag-and-release</a></strong> — Creates
   annotated git tags and GitHub Releases.</li>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/validate-inputs/action.yml">cd/release/validate-inputs</a></strong>
+<li><strong><a href="cd-release-validate-inputs/">cd/release/validate-inputs</a></strong>
   — Checks the <code>cd-release</code> inputs and fails early on an invalid combination.</li>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-gate/action.yml">cd/release/ci-evidence-gate</a></strong>
+<li><strong><a href="cd-release-ci-evidence-gate/">cd/release/ci-evidence-gate</a></strong>
   — Pre-publish gate: harvests the release PR's CI evidence artifacts and
   checks they are complete before anything is published.</li>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/registry-publish/action.yml">cd/release/registry-publish</a></strong>
+<li><strong><a href="cd-release-registry-publish/">cd/release/registry-publish</a></strong>
   — Builds the release for the repository's language ecosystem, attests it,
   generates an SBOM and, when enabled, publishes to the package registry.</li>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-attach/action.yml">cd/release/ci-evidence-attach</a></strong>
+<li><strong><a href="cd-release-ci-evidence-attach/">cd/release/ci-evidence-attach</a></strong>
   — Post-publish: assembles the evidence bundle including the SBOM, attests it
   and attaches it to the GitHub Release.</li>
 <li><strong><a href="cd-docs-deploy/">cd/docs/deploy</a></strong> — Deploys MkDocs documentation using
@@ -6218,7 +6216,7 @@ and <code>outputs</code> descriptions are the reference.</p>
 <ul>
 <li><strong><a href="shared-security-trivy/">shared/security/trivy</a></strong> — Runs Trivy
   vulnerability scanning, SBOM generation, or container image scanning.</li>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/docs/stage/action.yml">shared/docs/stage</a></strong>
+<li><strong><a href="shared-docs-stage/">shared/docs/stage</a></strong>
   — Stages the changelog and release-notes pages and patches the MkDocs nav,
   so <code>ci-docs</code> and <code>cd-docs</code> build from the same source tree.</li>
 <li><strong><a href="shared-setup-vergil/">shared/setup/vergil</a></strong> — Installs the
@@ -6243,7 +6241,7 @@ and <code>outputs</code> descriptions are the reference.</p>
 <h3 id="local">Local<a class="headerlink" href="#local" title="Permanent link">&para;</a></h3>
 <p>Actions used only by this repository's own workflows, not by consumers.</p>
 <ul>
-<li><strong><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/local/freeze-internal-refs/action.yml">local/freeze-internal-refs</a></strong>
+<li><strong><a href="local-freeze-internal-refs/">local/freeze-internal-refs</a></strong>
   — Rewrites this repository's relative <code>./actions/...</code> and <code>@develop</code> refs to
   absolute refs at the release tag, checks none remain and commits the result
   (used by <code>cd.yml</code>).</li>
