@@ -4626,6 +4626,8 @@
       
         
       
+        
+      
     
     
     
@@ -4686,6 +4688,34 @@
     
   
     shared/security/trivy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/shared-setup-vergil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/vergil
   
 
     
@@ -6154,18 +6184,27 @@ branch. In this project family, the default branch is <code>develop</code> (not 
 so <code>~DEFAULT_BRANCH</code> resolves to <code>develop</code> — silently leaving <code>main</code>
 unprotected. Always use explicit <code>refs/heads/</code> references for both branches.</p>
 <h2 id="modifying-rulesets-via-api">Modifying rulesets via API<a class="headerlink" href="#modifying-rulesets-via-api" title="Permanent link">&para;</a></h2>
-<p>Rulesets can be updated programmatically using the GitHub API:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># List rulesets for a repository</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>gh<span class="w"> </span>api<span class="w"> </span>repos/vergil-project/<span class="o">{</span>repo<span class="o">}</span>/rulesets<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--jq<span class="w"> </span><span class="s1">'.[] | {id: .id, name: .name}'</span>
+<p>Do not edit rulesets with raw <code>gh api</code> calls. <code>vrg-github-repo-config</code>
+computes the desired rulesets from the repository's <code>vergil.toml</code> and converges
+GitHub to them through the API:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Report drift in the local files and the GitHub configuration.</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Exit 0 = compliant, 1 = drift, 2 = the audit could not complete.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>vrg-github-repo-config<span class="w"> </span>audit<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># View a specific ruleset</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>gh<span class="w"> </span>api<span class="w"> </span>repos/vergil-project/<span class="o">{</span>repo<span class="o">}</span>/rulesets/<span class="o">{</span>id<span class="o">}</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Show the same differences without failing (always exits 0)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>vrg-github-repo-config<span class="w"> </span>diff<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Update required status checks</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>gh<span class="w"> </span>api<span class="w"> </span>--method<span class="w"> </span>PUT<span class="w"> </span>repos/vergil-project/<span class="o">{</span>repo<span class="o">}</span>/rulesets/<span class="o">{</span>id<span class="o">}</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span>--input<span class="w"> </span>payload.json
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Reconcile the GitHub configuration, including the rulesets</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>vrg-github-repo-config<span class="w"> </span>apply<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
 </code></pre></div>
+<p><code>--repo</code> defaults to the current directory's git remote. The local file
+checks run only from inside the repository's own checkout. <code>vergil.toml</code> is
+read from the <code>develop</code> branch; <code>--config PATH</code> uses a local copy instead.</p>
+<p>To change a ruleset, change the <code>vergil.toml</code> that it is derived from, merge the
+change to <code>develop</code>, and run <code>apply</code>. A ruleset edited by hand is reported as
+drift by the nightly <code>ops-github-config</code> audit. See the vergil-tooling
+<a href="https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/">GitHub config audit reference</a>
+for the full list of checks.</p>
 
 
 

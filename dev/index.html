@@ -4754,6 +4754,8 @@
       
         
       
+        
+      
     
     
     
@@ -4814,6 +4816,34 @@
     
   
     shared/security/trivy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="actions/shared-setup-vergil/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/vergil
   
 
     
@@ -5846,9 +5876,24 @@ releases.</p>
 <td>Pre-merge version validation</td>
 </tr>
 <tr>
+<td>CI / Matrix</td>
+<td><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/matrix/action.yml">matrix</a></td>
+<td>Per-version job matrix and container images</td>
+</tr>
+<tr>
+<td>CI / Evidence</td>
+<td><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/evidence/emit/action.yml">emit</a></td>
+<td>Per-gate CI evidence artifact</td>
+</tr>
+<tr>
 <td>CD / Release</td>
 <td><a href="actions/cd-release-tag-and-release/">tag-and-release</a></td>
 <td>Release tagging and GitHub Releases</td>
+</tr>
+<tr>
+<td>CD / Release</td>
+<td><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/validate-inputs/action.yml">validate-inputs</a>, <a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-gate/action.yml">ci-evidence-gate</a>, <a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/registry-publish/action.yml">registry-publish</a>, <a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-attach/action.yml">ci-evidence-attach</a></td>
+<td><code>cd-release</code> input checks, pre-publish evidence gate, build and registry publish, post-publish evidence attach</td>
 </tr>
 <tr>
 <td>CD / Docs</td>
@@ -5856,14 +5901,34 @@ releases.</p>
 <td>MkDocs Material + mike versioned deployment</td>
 </tr>
 <tr>
+<td>Ops / GitHub Config</td>
+<td><a href="actions/ops-github-config-branch-sweep/">branch-sweep</a></td>
+<td>Delete branches whose PR is merged or closed</td>
+</tr>
+<tr>
 <td>Shared / Security</td>
 <td><a href="actions/shared-security-trivy/">trivy</a></td>
 <td>Vulnerability scanning and SBOM generation</td>
 </tr>
 <tr>
+<td>Shared / Docs</td>
+<td><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/docs/stage/action.yml">stage</a></td>
+<td>Stage changelog and release-notes pages for the docs build</td>
+</tr>
+<tr>
 <td>Shared / Setup</td>
-<td><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/setup/vergil/action.yml">vergil</a>, <a href="actions/shared-setup-system-packages/">system-packages</a>, <a href="actions/shared-setup-build-command/">build-command</a></td>
+<td><a href="actions/shared-setup-vergil/">vergil</a>, <a href="actions/shared-setup-system-packages/">system-packages</a>, <a href="actions/shared-setup-build-command/">build-command</a></td>
 <td>vergil-tooling install and CI version set; test-job system packages and build command</td>
+</tr>
+<tr>
+<td>Package</td>
+<td><a href="actions/package-setup/">setup</a></td>
+<td>Package toolchain for package build and install-test containers</td>
+</tr>
+<tr>
+<td>Local</td>
+<td><a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/local/freeze-internal-refs/action.yml">freeze-internal-refs</a></td>
+<td>Pin this repository's internal action refs to the release tag (used only by its own <code>cd.yml</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -5919,7 +5984,7 @@ repositories. See <a href="workflows/">Reusable Workflows</a> for details.</p>
 <td>Full release pipeline (tag, build, publish, version bump), plus signed <code>.deb</code>/<code>.rpm</code> packages for repos with <code>[package]</code></td>
 </tr>
 <tr>
-<td>cd-docs</td>
+<td><a href="https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/cd-docs.yml">cd-docs</a></td>
 <td>MkDocs documentation deployment</td>
 </tr>
 <tr>
