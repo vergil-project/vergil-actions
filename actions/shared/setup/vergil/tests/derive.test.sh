@@ -190,6 +190,62 @@ versions = ["latest"]' shell)"
   pass_case "$name"
 }
 
+# ---------------------------------------------------------------------------
+# Cases 10-11: no vergil.toml, or one that is not valid TOML — a clean
+# ::error:: annotation naming the file, non-zero exit, and no Python
+# traceback (issue #977).
+# ---------------------------------------------------------------------------
+# run_derive_err <vergil.toml body | __NO_FILE__>
+# Echoes "<exit status>\t<stderr>".
+run_derive_err() {
+  local dir out err rc=0 stderr
+  dir="$(mktemp -d)"
+  out="$(mktemp)"
+  err="$(mktemp)"
+  if [ "$1" != "__NO_FILE__" ]; then
+    printf '%s\n' "$1" >"${dir}/vergil.toml"
+  fi
+  GITHUB_OUTPUT="$out" VERGIL_CONFIG_DIR="$dir" bash "$derive_sh" \
+    >/dev/null 2>"$err" || rc=$?
+  stderr="$(cat "$err")"
+  rm -rf "$dir" "$out" "$err"
+  printf '%s\t%s' "$rc" "$stderr"
+}
+
+# assert_clean_error <name> <run_derive_err result> <substring>
+assert_clean_error() {
+  local name="$1" rc="${2%%$'\t'*}" stderr="${2#*$'\t'}" needle="$3"
+  if [ "$rc" -eq 0 ]; then
+    fail_case "$name" "expected non-zero exit, got 0"
+    return 1
+  fi
+  case "$stderr" in
+    *Traceback*)
+      fail_case "$name" "stderr carries a Python traceback: $stderr"
+      return 1
+      ;;
+    ::error::*"$needle"*) ;;
+    *)
+      fail_case "$name" "expected ::error:: containing '$needle', got '$stderr'"
+      return 1
+      ;;
+  esac
+}
+
+case_missing_file() {
+  local name="missing-file"
+  assert_clean_error "$name" "$(run_derive_err __NO_FILE__)" \
+    "vergil.toml not found" || return
+  pass_case "$name"
+}
+
+case_invalid_toml() {
+  local name="invalid-toml"
+  assert_clean_error "$name" "$(run_derive_err '[ci
+versions = ["latest"]')" "not valid TOML" || return
+  pass_case "$name"
+}
+
 case_multi_version
 case_unsorted
 case_single_version
@@ -199,6 +255,8 @@ case_container_tag_cpp_clang
 case_container_tag_cpp_gcc
 case_container_tag_python
 case_container_tag_shell
+case_missing_file
+case_invalid_toml
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
