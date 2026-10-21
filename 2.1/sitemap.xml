@@ -25,7 +25,31 @@
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/cd-release-ci-evidence-attach/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/cd-release-ci-evidence-gate/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/cd-release-registry-publish/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/cd-release-tag-and-release/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/cd-release-validate-inputs/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-evidence-emit/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-matrix/</loc>
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
@@ -41,11 +65,19 @@
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/local-freeze-internal-refs/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ops-github-config-branch-sweep/</loc>
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/package-setup/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/shared-docs-stage/</loc>
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
@@ -58,6 +90,10 @@
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/shared-setup-system-packages/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/shared-setup-vergil/</loc>
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
@@ -545,6 +581,10 @@
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.47/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.5/</loc>
          <lastmod>2026-10-21</lastmod>
     </url>
@@ -566,6 +606,10 @@
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/cd-docs-refresh/</loc>
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
@@ -598,6 +642,14 @@
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ci-version-bump/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ops-epic-rollup/</loc>
+         <lastmod>2026-10-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ops-epic-sweep/</loc>
          <lastmod>2026-10-21</lastmod>
     </url>
     <url>
