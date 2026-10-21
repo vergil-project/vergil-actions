@@ -15,10 +15,17 @@ releases.
 | ---------- | --------- | --------- |
 | CI / Security | [codeql](actions/ci-security-codeql.md), [semgrep](actions/ci-security-semgrep.md) | SAST scanning |
 | CI / Version Bump | [version-divergence](actions/ci-version-bump-version-divergence.md) | Pre-merge version validation |
+| CI / Matrix | [matrix](https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/matrix/action.yml) | Per-version job matrix and container images |
+| CI / Evidence | [emit](https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/evidence/emit/action.yml) | Per-gate CI evidence artifact |
 | CD / Release | [tag-and-release](actions/cd-release-tag-and-release.md) | Release tagging and GitHub Releases |
+| CD / Release | [validate-inputs](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/validate-inputs/action.yml), [ci-evidence-gate](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-gate/action.yml), [registry-publish](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/registry-publish/action.yml), [ci-evidence-attach](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-attach/action.yml) | `cd-release` input checks, pre-publish evidence gate, build and registry publish, post-publish evidence attach |
 | CD / Docs | [deploy](actions/cd-docs-deploy.md) | MkDocs Material + mike versioned deployment |
+| Ops / GitHub Config | [branch-sweep](actions/ops-github-config-branch-sweep.md) | Delete branches whose PR is merged or closed |
 | Shared / Security | [trivy](actions/shared-security-trivy.md) | Vulnerability scanning and SBOM generation |
-| Shared / Setup | [vergil](https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/setup/vergil/action.yml), [system-packages](actions/shared-setup-system-packages.md), [build-command](actions/shared-setup-build-command.md) | vergil-tooling install and CI version set; test-job system packages and build command |
+| Shared / Docs | [stage](https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/docs/stage/action.yml) | Stage changelog and release-notes pages for the docs build |
+| Shared / Setup | [vergil](actions/shared-setup-vergil.md), [system-packages](actions/shared-setup-system-packages.md), [build-command](actions/shared-setup-build-command.md) | vergil-tooling install and CI version set; test-job system packages and build command |
+| Package | [setup](actions/package-setup.md) | Package toolchain for package build and install-test containers |
+| Local | [freeze-internal-refs](https://github.com/vergil-project/vergil-actions/blob/develop/actions/local/freeze-internal-refs/action.yml) | Pin this repository's internal action refs to the release tag (used only by its own `cd.yml`) |
 
 ## Reusable workflows
 
@@ -41,7 +48,7 @@ repositories. See [Reusable Workflows](workflows/index.md) for details.
 | Workflow | Purpose |
 | ---------- | --------- |
 | [cd-release](workflows/cd-release-packages.md) | Full release pipeline (tag, build, publish, version bump), plus signed `.deb`/`.rpm` packages for repos with `[package]` |
-| cd-docs | MkDocs documentation deployment |
+| [cd-docs](https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/cd-docs.yml) | MkDocs documentation deployment |
 | [publish-index](workflows/publish-index.md) | Signed apt/dnf package-repository site for an `<org>/packages` repo, deployed to GitHub Pages |
 
 ## Design principles

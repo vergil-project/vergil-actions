@@ -163,17 +163,28 @@ unprotected. Always use explicit `refs/heads/` references for both branches.
 
 ## Modifying rulesets via API
 
-Rulesets can be updated programmatically using the GitHub API:
+Do not edit rulesets with raw `gh api` calls. `vrg-github-repo-config`
+computes the desired rulesets from the repository's `vergil.toml` and converges
+GitHub to them through the API:
 
 ```bash
-# List rulesets for a repository
-gh api repos/vergil-project/{repo}/rulesets \
-  --jq '.[] | {id: .id, name: .name}'
+# Report drift in the local files and the GitHub configuration.
+# Exit 0 = compliant, 1 = drift, 2 = the audit could not complete.
+vrg-github-repo-config audit --repo vergil-project/{repo}
 
-# View a specific ruleset
-gh api repos/vergil-project/{repo}/rulesets/{id}
+# Show the same differences without failing (always exits 0)
+vrg-github-repo-config diff --repo vergil-project/{repo}
 
-# Update required status checks
-gh api --method PUT repos/vergil-project/{repo}/rulesets/{id} \
-  --input payload.json
+# Reconcile the GitHub configuration, including the rulesets
+vrg-github-repo-config apply --repo vergil-project/{repo}
 ```
+
+`--repo` defaults to the current directory's git remote. The local file
+checks run only from inside the repository's own checkout. `vergil.toml` is
+read from the `develop` branch; `--config PATH` uses a local copy instead.
+
+To change a ruleset, change the `vergil.toml` that it is derived from, merge the
+change to `develop`, and run `apply`. A ruleset edited by hand is reported as
+drift by the nightly `ops-github-config` audit. See the vergil-tooling
+[GitHub config audit reference](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/)
+for the full list of checks.
