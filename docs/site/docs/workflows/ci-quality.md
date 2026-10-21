@@ -13,13 +13,15 @@ Code quality and linting workflow.
 
 ## Version matrix
 
-The `lint` and `typecheck` matrix is derived from `[ci].versions` in the
-consumer's `vergil.toml` at run time — the workflow's `matrix` job runs the
-shared setup action for its `versions` output whenever the caller omits the
-`versions:` input. The single-container `common` job resolves its image tag from
-`[ci].primary-version` (default: the highest `[ci].versions` entry) whenever the
-caller omits `container-tag:`. Callers are thin: they pass only `language:` and
-`container-suffix:`.
+The `lint` and `typecheck` matrix comes from
+[`vrg-ci-resolve`](../actions/shared-setup-vergil.md) at run time: the
+workflow's `matrix` job runs the shared setup action, which calls the resolver,
+and passes its versions, image tags and image suffixes to
+[`ci/matrix`](../actions/ci-matrix.md). Each leg pins uv to its version (Python)
+and then asserts the running toolchain with
+[`ci/toolchain/assert`](../actions/ci-toolchain-assert.md). The
+single-container `common` job runs on the resolver's `primary-container-tag`.
+Callers are thin: they pass only `language:` and `container-suffix:`.
 
 ## Jobs and check names
 
@@ -34,8 +36,7 @@ caller omits `container-tag:`. Callers are thin: they pass only `language:` and
 
 The `common` job runs inside a single container on the primary version —
 `ghcr.io/vergil-project/<prefix>-<suffix>:<tag>`, where `<tag>` is the
-family-routed `primary-container-tag` derived from `[ci].primary-version`
-unless the caller passes `container-tag:`. It conditionally executes each
+resolver's `primary-container-tag`. It conditionally executes each
 linter based on whether matching files exist in the repository:
 
 | Tool | Condition |

@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
 #
-# Behavioural test for derive.sh — the setup action's CI version resolver.
+# Behavioural test for derive.sh — the setup action's call into the single CI
+# version resolver, `vrg-ci-resolve` (epic vergil-project/.github#407).
 #
-# This repo declares `language = shell` (vergil.toml), which runs no test gate,
-# so this is a self-contained, framework-free, developer-runnable harness: run
-# it directly with `bash derive.test.sh`. It needs only python3 on PATH (the
-# same dependency derive.sh has).
+# Framework-free and developer-runnable: `bash derive.test.sh`. It needs the
+# real `vrg-ci-resolve` (vergil-tooling v2.1.253 or later) and `jq` on PATH.
+# It does not stub the resolver: every case runs it for real against the
+# fixture window in tests/fixtures/window.json, through VRG_VERSION_WINDOW, the
+# resolver's one sanctioned override. So no case touches the network.
 #
 # Each case writes a fixture vergil.toml into a temp dir, runs derive.sh with a
-# temp GITHUB_OUTPUT and VERGIL_CONFIG_DIR pointed at the fixture, then asserts
-# the resolved `versions` / `primary-version` outputs.
+# temp GITHUB_OUTPUT and VERGIL_CONFIG_DIR pointed at the fixture, and asserts
+# the outputs (or, for the failure cases, the exit status, the `::error::`
+# annotation, and that nothing was written to GITHUB_OUTPUT).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 derive_sh="${here}/../derive.sh"
+window="${here}/fixtures/window.json"
+
+for tool in vrg-ci-resolve jq; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    printf 'derive.test.sh needs %s on PATH (install vergil-tooling v2.1)\n' "$tool" >&2
+    exit 1
+  fi
+done
 
 pass=0
 fail=0
@@ -28,195 +39,95 @@ pass_case() {
   pass=$((pass + 1))
 }
 
-# run_derive <vergil.toml body>
-# Echoes: "<versions>\t<primary-version>" read back from the GITHUB_OUTPUT file.
-run_derive() {
-  local dir out versions primary
-  dir="$(mktemp -d)"
-  out="$(mktemp)"
-  printf '%s\n' "$1" >"${dir}/vergil.toml"
-  GITHUB_OUTPUT="$out" VERGIL_CONFIG_DIR="$dir" bash "$derive_sh" >/dev/null
-  versions="$(sed -n 's/^versions=//p' "$out")"
-  primary="$(sed -n 's/^primary-version=//p' "$out")"
-  rm -rf "$dir" "$out"
-  printf '%s\t%s' "$versions" "$primary"
+# toml <primary-language> <repository-type> <[ci] lines> [<more sections>]
+# Prints a complete vergil.toml. An empty language omits the key.
+toml() {
+  printf '[project]\n'
+  printf 'repository-type = "%s"\n' "$2"
+  printf 'versioning-scheme = "semver"\n'
+  printf 'branching-model = "library-release"\n'
+  printf 'release-model = "tagged-release"\n'
+  if [ -n "$1" ]; then
+    printf 'primary-language = "%s"\n' "$1"
+  fi
+  printf '\n[dependencies]\nvergil = "v2.1"\n\n'
+  printf '[ci]\nintegration-tests = false\n%s\n\n' "$3"
+  printf '%s\n' "${4:-}"
 }
 
-# run_derive_tag <vergil.toml body> [language]
-# Echoes the resolved `primary-container-tag` output. The optional LANGUAGE
-# mirrors the workflow's `inputs.language` (the setup action plumbs it into
-# derive.sh); an empty language falls through to the verbatim tag.
-run_derive_tag() {
-  local dir out tag
+# Result of the last run_derive: exit status, stdout, stderr, and GITHUB_OUTPUT.
+rc=0
+stdout=""
+stderr=""
+output=""
+
+# run_derive <vergil.toml body | __NO_FILE__> [env assignments...]
+# Runs derive.sh against a fixture dir. By default VRG_VERSION_WINDOW points at
+# the fixture window; extra NAME=value arguments are added to the environment.
+#
+# Options before the env assignments:
+#   --input-window — pass the fixture window as VERSION_WINDOW (the action's
+#                    `version-window` input) instead of VRG_VERSION_WINDOW.
+#   --uv-lock      — add an empty uv.lock next to vergil.toml (a packaged
+#                    Python repo must have one).
+run_derive() {
+  local dir out err so window_var="VRG_VERSION_WINDOW"
   dir="$(mktemp -d)"
   out="$(mktemp)"
-  printf '%s\n' "$1" >"${dir}/vergil.toml"
-  GITHUB_OUTPUT="$out" VERGIL_CONFIG_DIR="$dir" LANGUAGE="${2:-}" \
-    bash "$derive_sh" >/dev/null
-  tag="$(sed -n 's/^primary-container-tag=//p' "$out")"
-  rm -rf "$dir" "$out"
-  printf '%s' "$tag"
+  err="$(mktemp)"
+  so="$(mktemp)"
+  if [ "$1" != "__NO_FILE__" ]; then
+    printf '%s\n' "$1" >"${dir}/vergil.toml"
+  fi
+  shift
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --input-window) window_var="VERSION_WINDOW" ;;
+      --uv-lock) : >"${dir}/uv.lock" ;;
+      *) break ;;
+    esac
+    shift
+  done
+  rc=0
+  env -u VRG_VERSION_WINDOW -u VERSION_WINDOW \
+    GITHUB_OUTPUT="$out" VERGIL_CONFIG_DIR="$dir" \
+    "${window_var}=${window}" "$@" \
+    bash "$derive_sh" >"$so" 2>"$err" || rc=$?
+  stdout="$(cat "$so")"
+  stderr="$(cat "$err")"
+  output="$(cat "$out")"
+  rm -rf "$dir" "$out" "$err" "$so"
+}
+
+# out <key> — a value from the last run's GITHUB_OUTPUT.
+out() {
+  printf '%s\n' "$output" | sed -n "s/^$1=//p"
 }
 
 # assert_eq <name> <actual> <expected>
 assert_eq() {
-  local name="$1" actual="$2" expected="$3"
-  if [ "$actual" = "$expected" ]; then
+  if [ "$2" = "$3" ]; then
     return 0
   fi
-  fail_case "$name" "expected '$expected', got '$actual'"
+  fail_case "$1" "expected '$3', got '$2'"
   return 1
 }
 
-# ---------------------------------------------------------------------------
-# Case 1: multi-version python — versions preserved in order; primary = max.
-# ---------------------------------------------------------------------------
-case_multi_version() {
-  local name="multi-version" res versions primary
-  res="$(run_derive '[ci]
-versions = ["3.12", "3.13", "3.14"]')"
-  versions="${res%$'\t'*}"
-  primary="${res#*$'\t'}"
-  assert_eq "$name (versions)" "$versions" '["3.12","3.13","3.14"]' || return
-  assert_eq "$name (primary=max)" "$primary" "3.14" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 2: list order does not change the derived primary (semantic max).
-# ---------------------------------------------------------------------------
-case_unsorted() {
-  local name="unsorted-order" res versions primary
-  res="$(run_derive '[ci]
-versions = ["3.14", "3.12", "3.13"]')"
-  versions="${res%$'\t'*}"
-  primary="${res#*$'\t'}"
-  assert_eq "$name (versions preserve order)" "$versions" '["3.14","3.12","3.13"]' || return
-  assert_eq "$name (primary still max)" "$primary" "3.14" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 3: single version — versions is a one-element array; primary is it.
-# ---------------------------------------------------------------------------
-case_single_version() {
-  local name="single-version" res versions primary
-  res="$(run_derive '[ci]
-versions = ["latest"]')"
-  versions="${res%$'\t'*}"
-  primary="${res#*$'\t'}"
-  assert_eq "$name (versions)" "$versions" '["latest"]' || return
-  assert_eq "$name (primary)" "$primary" "latest" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 4: explicit [ci].primary-version overrides the max (escape hatch).
-# ---------------------------------------------------------------------------
-case_explicit_primary() {
-  local name="explicit-primary" res versions primary
-  res="$(run_derive '[ci]
-versions = ["3.12", "3.13", "3.14"]
-primary-version = "3.12"')"
-  versions="${res%$'\t'*}"
-  primary="${res#*$'\t'}"
-  assert_eq "$name (versions)" "$versions" '["3.12","3.13","3.14"]' || return
-  assert_eq "$name (primary=override)" "$primary" "3.12" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 5: numeric runs compare numerically, not lexically (clang-20 > clang-9).
-# ---------------------------------------------------------------------------
-case_numeric_run() {
-  local name="numeric-run" res versions primary
-  res="$(run_derive '[ci]
-versions = ["clang-9", "clang-20"]')"
-  versions="${res%$'\t'*}"
-  primary="${res#*$'\t'}"
-  assert_eq "$name (versions)" "$versions" '["clang-9","clang-20"]' || return
-  assert_eq "$name (primary=numeric max)" "$primary" "clang-20" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 6: primary-container-tag — C++ clang family. The version token carries
-# the compiler family (clang-20); the published image tag is the NUMERIC part
-# (20), which rides in the tag while the family rides container-suffix
-# (cpp-clang). Mirrors actions/ci/matrix/resolve.sh's cpp routing so the
-# single-container jobs resolve prod-cpp-clang:20, not the nonexistent
-# prod-cpp-clang:clang-20 (issue #893).
-# ---------------------------------------------------------------------------
-case_container_tag_cpp_clang() {
-  local name="container-tag-cpp-clang" tag
-  tag="$(run_derive_tag '[ci]
-versions = ["clang-20"]' cpp)"
-  assert_eq "$name" "$tag" "20" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 7: primary-container-tag — C++ gcc family. Same split, family-agnostic:
-# gcc-14 -> 14 (the family is carried by container-suffix cpp-gcc).
-# ---------------------------------------------------------------------------
-case_container_tag_cpp_gcc() {
-  local name="container-tag-cpp-gcc" tag
-  tag="$(run_derive_tag '[ci]
-versions = ["gcc-14"]' cpp)"
-  assert_eq "$name" "$tag" "14" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 8: primary-container-tag — python. Not family-prefixed, so the tag is
-# the primary version verbatim (3.14 from the multi-version set).
-# ---------------------------------------------------------------------------
-case_container_tag_python() {
-  local name="container-tag-python" tag
-  tag="$(run_derive_tag '[ci]
-versions = ["3.12", "3.13", "3.14"]' python)"
-  assert_eq "$name" "$tag" "3.14" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Case 9: primary-container-tag — shell. Single "latest" version, verbatim.
-# ---------------------------------------------------------------------------
-case_container_tag_shell() {
-  local name="container-tag-shell" tag
-  tag="$(run_derive_tag '[ci]
-versions = ["latest"]' shell)"
-  assert_eq "$name" "$tag" "latest" || return
-  pass_case "$name"
-}
-
-# ---------------------------------------------------------------------------
-# Cases 10-11: no vergil.toml, or one that is not valid TOML — a clean
-# ::error:: annotation naming the file, non-zero exit, and no Python
-# traceback (issue #977).
-# ---------------------------------------------------------------------------
-# run_derive_err <vergil.toml body | __NO_FILE__>
-# Echoes "<exit status>\t<stderr>".
-run_derive_err() {
-  local dir out err rc=0 stderr
-  dir="$(mktemp -d)"
-  out="$(mktemp)"
-  err="$(mktemp)"
-  if [ "$1" != "__NO_FILE__" ]; then
-    printf '%s\n' "$1" >"${dir}/vergil.toml"
-  fi
-  GITHUB_OUTPUT="$out" VERGIL_CONFIG_DIR="$dir" bash "$derive_sh" \
-    >/dev/null 2>"$err" || rc=$?
-  stderr="$(cat "$err")"
-  rm -rf "$dir" "$out" "$err"
-  printf '%s\t%s' "$rc" "$stderr"
-}
-
-# assert_clean_error <name> <run_derive_err result> <substring>
-assert_clean_error() {
-  local name="$1" rc="${2%%$'\t'*}" stderr="${2#*$'\t'}" needle="$3"
+# assert_ok <name> — the last run succeeded.
+assert_ok() {
   if [ "$rc" -eq 0 ]; then
-    fail_case "$name" "expected non-zero exit, got 0"
+    return 0
+  fi
+  fail_case "$1" "expected exit 0, got ${rc}; stderr: ${stderr}"
+  return 1
+}
+
+# assert_error <name> <substring> — the last run failed with an ::error::
+# annotation containing <substring>, and wrote no outputs.
+assert_error() {
+  local name="$1" needle="$2"
+  if [ "$rc" -eq 0 ]; then
+    fail_case "$name" "expected a non-zero exit, got 0"
     return 1
   fi
   case "$stderr" in
@@ -224,39 +135,187 @@ assert_clean_error() {
       fail_case "$name" "stderr carries a Python traceback: $stderr"
       return 1
       ;;
-    ::error::*"$needle"*) ;;
+    *"::error::"*"$needle"*) ;;
     *)
       fail_case "$name" "expected ::error:: containing '$needle', got '$stderr'"
       return 1
       ;;
   esac
+  if [ -n "$output" ]; then
+    fail_case "$name" "a failed run wrote outputs: $output"
+    return 1
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# derive_uses_resolver_outputs: an unpinned Python library builds the whole
+# fixture window, newest first, and every output is the resolver's answer.
+# ---------------------------------------------------------------------------
+case_library_window() {
+  local name="derive_uses_resolver_outputs"
+  run_derive "$(toml python library '')"
+  assert_ok "$name" || return 0
+  assert_eq "$name (versions)" "$(out versions)" '["3.15","3.14","3.13"]' || return 0
+  assert_eq "$name (primary)" "$(out primary-version)" "3.15" || return 0
+  assert_eq "$name (primary tag)" "$(out primary-container-tag)" "3.15" || return 0
+  assert_eq "$name (tags)" "$(out container-tags)" \
+    '{"3.15":"3.15","3.14":"3.14","3.13":"3.13"}' || return 0
+  assert_eq "$name (suffixes)" "$(out container-suffixes)" \
+    '{"3.15":"python","3.14":"python","3.13":"python"}' || return 0
+  pass_case "$name"
+}
+
+# The outputs match `vrg-ci-resolve --format github-output` exactly, so the
+# rendering here adds nothing of its own.
+case_matches_github_output() {
+  local name="derive-matches-github-output" dir expected
+  dir="$(mktemp -d)"
+  toml cpp library 'versions = ["gcc-14", "clang-20"]' >"${dir}/vergil.toml"
+  expected="$(VRG_VERSION_WINDOW="$window" vrg-ci-resolve --format github-output \
+    --repo-root "$dir" 2>/dev/null)"
+  rm -rf "$dir"
+  run_derive "$(toml cpp library 'versions = ["gcc-14", "clang-20"]')"
+  assert_ok "$name" || return 0
+  assert_eq "$name" "$(printf '%s\n' "$output" | head -n 3)" "$expected" || return 0
+  pass_case "$name"
+}
+
+# An app (any type but library) builds only the newest window version.
+case_app_newest() {
+  local name="app-builds-newest"
+  run_derive "$(toml python application '')"
+  assert_ok "$name" || return 0
+  assert_eq "$name (versions)" "$(out versions)" '["3.15"]' || return 0
+  assert_eq "$name (primary)" "$(out primary-version)" "3.15" || return 0
+  pass_case "$name"
+}
+
+# A packaged Python app builds the newest version with a published runtime
+# (3.14 in the fixture; 3.15 has none) — a rule only the resolver knows.
+case_packaged_app() {
+  local name="packaged-app-follows-runtime"
+  run_derive "$(toml python application '' '[package]
+builder = "python"
+vendor = "Example"
+summary = "Example package"
+smoke = "example --version"')" --uv-lock
+  assert_ok "$name" || return 0
+  assert_eq "$name (versions)" "$(out versions)" '["3.14"]' || return 0
+  pass_case "$name"
+}
+
+# C++ family tokens: the resolver supplies each image tag and suffix.
+case_cpp_tags() {
+  local name="cpp-tags-from-resolver"
+  run_derive "$(toml cpp library 'versions = ["gcc-14", "clang-20"]')"
+  assert_ok "$name" || return 0
+  assert_eq "$name (versions)" "$(out versions)" '["clang-20","gcc-14"]' || return 0
+  assert_eq "$name (primary)" "$(out primary-version)" "clang-20" || return 0
+  assert_eq "$name (primary tag)" "$(out primary-container-tag)" "20" || return 0
+  assert_eq "$name (tags)" "$(out container-tags)" '{"clang-20":"20","gcc-14":"14"}' || return 0
+  assert_eq "$name (suffixes)" "$(out container-suffixes)" \
+    '{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}' || return 0
+  pass_case "$name"
+}
+
+# [ci].primary-version overrides the newest resolved version.
+case_explicit_primary() {
+  local name="explicit-primary"
+  run_derive "$(toml python library 'primary-version = "3.14"')"
+  assert_ok "$name" || return 0
+  assert_eq "$name (primary)" "$(out primary-version)" "3.14" || return 0
+  assert_eq "$name (primary tag)" "$(out primary-container-tag)" "3.14" || return 0
+  pass_case "$name"
+}
+
+# A repo with no language builds the base image at latest.
+case_no_language() {
+  local name="no-language-latest"
+  run_derive "$(toml '' library 'versions = ["latest"]')"
+  assert_ok "$name" || return 0
+  assert_eq "$name (versions)" "$(out versions)" '["latest"]' || return 0
+  assert_eq "$name (primary tag)" "$(out primary-container-tag)" "latest" || return 0
+  assert_eq "$name (suffixes)" "$(out container-suffixes)" '{"latest":"base"}' || return 0
+  pass_case "$name"
+}
+
+# The action's `version-window` input (VERSION_WINDOW) reaches the resolver as
+# VRG_VERSION_WINDOW.
+case_version_window_input() {
+  local name="version-window-input"
+  run_derive "$(toml go library '')" --input-window
+  assert_ok "$name" || return 0
+  assert_eq "$name (versions)" "$(out versions)" '["1.26","1.25"]' || return 0
+  pass_case "$name"
+}
+
+# A resolver warning (an app pinning two versions) stays visible as a
+# ::warning:: annotation and does not fail the step.
+case_warning_annotation() {
+  local name="warning-annotation"
+  run_derive "$(toml python application 'versions = ["3.14", "3.13"]')"
+  assert_ok "$name" || return 0
+  case "$stderr" in
+    *"::warning::"*"builds exactly one version"*) ;;
+    *)
+      fail_case "$name" "expected a ::warning:: annotation, got '$stderr'"
+      return
+      ;;
+  esac
+  pass_case "$name"
+}
+
+# ---------------------------------------------------------------------------
+# derive_fails_on_resolver_error: a pin outside the window fails the step with
+# the resolver's message as ::error::, and no outputs are written.
+# ---------------------------------------------------------------------------
+case_resolver_error() {
+  local name="derive_fails_on_resolver_error"
+  run_derive "$(toml python library 'versions = ["3.12"]')"
+  assert_error "$name" "pins 3.12, which is not in the python window" || return 0
+  pass_case "$name"
 }
 
 case_missing_file() {
-  local name="missing-file"
-  assert_clean_error "$name" "$(run_derive_err __NO_FILE__)" \
-    "vergil.toml not found" || return
+  local name="missing-vergil-toml"
+  run_derive __NO_FILE__
+  assert_error "$name" "vergil.toml" || return 0
   pass_case "$name"
 }
 
-case_invalid_toml() {
-  local name="invalid-toml"
-  assert_clean_error "$name" "$(run_derive_err '[ci
-versions = ["latest"]')" "not valid TOML" || return
+case_invalid_window() {
+  local name="invalid-window-override"
+  run_derive "$(toml python library '')" VRG_VERSION_WINDOW=/nonexistent/window.json
+  assert_error "$name" "cannot read the version window" || return 0
   pass_case "$name"
 }
 
-case_multi_version
-case_unsorted
-case_single_version
+case_resolver_missing() {
+  local name="resolver-not-on-path" bin tool
+  # A PATH holding only what derive.sh needs besides the resolver.
+  bin="$(mktemp -d)"
+  for tool in bash jq mktemp rm; do
+    ln -s "$(command -v "$tool")" "${bin}/${tool}"
+  done
+  run_derive "$(toml python library '')" PATH="$bin"
+  rm -rf "$bin"
+  assert_error "$name" "vrg-ci-resolve is not on PATH" || return 0
+  pass_case "$name"
+}
+
+case_library_window
+case_matches_github_output
+case_app_newest
+case_packaged_app
+case_cpp_tags
 case_explicit_primary
-case_numeric_run
-case_container_tag_cpp_clang
-case_container_tag_cpp_gcc
-case_container_tag_python
-case_container_tag_shell
+case_no_language
+case_version_window_input
+case_warning_annotation
+case_resolver_error
 case_missing_file
-case_invalid_toml
+case_invalid_window
+case_resolver_missing
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

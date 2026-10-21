@@ -15,9 +15,12 @@ definition and optional supporting scripts.
 - **[ci/version-bump/version-divergence](ci-version-bump-version-divergence.md)**
   — Verifies that the PR branch version differs from the main branch version.
 - **[ci/matrix](ci-matrix.md)**
-  — Resolves the per-version job matrix (version label and container image for
-  each entry) from the `versions` output of `shared/setup/vergil`; auto-wired
+  — Builds the per-version job matrix (version label and container image for
+  each entry) from the resolver outputs of `shared/setup/vergil`; auto-wired
   into `ci-quality`, `ci-audit` and `ci-test`.
+- **[ci/toolchain/assert](ci-toolchain-assert.md)** — Fails a CI leg whose
+  running Python or Go is not the version CI resolved for it; auto-wired into
+  the matrix legs of `ci-quality`, `ci-audit` and `ci-test`.
 - **[ci/evidence/emit](ci-evidence-emit.md)**
   — Writes a gate's `evidence.json` and uploads it with the gate's report files
   as a `ci-evidence-<gate>` artifact for the release-time evidence bundle.
@@ -54,9 +57,10 @@ definition and optional supporting scripts.
   — Stages the changelog and release-notes pages and patches the MkDocs nav,
   so `ci-docs` and `cd-docs` build from the same source tree.
 - **[shared/setup/vergil](shared-setup-vergil.md)** — Installs the
-  `vergil-tooling` version pinned in `vergil.toml` and derives the CI version
-  set (`versions`, `primary-version`, `primary-container-tag`) from `[ci]`
-  (auto-wired into the reusable workflows).
+  `vergil-tooling` version pinned in `vergil.toml` and resolves the CI version
+  set with `vrg-ci-resolve` (`versions`, `primary-version`,
+  `primary-container-tag`, `container-tags`, `container-suffixes`; auto-wired
+  into the reusable workflows).
 - **[shared/setup/system-packages](shared-setup-system-packages.md)** — Installs
   a repository's declared `[container].system-packages` on CI test jobs
   (test-runtime only; auto-wired into `ci-test`).

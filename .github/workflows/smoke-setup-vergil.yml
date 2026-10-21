@@ -1,29 +1,40 @@
 name: Smoke - setup/vergil outputs
 
-# Smoke test for the shared setup/vergil action's `versions`,
-# `primary-version`, and `primary-container-tag` outputs (epic
-# vergil-project/.github#338, Tasks 6 and #893).
+# Smoke test for the shared setup/vergil action's resolver outputs
+# (`versions`, `primary-version`, `primary-container-tag`, `container-tags`,
+# `container-suffixes`), the ci/matrix action built from them, and the
+# ci/toolchain/assert action (epics vergil-project/.github#338 and #407).
 #
-#   * fixtures — runs the framework-free derive.sh harness, asserting the
-#     derivation across multi-version, unsorted, single-version, explicit
-#     primary-version override, numeric-run, and family-routed
-#     primary-container-tag fixtures, plus a missing or invalid vergil.toml.
-#     It runs the read-pin.sh harness, asserting the pinned
-#     [dependencies].vergil tag is read and that a missing file, missing key,
-#     or empty/invalid value fails with a clean ::error:: annotation instead
-#     of a Python traceback (issue #977). Fast, no install. It also runs the
-#     package setup action's detect.sh harness (self-repo vs.
-#     [dependencies].vergil install spec; epic vergil-project/.github#356)
-#     and its os-prereqs.sh harness (apt mirror list on x86_64, fail-fast
-#     apt, one apt-get update, bounded dnf; issue #931).
-#   * action-e2e — calls the action itself against a multi-version fixture
-#     vergil.toml and asserts the three outputs are wired through action.yml.
+#   * fixtures — installs vergil-tooling with the setup action itself (for the
+#     real `vrg-ci-resolve`), then runs the framework-free harnesses:
+#       - derive.sh: the resolver's answer copied to the outputs, across
+#         library, app, packaged-app, C++ family, primary-version override and
+#         no-language fixtures, read from a fixture window through
+#         VRG_VERSION_WINDOW; and loud failure on a resolver error, a missing
+#         vergil.toml, an unreadable window, or a missing resolver;
+#       - read-pin.sh: the pinned [dependencies].vergil tag, and a clean
+#         ::error:: for a missing file, missing key, or empty/invalid value
+#         (issue #977);
+#       - ci/matrix resolve.sh: images from the resolver's tags and suffixes,
+#         the run-once collapse to the primary, and loud failure on a missing
+#         tag/suffix or a container-suffix the resolver did not choose;
+#       - ci/toolchain/assert assert.sh: Python and Go version checks against a
+#         fake uv/go, and the notice for other languages;
+#       - the package setup action's detect.sh (self-repo vs.
+#         [dependencies].vergil install spec; epic vergil-project/.github#356)
+#         and os-prereqs.sh (apt mirror list on x86_64, fail-fast apt, one
+#         apt-get update, bounded dnf; issue #931).
+#   * action-e2e — calls the setup action against a Python library fixture and
+#     a fixture window (the `version-window` input), asserts all five outputs
+#     are wired through action.yml, and feeds them to ci/matrix.
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - actions/shared/setup/vergil/**
+      - actions/ci/toolchain/assert/**
+      - actions/ci/matrix/**
       - actions/package/setup/**
       - .github/workflows/smoke-setup-vergil.yml
 
@@ -32,17 +43,27 @@ permissions:
 
 jobs:
   fixtures:
-    name: derive.sh fixtures
+    name: harness fixtures
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      # The derive.sh harness runs the real resolver, so install vergil-tooling
+      # at this repo's [dependencies].vergil pin first.
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
       - name: Run derive.sh harness
         shell: bash
         run: bash actions/shared/setup/vergil/tests/derive.test.sh
       - name: Run read-pin.sh harness
         shell: bash
         run: bash actions/shared/setup/vergil/tests/read-pin.test.sh
+      - name: Run ci/matrix resolve.sh harness
+        shell: bash
+        run: bash actions/ci/matrix/tests/resolve.test.sh
+      - name: Run ci/toolchain/assert assert.sh harness
+        shell: bash
+        run: bash actions/ci/toolchain/assert/tests/assert.test.sh
       - name: Run package setup detect.sh harness
         shell: bash
         run: bash actions/package/setup/tests/detect.test.sh
@@ -51,13 +72,13 @@ jobs:
         run: bash actions/package/setup/tests/os-prereqs.test.sh
 
   action-e2e:
-    name: action outputs (multi-version fixture)
+    name: action outputs (Python library fixture)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Write a multi-version fixture vergil.toml
+      - name: Write a Python library fixture vergil.toml
         shell: bash
         run: |
           cat > vergil.toml <<'TOML'
@@ -66,9 +87,9 @@ jobs:
           versioning-scheme = "semver"
           branching-model = "library-release"
           release-model = "tagged-release"
+          primary-language = "python"
 
           [ci]
-          versions = ["3.12", "3.13", "3.14"]
           integration-tests = false
 
           [dependencies]
@@ -78,33 +99,58 @@ jobs:
       - name: Run the setup action against the fixture
         id: setup
         uses: ./actions/shared/setup/vergil
+        with:
+          version-window: actions/shared/setup/vergil/tests/fixtures/window.json
 
-      - name: Assert versions, primary-version, primary-container-tag outputs
+      - name: Assert the five resolver outputs
         shell: bash
         env:
           VERSIONS: ${{ steps.setup.outputs.versions }}
           PRIMARY: ${{ steps.setup.outputs.primary-version }}
           PRIMARY_TAG: ${{ steps.setup.outputs.primary-container-tag }}
+          TAGS: ${{ steps.setup.outputs.container-tags }}
+          SUFFIXES: ${{ steps.setup.outputs.container-suffixes }}
         run: |
           set -euo pipefail
-          echo "versions=$VERSIONS"
-          echo "primary-version=$PRIMARY"
-          echo "primary-container-tag=$PRIMARY_TAG"
-          expected_versions='["3.12","3.13","3.14"]'
-          expected_primary="3.14"
-          # No language input here, so the tag falls through to the verbatim
-          # primary version (python is not family-on-token).
-          expected_tag="3.14"
-          if [ "$VERSIONS" != "$expected_versions" ]; then
-            echo "::error::versions mismatch: expected $expected_versions, got $VERSIONS"
+          failed=0
+          check() {
+            echo "$1=$2"
+            if [ "$2" != "$3" ]; then
+              echo "::error::$1 mismatch: expected $3, got $2"
+              failed=1
+            fi
+          }
+          # An unpinned library builds the whole fixture window, newest first.
+          check versions "$VERSIONS" '["3.15","3.14","3.13"]'
+          check primary-version "$PRIMARY" "3.15"
+          check primary-container-tag "$PRIMARY_TAG" "3.15"
+          check container-tags "$TAGS" '{"3.15":"3.15","3.14":"3.14","3.13":"3.13"}'
+          check container-suffixes "$SUFFIXES" '{"3.15":"python","3.14":"python","3.13":"python"}'
+          [ "$failed" -eq 0 ]
+          echo "All five outputs correct."
+
+      - name: Build the matrix from the outputs
+        id: matrix
+        uses: ./actions/ci/matrix
+        with:
+          language: python
+          versions: ${{ steps.setup.outputs.versions }}
+          primary-version: ${{ steps.setup.outputs.primary-version }}
+          container-tags: ${{ steps.setup.outputs.container-tags }}
+          container-suffixes: ${{ steps.setup.outputs.container-suffixes }}
+          container-suffix: python
+
+      - name: Assert the matrix
+        shell: bash
+        env:
+          ALL: ${{ steps.matrix.outputs.all }}
+        run: |
+          set -euo pipefail
+          reg="ghcr.io/vergil-project"
+          expected="[{\"version\":\"3.15\",\"image\":\"$reg/prod-python:3.15\"},{\"version\":\"3.14\",\"image\":\"$reg/prod-python:3.14\"},{\"version\":\"3.13\",\"image\":\"$reg/prod-python:3.13\"}]"
+          echo "all=$ALL"
+          if ! jq -en --argjson a "$ALL" --argjson e "$expected" '$a == $e' >/dev/null; then
+            echo "::error::matrix mismatch: expected $expected, got $ALL"
             exit 1
           fi
-          if [ "$PRIMARY" != "$expected_primary" ]; then
-            echo "::error::primary-version mismatch: expected $expected_primary, got $PRIMARY"
-            exit 1
-          fi
-          if [ "$PRIMARY_TAG" != "$expected_tag" ]; then
-            echo "::error::primary-container-tag mismatch: expected $expected_tag, got $PRIMARY_TAG"
-            exit 1
-          fi
-          echo "All three outputs correct."
+          echo "Matrix correct."

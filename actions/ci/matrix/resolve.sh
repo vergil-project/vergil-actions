@@ -1,84 +1,120 @@
 #!/usr/bin/env bash
 #
-# Resolve the per-version CI job matrix for a reusable CI workflow.
+# Build the per-version CI job matrix for a reusable CI workflow from the
+# resolver's answer.
+#
+# The versions, and the image suffix and tag of each, come from `vrg-ci-resolve`
+# by way of the shared setup action's outputs (`versions`, `primary-version`,
+# `container-tags`, `container-suffixes`; epic vergil-project/.github#407). This
+# script does no version or family routing of its own: every image is
+#
+#   ghcr.io/vergil-project/<prefix>-<container-suffixes[v]>:<container-tags[v]>
+#
+# so clang-20 -> prod-cpp-clang:20, node-24 -> prod-ts-node:24 and
+# 3.14 -> prod-python:3.14, exactly as the resolver says.
 #
 # Emits two JSON arrays of {version, image} objects to $GITHUB_OUTPUT:
 #
-#   all  — one entry per configured version. Consumed by per-version kinds
-#          (TEST always; TYPECHECK for languages whose typecheck is per-version,
-#          e.g. C++).
-#   once — the matrix collapsed to the primary (first) version for languages
-#          that carry run-once kinds (C++, TypeScript), else identical to `all`.
-#          Consumed by run-once kinds (LINT, AUDIT; and TYPECHECK for
-#          TypeScript). This mirrors github_config.desired_ci_gates_ruleset,
-#          which keys a run-once kind's single gate to ci.versions[0].
+#   all  — one entry per resolved version. Consumed by per-version kinds (TEST
+#          always; TYPECHECK for languages whose typecheck is per-version).
+#   once — the primary version's entry alone for the languages that carry
+#          run-once kinds (C++, TypeScript), else identical to `all`. Consumed
+#          by run-once kinds (LINT, AUDIT; and TYPECHECK for TypeScript).
 #
-# Image routing by language:
-#
-#   cpp         — the compiler family rides the version token (`clang-20`,
-#                 `gcc-14`): split into family + numeric tag →
-#                 `<prefix>-cpp-<family>:<tag>` (epic vergil-project/.github#207
-#                 §6). e.g. clang-20 -> prod-cpp-clang:20.
-#   typescript  — the Node major rides the version token (`node-24`): the
-#                 `ts-node` runtime family rides the image *suffix* and the
-#                 numeric part is the tag → `<prefix>-<suffix>:<tag>` (epic
-#                 vergil-project/.github#284). e.g. node-24 (suffix ts-node) ->
-#                 prod-ts-node:24. This matches repo_init's _container_suffix
-#                 (`ts-node`) / _container_tag (the Node major) on the tooling
-#                 side.
-#   everything  — the single-suffix scheme `<prefix>-<suffix>:<version>`, with
-#   else          the language name used as the suffix when none is given.
+# The caller's `container-suffix` (SUFFIX) is a cross-check, not an input to the
+# image: when it is set it must be one of the resolved suffixes. A mismatch
+# means the caller's workflow and the repo's vergil.toml disagree on the
+# language (for example `container-suffix: python` with no
+# [project].primary-language, which resolves to the base image at latest), and
+# running the legs on the wrong image could pass without testing anything, so
+# it fails loudly instead.
 #
 # The logic lives here (not inline in action.yml) so it is unit-testable
 # (tests/resolve.test.sh).
 #
-# Inputs (env): LANGUAGE, VERSIONS (JSON array string), PREFIX, SUFFIX.
+# Inputs (env): LANGUAGE, VERSIONS (JSON array), PRIMARY, CONTAINER_TAGS and
+# CONTAINER_SUFFIXES (JSON objects keyed by version), PREFIX, SUFFIX.
 set -euo pipefail
 
 registry="ghcr.io/vergil-project"
 prefix="${PREFIX:-prod}"
 
-all=$(jq -cn \
-  --argjson versions "$VERSIONS" \
-  --arg lang "$LANGUAGE" \
-  --arg prefix "$prefix" \
-  --arg suffix "$SUFFIX" \
-  --arg reg "$registry" '
-  $versions | map(
-    if $lang == "cpp" then
-      (. | split("-")) as $p
-      | { version: .,
-          image: ($reg + "/" + $prefix + "-cpp-" + $p[0]
-                  + ":" + ($p[1:] | join("-"))) }
-    elif $lang == "typescript" then
-      # The Node major rides the tag; the `ts-node` family rides the suffix.
-      # node-24 (suffix ts-node) -> prod-ts-node:24. Fall back to `ts-<family>`
-      # when no suffix is supplied so the runtime family is still explicit.
-      (. | split("-")) as $p
-      | (if $suffix == "" then ("ts-" + $p[0]) else $suffix end) as $sfx
-      | { version: .,
-          image: ($reg + "/" + $prefix + "-" + $sfx
-                  + ":" + ($p[1:] | join("-"))) }
-    else
-      (if $suffix == "" then $lang else $suffix end) as $sfx
-      | { version: ., image: ($reg + "/" + $prefix + "-" + $sfx + ":" + .) }
-    end)')
+error() {
+  echo "::error::ci/matrix: $*" >&2
+  exit 1
+}
 
-# Run-once kinds collapse to the primary (first) version for matrix languages
-# that declare them (C++, TypeScript), so LINT/AUDIT (and TypeScript's TYPECHECK)
-# emit a single job/gate instead of one per version — matching the run-once
-# gates github_config.desired_ci_gates_ruleset keys to ci.versions[0]. Every
-# other language keeps `once` == `all`, so its gates are byte-identical to the
-# pre-cardinality behavior.
-case "$LANGUAGE" in
-  cpp | typescript) once=$(printf '%s' "$all" | jq -c '.[:1]') ;;
+for name in VERSIONS PRIMARY CONTAINER_TAGS CONTAINER_SUFFIXES; do
+  if [ -z "${!name:-}" ]; then
+    error "${name} is empty; pass the shared setup action's outputs (versions," \
+      "primary-version, container-tags, container-suffixes) to this action"
+  fi
+done
+
+# Check the shape of the resolver's answer before building anything from it: a
+# missing tag or suffix must fail here, not become an image named ':null'.
+problem="$(jq -rn \
+  --argjson versions "$VERSIONS" \
+  --argjson tags "$CONTAINER_TAGS" \
+  --argjson suffixes "$CONTAINER_SUFFIXES" \
+  --arg primary "$PRIMARY" '
+  if ($versions | type) != "array" or ($versions | length) == 0
+    then "versions must be a non-empty JSON array (got \($versions | tojson))"
+  elif ($tags | type) != "object" then "container-tags must be a JSON object"
+  elif ($suffixes | type) != "object" then "container-suffixes must be a JSON object"
+  else
+    ([$versions[] | select(($tags[.] | type) != "string")] ) as $no_tag
+    | ([$versions[] | select(($suffixes[.] | type) != "string")]) as $no_suffix
+    | if ($no_tag | length) > 0
+        then "container-tags has no tag for \($no_tag | join(", "))"
+      elif ($no_suffix | length) > 0
+        then "container-suffixes has no suffix for \($no_suffix | join(", "))"
+      elif ($versions | index($primary)) == null
+        then "primary-version \($primary) is not one of the versions \($versions | join(", "))"
+      else "" end
+  end')" || error "cannot parse the resolver outputs passed to this action"
+if [ -n "$problem" ]; then
+  error "$problem"
+fi
+
+if [ -n "${SUFFIX:-}" ]; then
+  resolved_suffixes="$(jq -rn --argjson s "$CONTAINER_SUFFIXES" '[$s[]] | unique | join(", ")')"
+  if ! jq -en --argjson s "$CONTAINER_SUFFIXES" --arg want "$SUFFIX" \
+    '[$s[]] | index($want) != null' >/dev/null; then
+    error "the caller's container-suffix '${SUFFIX}' is not an image suffix the" \
+      "resolver chose for this repo (${resolved_suffixes}). The workflow's" \
+      "language inputs and vergil.toml ([project].primary-language, [ci]) disagree;" \
+      "fix whichever is wrong"
+  fi
+fi
+
+all="$(jq -cn \
+  --argjson versions "$VERSIONS" \
+  --argjson tags "$CONTAINER_TAGS" \
+  --argjson suffixes "$CONTAINER_SUFFIXES" \
+  --arg prefix "$prefix" \
+  --arg reg "$registry" '
+  $versions | map({
+    version: .,
+    image: ($reg + "/" + $prefix + "-" + $suffixes[.] + ":" + $tags[.])
+  })')"
+
+# Run-once kinds run on the primary version for the matrix languages that
+# declare them (C++, TypeScript), so LINT/AUDIT (and TypeScript's TYPECHECK)
+# emit a single job instead of one per version. Every other language keeps
+# `once` == `all`.
+case "${LANGUAGE:-}" in
+  cpp | typescript)
+    once="$(printf '%s' "$all" | jq -c --arg primary "$PRIMARY" \
+      'map(select(.version == $primary))')"
+    ;;
   *) once="$all" ;;
 esac
 
 {
   echo "all=$all"
   echo "once=$once"
-} >> "$GITHUB_OUTPUT"
+} >>"$GITHUB_OUTPUT"
 
 echo "Resolved matrix (all): $all"
 echo "Resolved matrix (once): $once"

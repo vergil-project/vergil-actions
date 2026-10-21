@@ -1,131 +1,112 @@
 #!/usr/bin/env bash
 #
-# Derive the CI version set for a reusable CI workflow from vergil.toml.
+# Derive the CI version set for a reusable CI workflow by calling the single
+# resolver, `vrg-ci-resolve` (vergil-tooling; epic vergil-project/.github#407,
+# spec §6.3).
 #
-# Emits three values to $GITHUB_OUTPUT:
+# Resolution is NOT implemented here. The resolver reads vergil.toml and the
+# published language version window (vergil-containers'
+# docker/versions/window.json at the [dependencies].vergil ref) and applies
+# every rule: library vs. app by [project].repository-type, pins checked
+# against the window, the [ci].primary-version override, the packaged-Python
+# runtime rule, and the image suffix and tag of every version. This script only
+# runs it once and copies its answer into $GITHUB_OUTPUT:
 #
-#   versions             — the `[ci].versions` list as a compact JSON array
-#                          string, consumed by the `matrix` job to fan out
-#                          per-version legs.
-#   primary-version      — the single "primary" version consumed by
-#                          single-container jobs (ci-security, ci-version-bump,
-#                          ci-docs) and as the container tag for run-once kinds.
-#   primary-container-tag — the family-routed container tag of the primary
-#                          version: for family-on-token languages (cpp, ts) the
-#                          numeric part after the family prefix (clang-20 -> 20);
-#                          every other language keeps the version verbatim
-#                          (3.14 -> 3.14, latest -> latest). This mirrors the
-#                          per-version routing in actions/ci/matrix/resolve.sh
-#                          (the single source of truth for the split) so the
-#                          single-container jobs `common` (ci-quality) and
-#                          `version-bump` (ci-version-bump) resolve the same
-#                          image tag the matrix legs do — prod-cpp-clang:20, not
-#                          the nonexistent prod-cpp-clang:clang-20 (issue #893).
-#                          The compiler/runtime family itself rides
-#                          container-suffix (cpp-clang / ts-node), so only the
-#                          tag is routed here. LANGUAGE is supplied by the
-#                          calling workflow's `inputs.language` via the setup
-#                          action; when empty the tag falls through verbatim.
+#   versions              — the resolved versions, newest first, as a compact
+#                           JSON array string. The `matrix` job fans out over it.
+#   primary-version       — the primary version (the newest resolved version,
+#                           or [ci].primary-version). Single-container jobs and
+#                           run-once kinds run on it.
+#   primary-container-tag — the image tag of the primary version (clang-20 -> 20,
+#                           3.14 -> 3.14). The single-container `common`
+#                           (ci-quality) and `version-bump` (ci-version-bump)
+#                           jobs use it as their image tag.
+#   container-tags        — compact JSON object, version token -> image tag.
+#   container-suffixes    — compact JSON object, version token -> image suffix
+#                           (clang-20 -> cpp-clang, 3.14 -> python).
 #
-# primary-version derivation (mirrors the tooling side so both agree):
+# The first three are what `vrg-ci-resolve --format github-output` prints. The
+# matrix also needs the last two, which only `--format json` carries, so this
+# script runs `--format json` once and renders all five from that single
+# answer: one window fetch, and no chance of two outputs disagreeing.
 #
-#   * If `[ci].primary-version` is set explicitly, it wins verbatim — the
-#     documented escape hatch for when "primary" must NOT be the max.
-#   * Otherwise it is the highest version in `[ci].versions` by a natural
-#     ("semantic") sort — `3.14` from `["3.12","3.13","3.14"]` — robust to list
-#     order. Numeric runs compare numerically (so `clang-20` > `clang-9`).
+# Failure is loud and final. A resolver error (window fetch, invalid window, a
+# pin outside the window, an invalid primary-version, a missing or invalid
+# vergil.toml) fails the step with the resolver's message as `::error::`
+# annotations and writes no outputs. There is no fallback derivation.
 #
-# The logic lives here (not inline in action.yml) so it is unit-testable
-# (tests/derive.test.sh), mirroring the sibling matrix action's resolve.sh.
-#
-# vergil.toml is read from $VERGIL_CONFIG_DIR (default: the current directory,
-# i.e. the checked-out consumer repo at the workspace root). The override lets
-# the test harness point the resolver at fixture repos.
+# Inputs (env):
+#   VERGIL_CONFIG_DIR — directory holding vergil.toml (default: the current
+#                       directory). The test harness points it at fixtures.
+#   VERSION_WINDOW    — the setup action's optional `version-window` input.
+#                       When non-empty it is exported as VRG_VERSION_WINDOW, the
+#                       resolver's one sanctioned override (a local
+#                       window.json path, for tests). When empty, any
+#                       VRG_VERSION_WINDOW already in the environment is left as
+#                       it is.
 set -euo pipefail
 
 config_dir="${VERGIL_CONFIG_DIR:-.}"
 
-python3 - "$config_dir" <<'PY' >>"$GITHUB_OUTPUT"
-import json
-import os
-import pathlib
-import re
-import sys
-import tomllib
+if [ -n "${VERSION_WINDOW:-}" ]; then
+  export VRG_VERSION_WINDOW="$VERSION_WINDOW"
+fi
 
-config_dir = pathlib.Path(sys.argv[1])
-config_path = config_dir / "vergil.toml"
-try:
-    config_text = config_path.read_text()
-except FileNotFoundError:
-    print(
-        f"::error::vergil.toml not found at {config_path}; it declares the CI "
-        "version set. Create vergil.toml at the repository root with a [ci] "
-        'table holding versions = ["..."]',
-        file=sys.stderr,
-    )
-    sys.exit(1)
-try:
-    cfg = tomllib.loads(config_text)
-except tomllib.TOMLDecodeError as exc:
-    print(f"::error::{config_path} is not valid TOML: {exc}", file=sys.stderr)
-    sys.exit(1)
+if ! command -v vrg-ci-resolve >/dev/null 2>&1; then
+  echo "::error::vrg-ci-resolve is not on PATH. It ships with vergil-tooling" \
+    "v2.1.253 and later; the install step above should have put it there." \
+    "Check that [dependencies].vergil in vergil.toml names a vergil-tooling" \
+    "release that includes it" >&2
+  exit 1
+fi
 
-# The calling workflow's `inputs.language` (plumbed in as $LANGUAGE by the setup
-# action). Empty when the setup action is invoked without it, in which case the
-# container tag falls through to the verbatim version.
-language = os.environ.get("LANGUAGE", "")
+err_file="$(mktemp)"
+trap 'rm -f "$err_file"' EXIT
 
-ci = cfg.get("ci")
-if not isinstance(ci, dict):
-    print("::error::vergil.toml is missing the required [ci] section", file=sys.stderr)
-    sys.exit(1)
+rc=0
+resolution="$(vrg-ci-resolve --format json --repo-root "$config_dir" 2>"$err_file")" || rc=$?
 
-versions = ci.get("versions")
-if not isinstance(versions, list) or not versions or not all(
-    isinstance(v, str) for v in versions
-):
-    print(
-        "::error::[ci].versions must be a non-empty list of strings",
-        file=sys.stderr,
-    )
-    sys.exit(1)
+if [ "$rc" -ne 0 ]; then
+  # Surface every line the resolver printed as an error annotation, so the
+  # reason is on the run summary, not only in the step log.
+  printed=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    [ -n "$line" ] || continue
+    echo "::error::${line}" >&2
+    printed=1
+  done <"$err_file"
+  if [ "$printed" -eq 0 ]; then
+    echo "::error::vrg-ci-resolve exited ${rc} without a message" >&2
+  fi
+  exit "$rc"
+fi
 
+# A successful run may still warn (for example an app that pins more than one
+# version). Keep each warning visible as a warning annotation; pass any other
+# line through unchanged.
+while IFS= read -r line || [ -n "$line" ]; do
+  [ -n "$line" ] || continue
+  case "$line" in
+    "warning: "*) echo "::warning::${line#warning: }" >&2 ;;
+    *) echo "$line" >&2 ;;
+  esac
+done <"$err_file"
 
-def natural_key(value: str) -> list[object]:
-    """Natural-sort key: numeric runs compare as ints, text as text.
+# Render the outputs. Every key must be present with the expected type; a
+# resolver answer that lacks one is an error, never an empty output.
+outputs="$(printf '%s' "$resolution" | jq -r '
+  def req(k; t):
+    if has(k) and (.[k] | type) == t then .[k]
+    else error("vrg-ci-resolve output has no \(t) \"\(k)\"") end;
+  "versions=" + (req("versions"; "array") | tojson),
+  "primary-version=" + req("primary-version"; "string"),
+  "primary-container-tag=" + req("primary-container-tag"; "string"),
+  "container-tags=" + (req("container-tags"; "object") | tojson),
+  "container-suffixes=" + (req("container-suffixes"; "object") | tojson)
+' 2>&1)" || {
+  echo "::error::cannot read the vrg-ci-resolve answer: ${outputs}" >&2
+  exit 1
+}
 
-    ``3.14`` -> ``['', 3, '.', 14, '']`` so ``3.14 > 3.13`` and
-    ``clang-20 > clang-9`` (20 > 9, not lexical). re.split alternates
-    text/number segments, so aligned positions across versions share a type.
-    """
-    return [int(tok) if tok.isdigit() else tok for tok in re.split(r"(\d+)", value)]
-
-
-explicit = ci.get("primary-version")
-if explicit is not None:
-    if not isinstance(explicit, str) or not explicit.strip():
-        print(
-            "::error::[ci].primary-version must be a non-empty string",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    primary = explicit
-else:
-    primary = max(versions, key=natural_key)
-
-# Family-routed container tag of the primary version. For the family-on-token
-# languages the version carries the compiler/runtime family (clang-20, gcc-14,
-# node-24); the image tag is the part after the family prefix while the family
-# rides container-suffix, so split on "-" and keep the remainder — exactly as
-# actions/ci/matrix/resolve.sh routes the per-version matrix legs (the single
-# source of truth). Every other language keeps the version verbatim.
-if language in ("cpp", "typescript"):
-    primary_container_tag = "-".join(primary.split("-")[1:])
-else:
-    primary_container_tag = primary
-
-print("versions=" + json.dumps(versions, separators=(",", ":")))
-print("primary-version=" + primary)
-print("primary-container-tag=" + primary_container_tag)
-PY
+printf '%s\n' "$outputs" >>"$GITHUB_OUTPUT"
+printf 'Resolved by vrg-ci-resolve:\n%s\n' "$outputs"

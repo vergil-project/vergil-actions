@@ -1,0 +1,28 @@
+name: Assert the running toolchain
+description: >-
+  Fail the job when the interpreter or toolchain actually running it is not
+  the version CI resolved for it (epic vergil-project/.github#407, spec §6.5).
+  A repo's own files can pick the interpreter behind Vergil's back, so a leg
+  could otherwise pass on a version it never ran. Python is checked with
+  `uv run --frozen python` (set UV_PYTHON to the leg's version first) and Go
+  with `go env GOVERSION`; every other language is a no-op with a notice.
+
+inputs:
+  language:
+    description: Primary language of the calling repo (e.g. python, go, cpp).
+    required: true
+  expected:
+    description: >-
+      The version CI resolved for this leg, as x.y (e.g. 3.14, 1.26). Ignored
+      for languages without an assertion.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Assert toolchain version
+      shell: bash
+      env:
+        LANGUAGE: ${{ inputs.language }}
+        EXPECTED: ${{ inputs.expected }}
+      run: bash "${GITHUB_ACTION_PATH}/assert.sh"

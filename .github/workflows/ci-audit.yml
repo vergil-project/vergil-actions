@@ -11,8 +11,10 @@ on:
         required: false
         description: >-
           Container image name suffix (e.g. python, go, base). Callers should
-          pass their language-specific suffix. Ignored for cpp, whose suffix
-          (cpp-clang / cpp-gcc) is derived per-version from the version token.
+          pass their language-specific suffix. The matrix legs take each
+          version's suffix from vrg-ci-resolve (cpp-clang / cpp-gcc for C++)
+          and only cross-check this value: when set, it must be one of the
+          resolved suffixes.
       container-prefix:
         type: string
         required: false
@@ -31,10 +33,10 @@ on:
           via `secrets: inherit` (epics vergil-project/.github#189, #197).
 
 jobs:
-  # Resolve the per-version job matrix (version label + container image),
-  # applying C++ compiler-family image routing and per-kind cardinality. AUDIT
-  # is a run-once kind, so dependencies consumes the `once` output (primary
-  # version only for C++, every version otherwise).
+  # Resolve the per-version job matrix (version label + container image) from
+  # vrg-ci-resolve's answer, with per-kind cardinality. AUDIT is a run-once
+  # kind, so dependencies consumes the `once` output (the primary version only
+  # for C++ and TypeScript, every version otherwise).
   matrix:
     name: matrix
     runs-on: ubuntu-latest
@@ -45,10 +47,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      # Source the version set from vergil.toml. Runs the shared setup action
-      # for its `versions` output (epic vergil-project/.github#338, Task 6):
-      # [ci].versions in vergil.toml is the sole source for the matrix.
-      - name: Resolve versions from vergil.toml
+      # Resolve the version set. The shared setup action installs
+      # vergil-tooling and runs `vrg-ci-resolve` (epic
+      # vergil-project/.github#407): the resolver's versions, primary version,
+      # and per-version image tags and suffixes are the sole source for the
+      # matrix.
+      - name: Resolve versions with vrg-ci-resolve
         id: setup
         uses: ./actions/shared/setup/vergil
 
@@ -58,6 +62,9 @@ jobs:
         with:
           language: ${{ inputs.language }}
           versions: ${{ steps.setup.outputs.versions }}
+          primary-version: ${{ steps.setup.outputs.primary-version }}
+          container-tags: ${{ steps.setup.outputs.container-tags }}
+          container-suffixes: ${{ steps.setup.outputs.container-suffixes }}
           container-prefix: ${{ inputs.container-prefix }}
           container-suffix: ${{ inputs.container-suffix }}
 
@@ -76,9 +83,28 @@ jobs:
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
+      # Hand uv the leg's resolved version (spec §6.5 of epic
+      # vergil-project/.github#407), so the dependency install and every check
+      # below run on the image's interpreter for this leg, not one a repo file
+      # selects.
+      - name: Pin uv to the leg's Python version
+        if: inputs.language == 'python'
+        shell: bash
+        env:
+          VERSION: ${{ matrix.version }}
+        run: echo "UV_PYTHON=${VERSION}" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         if: inputs.language == 'python'
         run: uv sync --group dev --frozen
+
+      # Backstop for the pin above: fail the leg if the interpreter or
+      # toolchain it actually runs is not the version CI resolved for it.
+      - name: assert-toolchain
+        uses: ./actions/ci/toolchain/assert
+        with:
+          language: ${{ inputs.language }}
+          expected: ${{ matrix.version }}
 
       # The job runs INSIDE the language container, so this step-level env:
       # lands inside the container directly — no [container].env-prefixes
