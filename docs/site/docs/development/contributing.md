@@ -23,7 +23,7 @@
 - **No secrets access** — Composite actions cannot access secrets directly.
   Callers must pass secrets as inputs.
 - **Idempotent when possible** — Actions should be safe to re-run (e.g.,
-  `publish/tag-and-release` skips if the tag exists).
+  `cd/release/tag-and-release` skips if the tag exists).
 - **Environment variables for sensitive data** — Use `env` blocks rather than
   inline interpolation for values that might contain special characters.
 
@@ -73,52 +73,70 @@ provides integration testing without a separate test repository.
 ## Branching workflow
 
 - **Protected branches**: `main` and `develop` — no direct commits.
-- **Branch naming**: `feature/*`, `bugfix/*`, or `hotfix/*` only.
+- **Branch naming**: work branches are `<type>/<N>-<slug>`, where `<type>` is
+  `feature`, `bugfix`, `hotfix` or `chore` and `<N>` is the GitHub issue
+  number (e.g. `feature/42-add-check`). `release/*` branches are created by
+  `vrg-release`.
 - Feature and bugfix PRs target `develop` with squash merge.
 - Release PRs target `main` with regular merge.
 
 ## Committing
 
-Always use the commit script:
+Always use `vrg-commit`:
 
 ```bash
 vrg-commit \
   --type feat \
   --scope ci \
-  --message "add new validation check" \
-  --agent claude
+  --message "add new validation check"
 ```
 
 Required flags:
 
-- `--type`: `feat|fix|docs|style|refactor|test|chore|ci|build`
+- `--type`: `feat|fix|docs|style|refactor|test|chore|ci|build|revert`
+- `--scope`: Conventional commit scope
 - `--message`: Commit description
-- `--agent`: `claude` or `codex`
 
 Optional flags:
 
-- `--scope`: Conventional commit scope
 - `--body`: Detailed commit body
+- `--allow-empty`: Allow a commit with no staged changes (e.g. to re-trigger CI)
 
 ## Submitting PRs
 
-Always use the PR script:
+PR submission is split between the agent and the human. Agents never run
+`vrg-submit-pr`.
 
-```bash
-st-submit-pr \
-  --issue 42 \
-  --summary "Add new validation check"
-```
+1. **Agent: push the branch, then record the PR metadata.** Push the branch to
+   origin first — `report-ready` pushes only its metadata ref, not the branch:
 
-Required flags:
+    ```bash
+    vrg-git push -u origin feature/42-add-check
+    vrg-pr-workflow report-ready \
+      --issue 42 \
+      --title "feat(ci): add new validation check" \
+      --summary "Add new validation check" \
+      --notes "Validated with vrg-validate."
+    ```
 
-- `--issue`: GitHub issue number
-- `--summary`: One-line PR summary
+    `--issue`, `--title`, `--summary` and `--notes` are required and must be
+    non-empty. `--linkage` defaults to `Ref`; leave it there, because
+    `vrg-submit-pr` picks the keyword at submit time. If the change touches
+    `.github/workflows/**`, GitHub refuses the agent's push; the human's
+    `vrg-submit-pr` pushes the branch instead.
 
-Optional flags:
+    `report-ready` freezes the branch: further commits and pushes are refused.
+    Re-running it to correct the title, summary or notes is allowed. More work
+    belongs in a new follow-up issue; `vrg-pr-workflow unfreeze` reopens a
+    branch that has not been submitted.
 
-- `--linkage`: `Ref` (default) or `Closes`. `Fixes` and `Resolves` are
-  rejected.
-- `--title`: PR title (default: most recent commit subject)
-- `--notes`: Additional notes
-- `--dry-run`: Print without executing
+2. **Human: submit the PR.** Run `vrg-submit-pr` with no arguments from the
+   worktree, or `vrg-submit-pr <branch> [<branch> …]` from the main worktree.
+   It reads the recorded metadata, previews the PR and opens it after
+   confirmation.
+
+3. **Human: merge and clean up.** Run `vrg-finalize-pr`, which waits for checks,
+   merges the PR and removes the merged branch and worktree.
+
+The recorded title, summary and notes are readable by anyone on a public
+repository, so they must not contain secrets.

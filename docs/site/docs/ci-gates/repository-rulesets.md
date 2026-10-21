@@ -44,14 +44,14 @@ checks that must pass before a PR can merge.
 | Strict required status checks | Yes (branch must be up to date) |
 | Do not enforce on create | No |
 
-The required checks vary by repository category. See the
-[required check set](required-checks.md#required-check-set) for the full list.
+`vrg-github-repo-config` derives the required checks from each repository's
+`vergil.toml`, so the set depends on the repository's configuration. See the
+[required check set](required-checks.md#required-check-set) for the full list
+and the condition under which each check is required.
 
 ### Example: a public Python library
 
-`vrg-github-repo-config` derives the set from `vergil.toml`, not from a fixed
-repository category. A public Python library that publishes docs and has a
-release model gets:
+A public Python library that publishes docs and has a release model gets:
 
 ```text
 quality / common
