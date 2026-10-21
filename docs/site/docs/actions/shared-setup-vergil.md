@@ -36,7 +36,7 @@ to detect vergil-tooling itself, `pyproject.toml`) from the working directory.
 
 | Output | Description |
 | ------ | ----------- |
-| `versions` | `[ci].versions` from `vergil.toml` as a compact JSON array string, e.g. `["3.12","3.13","3.14"]`. The `matrix` job passes it to [`ci/matrix`](https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/matrix/action.yml) to fan out per-version legs. |
+| `versions` | `[ci].versions` from `vergil.toml` as a compact JSON array string, e.g. `["3.12","3.13","3.14"]`. The `matrix` job passes it to [`ci/matrix`](ci-matrix.md) to fan out per-version legs. |
 | `primary-version` | `[ci].primary-version` when it is set; otherwise the highest entry in `[ci].versions` by natural sort (`3.14` from `["3.12","3.13","3.14"]`, `clang-20` over `clang-9`). |
 | `primary-container-tag` | The container tag of the primary version. For `cpp` and `typescript` the family prefix is dropped (`clang-20` becomes `20`, `node-24` becomes `24`), the same split `ci/matrix` applies to each matrix leg; for every other language it is the primary version unchanged. Used by the single-container `common` job in `ci-quality` and the `version-bump` job in `ci-version-bump`. |
 
@@ -56,18 +56,39 @@ The action runs these steps in order:
       released version.
     - Otherwise it reads `[dependencies].vergil` from `vergil.toml` (e.g.
       `v2.1`) and runs `uv tool install` for vergil-tooling at that git tag.
-      The step fails if `vergil.toml` or the `vergil` version is missing.
+      The tag is read by `read-pin.sh`, which fails the job with a single
+      `::error::` annotation naming the file or key, and nothing is installed,
+      when:
+        - `vergil.toml` does not exist (usually because the repository was
+          not checked out first);
+        - `vergil.toml` is not valid TOML (the annotation includes the parse
+          error);
+        - there is no `[dependencies]` table, or `dependencies` is not a
+          table;
+        - `[dependencies]` has no `vergil` key;
+        - `[dependencies].vergil` is not a string, or is empty or blank.
+
+      Apart from the TOML parse error, each annotation says what to add: a pin
+      such as
+
+      ```toml
+      [dependencies]
+      vergil = "v2.1"
+      ```
+
 4. **Derive the CI versions.** Runs `derive.sh`, which reads `vergil.toml` and
    writes the three outputs. It fails the job with an `::error::` annotation
    when:
-    - `vergil.toml` has no `[ci]` section;
+    - `vergil.toml` does not exist, or is not valid TOML;
+    - `vergil.toml` has no `[ci]` table (or `ci` is not a table);
     - `[ci].versions` is not a non-empty list of strings;
     - `[ci].primary-version` is set but is not a non-empty string.
 
-The derivation lives in `derive.sh` rather than inline YAML so it can be unit
-tested; see `actions/shared/setup/vergil/tests/derive.test.sh`. The
-`smoke-setup-vergil` workflow runs those tests and checks the action's outputs
-end to end.
+The pin reading and the derivation live in `read-pin.sh` and `derive.sh` rather
+than inline YAML so they can be unit tested; see
+`actions/shared/setup/vergil/tests/derive.test.sh` and
+`tests/read-pin.test.sh`. The `smoke-setup-vergil` workflow runs those tests
+and checks the action's outputs end to end.
 
 ## Configuration
 

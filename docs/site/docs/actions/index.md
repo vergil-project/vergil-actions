@@ -4,9 +4,6 @@ All actions are composite GitHub Actions located under the `actions/` directory,
 organized by pipeline phase. Each action is self-contained with an `action.yml`
 definition and optional supporting scripts.
 
-Actions without a page of their own link to their `action.yml`, whose `inputs`
-and `outputs` descriptions are the reference.
-
 ## Available actions
 
 ### CI
@@ -17,11 +14,11 @@ and `outputs` descriptions are the reference.
   with language-specific and cross-cutting security rulesets.
 - **[ci/version-bump/version-divergence](ci-version-bump-version-divergence.md)**
   — Verifies that the PR branch version differs from the main branch version.
-- **[ci/matrix](https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/matrix/action.yml)**
+- **[ci/matrix](ci-matrix.md)**
   — Resolves the per-version job matrix (version label and container image for
   each entry) from the `versions` output of `shared/setup/vergil`; auto-wired
   into `ci-quality`, `ci-audit` and `ci-test`.
-- **[ci/evidence/emit](https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/evidence/emit/action.yml)**
+- **[ci/evidence/emit](ci-evidence-emit.md)**
   — Writes a gate's `evidence.json` and uploads it with the gate's report files
   as a `ci-evidence-<gate>` artifact for the release-time evidence bundle.
 
@@ -29,15 +26,15 @@ and `outputs` descriptions are the reference.
 
 - **[cd/release/tag-and-release](cd-release-tag-and-release.md)** — Creates
   annotated git tags and GitHub Releases.
-- **[cd/release/validate-inputs](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/validate-inputs/action.yml)**
+- **[cd/release/validate-inputs](cd-release-validate-inputs.md)**
   — Checks the `cd-release` inputs and fails early on an invalid combination.
-- **[cd/release/ci-evidence-gate](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-gate/action.yml)**
+- **[cd/release/ci-evidence-gate](cd-release-ci-evidence-gate.md)**
   — Pre-publish gate: harvests the release PR's CI evidence artifacts and
   checks they are complete before anything is published.
-- **[cd/release/registry-publish](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/registry-publish/action.yml)**
+- **[cd/release/registry-publish](cd-release-registry-publish.md)**
   — Builds the release for the repository's language ecosystem, attests it,
   generates an SBOM and, when enabled, publishes to the package registry.
-- **[cd/release/ci-evidence-attach](https://github.com/vergil-project/vergil-actions/blob/develop/actions/cd/release/ci-evidence-attach/action.yml)**
+- **[cd/release/ci-evidence-attach](cd-release-ci-evidence-attach.md)**
   — Post-publish: assembles the evidence bundle including the SBOM, attests it
   and attaches it to the GitHub Release.
 - **[cd/docs/deploy](cd-docs-deploy.md)** — Deploys MkDocs documentation using
@@ -53,7 +50,7 @@ and `outputs` descriptions are the reference.
 
 - **[shared/security/trivy](shared-security-trivy.md)** — Runs Trivy
   vulnerability scanning, SBOM generation, or container image scanning.
-- **[shared/docs/stage](https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/docs/stage/action.yml)**
+- **[shared/docs/stage](shared-docs-stage.md)**
   — Stages the changelog and release-notes pages and patches the MkDocs nav,
   so `ci-docs` and `cd-docs` build from the same source tree.
 - **[shared/setup/vergil](shared-setup-vergil.md)** — Installs the
@@ -79,7 +76,7 @@ and `outputs` descriptions are the reference.
 
 Actions used only by this repository's own workflows, not by consumers.
 
-- **[local/freeze-internal-refs](https://github.com/vergil-project/vergil-actions/blob/develop/actions/local/freeze-internal-refs/action.yml)**
+- **[local/freeze-internal-refs](local-freeze-internal-refs.md)**
   — Rewrites this repository's relative `./actions/...` and `@develop` refs to
   absolute refs at the release tag, checks none remain and commits the result
   (used by `cd.yml`).

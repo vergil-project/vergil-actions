@@ -6,7 +6,7 @@ qualified container image the leg runs in.
 
 This action is **wired automatically** into the `matrix` job of `ci-quality`,
 `ci-audit` and `ci-test`, which pass it the `versions` output of
-[`shared/setup/vergil`](https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/setup/vergil/action.yml).
+[`shared/setup/vergil`](shared-setup-vergil.md).
 Consuming repositories do not add it themselves.
 
 ## Usage
