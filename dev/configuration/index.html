@@ -6824,8 +6824,21 @@ trigger CI normally and can auto-merge.</p>
 <td>Read-only</td>
 <td>Required by GitHub (always enabled)</td>
 </tr>
+<tr>
+<td>Dependabot alerts</td>
+<td>Read-only</td>
+<td>Nightly <code>dependabot-audit</code> (ops)</td>
+</tr>
 </tbody>
 </table>
+<p>The nightly ops run uses the same secrets to mint a token for its
+<code>dependabot-audit</code> job in <code>ops-github-config.yml</code>. That token is scoped to the
+calling repository and carries only <strong>Dependabot alerts: Read</strong>, which
+<code>vrg-dependabot-audit</code> needs to list the repository's open alerts. Grant the
+App this permission, then accept the updated permission on <strong>each</strong> of its
+installations: GitHub does not apply a new App permission to an installation
+until that installation accepts it. Until it is accepted, the job exits 2
+("could not check") and the ops run fails.</p>
 <p><strong>Creation steps:</strong></p>
 <ol>
 <li>Go to <strong>Settings &gt; Developer settings &gt; GitHub Apps</strong>.</li>
