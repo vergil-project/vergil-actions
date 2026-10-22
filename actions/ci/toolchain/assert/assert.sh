@@ -10,9 +10,11 @@
 # and fails the leg when that is not the resolved `x.y`.
 #
 #   python — `uv run --frozen python -c ...`, the interpreter uv gives the
-#            project, which is the one the leg's tests run on. The workflow sets
-#            UV_PYTHON to the leg's version before this runs. `--frozen` keeps
-#            uv from rewriting uv.lock.
+#            project, which is the one the leg's tests run on. The workflow pins
+#            UV_PYTHON (the leg's version) and UV_PYTHON_PREFERENCE=only-system
+#            (the image's interpreter) before this runs, via
+#            ci/toolchain/pin-python. `--frozen` keeps uv from rewriting
+#            uv.lock. The interpreter's path is logged alongside its version.
 #   go     — `go env GOVERSION` (go1.26.3 -> 1.26). Run in the module, so a
 #            `toolchain` switch in go.mod is what gets reported.
 #   other  — no assertion yet (each language's turn adds one); a notice says so.
@@ -52,8 +54,10 @@ case "$language" in
     err_file="$(mktemp)"
     trap 'rm -f "$err_file"' EXIT
     rc=0
-    actual="$(uv run --frozen python -c \
-      'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")' \
+    # Line 1: the interpreter's x.y. Line 2: its path, reported so the log
+    # shows which interpreter (image or downloaded) the leg actually runs.
+    answer="$(uv run --frozen python -c \
+      'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}"); print(sys.executable)' \
       2>"$err_file")" || rc=$?
     # uv reports its own progress on stderr; show it, it says which
     # interpreter uv chose and why.
@@ -62,9 +66,12 @@ case "$language" in
       error "assert-toolchain: cannot ask uv for the job's Python interpreter" \
         "(uv run exited ${rc}): $(tr '\n' ' ' <"$err_file")"
     fi
-    if ! [[ "$actual" =~ ^[0-9]+\.[0-9]+$ ]]; then
-      error "assert-toolchain: unexpected answer from the job's Python interpreter: '${actual}'"
+    actual="$(sed -n 1p <<<"$answer")"
+    interpreter="$(sed -n 2p <<<"$answer")"
+    if ! [[ "$actual" =~ ^[0-9]+\.[0-9]+$ ]] || [ -z "$interpreter" ]; then
+      error "assert-toolchain: unexpected answer from the job's Python interpreter: '${answer}'"
     fi
+    echo "assert-toolchain: the job's Python interpreter is ${interpreter}"
     ;;
   go)
     check_expected

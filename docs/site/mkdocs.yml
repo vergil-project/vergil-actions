@@ -71,6 +71,7 @@ nav:
           - ci/security/semgrep: actions/ci-security-semgrep.md
           - ci/version-bump/version-divergence: actions/ci-version-bump-version-divergence.md
           - ci/matrix: actions/ci-matrix.md
+          - ci/toolchain/pin-python: actions/ci-toolchain-pin-python.md
           - ci/toolchain/assert: actions/ci-toolchain-assert.md
           - ci/evidence/emit: actions/ci-evidence-emit.md
       - CD:

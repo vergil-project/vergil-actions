@@ -4,7 +4,8 @@ description: >-
   the version CI resolved for it (epic vergil-project/.github#407, spec §6.5).
   A repo's own files can pick the interpreter behind Vergil's back, so a leg
   could otherwise pass on a version it never ran. Python is checked with
-  `uv run --frozen python` (set UV_PYTHON to the leg's version first) and Go
+  `uv run --frozen python` (pin uv with ci/toolchain/pin-python first; the
+  interpreter's path is logged too) and Go
   with `go env GOVERSION`; every other language is a no-op with a notice.
 
 inputs:

@@ -1,0 +1,22 @@
+name: Pin uv to the leg's Python interpreter
+description: >-
+  Export UV_PYTHON (the leg's resolved x.y) and UV_PYTHON_PREFERENCE=only-system
+  to the rest of the job (epic vergil-project/.github#407, spec §6.5), so the
+  dependency install and every check run on the image's interpreter for the
+  leg. The version comes from CI, not a repo file, and the source is always the
+  image: a repo's uv `python-preference` cannot make uv download a managed
+  Python, and a missing interpreter fails loudly.
+
+inputs:
+  version:
+    description: The Python version CI resolved for this leg, as x.y (e.g. 3.14).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Pin uv to the leg's Python interpreter
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: bash "${GITHUB_ACTION_PATH}/pin.sh"
