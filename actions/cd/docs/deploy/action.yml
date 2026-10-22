@@ -98,10 +98,17 @@ runs:
           echo "alias=" >> "$GITHUB_OUTPUT"
         fi
 
+    # UV_PYTHON_PREFERENCE=only-system pins the interpreter source of
+    # `uv run mike`/`uv run mkdocs` (Python repos) to the image's Python, so a
+    # repo's `python-preference = "only-managed"` cannot make uv download one;
+    # a missing interpreter fails loudly (epic vergil-project/.github#407 spec
+    # §6.5, issue #1002). Set here as well as on the cd-docs job so a direct
+    # caller of this action gets the same pin.
     - name: Deploy docs
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
+        UV_PYTHON_PREFERENCE: only-system
         MIKE_CMD: ${{ steps.mike-cmd.outputs.cmd }}
         MKDOCS_CMD: ${{ steps.mike-cmd.outputs.mkdocs }}
         SCHEME: ${{ steps.mike-cmd.outputs.scheme }}

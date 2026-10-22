@@ -54,7 +54,10 @@ The action runs these steps in order:
     - If `pyproject.toml` declares `name = "vergil-tooling"`, the repository is
       vergil-tooling itself. The step runs `uv sync --frozen --group dev` and
       adds `.venv/bin` to `PATH`, so CI tests the PR's own code rather than a
-      released version.
+      released version. The sync runs with `UV_PYTHON_PREFERENCE=only-system`,
+      so it uses the system (image or runner) interpreter and never downloads a managed one
+      (issue #1002). `uv tool install` needs no such pin, because uv tool
+      commands ignore a project's uv settings.
     - Otherwise it reads `[dependencies].vergil` from `vergil.toml` (e.g.
       `v2.1`) and runs `uv tool install` for vergil-tooling at that git tag.
       The tag is read by `read-pin.sh`, which fails the job with a single

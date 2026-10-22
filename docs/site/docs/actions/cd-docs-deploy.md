@@ -56,6 +56,18 @@ jobs:
       contents: write
 ```
 
+### Interpreter source
+
+The action's "Deploy docs" step sets `UV_PYTHON_PREFERENCE=only-system`, and
+the `cd-docs.yml` `docs` job sets it in its job `env` too, so it also reaches
+the pre-deploy command. For Python repositories, `uv run mike` and
+`uv run mkdocs` then use the image's Python, never a managed Python that uv
+downloads because the repository sets `python-preference = "only-managed"`. If
+the image cannot satisfy the repository's `requires-python`, the deploy fails
+loudly. Only the source is pinned: `UV_PYTHON` is not set (epic
+vergil-project/.github#407, spec §6.5; issue #1002). The pin is on the step,
+so a direct caller of this action gets it without setting anything.
+
 ### MkDocs 2.0 banner
 
 The `cd-docs.yml` workflow sets `NO_MKDOCS_2_WARNING=1` on its "Deploy docs"
