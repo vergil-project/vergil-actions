@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.50] - 2026-10-22
+
+### CI
+
+- pin the docs jobs' uv interpreter source with UV_PYTHON_PREFERENCE=only-system (#1005)
+
+### Features
+
+- fail the nightly ops run on any open Dependabot alert (#1004)
+
 ## [2.1.49] - 2026-10-22
 
 ### CI
