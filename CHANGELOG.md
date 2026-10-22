@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.49] - 2026-10-22
+
+### CI
+
+- pin Python legs to the image's interpreter with UV_PYTHON_PREFERENCE=only-system (#995)
+
 ## [2.1.48] - 2026-10-22
 
 ### Bug fixes
