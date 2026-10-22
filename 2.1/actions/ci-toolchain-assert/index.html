@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://vergil-project.github.io/vergil-actions/2.1/actions/ci-toolchain-assert/">
       
       
-        <link rel="prev" href="../ci-matrix/">
+        <link rel="prev" href="../ci-toolchain-pin-python/">
       
       
         <link rel="next" href="../ci-evidence-emit/">
@@ -801,6 +801,8 @@
       
         
       
+        
+      
     
     
     
@@ -853,6 +855,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.49/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.49
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4335,6 +4365,8 @@
       
         
       
+        
+      
     
     
     
@@ -4482,6 +4514,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-toolchain-pin-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/pin-python
   
 
     
@@ -6311,9 +6371,11 @@ behind Vergil's back (for Python, <code>.python-version</code> or uv's
 action is the backstop for that.</p>
 <p>This action is <strong>wired automatically</strong> into every matrix leg of <code>ci-quality</code>,
 <code>ci-audit</code> and <code>ci-test</code>, as the <code>assert-toolchain</code> step. It runs after the
-dependency install. For Python, an earlier step in the leg sets <code>UV_PYTHON</code> to
-the leg's version, so uv uses the image's interpreter for the install and the
-checks. Consuming repositories do not add it themselves.</p>
+dependency install. For Python, an earlier step in the leg
+(<a href="../ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) sets <code>UV_PYTHON</code> to
+the leg's version and <code>UV_PYTHON_PREFERENCE</code> to <code>only-system</code>, so uv uses the
+image's interpreter for the install and the checks. Consuming repositories do
+not add it themselves.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assert-toolchain</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/toolchain/assert@v2.1</span>
@@ -6357,7 +6419,7 @@ checks. Consuming repositories do not add it themselves.</p>
 <tbody>
 <tr>
 <td><code>python</code></td>
-<td>Runs <code>uv run --frozen python -c '...'</code> and compares the interpreter's <code>x.y</code> with <code>expected</code>. <code>--frozen</code> keeps uv from rewriting <code>uv.lock</code>.</td>
+<td>Runs <code>uv run --frozen python -c '...'</code> and compares the interpreter's <code>x.y</code> with <code>expected</code>, logging the interpreter's path. <code>--frozen</code> keeps uv from rewriting <code>uv.lock</code>.</td>
 </tr>
 <tr>
 <td><code>go</code></td>

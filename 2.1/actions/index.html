@@ -801,6 +801,8 @@
       
         
       
+        
+      
     
     
     
@@ -853,6 +855,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.49/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.49
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4333,6 +4363,8 @@
       
         
       
+        
+      
     
     
     
@@ -4480,6 +4512,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ci-toolchain-pin-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/pin-python
   
 
     
@@ -6244,6 +6304,10 @@ definition and optional supporting scripts.</p>
   — Builds the per-version job matrix (version label and container image for
   each entry) from the resolver outputs of <code>shared/setup/vergil</code>; auto-wired
   into <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
+<li><strong><a href="ci-toolchain-pin-python/">ci/toolchain/pin-python</a></strong> — Pins uv to a
+  Python leg's resolved version and to the image's interpreter
+  (<code>UV_PYTHON</code>, <code>UV_PYTHON_PREFERENCE=only-system</code>); auto-wired into the
+  Python matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
 <li><strong><a href="ci-toolchain-assert/">ci/toolchain/assert</a></strong> — Fails a CI leg whose
   running Python or Go is not the version CI resolved for it; auto-wired into
   the matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
