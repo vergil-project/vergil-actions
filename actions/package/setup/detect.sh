@@ -15,6 +15,13 @@
 # Reading vergil.toml needs a Python with tomllib (3.11+). Raw ubuntu/UBI images
 # ship none, so it runs under uv's managed Python when uv is on PATH, else
 # python3. A missing vergil.toml or [dependencies].vergil is fatal.
+#
+# --no-config stops uv reading the repo's uv settings ([tool.uv] in
+# pyproject.toml, uv.toml), which --no-project does not. A repo may set
+# python-downloads = "manual" or python-preference = "only-managed"; honoured
+# here, those would stop uv downloading the interpreter these images need, or
+# change which one it picks (issue #1003). Reading vergil.toml never runs the
+# repo's code, so its uv settings have no say in this interpreter.
 set -euo pipefail
 
 repo="${1:-.}"
@@ -39,7 +46,7 @@ print(ref)
 '
 
 if command -v uv >/dev/null 2>&1; then
-  ref="$(uv run --no-project --python 3.14 python -c "$read_ref" "${repo}/vergil.toml")"
+  ref="$(uv run --no-config --no-project --python 3.14 python -c "$read_ref" "${repo}/vergil.toml")"
 else
   ref="$(python3 -c "$read_ref" "${repo}/vergil.toml")"
 fi

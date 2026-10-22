@@ -5,8 +5,10 @@
 #
 # This repo declares `language = shell` (vergil.toml), which runs no test gate,
 # so this is a self-contained, framework-free, developer-runnable harness: run
-# it directly with `bash detect.test.sh`. It needs uv or python3 (3.11+) on
-# PATH (the same dependency detect.sh has).
+# it directly with `bash detect.test.sh`. It needs uv on PATH: the cases for
+# the repo's uv settings (issue #1003) test detect.sh's uv path and fail
+# without it. They may download a managed Python 3.14 into a temp dir when no
+# system 3.14 is on PATH, as in the package images.
 #
 # Each case writes fixture pyproject.toml / vergil.toml files into a temp dir,
 # runs detect.sh against it, and asserts the printed spec (or the failure).
@@ -125,11 +127,70 @@ case_missing_dependency() {
 repository-type = "library"')"
 }
 
+# ---------------------------------------------------------------------------
+# Cases 6 and 7: the repo's uv settings must not change what detect.sh does
+# (issue #1003). A repo may set `python-downloads = "manual"` and
+# `python-preference = "only-managed"` in [tool.uv] (pyproject.toml) or in
+# uv.toml. uv reads those from the working directory, so the case runs
+# detect.sh from inside the fixture repo, as the setup action does
+# (`detect.sh .`).
+#
+# UV_PYTHON_INSTALL_DIR is a fresh empty dir, so no managed Python exists:
+# without --no-config, uv honours the settings and fails ("Python downloads
+# are set to 'manual'"). With it, uv uses a system 3.14 if there is one, else
+# downloads one, as in the package images. The uv environment variables that
+# would mask or change that are unset. The case needs uv: detect.sh only reads
+# uv settings on its uv path, so without uv it fails rather than pass vacuously.
+# ---------------------------------------------------------------------------
+# run_in_configured_repo <name> <config file name> <config body>
+run_in_configured_repo() {
+  local name="$1" dir pydir err out stderr rc=0
+  if ! command -v uv >/dev/null 2>&1; then
+    fail_case "$name" "uv is not on PATH; this case tests detect.sh's uv path"
+    return
+  fi
+  dir="$(fixture '[project]
+name = "vergil-python"' '[dependencies]
+vergil = "v2.1"')"
+  if [ "$2" = pyproject.toml ]; then
+    printf '\n%s\n' "[tool.uv]" "$3" >>"${dir}/pyproject.toml"
+  else
+    printf '%s\n' "$3" >"${dir}/$2"
+  fi
+  pydir="$(mktemp -d)"
+  err="$(mktemp)"
+  out="$(cd "$dir" && env -u UV_PYTHON -u UV_PYTHON_PREFERENCE \
+    -u UV_PYTHON_DOWNLOADS -u UV_NO_CONFIG -u UV_CONFIG_FILE \
+    UV_PYTHON_INSTALL_DIR="$pydir" bash "$detect_sh" . 2>"$err")" || rc=$?
+  stderr="$(cat "$err")"
+  rm -rf "$dir" "$pydir" "$err"
+  if [ "$rc" -ne 0 ]; then
+    fail_case "$name" "detect.sh exited ${rc}: ${stderr}"
+    return
+  fi
+  assert_eq "$name" "$out" \
+    "vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1" || return
+  pass_case "$name"
+}
+
+uv_settings='python-downloads = "manual"
+python-preference = "only-managed"'
+
+case_ignores_pyproject_uv_settings() {
+  run_in_configured_repo "ignores-pyproject-uv-settings" pyproject.toml "$uv_settings"
+}
+
+case_ignores_uv_toml() {
+  run_in_configured_repo "ignores-uv-toml" uv.toml "$uv_settings"
+}
+
 case_self_repo
 case_consumer_repo
 case_consumer_no_pyproject
 case_missing_vergil_toml
 case_missing_dependency
+case_ignores_pyproject_uv_settings
+case_ignores_uv_toml
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
