@@ -52,6 +52,22 @@ The logic is in `pin.sh` next to `action.yml`, so it can be unit tested
 with an `assert-toolchain` step must pin through this action, and no workflow
 may set `UV_PYTHON` by hand. The `smoke-setup-vergil` workflow runs the tests.
 
+The harness also guards the interpreter **source** everywhere uv runs against
+a repository's project (issue #1002). Every workflow job that runs a uv
+project command (`uv run`, `uv sync`, `uv lock` and so on) or uses
+`ci/toolchain/assert` must pin `UV_PYTHON_PREFERENCE=only-system` before that
+point: through this action, or with a job-level `env`. Jobs that resolve no
+version, such as the `ci-docs` and `cd-docs` docs jobs, use the job `env`. Every
+composite action or script that runs one must pin it on the step's `env` or
+inline on the command line. There are two exceptions:
+
+- `ci/toolchain/assert` is pinned by its caller.
+- `package/setup/detect.sh` reads `vergil.toml` in raw package-build images
+  that ship no Python, so it needs uv's managed interpreter.
+
+`uv tool` commands are not checked, because uv ignores a project's uv
+settings for them. Fixture workflows and actions test the guard both ways.
+
 ## Related
 
 - [`ci/toolchain/assert`](ci-toolchain-assert.md) — fails the leg if it runs a

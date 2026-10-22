@@ -23,8 +23,10 @@ name: Smoke - setup/vergil outputs
 #         fake uv/go, and the notice for other languages;
 #       - ci/toolchain/pin-python pin.sh: UV_PYTHON and
 #         UV_PYTHON_PREFERENCE=only-system written to GITHUB_ENV, loud failure
-#         on a bad version, and every Python leg of ci-quality, ci-audit and
-#         ci-test pinning through it;
+#         on a bad version, every Python leg of ci-quality, ci-audit and
+#         ci-test pinning through it, and every uv command in any workflow
+#         job or composite action pinning the interpreter source with
+#         UV_PYTHON_PREFERENCE=only-system (issue #1002);
 #       - the package setup action's detect.sh (self-repo vs.
 #         [dependencies].vergil install spec; epic vergil-project/.github#356)
 #         and os-prereqs.sh (apt mirror list on x86_64, fail-fast apt, one
@@ -36,16 +38,13 @@ name: Smoke - setup/vergil outputs
 on:
   workflow_dispatch:
   pull_request:
+    # The pin-python harness's uv source guard scans every workflow and every
+    # composite action, so a change to any of them can add an unpinned uv
+    # command (issue #1002). These two globs also cover the setup/vergil,
+    # toolchain, matrix and package setup actions the other harnesses test.
     paths:
-      - actions/shared/setup/vergil/**
-      - actions/ci/toolchain/assert/**
-      - actions/ci/toolchain/pin-python/**
-      - .github/workflows/ci-quality.yml
-      - .github/workflows/ci-audit.yml
-      - .github/workflows/ci-test.yml
-      - actions/ci/matrix/**
-      - actions/package/setup/**
-      - .github/workflows/smoke-setup-vergil.yml
+      - actions/**
+      - .github/workflows/**
 
 permissions:
   contents: read

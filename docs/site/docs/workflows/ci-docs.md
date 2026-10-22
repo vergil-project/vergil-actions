@@ -44,6 +44,22 @@ For Python repositories the build runs as `uv run mkdocs`; otherwise it runs
 `mkdocs` directly, matching the toolchain resolution in
 `actions/cd/docs/deploy`.
 
+### Interpreter source
+
+The `build` job sets `UV_PYTHON_PREFERENCE=only-system` in its job `env`, so
+every uv command in the job, including `uv run mkdocs`, uses the image's
+Python (`/usr/local/bin/python3` in `prod-base`). A repository may set uv's
+`python-preference` (for example `only-managed`). Without the pin, uv would
+download a managed Python for the docs build, or fail when the repository also
+sets `python-downloads = "manual"`. uv's environment variables take precedence
+over a repository's uv settings (epic vergil-project/.github#407, spec §6.5).
+
+Only the source is pinned. The job resolves no Python version, so `UV_PYTHON`
+is not set and uv picks the image's interpreter against the repository's
+`requires-python`. If the image cannot satisfy it, the build fails loudly.
+There is no fallback. Repositories that do not set these uv options build as
+before. Added in issue #1002.
+
 ### MkDocs 2.0 banner
 
 The "Build docs" step sets `NO_MKDOCS_2_WARNING=1`. Without it, mkdocs-material
