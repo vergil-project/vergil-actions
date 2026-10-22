@@ -6435,6 +6435,21 @@ when <code>version</code> is not an <code>x.y</code> version or <code>GITHUB_ENV
 (<code>tests/pin.test.sh</code>). The same harness also checks the CI workflows: every job
 with an <code>assert-toolchain</code> step must pin through this action, and no workflow
 may set <code>UV_PYTHON</code> by hand. The <code>smoke-setup-vergil</code> workflow runs the tests.</p>
+<p>The harness also guards the interpreter <strong>source</strong> everywhere uv runs against
+a repository's project (issue #1002). Every workflow job that runs a uv
+project command (<code>uv run</code>, <code>uv sync</code>, <code>uv lock</code> and so on) or uses
+<code>ci/toolchain/assert</code> must pin <code>UV_PYTHON_PREFERENCE=only-system</code> before that
+point: through this action, or with a job-level <code>env</code>. Jobs that resolve no
+version, such as the <code>ci-docs</code> and <code>cd-docs</code> docs jobs, use the job <code>env</code>. Every
+composite action or script that runs one must pin it on the step's <code>env</code> or
+inline on the command line. There are two exceptions:</p>
+<ul>
+<li><code>ci/toolchain/assert</code> is pinned by its caller.</li>
+<li><code>package/setup/detect.sh</code> reads <code>vergil.toml</code> in raw package-build images
+  that ship no Python, so it needs uv's managed interpreter.</li>
+</ul>
+<p><code>uv tool</code> commands are not checked, because uv ignores a project's uv
+settings for them. Fixture workflows and actions test the guard both ways.</p>
 <h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../ci-toolchain-assert/"><code>ci/toolchain/assert</code></a> — fails the leg if it runs a

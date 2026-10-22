@@ -4951,6 +4951,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#interpreter-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreter source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mkdocs-20-banner" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6415,6 +6426,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#interpreter-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreter source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mkdocs-20-banner" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6569,6 +6591,16 @@ rather than calling the composite action directly:</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
 </code></pre></div>
+<h3 id="interpreter-source">Interpreter source<a class="headerlink" href="#interpreter-source" title="Permanent link">&para;</a></h3>
+<p>The action's "Deploy docs" step sets <code>UV_PYTHON_PREFERENCE=only-system</code>, and
+the <code>cd-docs.yml</code> <code>docs</code> job sets it in its job <code>env</code> too, so it also reaches
+the pre-deploy command. For Python repositories, <code>uv run mike</code> and
+<code>uv run mkdocs</code> then use the image's Python, never a managed Python that uv
+downloads because the repository sets <code>python-preference = "only-managed"</code>. If
+the image cannot satisfy the repository's <code>requires-python</code>, the deploy fails
+loudly. Only the source is pinned: <code>UV_PYTHON</code> is not set (epic
+vergil-project/.github#407, spec §6.5; issue #1002). The pin is on the step,
+so a direct caller of this action gets it without setting anything.</p>
 <h3 id="mkdocs-20-banner">MkDocs 2.0 banner<a class="headerlink" href="#mkdocs-20-banner" title="Permanent link">&para;</a></h3>
 <p>The <code>cd-docs.yml</code> workflow sets <code>NO_MKDOCS_2_WARNING=1</code> on its "Deploy docs"
 step, which reaches the <code>mkdocs</code> and <code>mike</code> processes this action starts.
