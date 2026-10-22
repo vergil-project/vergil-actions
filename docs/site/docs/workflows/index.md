@@ -44,18 +44,24 @@ rulesets.
 
 ## Dynamic version matrix and evidence gates
 
-The matrixed CI workflows (`ci-audit`, `ci-quality`, `ci-test`) derive their
-version matrix from `[ci].versions` in the consumer's `vergil.toml` at run time,
-via the shared setup action's `versions` / `primary-version` outputs. A
+The matrixed CI workflows (`ci-audit`, `ci-quality`, `ci-test`) take their
+version matrix from
+[`vrg-ci-resolve`](../actions/shared-setup-vergil.md) at run time, via the shared setup action's
+outputs. The resolver reads the consumer's `vergil.toml` and the published
+language version window: a `library` builds the whole window, any other
+repository type builds one version, and a `[ci].versions` pin must lie inside
+the window. Each leg asserts that it runs the version it was resolved for
+([`ci/toolchain/assert`](../actions/ci-toolchain-assert.md)). A
 consumer's `ci.yml` is therefore a **thin caller** that passes only `language:`
 and `container-suffix:` — it no longer passes `versions:` or `container-tag:`.
 Those two inputs are still accepted for back-compat but are deprecated and
 slated for removal (see each workflow's inputs table and
 [#876](https://github.com/vergil-project/vergil-actions/issues/876)).
 
-Single-container workflows (`ci-security`, `ci-version-bump`, `ci-docs`) run on
-the primary version = `[ci].primary-version` if set, else the highest
-`[ci].versions` entry (family-routed to the published container tag for `cpp`).
+Single-container jobs (`ci-quality`'s `common`, `ci-version-bump`) run on the
+resolver's primary version: `[ci].primary-version` if set, else the newest
+resolved version, at the resolver's image tag for it (`clang-20` runs on tag
+`20`).
 
 Each matrixed workflow emits a stable, version-agnostic aggregate gate named
 `<kind> / evidence` — `audit / evidence`, `quality / evidence`, and

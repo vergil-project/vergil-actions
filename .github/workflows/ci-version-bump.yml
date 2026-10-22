@@ -28,15 +28,14 @@ on:
           Container image name prefix (prod or dev). Defaults to "prod".
 
 jobs:
-  # Derive `primary-container-tag` from [ci].versions in vergil.toml so the
-  # single-container version-bump job can resolve its image tag without a
-  # hand-set `container-tag` input (epic vergil-project/.github#338, Task 7).
-  # The tag is family-routed: for family-on-token languages (cpp, typescript)
-  # the version carries the compiler/runtime family (clang-20) but the published
-  # image tag is the numeric part (20), so using the raw `primary-version`
-  # resolved the nonexistent prod-cpp-clang:clang-20 (issue #893).
-  # `primary-container-tag` applies the same split as actions/ci/matrix/resolve.sh
-  # (the source of truth); every other language keeps the version verbatim. The
+  # Resolve `primary-container-tag` with vrg-ci-resolve (via the shared setup
+  # action) so the single-container version-bump job can resolve its image tag
+  # without a hand-set `container-tag` input (epics vergil-project/.github#338
+  # and #407). It is the resolver's image tag for the primary version: for
+  # family-on-token languages (cpp, typescript) the version carries the
+  # compiler/runtime family (clang-20) but the published image tag is the
+  # numeric part (20), so using the raw `primary-version` resolved the
+  # nonexistent prod-cpp-clang:clang-20 (issue #893). The
   # job's `container:` is evaluated before any step runs, so the value must come
   # from a preceding job — mirroring how the matrix workflows resolve their image
   # in a separate `matrix` job.
@@ -49,11 +48,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Resolve primary-container-tag from vergil.toml
+      - name: Resolve primary-container-tag with vrg-ci-resolve
         id: derive
         uses: ./actions/shared/setup/vergil
-        with:
-          language: ${{ inputs.language }}
 
   version-bump:
     name: version-bump

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       language:
-        description: Language for security scanners (e.g., ruby, python, go, java)
+        description: Language for security scanners (e.g., python, go, java)
         type: string
         required: true
       run-standards:

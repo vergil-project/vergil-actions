@@ -5,44 +5,54 @@ description: >-
   vergil-tooling itself, runs uv sync to install from source so CI
   validates the PR's code instead of the released version.
 
-  Also derives the CI version set from vergil.toml and exposes it as the
-  `versions` (JSON array), `primary-version`, and `primary-container-tag`
-  outputs, so reusable workflows read their matrix from vergil.toml rather than
-  hardcoded inputs (epic vergil-project/.github#338).
+  Then resolves the CI version set by calling the single resolver,
+  `vrg-ci-resolve`, against the published language version window, and
+  exposes its answer as the `versions` (JSON array), `primary-version`,
+  `primary-container-tag`, `container-tags` and `container-suffixes` outputs,
+  so reusable workflows read their matrix from the resolver rather than from
+  hardcoded inputs (epics vergil-project/.github#338 and #407).
 
 inputs:
-  language:
+  version-window:
     description: >-
-      Primary language of the calling repo (e.g. python, cpp, shell). Optional:
-      used only to family-route `primary-container-tag` for family-on-token
-      languages (cpp, typescript), mirroring actions/ci/matrix/resolve.sh. When
-      omitted, `primary-container-tag` is the primary version verbatim.
+      Path to a local window.json for the resolver to read instead of the
+      published window, exported as VRG_VERSION_WINDOW for the Derive step.
+      For tests only: leave it empty in real workflows so the resolver reads
+      the window published at the [dependencies].vergil ref.
     required: false
     default: ""
 
 outputs:
   versions:
     description: >-
-      The `[ci].versions` list from vergil.toml as a compact JSON array
-      string (e.g. '["3.12","3.13","3.14"]'). Consumed by the `matrix` job to
-      fan out per-version legs.
+      The resolved CI versions, newest first, as a compact JSON array string
+      (e.g. '["3.14","3.13","3.12"]'). Consumed by the `matrix` job to fan out
+      per-version legs.
     value: ${{ steps.derive.outputs.versions }}
   primary-version:
     description: >-
-      The single primary version: `[ci].primary-version` when set explicitly,
-      otherwise the highest entry in `[ci].versions` by natural/semantic sort.
-      Consumed by single-container jobs and as the run-once container tag.
+      The primary version: `[ci].primary-version` when set, otherwise the
+      newest resolved version. Consumed by single-container jobs and the
+      run-once kinds.
     value: ${{ steps.derive.outputs.primary-version }}
   primary-container-tag:
     description: >-
-      The family-routed container tag of the primary version: for
-      family-on-token languages (cpp, typescript) the part after the family
-      prefix (clang-20 -> 20), mirroring actions/ci/matrix/resolve.sh; every
-      other language keeps the version verbatim (3.14 -> 3.14, latest ->
-      latest). Consumed by the single-container jobs `common` (ci-quality) and
-      `version-bump` (ci-version-bump) so they resolve prod-cpp-clang:20, not
-      the nonexistent prod-cpp-clang:clang-20 (issue #893).
+      The image tag of the primary version, as the resolver gives it
+      (clang-20 -> 20, node-24 -> 24, 3.14 -> 3.14, latest -> latest).
+      Consumed by the single-container jobs `common` (ci-quality) and
+      `version-bump` (ci-version-bump).
     value: ${{ steps.derive.outputs.primary-container-tag }}
+  container-tags:
+    description: >-
+      Compact JSON object mapping each resolved version to its image tag
+      (e.g. '{"clang-20":"20","gcc-14":"14"}'). Consumed by actions/ci/matrix.
+    value: ${{ steps.derive.outputs.container-tags }}
+  container-suffixes:
+    description: >-
+      Compact JSON object mapping each resolved version to its image suffix
+      (e.g. '{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}'). Consumed by
+      actions/ci/matrix.
+    value: ${{ steps.derive.outputs.container-suffixes }}
 
 runs:
   using: composite
@@ -81,9 +91,13 @@ runs:
         TAG=$(bash "${GITHUB_ACTION_PATH}/read-pin.sh") || exit 1
         uv tool install "vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@${TAG}"
 
-    - name: Derive CI versions from vergil.toml
+    # Calls vrg-ci-resolve (installed by the step above). A step-level env key
+    # cannot be set conditionally, so the optional `version-window` input rides
+    # as VERSION_WINDOW and derive.sh exports it as VRG_VERSION_WINDOW only
+    # when it is non-empty: an unset input never overrides the published window.
+    - name: Derive CI versions with vrg-ci-resolve
       id: derive
       shell: bash
       env:
-        LANGUAGE: ${{ inputs.language }}
+        VERSION_WINDOW: ${{ inputs.version-window }}
       run: bash "${GITHUB_ACTION_PATH}/derive.sh"
