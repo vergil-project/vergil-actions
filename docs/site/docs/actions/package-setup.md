@@ -135,7 +135,10 @@ in `ci-package.yml`, and `package-matrix` 5, `package-build` 30 and
   against a pinned sha256, and installs `uv` into `/usr/local/bin`.
 - **Install vergil-tooling.** `detect.sh` resolves the install spec. In
   `vergil-tooling` itself it is the checkout, so CI exercises the PR's own
-  `vrg-package`. Elsewhere it is `[dependencies].vergil` from `vergil.toml`.
+  `vrg-package`. Elsewhere it is `[dependencies].vergil` from `vergil.toml`,
+  read with `uv run --no-config` under a uv-managed Python 3.14. `--no-config`
+  ignores the repository's uv settings (`[tool.uv]`, `uv.toml`), so settings
+  such as `python-downloads = "manual"` cannot stop the download.
   The tools land in uv's tool bin directory under `$HOME`, never in
   `/usr/local/bin`. That way install-test smoke checks, which run with a
   system-only `PATH`, cannot resolve this copy.
