@@ -28,6 +28,16 @@ jobs:
     name: docs
     runs-on: ubuntu-latest
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    # Pin uv's interpreter source to the image (spec §6.5 of epic
+    # vergil-project/.github#407): every uv command in this job, including the
+    # pre-deploy command and `uv run mike`/`uv run mkdocs` for Python repos,
+    # uses the image's Python and never one uv downloads because a repo sets
+    # `python-preference = "only-managed"`. If the image cannot satisfy the
+    # repo's requires-python, uv fails loudly; there is no fallback. Only the
+    # source is pinned: this job resolves no Python version, so UV_PYTHON stays
+    # unset (issue #1002).
+    env:
+      UV_PYTHON_PREFERENCE: only-system
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

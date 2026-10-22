@@ -1,8 +1,9 @@
 name: Install vergil-tooling
 description: >-
   Reads the pinned vergil version from vergil.toml
-  and installs it via uv tool install. When the consumer repo is
-  vergil-tooling itself, runs uv sync to install from source so CI
+  and installs it via `uv tool install`. When the consumer repo is
+  vergil-tooling itself, runs `uv sync` (pinned to the image's interpreter
+  with UV_PYTHON_PREFERENCE=only-system) to install from source so CI
   validates the PR's code instead of the released version.
 
   Then resolves the CI version set by calling the single resolver,
@@ -81,7 +82,12 @@ runs:
       run: |
         if grep -q '^name = "vergil-tooling"' pyproject.toml 2>/dev/null; then
           echo "Consumer repo is vergil-tooling itself — installing from source"
-          uv sync --frozen --group dev
+          # A project command, so it honours the repo's uv settings: pin the
+          # interpreter source to the image's Python (never a download; epic
+          # vergil-project/.github#407 spec §6.5, issue #1002). The
+          # `uv tool install` below needs no pin: uv tool commands ignore a
+          # project's uv settings.
+          UV_PYTHON_PREFERENCE=only-system uv sync --frozen --group dev
           echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
           exit 0
         fi
