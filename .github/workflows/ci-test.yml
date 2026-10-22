@@ -72,16 +72,16 @@ jobs:
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
-      # Hand uv the leg's resolved version (spec §6.5 of epic
-      # vergil-project/.github#407), so the dependency install and every check
-      # below run on the image's interpreter for this leg, not one a repo file
-      # selects.
-      - name: Pin uv to the leg's Python version
+      # Hand uv the leg's resolved version and pin its source to the image
+      # (spec §6.5 of epic vergil-project/.github#407): UV_PYTHON plus
+      # UV_PYTHON_PREFERENCE=only-system, so the dependency install and every
+      # check below run on the image's interpreter for this leg, never one a
+      # repo file selects or uv downloads.
+      - name: Pin uv to the leg's Python interpreter
         if: inputs.language == 'python'
-        shell: bash
-        env:
-          VERSION: ${{ matrix.version }}
-        run: echo "UV_PYTHON=${VERSION}" >> "$GITHUB_ENV"
+        uses: ./actions/ci/toolchain/pin-python
+        with:
+          version: ${{ matrix.version }}
 
       # Test-runtime dependency only (spec §3.3): the declared
       # [container].system-packages install onto jobs that execute the repo's
