@@ -799,6 +799,8 @@
       
         
       
+        
+      
     
     
     
@@ -851,6 +853,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.48/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.48
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4301,6 +4331,8 @@
       
         
       
+        
+      
     
     
     
@@ -4448,6 +4480,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-toolchain-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/assert
   
 
     
@@ -6342,25 +6402,19 @@ repositories. Consuming repositories set its behavior through the
 <td><code>cargo-registry-token</code></td>
 <td>No</td>
 <td><code>""</code></td>
-<td>Rust: crates.io token.</td>
-</tr>
-<tr>
-<td><code>rubygems-api-key</code></td>
-<td>No</td>
-<td><code>""</code></td>
-<td>Ruby: RubyGems API key. Unused: vergil-tooling no longer supports Ruby.</td>
+<td>Rust: crates.io token. Exported as <code>CARGO_REGISTRY_TOKEN</code>, which <code>cargo publish</code> reads.</td>
 </tr>
 <tr>
 <td><code>central-username</code></td>
 <td>No</td>
 <td><code>""</code></td>
-<td>Java: Maven Central username.</td>
+<td>Java: Maven Central username. Exported as <code>MAVEN_USERNAME</code>.</td>
 </tr>
 <tr>
 <td><code>central-token</code></td>
 <td>No</td>
 <td><code>""</code></td>
-<td>Java: Maven Central token.</td>
+<td>Java: Maven Central token. Exported as <code>MAVEN_PASSWORD</code>.</td>
 </tr>
 <tr>
 <td><code>gpg-private-key</code></td>
@@ -6372,7 +6426,7 @@ repositories. Consuming repositories set its behavior through the
 <td><code>gpg-passphrase</code></td>
 <td>No</td>
 <td><code>""</code></td>
-<td>Java: GPG passphrase.</td>
+<td>Java: GPG passphrase. Exported as <code>MAVEN_GPG_PASSPHRASE</code>, which <code>maven-gpg-plugin</code> reads.</td>
 </tr>
 </tbody>
 </table>
@@ -6415,7 +6469,7 @@ repositories. Consuming repositories set its behavior through the
 <td><code>python</code></td>
 <td><code>uv build</code></td>
 <td><code>uv publish</code></td>
-<td><code>PYPI_TOKEN</code></td>
+<td>none (PyPI trusted publishing)</td>
 </tr>
 <tr>
 <td><code>java</code></td>
@@ -6427,7 +6481,7 @@ repositories. Consuming repositories set its behavior through the
 <td><code>rust</code></td>
 <td><code>cargo build --release</code></td>
 <td><code>cargo publish</code></td>
-<td><code>CRATES_IO_TOKEN</code></td>
+<td><code>CARGO_REGISTRY_TOKEN</code></td>
 </tr>
 <tr>
 <td><code>go</code></td>
@@ -6455,18 +6509,26 @@ repositories. Consuming repositories set its behavior through the
 <li><strong>Generate SBOM.</strong> Runs <a href="../shared-security-trivy/"><code>shared/security/trivy</code></a>
    with <code>scan-type: sbom</code>. Skipped when <code>sbom-output-file</code> is empty.</li>
 <li><strong>Publish.</strong> Runs only when <code>registry-publish</code> is <code>"true"</code> and there is a
-   publish command. If the ecosystem names a credential variable and that
-   variable is empty in the step environment, the step logs
-   <code>&lt;variable&gt; not configured — skipping publish</code> and exits 0 without
-   publishing. The step maps the inputs to <code>CARGO_REGISTRY_TOKEN</code>,
-   <code>GEM_HOST_API_KEY</code>, <code>MAVEN_USERNAME</code>, <code>MAVEN_PASSWORD</code> and
-   <code>MAVEN_GPG_PASSPHRASE</code>.</li>
+   publish command. The step sets <code>CARGO_REGISTRY_TOKEN</code>, <code>MAVEN_USERNAME</code>,
+   <code>MAVEN_PASSWORD</code> and <code>MAVEN_GPG_PASSPHRASE</code> from the inputs, then runs
+   <code>publish.sh</code>. When the ecosystem names a credential variable and that
+   variable is empty, the step fails with an <code>::error::</code> naming the
+   <code>cd-release</code> secret to set (or telling you to turn <code>registry-publish</code>
+   off): <code>CARGO_REGISTRY_TOKEN</code> comes from the <code>CARGO_REGISTRY_TOKEN</code> secret
+   and <code>MAVEN_GPG_PASSPHRASE</code> from the <code>GPG_PASSPHRASE</code> secret. A requested
+   publish that cannot happen never lets the release report success. A
+   credential variable this action does not set also fails the step, since
+   it means vergil-tooling and vergil-actions disagree on the name. Python
+   names no credential: <code>uv publish</code> uses PyPI trusted publishing, which
+   needs <code>id-token: write</code> and a trusted publisher configured for the
+   project on PyPI.</li>
 </ol>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>contents: read</code> to build</li>
 <li><code>id-token: write</code> and <code>attestations: write</code> when <code>attestation-subject-path</code>
   is set</li>
+<li><code>id-token: write</code> to publish a <code>python</code> release (PyPI trusted publishing)</li>
 </ul>
 
 

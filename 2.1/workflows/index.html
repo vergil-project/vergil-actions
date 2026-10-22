@@ -799,6 +799,8 @@
       
         
       
+        
+      
     
     
     
@@ -851,6 +853,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.48/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.48
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4296,6 +4326,8 @@
       
         
       
+        
+      
     
     
     
@@ -4440,6 +4472,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/ci-toolchain-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/assert
   
 
     
@@ -6300,17 +6360,23 @@ rulesets.</p>
 </tbody>
 </table>
 <h2 id="dynamic-version-matrix-and-evidence-gates">Dynamic version matrix and evidence gates<a class="headerlink" href="#dynamic-version-matrix-and-evidence-gates" title="Permanent link">&para;</a></h2>
-<p>The matrixed CI workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) derive their
-version matrix from <code>[ci].versions</code> in the consumer's <code>vergil.toml</code> at run time,
-via the shared setup action's <code>versions</code> / <code>primary-version</code> outputs. A
+<p>The matrixed CI workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) take their
+version matrix from
+<a href="../actions/shared-setup-vergil/"><code>vrg-ci-resolve</code></a> at run time, via the shared setup action's
+outputs. The resolver reads the consumer's <code>vergil.toml</code> and the published
+language version window: a <code>library</code> builds the whole window, any other
+repository type builds one version, and a <code>[ci].versions</code> pin must lie inside
+the window. Each leg asserts that it runs the version it was resolved for
+(<a href="../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>). A
 consumer's <code>ci.yml</code> is therefore a <strong>thin caller</strong> that passes only <code>language:</code>
 and <code>container-suffix:</code> — it no longer passes <code>versions:</code> or <code>container-tag:</code>.
 Those two inputs are still accepted for back-compat but are deprecated and
 slated for removal (see each workflow's inputs table and
 <a href="https://github.com/vergil-project/vergil-actions/issues/876">#876</a>).</p>
-<p>Single-container workflows (<code>ci-security</code>, <code>ci-version-bump</code>, <code>ci-docs</code>) run on
-the primary version = <code>[ci].primary-version</code> if set, else the highest
-<code>[ci].versions</code> entry (family-routed to the published container tag for <code>cpp</code>).</p>
+<p>Single-container jobs (<code>ci-quality</code>'s <code>common</code>, <code>ci-version-bump</code>) run on the
+resolver's primary version: <code>[ci].primary-version</code> if set, else the newest
+resolved version, at the resolver's image tag for it (<code>clang-20</code> runs on tag
+<code>20</code>).</p>
 <p>Each matrixed workflow emits a stable, version-agnostic aggregate gate named
 <code>&lt;kind&gt; / evidence</code> — <code>audit / evidence</code>, <code>quality / evidence</code>, and
 <code>test / evidence</code>. The evidence job <code>needs</code> every matrix leg and runs with

@@ -16,7 +16,7 @@
         <link rel="prev" href="../ci-version-bump-version-divergence/">
       
       
-        <link rel="next" href="../ci-evidence-emit/">
+        <link rel="next" href="../ci-toolchain-assert/">
       
       
         
@@ -799,6 +799,8 @@
       
         
       
+        
+      
     
     
     
@@ -851,6 +853,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.48/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.48
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4303,6 +4333,8 @@
       
         
       
+        
+      
     
     
     
@@ -4535,10 +4567,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#image-routing" class="md-nav__link">
+  <a href="#images" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Image routing
+        Images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failures
       
     </span>
   </a>
@@ -4571,6 +4614,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-toolchain-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/assert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -6216,10 +6287,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#image-routing" class="md-nav__link">
+  <a href="#images" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Image routing
+        Images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failures
       
     </span>
   </a>
@@ -6266,13 +6348,15 @@
 
 
 <h1 id="cimatrix">ci/matrix<a class="headerlink" href="#cimatrix" title="Permanent link">&para;</a></h1>
-<p>Resolves the per-version job matrix for a reusable CI workflow. Each matrix
+<p>Builds the per-version job matrix for a reusable CI workflow. Each matrix
 entry carries the version label, used in the job and check name, and the fully
 qualified container image the leg runs in.</p>
+<p>The versions, and the image suffix and tag of each, come from the single
+resolver, <code>vrg-ci-resolve</code>, by way of the outputs of
+<a href="../shared-setup-vergil/"><code>shared/setup/vergil</code></a>. This action does no version
+or family routing of its own.</p>
 <p>This action is <strong>wired automatically</strong> into the <code>matrix</code> job of <code>ci-quality</code>,
-<code>ci-audit</code> and <code>ci-test</code>, which pass it the <code>versions</code> output of
-<a href="https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/setup/vergil/action.yml"><code>shared/setup/vergil</code></a>.
-Consuming repositories do not add it themselves.</p>
+<code>ci-audit</code> and <code>ci-test</code>. Consuming repositories do not add it themselves.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Install vergil-tooling</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setup</span>
@@ -6284,7 +6368,10 @@ Consuming repositories do not add it themselves.</p>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">versions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.setup.outputs.versions }}</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">container-suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">primary-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.setup.outputs.primary-version }}</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">container-tags</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.setup.outputs.container-tags }}</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">container-suffixes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.setup.outputs.container-suffixes }}</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">container-suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 </code></pre></div>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
@@ -6301,13 +6388,31 @@ Consuming repositories do not add it themselves.</p>
 <td><code>language</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Primary language of the calling repository (e.g. <code>python</code>, <code>cpp</code>, <code>shell</code>). Selects the image-routing rule and the run-once collapse.</td>
+<td>Primary language of the calling repository (e.g. <code>python</code>, <code>cpp</code>, <code>shell</code>). Selects the run-once collapse only.</td>
 </tr>
 <tr>
 <td><code>versions</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>JSON array string of version tokens, e.g. <code>["3.12","3.13","3.14"]</code> or <code>["clang-20","gcc-14"]</code>.</td>
+<td>The setup action's <code>versions</code> output, e.g. <code>["3.14","3.13"]</code> or <code>["clang-20","gcc-14"]</code>.</td>
+</tr>
+<tr>
+<td><code>primary-version</code></td>
+<td>Yes</td>
+<td>—</td>
+<td>The setup action's <code>primary-version</code> output.</td>
+</tr>
+<tr>
+<td><code>container-tags</code></td>
+<td>Yes</td>
+<td>—</td>
+<td>The setup action's <code>container-tags</code> output: version to image tag.</td>
+</tr>
+<tr>
+<td><code>container-suffixes</code></td>
+<td>Yes</td>
+<td>—</td>
+<td>The setup action's <code>container-suffixes</code> output: version to image suffix.</td>
 </tr>
 <tr>
 <td><code>container-prefix</code></td>
@@ -6319,7 +6424,7 @@ Consuming repositories do not add it themselves.</p>
 <td><code>container-suffix</code></td>
 <td>No</td>
 <td><code>""</code></td>
-<td>Container image name suffix for single-suffix languages (e.g. <code>python</code>, <code>go</code>, <code>base</code>), and the runtime family for TypeScript (<code>ts-node</code>). Ignored for C++.</td>
+<td>The calling workflow's <code>container-suffix</code>, used only as a cross-check. When set, it must be one of the resolved suffixes.</td>
 </tr>
 </tbody>
 </table>
@@ -6334,53 +6439,75 @@ Consuming repositories do not add it themselves.</p>
 <tbody>
 <tr>
 <td><code>all</code></td>
-<td>JSON array of <code>{version, image}</code> objects, one per configured version. Used by per-version kinds (TEST always; TYPECHECK for C++ and the single-suffix languages).</td>
+<td>JSON array of <code>{version, image}</code> objects, one per resolved version. Used by per-version kinds (TEST always; TYPECHECK for C++ and the single-suffix languages).</td>
 </tr>
 <tr>
 <td><code>once</code></td>
-<td>The same array collapsed to the first version for C++ and TypeScript; identical to <code>all</code> for every other language. Used by run-once kinds (LINT and AUDIT; TYPECHECK too for TypeScript).</td>
+<td>The primary version's entry alone for C++ and TypeScript; identical to <code>all</code> for every other language. Used by run-once kinds (LINT and AUDIT; TYPECHECK too for TypeScript).</td>
 </tr>
 </tbody>
 </table>
-<h2 id="image-routing">Image routing<a class="headerlink" href="#image-routing" title="Permanent link">&para;</a></h2>
-<p>Every image is <code>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;suffix&gt;:&lt;tag&gt;</code>. How the suffix
-and tag are chosen depends on <code>language</code>:</p>
+<h2 id="images">Images<a class="headerlink" href="#images" title="Permanent link">&para;</a></h2>
+<p>Every image is
+<code>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;container-suffixes[v]&gt;:&lt;container-tags[v]&gt;</code>,
+for every language:</p>
 <table>
 <thead>
 <tr>
-<th>Language</th>
-<th>Rule</th>
-<th>Example</th>
+<th>Version</th>
+<th>Resolver's suffix and tag</th>
+<th>Image</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>cpp</code></td>
-<td>The compiler family rides the version token. The token is split at the first <code>-</code>: the family goes into the suffix, the rest is the tag. <code>container-suffix</code> is ignored.</td>
-<td><code>clang-20</code> → <code>prod-cpp-clang:20</code></td>
+<td><code>clang-20</code></td>
+<td><code>cpp-clang</code>, <code>20</code></td>
+<td><code>prod-cpp-clang:20</code></td>
 </tr>
 <tr>
-<td><code>typescript</code></td>
-<td>The Node major rides the version token. The suffix is <code>container-suffix</code> (or <code>ts-&lt;family&gt;</code> when it is empty), and the part after the first <code>-</code> is the tag.</td>
-<td><code>node-24</code> with suffix <code>ts-node</code> → <code>prod-ts-node:24</code></td>
+<td><code>gcc-14</code></td>
+<td><code>cpp-gcc</code>, <code>14</code></td>
+<td><code>prod-cpp-gcc:14</code></td>
 </tr>
 <tr>
-<td>Any other</td>
-<td>The version is the tag unchanged. The suffix is <code>container-suffix</code>, or the language name when it is empty.</td>
-<td><code>3.14</code> with suffix <code>python</code> → <code>prod-python:3.14</code></td>
+<td><code>node-24</code></td>
+<td><code>ts-node</code>, <code>24</code></td>
+<td><code>prod-ts-node:24</code></td>
+</tr>
+<tr>
+<td><code>3.14</code></td>
+<td><code>python</code>, <code>3.14</code></td>
+<td><code>prod-python:3.14</code></td>
+</tr>
+<tr>
+<td><code>latest</code> (no language)</td>
+<td><code>base</code>, <code>latest</code></td>
+<td><code>prod-base:latest</code></td>
 </tr>
 </tbody>
 </table>
+<h2 id="failures">Failures<a class="headerlink" href="#failures" title="Permanent link">&para;</a></h2>
+<p>The action fails with an <code>::error::</code> annotation, and writes no matrix, when:</p>
+<ul>
+<li>an input is empty, or <code>versions</code> is not a non-empty JSON array;</li>
+<li>a version has no tag in <code>container-tags</code> or no suffix in
+  <code>container-suffixes</code>;</li>
+<li><code>primary-version</code> is not one of <code>versions</code>;</li>
+<li><code>container-suffix</code> is set but is not one of the resolved suffixes. The
+  workflow's inputs and the repository's <code>vergil.toml</code> then disagree on the
+  language (for example <code>container-suffix: python</code> with no
+  <code>[project].primary-language</code>, which resolves to <code>prod-base:latest</code>), and the
+  legs would run on the wrong image.</li>
+</ul>
 <h2 id="run-once-kinds">Run-once kinds<a class="headerlink" href="#run-once-kinds" title="Permanent link">&para;</a></h2>
-<p>For C++ and TypeScript some check kinds run once, on the first version, rather
-than once per version: LINT and AUDIT for C++; LINT, AUDIT and TYPECHECK for
-TypeScript. The <code>once</code> output gives those jobs a one-entry matrix. This matches
-the run-once gates that vergil-tooling's <code>desired_ci_gates_ruleset()</code> keys to
-<code>[ci].versions[0]</code>, so the jobs CI runs and the checks the ruleset requires
-stay in step.</p>
+<p>For C++ and TypeScript some check kinds run once, on the primary version,
+rather than once per version: LINT and AUDIT for C++; LINT, AUDIT and TYPECHECK
+for TypeScript. The <code>once</code> output gives those jobs a one-entry matrix.</p>
 <h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h2>
 <p>The logic is in <code>resolve.sh</code> next to <code>action.yml</code>, so it can be unit tested
-(<code>tests/resolve.test.sh</code>). The step prints both resolved arrays to the job log.</p>
+(<code>tests/resolve.test.sh</code>). The step prints both resolved arrays to the job log.
+The <code>smoke-setup-vergil</code> workflow runs the tests.</p>
 
 
 
