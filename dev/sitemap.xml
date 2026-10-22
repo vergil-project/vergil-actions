@@ -65,6 +65,10 @@
          <lastmod>2026-10-22</lastmod>
     </url>
     <url>
+         <loc>https://vergil-project.github.io/vergil-actions/dev/actions/ci-toolchain-pin-python/</loc>
+         <lastmod>2026-10-22</lastmod>
+    </url>
+    <url>
          <loc>https://vergil-project.github.io/vergil-actions/dev/actions/ci-version-bump-version-divergence/</loc>
          <lastmod>2026-10-22</lastmod>
     </url>

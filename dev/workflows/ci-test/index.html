@@ -4328,6 +4328,8 @@
       
         
       
+        
+      
     
     
     
@@ -4472,6 +4474,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-pin-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/pin-python
   
 
     
@@ -6369,8 +6399,10 @@
 <a href="../../actions/shared-setup-vergil/"><code>vrg-ci-resolve</code></a> at run time: the workflow's <code>matrix</code> job
 runs the shared setup action, which calls the resolver, and passes its
 versions, image tags and image suffixes to
-<a href="../../actions/ci-matrix/"><code>ci/matrix</code></a>. Each leg pins uv to its version (Python)
-and then asserts the running toolchain with
+<a href="../../actions/ci-matrix/"><code>ci/matrix</code></a>. Each leg pins uv to its version and to
+the image's interpreter (Python, with
+<a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and then
+asserts the running toolchain with
 <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>. Callers are
 thin: they pass only <code>language:</code> and <code>container-suffix:</code>.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
