@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.48] - 2026-10-22
+
+### Bug fixes
+
+- fail a requested publish whose credential is missing, and drop Ruby (#988)
+
+### Documentation
+
+- link the new action pages and document the setup/vergil and registry-publish changes (#989)
+
+### Features
+
+- derive CI versions through vrg-ci-resolve and assert the running toolchain (#990)
+
 ## [2.1.47] - 2026-10-21
 
 ### Bug fixes
