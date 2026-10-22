@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "languages": {
+    "python": {
+      "families": [
+        {
+          "key": "python",
+          "token_prefix": "",
+          "versions": [
+            {
+              "version": "3.15",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": false
+            },
+            {
+              "version": "3.14",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": true
+            },
+            {
+              "version": "3.13",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": false
+            }
+          ]
+        }
+      ]
+    },
+    "go": {
+      "families": [
+        {
+          "key": "go",
+          "token_prefix": "",
+          "versions": [
+            {
+              "version": "1.26",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": null
+            },
+            {
+              "version": "1.25",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": null
+            }
+          ]
+        }
+      ]
+    },
+    "cpp": {
+      "families": [
+        {
+          "key": "cpp-clang",
+          "token_prefix": "clang-",
+          "versions": [
+            {
+              "version": "20",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": null
+            },
+            {
+              "version": "19",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": null
+            }
+          ]
+        },
+        {
+          "key": "cpp-gcc",
+          "token_prefix": "gcc-",
+          "versions": [
+            {
+              "version": "14",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": null
+            }
+          ]
+        }
+      ]
+    },
+    "typescript": {
+      "families": [
+        {
+          "key": "ts-node",
+          "token_prefix": "node-",
+          "versions": [
+            {
+              "version": "24",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": null
+            },
+            {
+              "version": "22",
+              "eol": null,
+              "in_policy": true,
+              "runtime_published": null
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

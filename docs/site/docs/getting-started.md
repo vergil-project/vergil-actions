@@ -115,7 +115,6 @@ the publishing credentials the target ecosystem needs, never a blanket
 | `python` | None — OIDC trusted publishing (requires `id-token: write`) |
 | `go` | None |
 | `rust` | `CARGO_REGISTRY_TOKEN` |
-| `ruby` | `RUBYGEMS_API_KEY` |
 | `java` | `CENTRAL_USERNAME`, `CENTRAL_TOKEN`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` |
 
 For example, a Rust release job forwards a single least-privilege secret:

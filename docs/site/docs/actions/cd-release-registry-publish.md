@@ -36,12 +36,11 @@ The action needs `vergil-tooling` on `PATH`.
 | `publish-command` | No | `""` | Replaces the ecosystem publish command. |
 | `attestation-subject-path` | No | `""` | Glob of build outputs to attest with `actions/attest-build-provenance`. Empty skips attestation. |
 | `sbom-output-file` | No | `""` | SBOM output path; `$VERSION` is replaced with the version. Empty skips the SBOM. |
-| `cargo-registry-token` | No | `""` | Rust: crates.io token. |
-| `rubygems-api-key` | No | `""` | Ruby: RubyGems API key. Unused: vergil-tooling no longer supports Ruby. |
-| `central-username` | No | `""` | Java: Maven Central username. |
-| `central-token` | No | `""` | Java: Maven Central token. |
+| `cargo-registry-token` | No | `""` | Rust: crates.io token. Exported as `CARGO_REGISTRY_TOKEN`, which `cargo publish` reads. |
+| `central-username` | No | `""` | Java: Maven Central username. Exported as `MAVEN_USERNAME`. |
+| `central-token` | No | `""` | Java: Maven Central token. Exported as `MAVEN_PASSWORD`. |
 | `gpg-private-key` | No | `""` | Java: GPG signing key. |
-| `gpg-passphrase` | No | `""` | Java: GPG passphrase. |
+| `gpg-passphrase` | No | `""` | Java: GPG passphrase. Exported as `MAVEN_GPG_PASSPHRASE`, which `maven-gpg-plugin` reads. |
 
 ## Outputs
 
@@ -57,9 +56,9 @@ The derived commands come from vergil-tooling's language registry:
 
 | Language | Build | Publish | Credential variable |
 | -------- | ----- | ------- | ------------------- |
-| `python` | `uv build` | `uv publish` | `PYPI_TOKEN` |
+| `python` | `uv build` | `uv publish` | none (PyPI trusted publishing) |
 | `java` | `./mvnw package -B` | `./mvnw deploy -B` | `MAVEN_GPG_PASSPHRASE` |
-| `rust` | `cargo build --release` | `cargo publish` | `CRATES_IO_TOKEN` |
+| `rust` | `cargo build --release` | `cargo publish` | `CARGO_REGISTRY_TOKEN` |
 | `go` | `go build ./...` | none | none |
 
 ## Behavior
@@ -80,15 +79,23 @@ The derived commands come from vergil-tooling's language registry:
 6. **Generate SBOM.** Runs [`shared/security/trivy`](shared-security-trivy.md)
    with `scan-type: sbom`. Skipped when `sbom-output-file` is empty.
 7. **Publish.** Runs only when `registry-publish` is `"true"` and there is a
-   publish command. If the ecosystem names a credential variable and that
-   variable is empty in the step environment, the step logs
-   `<variable> not configured — skipping publish` and exits 0 without
-   publishing. The step maps the inputs to `CARGO_REGISTRY_TOKEN`,
-   `GEM_HOST_API_KEY`, `MAVEN_USERNAME`, `MAVEN_PASSWORD` and
-   `MAVEN_GPG_PASSPHRASE`.
+   publish command. The step sets `CARGO_REGISTRY_TOKEN`, `MAVEN_USERNAME`,
+   `MAVEN_PASSWORD` and `MAVEN_GPG_PASSPHRASE` from the inputs, then runs
+   `publish.sh`. When the ecosystem names a credential variable and that
+   variable is empty, the step fails with an `::error::` naming the
+   `cd-release` secret to set (or telling you to turn `registry-publish`
+   off): `CARGO_REGISTRY_TOKEN` comes from the `CARGO_REGISTRY_TOKEN` secret
+   and `MAVEN_GPG_PASSPHRASE` from the `GPG_PASSPHRASE` secret. A requested
+   publish that cannot happen never lets the release report success. A
+   credential variable this action does not set also fails the step, since
+   it means vergil-tooling and vergil-actions disagree on the name. Python
+   names no credential: `uv publish` uses PyPI trusted publishing, which
+   needs `id-token: write` and a trusted publisher configured for the
+   project on PyPI.
 
 ## Permissions
 
 - `contents: read` to build
 - `id-token: write` and `attestations: write` when `attestation-subject-path`
   is set
+- `id-token: write` to publish a `python` release (PyPI trusted publishing)

@@ -1,13 +1,16 @@
 # ci/matrix
 
-Resolves the per-version job matrix for a reusable CI workflow. Each matrix
+Builds the per-version job matrix for a reusable CI workflow. Each matrix
 entry carries the version label, used in the job and check name, and the fully
 qualified container image the leg runs in.
 
+The versions, and the image suffix and tag of each, come from the single
+resolver, `vrg-ci-resolve`, by way of the outputs of
+[`shared/setup/vergil`](shared-setup-vergil.md). This action does no version
+or family routing of its own.
+
 This action is **wired automatically** into the `matrix` job of `ci-quality`,
-`ci-audit` and `ci-test`, which pass it the `versions` output of
-[`shared/setup/vergil`](https://github.com/vergil-project/vergil-actions/blob/develop/actions/shared/setup/vergil/action.yml).
-Consuming repositories do not add it themselves.
+`ci-audit` and `ci-test`. Consuming repositories do not add it themselves.
 
 ## Usage
 
@@ -22,6 +25,9 @@ Consuming repositories do not add it themselves.
   with:
     language: python
     versions: ${{ steps.setup.outputs.versions }}
+    primary-version: ${{ steps.setup.outputs.primary-version }}
+    container-tags: ${{ steps.setup.outputs.container-tags }}
+    container-suffixes: ${{ steps.setup.outputs.container-suffixes }}
     container-suffix: python
 ```
 
@@ -29,39 +35,57 @@ Consuming repositories do not add it themselves.
 
 | Input | Required | Default | Description |
 | ----- | -------- | ------- | ----------- |
-| `language` | Yes | — | Primary language of the calling repository (e.g. `python`, `cpp`, `shell`). Selects the image-routing rule and the run-once collapse. |
-| `versions` | Yes | — | JSON array string of version tokens, e.g. `["3.12","3.13","3.14"]` or `["clang-20","gcc-14"]`. |
+| `language` | Yes | — | Primary language of the calling repository (e.g. `python`, `cpp`, `shell`). Selects the run-once collapse only. |
+| `versions` | Yes | — | The setup action's `versions` output, e.g. `["3.14","3.13"]` or `["clang-20","gcc-14"]`. |
+| `primary-version` | Yes | — | The setup action's `primary-version` output. |
+| `container-tags` | Yes | — | The setup action's `container-tags` output: version to image tag. |
+| `container-suffixes` | Yes | — | The setup action's `container-suffixes` output: version to image suffix. |
 | `container-prefix` | No | `prod` | Container image name prefix (`prod` or `dev`). |
-| `container-suffix` | No | `""` | Container image name suffix for single-suffix languages (e.g. `python`, `go`, `base`), and the runtime family for TypeScript (`ts-node`). Ignored for C++. |
+| `container-suffix` | No | `""` | The calling workflow's `container-suffix`, used only as a cross-check. When set, it must be one of the resolved suffixes. |
 
 ## Outputs
 
 | Output | Description |
 | ------ | ----------- |
-| `all` | JSON array of `{version, image}` objects, one per configured version. Used by per-version kinds (TEST always; TYPECHECK for C++ and the single-suffix languages). |
-| `once` | The same array collapsed to the first version for C++ and TypeScript; identical to `all` for every other language. Used by run-once kinds (LINT and AUDIT; TYPECHECK too for TypeScript). |
+| `all` | JSON array of `{version, image}` objects, one per resolved version. Used by per-version kinds (TEST always; TYPECHECK for C++ and the single-suffix languages). |
+| `once` | The primary version's entry alone for C++ and TypeScript; identical to `all` for every other language. Used by run-once kinds (LINT and AUDIT; TYPECHECK too for TypeScript). |
 
-## Image routing
+## Images
 
-Every image is `ghcr.io/vergil-project/<prefix>-<suffix>:<tag>`. How the suffix
-and tag are chosen depends on `language`:
+Every image is
+`ghcr.io/vergil-project/<prefix>-<container-suffixes[v]>:<container-tags[v]>`,
+for every language:
 
-| Language | Rule | Example |
-| -------- | ---- | ------- |
-| `cpp` | The compiler family rides the version token. The token is split at the first `-`: the family goes into the suffix, the rest is the tag. `container-suffix` is ignored. | `clang-20` → `prod-cpp-clang:20` |
-| `typescript` | The Node major rides the version token. The suffix is `container-suffix` (or `ts-<family>` when it is empty), and the part after the first `-` is the tag. | `node-24` with suffix `ts-node` → `prod-ts-node:24` |
-| Any other | The version is the tag unchanged. The suffix is `container-suffix`, or the language name when it is empty. | `3.14` with suffix `python` → `prod-python:3.14` |
+| Version | Resolver's suffix and tag | Image |
+| ------- | ------------------------- | ----- |
+| `clang-20` | `cpp-clang`, `20` | `prod-cpp-clang:20` |
+| `gcc-14` | `cpp-gcc`, `14` | `prod-cpp-gcc:14` |
+| `node-24` | `ts-node`, `24` | `prod-ts-node:24` |
+| `3.14` | `python`, `3.14` | `prod-python:3.14` |
+| `latest` (no language) | `base`, `latest` | `prod-base:latest` |
+
+## Failures
+
+The action fails with an `::error::` annotation, and writes no matrix, when:
+
+- an input is empty, or `versions` is not a non-empty JSON array;
+- a version has no tag in `container-tags` or no suffix in
+  `container-suffixes`;
+- `primary-version` is not one of `versions`;
+- `container-suffix` is set but is not one of the resolved suffixes. The
+  workflow's inputs and the repository's `vergil.toml` then disagree on the
+  language (for example `container-suffix: python` with no
+  `[project].primary-language`, which resolves to `prod-base:latest`), and the
+  legs would run on the wrong image.
 
 ## Run-once kinds
 
-For C++ and TypeScript some check kinds run once, on the first version, rather
-than once per version: LINT and AUDIT for C++; LINT, AUDIT and TYPECHECK for
-TypeScript. The `once` output gives those jobs a one-entry matrix. This matches
-the run-once gates that vergil-tooling's `desired_ci_gates_ruleset()` keys to
-`[ci].versions[0]`, so the jobs CI runs and the checks the ruleset requires
-stay in step.
+For C++ and TypeScript some check kinds run once, on the primary version,
+rather than once per version: LINT and AUDIT for C++; LINT, AUDIT and TYPECHECK
+for TypeScript. The `once` output gives those jobs a one-entry matrix.
 
 ## Implementation
 
 The logic is in `resolve.sh` next to `action.yml`, so it can be unit tested
 (`tests/resolve.test.sh`). The step prints both resolved arrays to the job log.
+The `smoke-setup-vergil` workflow runs the tests.

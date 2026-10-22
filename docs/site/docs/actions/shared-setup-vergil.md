@@ -1,9 +1,10 @@
 # shared/setup/vergil
 
 Installs `vergil-tooling` at the version the repository pins in `vergil.toml`,
-and derives the repository's CI version set from the same file. Reusable
-workflows read their version matrix and container tags from this action's
-outputs instead of from hard-coded inputs.
+then resolves the repository's CI version set by calling `vrg-ci-resolve`, the
+single resolver that ships with it. Reusable workflows read their version
+matrix and container tags from this action's outputs instead of from
+hard-coded inputs.
 
 This action is **wired automatically** into the reusable workflows: every job
 that runs a `vrg-*` command, and the `matrix` and `setup` jobs that resolve the
@@ -19,8 +20,6 @@ might fail inside it.
 - name: Install vergil-tooling
   id: setup
   uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1
-  with:
-    language: python   # optional; only affects primary-container-tag
 ```
 
 The repository must be checked out first: the action reads `vergil.toml` (and,
@@ -30,15 +29,17 @@ to detect vergil-tooling itself, `pyproject.toml`) from the working directory.
 
 | Input | Required | Default | Description |
 | ----- | -------- | ------- | ----------- |
-| `language` | No | `""` | Primary language of the calling repository (e.g. `python`, `cpp`, `shell`). Used only to family-route `primary-container-tag` for `cpp` and `typescript`. When omitted, `primary-container-tag` is the primary version unchanged. |
+| `version-window` | No | `""` | Path to a local `window.json` for the resolver to read instead of the published window. When set, the Derive step exports it as `VRG_VERSION_WINDOW`, the resolver's one sanctioned override. For tests only: leave it empty in real workflows. |
 
 ## Outputs
 
 | Output | Description |
 | ------ | ----------- |
-| `versions` | `[ci].versions` from `vergil.toml` as a compact JSON array string, e.g. `["3.12","3.13","3.14"]`. The `matrix` job passes it to [`ci/matrix`](https://github.com/vergil-project/vergil-actions/blob/develop/actions/ci/matrix/action.yml) to fan out per-version legs. |
-| `primary-version` | `[ci].primary-version` when it is set; otherwise the highest entry in `[ci].versions` by natural sort (`3.14` from `["3.12","3.13","3.14"]`, `clang-20` over `clang-9`). |
-| `primary-container-tag` | The container tag of the primary version. For `cpp` and `typescript` the family prefix is dropped (`clang-20` becomes `20`, `node-24` becomes `24`), the same split `ci/matrix` applies to each matrix leg; for every other language it is the primary version unchanged. Used by the single-container `common` job in `ci-quality` and the `version-bump` job in `ci-version-bump`. |
+| `versions` | The resolved versions, newest first, as a compact JSON array string, e.g. `["3.14","3.13","3.12"]`. The `matrix` job passes it to [`ci/matrix`](ci-matrix.md) to fan out per-version legs. |
+| `primary-version` | `[ci].primary-version` when it is set; otherwise the newest resolved version. |
+| `primary-container-tag` | The resolver's image tag for the primary version (`clang-20` has tag `20`, `node-24` has `24`, `3.14` has `3.14`). Used by the single-container `common` job in `ci-quality` and the `version-bump` job in `ci-version-bump`. |
+| `container-tags` | Compact JSON object mapping each resolved version to its image tag, e.g. `{"clang-20":"20","gcc-14":"14"}`. Passed to [`ci/matrix`](ci-matrix.md). |
+| `container-suffixes` | Compact JSON object mapping each resolved version to its image suffix, e.g. `{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}`. Passed to [`ci/matrix`](ci-matrix.md). |
 
 ## Behavior
 
@@ -56,34 +57,77 @@ The action runs these steps in order:
       released version.
     - Otherwise it reads `[dependencies].vergil` from `vergil.toml` (e.g.
       `v2.1`) and runs `uv tool install` for vergil-tooling at that git tag.
-      The step fails if `vergil.toml` or the `vergil` version is missing.
-4. **Derive the CI versions.** Runs `derive.sh`, which reads `vergil.toml` and
-   writes the three outputs. It fails the job with an `::error::` annotation
-   when:
-    - `vergil.toml` has no `[ci]` section;
-    - `[ci].versions` is not a non-empty list of strings;
-    - `[ci].primary-version` is set but is not a non-empty string.
+      The tag is read by `read-pin.sh`, which fails the job with a single
+      `::error::` annotation naming the file or key, and nothing is installed,
+      when:
+        - `vergil.toml` does not exist (usually because the repository was
+          not checked out first);
+        - `vergil.toml` is not valid TOML (the annotation includes the parse
+          error);
+        - there is no `[dependencies]` table, or `dependencies` is not a
+          table;
+        - `[dependencies]` has no `vergil` key;
+        - `[dependencies].vergil` is not a string, or is empty or blank.
 
-The derivation lives in `derive.sh` rather than inline YAML so it can be unit
-tested; see `actions/shared/setup/vergil/tests/derive.test.sh`. The
-`smoke-setup-vergil` workflow runs those tests and checks the action's outputs
-end to end.
+      Apart from the TOML parse error, each annotation says what to add: a pin
+      such as
+
+      ```toml
+      [dependencies]
+      vergil = "v2.1"
+      ```
+
+4. **Derive the CI versions.** Runs `derive.sh`, which calls
+   `vrg-ci-resolve --format json` once and writes its answer to the five
+   outputs. The resolution itself is not done here: the resolver reads
+   `vergil.toml` and the language version window that `vergil-containers`
+   publishes at the `[dependencies].vergil` ref, and applies the rules:
+    - `repository-type = "library"` builds the whole window; every other type
+      builds one version, the newest;
+    - a packaged Python app (`[package].builder = "python"`) builds the newest
+      version that has a published `vergil-python` runtime;
+    - a `[ci].versions` pin must lie inside the window;
+    - `[ci].primary-version` must name a resolved version;
+    - a repository with no `[project].primary-language` builds `latest` on the
+      base image.
+
+   Any resolver failure fails the job, and every line of the resolver's
+   message becomes an `::error::` annotation. That includes a window that
+   cannot be fetched or is invalid, a pin outside the window, an invalid
+   `primary-version`, and a missing or invalid `vergil.toml`. It also fails
+   when `vrg-ci-resolve` is not on `PATH` (a `[dependencies].vergil` pin older
+   than vergil-tooling 2.1.253). There is no fallback. A resolver warning (for
+   example an app that pins more than one version) becomes a `::warning::`
+   annotation and does not fail the job.
+
+The pin reading and the derivation live in `read-pin.sh` and `derive.sh` rather
+than inline YAML so they can be unit tested; see
+`actions/shared/setup/vergil/tests/derive.test.sh`, which runs the real
+resolver against the fixture window in `tests/fixtures/window.json`, and
+`tests/read-pin.test.sh`. The `smoke-setup-vergil` workflow runs those tests
+and checks the action's outputs end to end.
 
 ## Configuration
 
-The action reads two parts of the consuming repository's `vergil.toml`:
+The action and the resolver read these parts of the consuming repository's
+`vergil.toml`:
 
 ```toml
+[project]
+repository-type = "library"   # library: the whole window; otherwise one version
+primary-language = "python"
+
 [dependencies]
-vergil = "v2.1"            # vergil-tooling tag to install
+vergil = "v2.1"               # vergil-tooling tag to install, and window ref
 
 [ci]
-versions = ["3.12", "3.13", "3.14"]
-# primary-version = "3.13" # optional; defaults to the highest entry
+# versions = ["3.14"]         # optional pin; must lie inside the window
+# primary-version = "3.13"    # optional; defaults to the newest resolved version
 ```
 
-Set `[ci].primary-version` only when the primary version must not be the
-highest entry.
+Leave `[ci].versions` out so the repository follows the window. Set
+`[ci].primary-version` only when the primary version must not be the newest
+resolved version.
 
 ## Related
 

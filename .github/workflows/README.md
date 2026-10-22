@@ -84,7 +84,7 @@ Rules:
 
 - Boolean toggles use `type: boolean` (not `type: string`).
 - Version matrix input is always named `versions` (not `go-versions`,
-  `ruby-versions`, etc.).
+  `python-versions`, etc.).
 - **`versions` and `container-tag` are optional and no longer the way to
   set the matrix or the single-container tag.** The matrixed workflows
   (`ci-audit`, `ci-quality`, `ci-test`) derive the version matrix from

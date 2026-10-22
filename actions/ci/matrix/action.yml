@@ -1,36 +1,46 @@
 name: Resolve CI matrix
 description: >-
-  Resolve the per-version job matrix for a reusable CI workflow. Each entry
+  Build the per-version job matrix for a reusable CI workflow. Each entry
   carries the version label (used in the job/gate name) and the fully
   qualified container image to run it in.
 
-  Two behaviors are folded in:
+  The versions and each version's image suffix and tag come from the single
+  resolver, `vrg-ci-resolve`, via the shared setup action's outputs (epic
+  vergil-project/.github#407). The image is
+  `<prefix>-<container-suffixes[v]>:<container-tags[v]>` for every language —
+  `clang-20` -> `prod-cpp-clang:20`, `node-24` -> `prod-ts-node:24`,
+  `3.14` -> `prod-python:3.14` — with no routing of its own.
 
-    1. Version-token image routing. C++ carries its compiler family on the
-       version token (`clang-20`, `gcc-14`) rather than a separate suffix, so
-       the token is split into family + numeric tag and routed to the matching
-       image — `clang-20` -> `prod-cpp-clang:20`, `gcc-14` -> `prod-cpp-gcc:14`
-       (epic vergil-project/.github#207 §6). TypeScript carries its Node major
-       on the version token (`node-24`): the `ts-node` runtime family rides the
-       suffix and the numeric part is the tag — `node-24` -> `prod-ts-node:24`
-       (epic vergil-project/.github#284). Every other language keeps the
-       single-suffix scheme `<prefix>-<suffix>:<version>`.
-
-    2. Per-kind cardinality. The `once` output collapses the matrix to the
-       primary (first) version for the matrix languages that declare run-once
-       kinds (C++, TypeScript) so those kinds emit a single job/gate instead of
-       one per version — matching the run-once gates that
-       `github_config.desired_ci_gates_ruleset` emits. For C++ the run-once
-       kinds are LINT and AUDIT; for TypeScript they are LINT, AUDIT, and
-       TYPECHECK (one canonical `tsc`). For every other language `once` equals
-       `all`, so their run-once kinds stay per-version exactly as before.
+  Per-kind cardinality: the `once` output collapses the matrix to the primary
+  version for the matrix languages that declare run-once kinds (C++,
+  TypeScript), so those kinds emit a single job instead of one per version.
+  For C++ the run-once kinds are LINT and AUDIT; for TypeScript they are LINT,
+  AUDIT, and TYPECHECK (one canonical `tsc`). For every other language `once`
+  equals `all`.
 
 inputs:
   language:
-    description: Primary language of the calling repo (e.g. python, cpp, shell).
+    description: >-
+      Primary language of the calling repo (e.g. python, cpp, shell). Selects
+      the run-once collapse only; it does not affect the images.
     required: true
   versions:
-    description: JSON array string of version tokens (e.g. '["clang-20","gcc-14"]').
+    description: >-
+      The setup action's `versions` output: JSON array of resolved version
+      tokens (e.g. '["clang-20","gcc-14"]').
+    required: true
+  primary-version:
+    description: The setup action's `primary-version` output.
+    required: true
+  container-tags:
+    description: >-
+      The setup action's `container-tags` output: JSON object mapping each
+      version to its image tag.
+    required: true
+  container-suffixes:
+    description: >-
+      The setup action's `container-suffixes` output: JSON object mapping each
+      version to its image suffix.
     required: true
   container-prefix:
     description: Container image name prefix (prod or dev).
@@ -38,17 +48,17 @@ inputs:
     default: prod
   container-suffix:
     description: >-
-      Container image name suffix for single-suffix languages (e.g. python, go,
-      base) and for TypeScript (`ts-node`, with the Node major taken from the
-      version token as the tag). Ignored for C++, whose suffix is derived
-      entirely from the version token.
+      The calling workflow's `container-suffix`, as a cross-check only: when
+      set, it must be one of the resolved image suffixes, or the action fails
+      (the workflow and vergil.toml disagree on the language). It never
+      changes an image.
     required: false
     default: ""
 
 outputs:
   all:
     description: >-
-      JSON array of {version, image} objects, one per configured version.
+      JSON array of {version, image} objects, one per resolved version.
       Consumed by per-version kinds (TYPECHECK, TEST).
     value: ${{ steps.resolve.outputs.all }}
   once:
@@ -68,6 +78,9 @@ runs:
       env:
         LANGUAGE: ${{ inputs.language }}
         VERSIONS: ${{ inputs.versions }}
+        PRIMARY: ${{ inputs.primary-version }}
+        CONTAINER_TAGS: ${{ inputs.container-tags }}
+        CONTAINER_SUFFIXES: ${{ inputs.container-suffixes }}
         PREFIX: ${{ inputs.container-prefix }}
         SUFFIX: ${{ inputs.container-suffix }}
       run: bash "${GITHUB_ACTION_PATH}/resolve.sh"
