@@ -63,7 +63,10 @@ inline on the command line. There are two exceptions:
 
 - `ci/toolchain/assert` is pinned by its caller.
 - `package/setup/detect.sh` reads `vergil.toml` in raw package-build images
-  that ship no Python, so it needs uv's managed interpreter.
+  that ship no Python, so it needs uv's managed interpreter. Instead of the
+  pin, every uv command in it must pass `--no-config`, so the repository's uv
+  settings cannot reach it at all (issue #1003). Without it, a repository that
+  sets `python-downloads = "manual"` stops uv downloading that interpreter.
 
 `uv tool` commands are not checked, because uv ignores a project's uv
 settings for them. Fixture workflows and actions test the guard both ways.

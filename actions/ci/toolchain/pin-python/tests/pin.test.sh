@@ -154,11 +154,19 @@ uv_cmd_re='(^|[^[:alnum:]_.`-])uv (run|sync|lock|pip|venv|build|publish|export|a
 #   ci/toolchain/assert — runs after ./actions/ci/toolchain/pin-python.
 caller_pinned_actions='ci/toolchain/assert/'
 
-# Files allowed to run uv without the pin, each with its reason.
-#   package/setup/detect.sh — reads vergil.toml with `uv run --no-project
-#     --python 3.14` in raw package-build images that ship no Python, so it
-#     needs uv's managed interpreter; it never runs the repo's code.
-unpinned_files='package/setup/detect.sh'
+# Files that run uv without the pin, each with its reason. Every uv command in
+# them must instead pass --no-config on the same line, so the repo's uv
+# settings cannot reach it at all (issue #1003).
+#   package/setup/detect.sh — reads vergil.toml with `uv run --no-config
+#     --no-project --python 3.14` in raw package-build images that ship no
+#     Python, so it needs uv's managed interpreter; it never runs the repo's
+#     code. Without --no-config a repo's python-downloads = "manual" breaks it.
+config_free_files='package/setup/detect.sh'
+
+# The config-ignoring form: --no-config right before or right after the
+# subcommand (`uv --no-config run ...` or `uv run --no-config ...`), so it is
+# uv's flag and never an argument of the command uv runs.
+uv_no_config_re='(^|[^[:alnum:]_.`-])uv[[:space:]]+(--no-config[[:space:]]+[a-z]+|[a-z]+[[:space:]]+--no-config)([[:space:]]|$)'
 
 # check_workflow_uv_pins <workflows dir>
 #
@@ -210,17 +218,35 @@ check_workflow_uv_pins() {
 # Prints "<path>:<line>: ..." for every uv command in a composite action or
 # script (tests excluded) that is not pinned: inline
 # (UV_PYTHON_PREFERENCE=only-system on the same line), by a step env
-# (`UV_PYTHON_PREFERENCE: only-system` in the same action.yml), by the caller
-# (caller_pinned_actions) or by a listed exemption (unpinned_files).
+# (`UV_PYTHON_PREFERENCE: only-system` in the same action.yml) or by the caller
+# (caller_pinned_actions). In a config-free file (config_free_files) the pin
+# does not count: every uv command must pass --no-config instead.
 check_action_uv_pins() {
-  local root="$1" f rel prefix skip
+  local root="$1" f rel prefix skip config_free
   while IFS= read -r f; do
     rel="${f#"$root"/}"
     skip=0
-    for prefix in $caller_pinned_actions $unpinned_files; do
+    for prefix in $caller_pinned_actions; do
       case "$rel" in "$prefix"*) skip=1 ;; esac
     done
     [ "$skip" -eq 0 ] || continue
+    config_free=0
+    for prefix in $config_free_files; do
+      [ "$rel" != "$prefix" ] || config_free=1
+    done
+    if [ "$config_free" -eq 1 ]; then
+      awk -v re="$uv_cmd_re" -v ok="$uv_no_config_re" -v file="$rel" '
+        {
+          stripped = $0
+          sub(/^[[:space:]]+/, "", stripped)
+        }
+        stripped ~ /^#/ { next }
+        $0 ~ re && $0 !~ ok {
+          printf "%s:%d: uv runs without --no-config in a config-free file: %s\n", file, NR, stripped
+        }
+      ' "$f"
+      continue
+    fi
     if grep -Eq '^[[:space:]]*UV_PYTHON_PREFERENCE:[[:space:]]*only-system[[:space:]]*$' "$f"; then
       continue
     fi
@@ -381,6 +407,27 @@ jobs:
     "x/run/action.yml" "$(printf 'description: runs `uv sync` for you\nruns:\n  using: composite\n  steps:\n    # uv run mike here is a comment\n    - shell: bash\n      run: uv tool install x')"
   expect_guard "guard-skips-action-tests" pass "$wf_ok" \
     "x/run/tests/t.sh" "$(printf '#!/usr/bin/env bash\nuv run pytest')"
+
+  # Config-free files (issue #1003): detect.sh must use the config-ignoring
+  # form, and the source pin is no substitute for it.
+  local detect='package/setup/detect.sh'
+  expect_guard "guard-passes-config-free-no-config" pass "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nref="$(uv run --no-config --no-project --python 3.14 python -c "$x")"')"
+  expect_guard "guard-passes-config-free-global-no-config" pass "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv --no-config run --no-project --python 3.14 python -c pass')"
+  expect_guard "guard-fails-config-free-without-no-config" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nref="$(uv run --no-project --python 3.14 python -c "$x")"')"
+  expect_guard "guard-fails-config-free-pin-instead" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nUV_PYTHON_PREFERENCE=only-system uv run --no-project --python 3.14 python')"
+  expect_guard "guard-fails-config-free-step-env-instead" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\n# env:\n  UV_PYTHON_PREFERENCE: only-system\nuv run --no-project python')"
+  expect_guard "guard-fails-config-free-no-config-as-argument" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv run --no-project python tool.py --no-config')"
+  expect_guard "guard-fails-config-free-second-uv-unflagged" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv run --no-config --no-project python -c pass\nuv sync --frozen')"
+  # The no-config form does not exempt any other file from the source pin.
+  expect_guard "guard-fails-no-config-outside-config-free-files" fail "$wf_ok" \
+    "x/run/go.sh" "$(printf '#!/usr/bin/env bash\nuv run --no-config --no-project python -c pass')"
 }
 
 case_pins_version_and_source

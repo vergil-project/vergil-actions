@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.51] - 2026-10-22
+
+### Bug fixes
+
+- make detect.sh ignore the repo's uv settings with uv run --no-config (#1010)
+
 ## [2.1.50] - 2026-10-22
 
 ### CI
