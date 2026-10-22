@@ -76,3 +76,37 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: vrg-github-repo-config audit --repo "${{ github.repository }}"
+
+  # Report-only Dependabot gate (epic vergil-project/.github#420): alerts are
+  # on, Dependabot never opens a PR, and this job turns any open alert, at any
+  # severity, into a red nightly run. vrg-dependabot-audit exits 0 (no open
+  # alerts), 1 (open alerts) or 2 (the alerts could not be read); both 1 and 2
+  # fail the job. A public repo's log carries counts only, never package names.
+  dependabot-audit:
+    name: dependabot-audit
+    runs-on: ubuntu-latest
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Narrowest token that can read Dependabot alerts: scoped to the
+          # calling repo only (no owner/repositories input), with only the
+          # "Dependabot alerts: Read" permission. GITHUB_TOKEN cannot be used:
+          # a called workflow can only request what the caller's ops.yml
+          # grants, and that is contents:read, which cannot read alerts.
+          permission-vulnerability-alerts: read
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Audit open Dependabot alerts
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: vrg-dependabot-audit --repo "${{ github.repository }}"

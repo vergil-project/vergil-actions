@@ -38,7 +38,7 @@ rulesets.
 
 | Workflow | File | Purpose |
 | ---------- | ------ | --------- |
-| Ops GitHub Config | `ops-github-config.yml` | Nightly `vrg-github-repo-config` audit and [branch sweep](../actions/ops-github-config-branch-sweep.md) |
+| Ops GitHub Config | `ops-github-config.yml` | Nightly `vrg-github-repo-config` audit, [branch sweep](../actions/ops-github-config-branch-sweep.md), and `vrg-dependabot-audit` open-alert gate |
 | [Ops Epic Rollup](ops-epic-rollup.md) | `ops-epic-rollup.yml` | Close a task's parent epic when its last task closes (called on `issues: closed`) |
 | [Ops Epic Sweep](ops-epic-sweep.md) | `ops-epic-sweep.yml` | Daily close of epics and tasks that missed their event-driven close |
 

@@ -66,6 +66,16 @@ trigger CI normally and can auto-merge.
 | Pull requests | Read & write | Create and merge PRs |
 | Workflows | Read & write | Push commits that modify workflow files |
 | Metadata | Read-only | Required by GitHub (always enabled) |
+| Dependabot alerts | Read-only | Nightly `dependabot-audit` (ops) |
+
+The nightly ops run uses the same secrets to mint a token for its
+`dependabot-audit` job in `ops-github-config.yml`. That token is scoped to the
+calling repository and carries only **Dependabot alerts: Read**, which
+`vrg-dependabot-audit` needs to list the repository's open alerts. Grant the
+App this permission, then accept the updated permission on **each** of its
+installations: GitHub does not apply a new App permission to an installation
+until that installation accepts it. Until it is accepted, the job exits 2
+("could not check") and the ops run fails.
 
 **Creation steps:**
 
