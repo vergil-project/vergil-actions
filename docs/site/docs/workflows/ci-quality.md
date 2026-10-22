@@ -17,8 +17,10 @@ The `lint` and `typecheck` matrix comes from
 [`vrg-ci-resolve`](../actions/shared-setup-vergil.md) at run time: the
 workflow's `matrix` job runs the shared setup action, which calls the resolver,
 and passes its versions, image tags and image suffixes to
-[`ci/matrix`](../actions/ci-matrix.md). Each leg pins uv to its version (Python)
-and then asserts the running toolchain with
+[`ci/matrix`](../actions/ci-matrix.md). Each leg pins uv to its version and to
+the image's interpreter (Python, with
+[`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and then
+asserts the running toolchain with
 [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md). The
 single-container `common` job runs on the resolver's `primary-container-tag`.
 Callers are thin: they pass only `language:` and `container-suffix:`.

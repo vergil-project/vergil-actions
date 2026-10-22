@@ -18,6 +18,10 @@ definition and optional supporting scripts.
   — Builds the per-version job matrix (version label and container image for
   each entry) from the resolver outputs of `shared/setup/vergil`; auto-wired
   into `ci-quality`, `ci-audit` and `ci-test`.
+- **[ci/toolchain/pin-python](ci-toolchain-pin-python.md)** — Pins uv to a
+  Python leg's resolved version and to the image's interpreter
+  (`UV_PYTHON`, `UV_PYTHON_PREFERENCE=only-system`); auto-wired into the
+  Python matrix legs of `ci-quality`, `ci-audit` and `ci-test`.
 - **[ci/toolchain/assert](ci-toolchain-assert.md)** — Fails a CI leg whose
   running Python or Go is not the version CI resolved for it; auto-wired into
   the matrix legs of `ci-quality`, `ci-audit` and `ci-test`.

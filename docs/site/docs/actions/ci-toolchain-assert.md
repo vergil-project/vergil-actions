@@ -8,9 +8,11 @@ action is the backstop for that.
 
 This action is **wired automatically** into every matrix leg of `ci-quality`,
 `ci-audit` and `ci-test`, as the `assert-toolchain` step. It runs after the
-dependency install. For Python, an earlier step in the leg sets `UV_PYTHON` to
-the leg's version, so uv uses the image's interpreter for the install and the
-checks. Consuming repositories do not add it themselves.
+dependency install. For Python, an earlier step in the leg
+([`ci/toolchain/pin-python`](ci-toolchain-pin-python.md)) sets `UV_PYTHON` to
+the leg's version and `UV_PYTHON_PREFERENCE` to `only-system`, so uv uses the
+image's interpreter for the install and the checks. Consuming repositories do
+not add it themselves.
 
 ## Usage
 
@@ -33,7 +35,7 @@ checks. Consuming repositories do not add it themselves.
 
 | Language | Check |
 | -------- | ----- |
-| `python` | Runs `uv run --frozen python -c '...'` and compares the interpreter's `x.y` with `expected`. `--frozen` keeps uv from rewriting `uv.lock`. |
+| `python` | Runs `uv run --frozen python -c '...'` and compares the interpreter's `x.y` with `expected`, logging the interpreter's path. `--frozen` keeps uv from rewriting `uv.lock`. |
 | `go` | Runs `go env GOVERSION` in the module (so a `toolchain` switch in `go.mod` is what gets reported) and compares its `x.y` (`go1.26.3` is `1.26`). |
 | Any other | No check yet; prints a `::notice::` saying so and passes. |
 

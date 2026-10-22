@@ -3,7 +3,8 @@ name: Smoke - setup/vergil outputs
 # Smoke test for the shared setup/vergil action's resolver outputs
 # (`versions`, `primary-version`, `primary-container-tag`, `container-tags`,
 # `container-suffixes`), the ci/matrix action built from them, and the
-# ci/toolchain/assert action (epics vergil-project/.github#338 and #407).
+# ci/toolchain/assert and ci/toolchain/pin-python actions (epics
+# vergil-project/.github#338 and #407).
 #
 #   * fixtures — installs vergil-tooling with the setup action itself (for the
 #     real `vrg-ci-resolve`), then runs the framework-free harnesses:
@@ -20,6 +21,10 @@ name: Smoke - setup/vergil outputs
 #         tag/suffix or a container-suffix the resolver did not choose;
 #       - ci/toolchain/assert assert.sh: Python and Go version checks against a
 #         fake uv/go, and the notice for other languages;
+#       - ci/toolchain/pin-python pin.sh: UV_PYTHON and
+#         UV_PYTHON_PREFERENCE=only-system written to GITHUB_ENV, loud failure
+#         on a bad version, and every Python leg of ci-quality, ci-audit and
+#         ci-test pinning through it;
 #       - the package setup action's detect.sh (self-repo vs.
 #         [dependencies].vergil install spec; epic vergil-project/.github#356)
 #         and os-prereqs.sh (apt mirror list on x86_64, fail-fast apt, one
@@ -34,6 +39,10 @@ on:
     paths:
       - actions/shared/setup/vergil/**
       - actions/ci/toolchain/assert/**
+      - actions/ci/toolchain/pin-python/**
+      - .github/workflows/ci-quality.yml
+      - .github/workflows/ci-audit.yml
+      - .github/workflows/ci-test.yml
       - actions/ci/matrix/**
       - actions/package/setup/**
       - .github/workflows/smoke-setup-vergil.yml
@@ -64,6 +73,9 @@ jobs:
       - name: Run ci/toolchain/assert assert.sh harness
         shell: bash
         run: bash actions/ci/toolchain/assert/tests/assert.test.sh
+      - name: Run ci/toolchain/pin-python pin.sh harness
+        shell: bash
+        run: bash actions/ci/toolchain/pin-python/tests/pin.test.sh
       - name: Run package setup detect.sh harness
         shell: bash
         run: bash actions/package/setup/tests/detect.test.sh

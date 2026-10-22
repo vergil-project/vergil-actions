@@ -38,7 +38,7 @@ run_assert() {
   so="$(mktemp)"
   se="$(mktemp)"
   log="${bin}/calls.log"
-  printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"%s"\nprintf "%%s\\n" "%s"\necho "fake %s progress" >&2\nexit %s\n' \
+  printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"%s"\nprintf "%%b\\n" "%s"\necho "fake %s progress" >&2\nexit %s\n' \
     "$log" "$4" "$3" "${5:-0}" >"${bin}/$3"
   chmod +x "${bin}/$3"
   rc=0
@@ -73,14 +73,14 @@ assert_fail() {
 
 case_python_mismatch() {
   local name="assert_python_mismatch_fails"
-  run_assert python 3.15 uv 3.14
+  run_assert python 3.15 uv "3.14\\n/usr/bin/python3.14"
   assert_fail "$name" "CI resolved 3.15 but the job runs 3.14" || return 0
   pass_case "$name"
 }
 
 case_python_match() {
   local name="assert_python_match_passes"
-  run_assert python 3.15 uv 3.15
+  run_assert python 3.15 uv "3.15\\n/usr/bin/python3.15"
   assert_pass "$name" || return 0
   case "$calls" in
     "run --frozen python -c "*) ;;
@@ -89,6 +89,20 @@ case_python_match() {
       return 0
       ;;
   esac
+  case "$stdout" in
+    *"assert-toolchain: the job's Python interpreter is /usr/bin/python3.15"*) ;;
+    *)
+      fail_case "$name" "expected the interpreter path in the log, got '$stdout'"
+      return 0
+      ;;
+  esac
+  pass_case "$name"
+}
+
+case_python_no_path() {
+  local name="python-answer-without-interpreter-path"
+  run_assert python 3.15 uv 3.15
+  assert_fail "$name" "assert-toolchain: unexpected answer" || return 0
   pass_case "$name"
 }
 
@@ -101,7 +115,7 @@ case_python_uv_fails() {
 
 case_python_garbage() {
   local name="python-unexpected-answer"
-  run_assert python 3.14 uv "not a version"
+  run_assert python 3.14 uv "not a version\\n/usr/bin/python3"
   assert_fail "$name" "assert-toolchain: unexpected answer" || return 0
   pass_case "$name"
 }
@@ -170,6 +184,7 @@ case_other_language() {
 
 case_python_mismatch
 case_python_match
+case_python_no_path
 case_python_uv_fails
 case_python_garbage
 case_go_match
