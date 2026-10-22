@@ -4301,6 +4301,8 @@
       
         
       
+        
+      
     
     
     
@@ -4448,6 +4450,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ci-toolchain-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/assert
   
 
     
@@ -6181,9 +6211,12 @@ definition and optional supporting scripts.</p>
 <li><strong><a href="ci-version-bump-version-divergence/">ci/version-bump/version-divergence</a></strong>
   — Verifies that the PR branch version differs from the main branch version.</li>
 <li><strong><a href="ci-matrix/">ci/matrix</a></strong>
-  — Resolves the per-version job matrix (version label and container image for
-  each entry) from the <code>versions</code> output of <code>shared/setup/vergil</code>; auto-wired
+  — Builds the per-version job matrix (version label and container image for
+  each entry) from the resolver outputs of <code>shared/setup/vergil</code>; auto-wired
   into <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
+<li><strong><a href="ci-toolchain-assert/">ci/toolchain/assert</a></strong> — Fails a CI leg whose
+  running Python or Go is not the version CI resolved for it; auto-wired into
+  the matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
 <li><strong><a href="ci-evidence-emit/">ci/evidence/emit</a></strong>
   — Writes a gate's <code>evidence.json</code> and uploads it with the gate's report files
   as a <code>ci-evidence-&lt;gate&gt;</code> artifact for the release-time evidence bundle.</li>
@@ -6220,9 +6253,10 @@ definition and optional supporting scripts.</p>
   — Stages the changelog and release-notes pages and patches the MkDocs nav,
   so <code>ci-docs</code> and <code>cd-docs</code> build from the same source tree.</li>
 <li><strong><a href="shared-setup-vergil/">shared/setup/vergil</a></strong> — Installs the
-  <code>vergil-tooling</code> version pinned in <code>vergil.toml</code> and derives the CI version
-  set (<code>versions</code>, <code>primary-version</code>, <code>primary-container-tag</code>) from <code>[ci]</code>
-  (auto-wired into the reusable workflows).</li>
+  <code>vergil-tooling</code> version pinned in <code>vergil.toml</code> and resolves the CI version
+  set with <code>vrg-ci-resolve</code> (<code>versions</code>, <code>primary-version</code>,
+  <code>primary-container-tag</code>, <code>container-tags</code>, <code>container-suffixes</code>; auto-wired
+  into the reusable workflows).</li>
 <li><strong><a href="shared-setup-system-packages/">shared/setup/system-packages</a></strong> — Installs
   a repository's declared <code>[container].system-packages</code> on CI test jobs
   (test-runtime only; auto-wired into <code>ci-test</code>).</li>

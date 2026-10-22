@@ -4296,6 +4296,8 @@
       
         
       
+        
+      
     
     
     
@@ -4440,6 +4442,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/assert
   
 
     
@@ -6290,13 +6320,15 @@
 </tbody>
 </table>
 <h2 id="version-matrix">Version matrix<a class="headerlink" href="#version-matrix" title="Permanent link">&para;</a></h2>
-<p>The <code>lint</code> and <code>typecheck</code> matrix is derived from <code>[ci].versions</code> in the
-consumer's <code>vergil.toml</code> at run time — the workflow's <code>matrix</code> job runs the
-shared setup action for its <code>versions</code> output whenever the caller omits the
-<code>versions:</code> input. The single-container <code>common</code> job resolves its image tag from
-<code>[ci].primary-version</code> (default: the highest <code>[ci].versions</code> entry) whenever the
-caller omits <code>container-tag:</code>. Callers are thin: they pass only <code>language:</code> and
-<code>container-suffix:</code>.</p>
+<p>The <code>lint</code> and <code>typecheck</code> matrix comes from
+<a href="../../actions/shared-setup-vergil/"><code>vrg-ci-resolve</code></a> at run time: the
+workflow's <code>matrix</code> job runs the shared setup action, which calls the resolver,
+and passes its versions, image tags and image suffixes to
+<a href="../../actions/ci-matrix/"><code>ci/matrix</code></a>. Each leg pins uv to its version (Python)
+and then asserts the running toolchain with
+<a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>. The
+single-container <code>common</code> job runs on the resolver's <code>primary-container-tag</code>.
+Callers are thin: they pass only <code>language:</code> and <code>container-suffix:</code>.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -6332,8 +6364,7 @@ caller omits <code>container-tag:</code>. Callers are thin: they pass only <code
 <h2 id="common-checks">Common checks<a class="headerlink" href="#common-checks" title="Permanent link">&para;</a></h2>
 <p>The <code>common</code> job runs inside a single container on the primary version —
 <code>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;suffix&gt;:&lt;tag&gt;</code>, where <code>&lt;tag&gt;</code> is the
-family-routed <code>primary-container-tag</code> derived from <code>[ci].primary-version</code>
-unless the caller passes <code>container-tag:</code>. It conditionally executes each
+resolver's <code>primary-container-tag</code>. It conditionally executes each
 linter based on whether matching files exist in the repository:</p>
 <table>
 <thead>

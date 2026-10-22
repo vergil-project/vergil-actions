@@ -4301,6 +4301,8 @@
       
         
       
+        
+      
     
     
     
@@ -4448,6 +4450,34 @@
     
   
     ci/matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-toolchain-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/assert
   
 
     
@@ -6267,9 +6297,10 @@
 
 <h1 id="sharedsetupvergil">shared/setup/vergil<a class="headerlink" href="#sharedsetupvergil" title="Permanent link">&para;</a></h1>
 <p>Installs <code>vergil-tooling</code> at the version the repository pins in <code>vergil.toml</code>,
-and derives the repository's CI version set from the same file. Reusable
-workflows read their version matrix and container tags from this action's
-outputs instead of from hard-coded inputs.</p>
+then resolves the repository's CI version set by calling <code>vrg-ci-resolve</code>, the
+single resolver that ships with it. Reusable workflows read their version
+matrix and container tags from this action's outputs instead of from
+hard-coded inputs.</p>
 <p>This action is <strong>wired automatically</strong> into the reusable workflows: every job
 that runs a <code>vrg-*</code> command, and the <code>matrix</code> and <code>setup</code> jobs that resolve the
 version set. Consuming repositories do not add it themselves. It is documented
@@ -6281,8 +6312,6 @@ might fail inside it.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Install vergil-tooling</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setup</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span><span class="w">   </span><span class="c1"># optional; only affects primary-container-tag</span>
 </code></pre></div>
 <p>The repository must be checked out first: the action reads <code>vergil.toml</code> (and,
 to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working directory.</p>
@@ -6298,10 +6327,10 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 </thead>
 <tbody>
 <tr>
-<td><code>language</code></td>
+<td><code>version-window</code></td>
 <td>No</td>
 <td><code>""</code></td>
-<td>Primary language of the calling repository (e.g. <code>python</code>, <code>cpp</code>, <code>shell</code>). Used only to family-route <code>primary-container-tag</code> for <code>cpp</code> and <code>typescript</code>. When omitted, <code>primary-container-tag</code> is the primary version unchanged.</td>
+<td>Path to a local <code>window.json</code> for the resolver to read instead of the published window. When set, the Derive step exports it as <code>VRG_VERSION_WINDOW</code>, the resolver's one sanctioned override. For tests only: leave it empty in real workflows.</td>
 </tr>
 </tbody>
 </table>
@@ -6316,15 +6345,23 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <tbody>
 <tr>
 <td><code>versions</code></td>
-<td><code>[ci].versions</code> from <code>vergil.toml</code> as a compact JSON array string, e.g. <code>["3.12","3.13","3.14"]</code>. The <code>matrix</code> job passes it to <a href="../ci-matrix/"><code>ci/matrix</code></a> to fan out per-version legs.</td>
+<td>The resolved versions, newest first, as a compact JSON array string, e.g. <code>["3.14","3.13","3.12"]</code>. The <code>matrix</code> job passes it to <a href="../ci-matrix/"><code>ci/matrix</code></a> to fan out per-version legs.</td>
 </tr>
 <tr>
 <td><code>primary-version</code></td>
-<td><code>[ci].primary-version</code> when it is set; otherwise the highest entry in <code>[ci].versions</code> by natural sort (<code>3.14</code> from <code>["3.12","3.13","3.14"]</code>, <code>clang-20</code> over <code>clang-9</code>).</td>
+<td><code>[ci].primary-version</code> when it is set; otherwise the newest resolved version.</td>
 </tr>
 <tr>
 <td><code>primary-container-tag</code></td>
-<td>The container tag of the primary version. For <code>cpp</code> and <code>typescript</code> the family prefix is dropped (<code>clang-20</code> becomes <code>20</code>, <code>node-24</code> becomes <code>24</code>), the same split <code>ci/matrix</code> applies to each matrix leg; for every other language it is the primary version unchanged. Used by the single-container <code>common</code> job in <code>ci-quality</code> and the <code>version-bump</code> job in <code>ci-version-bump</code>.</td>
+<td>The resolver's image tag for the primary version (<code>clang-20</code> has tag <code>20</code>, <code>node-24</code> has <code>24</code>, <code>3.14</code> has <code>3.14</code>). Used by the single-container <code>common</code> job in <code>ci-quality</code> and the <code>version-bump</code> job in <code>ci-version-bump</code>.</td>
+</tr>
+<tr>
+<td><code>container-tags</code></td>
+<td>Compact JSON object mapping each resolved version to its image tag, e.g. <code>{"clang-20":"20","gcc-14":"14"}</code>. Passed to <a href="../ci-matrix/"><code>ci/matrix</code></a>.</td>
+</tr>
+<tr>
+<td><code>container-suffixes</code></td>
+<td>Compact JSON object mapping each resolved version to its image suffix, e.g. <code>{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}</code>. Passed to <a href="../ci-matrix/"><code>ci/matrix</code></a>.</td>
 </tr>
 </tbody>
 </table>
@@ -6366,33 +6403,54 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 </code></pre></div>
 </li>
 <li>
-<p><strong>Derive the CI versions.</strong> Runs <code>derive.sh</code>, which reads <code>vergil.toml</code> and
-   writes the three outputs. It fails the job with an <code>::error::</code> annotation
-   when:</p>
+<p><strong>Derive the CI versions.</strong> Runs <code>derive.sh</code>, which calls
+   <code>vrg-ci-resolve --format json</code> once and writes its answer to the five
+   outputs. The resolution itself is not done here: the resolver reads
+   <code>vergil.toml</code> and the language version window that <code>vergil-containers</code>
+   publishes at the <code>[dependencies].vergil</code> ref, and applies the rules:</p>
 <ul>
-<li><code>vergil.toml</code> does not exist, or is not valid TOML;</li>
-<li><code>vergil.toml</code> has no <code>[ci]</code> table (or <code>ci</code> is not a table);</li>
-<li><code>[ci].versions</code> is not a non-empty list of strings;</li>
-<li><code>[ci].primary-version</code> is set but is not a non-empty string.</li>
+<li><code>repository-type = "library"</code> builds the whole window; every other type
+  builds one version, the newest;</li>
+<li>a packaged Python app (<code>[package].builder = "python"</code>) builds the newest
+  version that has a published <code>vergil-python</code> runtime;</li>
+<li>a <code>[ci].versions</code> pin must lie inside the window;</li>
+<li><code>[ci].primary-version</code> must name a resolved version;</li>
+<li>a repository with no <code>[project].primary-language</code> builds <code>latest</code> on the
+  base image.</li>
 </ul>
 </li>
 </ol>
+<p>Any resolver failure fails the job, and every line of the resolver's
+   message becomes an <code>::error::</code> annotation. That includes a window that
+   cannot be fetched or is invalid, a pin outside the window, an invalid
+   <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It also fails
+   when <code>vrg-ci-resolve</code> is not on <code>PATH</code> (a <code>[dependencies].vergil</code> pin older
+   than vergil-tooling 2.1.253). There is no fallback. A resolver warning (for
+   example an app that pins more than one version) becomes a <code>::warning::</code>
+   annotation and does not fail the job.</p>
 <p>The pin reading and the derivation live in <code>read-pin.sh</code> and <code>derive.sh</code> rather
 than inline YAML so they can be unit tested; see
-<code>actions/shared/setup/vergil/tests/derive.test.sh</code> and
+<code>actions/shared/setup/vergil/tests/derive.test.sh</code>, which runs the real
+resolver against the fixture window in <code>tests/fixtures/window.json</code>, and
 <code>tests/read-pin.test.sh</code>. The <code>smoke-setup-vergil</code> workflow runs those tests
 and checks the action's outputs end to end.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>The action reads two parts of the consuming repository's <code>vergil.toml</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[dependencies]</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">vergil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"v2.1"</span><span class="w">            </span><span class="c1"># vergil-tooling tag to install</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">[ci]</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">versions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"3.12"</span><span class="p">,</span><span class="w"> </span><span class="s2">"3.13"</span><span class="p">,</span><span class="w"> </span><span class="s2">"3.14"</span><span class="p">]</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># primary-version = "3.13" # optional; defaults to the highest entry</span>
+<p>The action and the resolver read these parts of the consuming repository's
+<code>vergil.toml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[project]</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">repository-type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"library"</span><span class="w">   </span><span class="c1"># library: the whole window; otherwise one version</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">primary-language</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"python"</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">[dependencies]</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">vergil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"v2.1"</span><span class="w">               </span><span class="c1"># vergil-tooling tag to install, and window ref</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">[ci]</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># versions = ["3.14"]         # optional pin; must lie inside the window</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># primary-version = "3.13"    # optional; defaults to the newest resolved version</span>
 </code></pre></div>
-<p>Set <code>[ci].primary-version</code> only when the primary version must not be the
-highest entry.</p>
+<p>Leave <code>[ci].versions</code> out so the repository follows the window. Set
+<code>[ci].primary-version</code> only when the primary version must not be the newest
+resolved version.</p>
 <h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../workflows/ci-test/"><code>ci-test</code> reusable workflow</a> — uses the <code>versions</code>
