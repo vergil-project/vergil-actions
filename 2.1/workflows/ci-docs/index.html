@@ -803,6 +803,8 @@
       
         
       
+        
+      
     
     
     
@@ -855,6 +857,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.50/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.50
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5543,6 +5573,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#interpreter-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreter source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mkdocs-20-banner" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6312,6 +6353,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#interpreter-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreter source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#mkdocs-20-banner" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6428,6 +6480,19 @@ a required check for repositories that publish docs (see
 <p>For Python repositories the build runs as <code>uv run mkdocs</code>; otherwise it runs
 <code>mkdocs</code> directly, matching the toolchain resolution in
 <code>actions/cd/docs/deploy</code>.</p>
+<h3 id="interpreter-source">Interpreter source<a class="headerlink" href="#interpreter-source" title="Permanent link">&para;</a></h3>
+<p>The <code>build</code> job sets <code>UV_PYTHON_PREFERENCE=only-system</code> in its job <code>env</code>, so
+every uv command in the job, including <code>uv run mkdocs</code>, uses the image's
+Python (<code>/usr/local/bin/python3</code> in <code>prod-base</code>). A repository may set uv's
+<code>python-preference</code> (for example <code>only-managed</code>). Without the pin, uv would
+download a managed Python for the docs build, or fail when the repository also
+sets <code>python-downloads = "manual"</code>. uv's environment variables take precedence
+over a repository's uv settings (epic vergil-project/.github#407, spec §6.5).</p>
+<p>Only the source is pinned. The job resolves no Python version, so <code>UV_PYTHON</code>
+is not set and uv picks the image's interpreter against the repository's
+<code>requires-python</code>. If the image cannot satisfy it, the build fails loudly.
+There is no fallback. Repositories that do not set these uv options build as
+before. Added in issue #1002.</p>
 <h3 id="mkdocs-20-banner">MkDocs 2.0 banner<a class="headerlink" href="#mkdocs-20-banner" title="Permanent link">&para;</a></h3>
 <p>The "Build docs" step sets <code>NO_MKDOCS_2_WARNING=1</code>. Without it, mkdocs-material
 9.7.x prints a
