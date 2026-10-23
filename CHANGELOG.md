@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.52] - 2026-10-23
+
+### Bug fixes
+
+- test the warning passthrough with a stub resolver; app multi-pin is fatal (#1023)
+- derive the release container tag from the resolver (#1024)
+
+### Chores
+
+- add the report-only dependabot.yml (#1015)
+
+### Documentation
+
+- reflect resolver-driven CI and the removed workflow inputs (#1021)
+
 ## [2.1.51] - 2026-10-22
 
 ### Bug fixes
