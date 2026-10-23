@@ -86,7 +86,8 @@ The action runs these steps in order:
    `vergil.toml` and the language version window that `vergil-containers`
    publishes at the `[dependencies].vergil` ref, and applies the rules:
     - `repository-type = "library"` builds the whole window; every other type
-      builds one version, the newest;
+      builds one version, the newest, and a `[ci].versions` pin of more than
+      one version is an error for it;
     - a packaged Python app (`[package].builder = "python"`) builds the newest
       version that has a published `vergil-python` runtime;
     - a `[ci].versions` pin must lie inside the window;
@@ -96,17 +97,18 @@ The action runs these steps in order:
 
    Any resolver failure fails the job, and every line of the resolver's
    message becomes an `::error::` annotation. That includes a window that
-   cannot be fetched or is invalid, a pin outside the window, an invalid
-   `primary-version`, and a missing or invalid `vergil.toml`. It also fails
-   when `vrg-ci-resolve` is not on `PATH` (a `[dependencies].vergil` pin older
-   than vergil-tooling 2.1.253). There is no fallback. A resolver warning (for
-   example an app that pins more than one version) becomes a `::warning::`
-   annotation and does not fail the job.
+   cannot be fetched or is invalid, a pin outside the window, an app that pins
+   more than one version, an invalid `primary-version`, and a missing or
+   invalid `vergil.toml`. It also fails when `vrg-ci-resolve` is not on `PATH`
+   (a `[dependencies].vergil` pin older than vergil-tooling 2.1.253). There is
+   no fallback. A resolver stderr line starting `warning:` becomes a `::warning::`
+   annotation and does not fail the job (the resolver prints none today).
 
 The pin reading and the derivation live in `read-pin.sh` and `derive.sh` rather
 than inline YAML so they can be unit tested; see
 `actions/shared/setup/vergil/tests/derive.test.sh`, which runs the real
-resolver against the fixture window in `tests/fixtures/window.json`, and
+resolver against the fixture window in `tests/fixtures/window.json` (one case
+stubs the resolver to test the `warning:` passthrough), and
 `tests/read-pin.test.sh`. The `smoke-setup-vergil` workflow runs those tests
 and checks the action's outputs end to end.
 
