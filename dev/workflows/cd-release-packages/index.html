@@ -6411,15 +6411,15 @@ also builds, signs and attaches the repo's <code>.deb</code>/<code>.rpm</code> p
 <tbody>
 <tr>
 <td><code>package-matrix</code></td>
-<td>Always runs. <code>vrg-package check-unpublished --version &lt;version&gt;</code> first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without <code>[package]</code> passes. Then <code>vrg-package matrix --github-output --manifest packages-manifest.json</code> resolves the build cells and writes the release manifest.</td>
+<td>Always runs. <code>vrg-package check-unpublished --version &lt;version&gt;</code> first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without <code>[package]</code> passes. Then <code>vrg-package matrix --github-output --manifest packages-manifest.json</code> resolves the build cells and writes the release manifest. For <code>builder = "python"</code> it resolves the <code>vergil-python</code> runtime once and records it as <code>runtime</code> on every build cell and in the manifest.</td>
 </tr>
 <tr>
 <td><code>package-build / &lt;cell&gt;</code></td>
-<td>One job per build cell, on the cell's runner inside its build OS image, with the same toolchain as <code>ci-package.yml</code>. The packages are unsigned.</td>
+<td>One job per build cell, on the cell's runner inside its build OS image, with the same toolchain as <code>ci-package.yml</code>. It runs <code>vrg-package build --cell &lt;cell&gt; --runtime &lt;runtime&gt;</code> with the cell's recorded <code>runtime</code>, so every cell builds on the same runtime. A cell without one (a non-python builder) passes an empty <code>--runtime</code>, never <code>null</code>. The packages are unsigned.</td>
 </tr>
 <tr>
 <td><code>package-sign</code></td>
-<td>Declares the <code>package-signing</code> environment. It signs every <code>.rpm</code> with the org signing subkey and verifies each signature, then attests the provenance of every package.</td>
+<td>Declares the <code>package-signing</code> environment. Before signing anything it runs <code>vrg-package check-runtime --manifest packages-manifest.json --artifacts dist/packages</code>, which fails unless every <code>.deb</code> and <code>.rpm</code> depends on exactly the runtime the manifest records (a manifest without a runtime passes). It then signs every <code>.rpm</code> with the org signing subkey and verifies each signature, then attests the provenance of every package.</td>
 </tr>
 <tr>
 <td><code>release</code></td>
@@ -6427,8 +6427,14 @@ also builds, signs and attaches the repo's <code>.deb</code>/<code>.rpm</code> p
 </tr>
 </tbody>
 </table>
-<p>A re-published package version, a failed build cell or a failed signing step
-stops <code>release</code> before anything is published or tagged. The re-publish check is
+<p>A re-published package version, a failed build cell, a mixed-runtime package
+set or a failed signing step stops <code>release</code> before anything is published or
+tagged. The runtime check
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/3478">vergil-tooling#3478</a>)
+catches cells that built on different runtimes, as vergil-tooling 2.1.258 did
+(amd64 on <code>vergil-python3.15</code>, arm64 on <code>vergil-python3.14</code>). The <code>--runtime</code>
+and <code>check-runtime</code> options need vergil-tooling 2.1.262 or later at the
+caller's <code>[dependencies].vergil</code> pin; <code>v2.1</code> resolves to it. The re-publish check is
 the CD backstop for a release that did not go through <code>vrg-release</code> preflight,
 which runs the same check: a package version published twice breaks the shared
 package index for every repo. Any <code>gh</code> error fails the check rather than
