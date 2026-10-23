@@ -45,6 +45,19 @@ and `install-test` jobs all succeeded, and it records the tier that ran as
 
 This needs a vergil-tooling release whose `vrg-package matrix` accepts `--tier`.
 
+## Build runtime
+
+For `builder = "python"`, `vrg-package matrix` resolves the `vergil-python`
+runtime once and records it as `runtime` on every build cell
+([vergil-tooling#3478](https://github.com/vergil-project/vergil-tooling/issues/3478)).
+Each `build / <cell>` job passes it on as
+`vrg-package build --cell <cell> --runtime <runtime>`, as `cd-release.yml`'s
+`package-build` does, so PR builds and release builds use the same runtime on
+every architecture. A cell without a `runtime` (a non-python builder) passes
+an empty `--runtime`, never `null`, which `vrg-package build` reads as none
+recorded. This needs vergil-tooling 2.1.262 or later at the caller's
+`[dependencies].vergil` pin; `v2.1` resolves to it.
+
 ## Toolchain setup
 
 Each `build / <cell>` and `install-test / <cell>` job runs inside the cell's

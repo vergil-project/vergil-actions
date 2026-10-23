@@ -5,13 +5,19 @@ also builds, signs and attaches the repo's `.deb`/`.rpm` packages:
 
 | Job | Behavior |
 | --- | -------- |
-| `package-matrix` | Always runs. `vrg-package check-unpublished --version <version>` first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without `[package]` passes. Then `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest. |
-| `package-build / <cell>` | One job per build cell, on the cell's runner inside its build OS image, with the same toolchain as `ci-package.yml`. The packages are unsigned. |
-| `package-sign` | Declares the `package-signing` environment. It signs every `.rpm` with the org signing subkey and verifies each signature, then attests the provenance of every package. |
+| `package-matrix` | Always runs. `vrg-package check-unpublished --version <version>` first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without `[package]` passes. Then `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest. For `builder = "python"` it resolves the `vergil-python` runtime once and records it as `runtime` on every build cell and in the manifest. |
+| `package-build / <cell>` | One job per build cell, on the cell's runner inside its build OS image, with the same toolchain as `ci-package.yml`. It runs `vrg-package build --cell <cell> --runtime <runtime>` with the cell's recorded `runtime`, so every cell builds on the same runtime. A cell without one (a non-python builder) passes an empty `--runtime`, never `null`. The packages are unsigned. |
+| `package-sign` | Declares the `package-signing` environment. Before signing anything it runs `vrg-package check-runtime --manifest packages-manifest.json --artifacts dist/packages`, which fails unless every `.deb` and `.rpm` depends on exactly the runtime the manifest records (a manifest without a runtime passes). It then signs every `.rpm` with the org signing subkey and verifies each signature, then attests the provenance of every package. |
 | `release` | Runs only if `package-sign` succeeded. It attaches the signed packages and `packages-manifest.json` to the Release, then dispatches `package-released` to `<owner>/packages`. |
 
-A re-published package version, a failed build cell or a failed signing step
-stops `release` before anything is published or tagged. The re-publish check is
+A re-published package version, a failed build cell, a mixed-runtime package
+set or a failed signing step stops `release` before anything is published or
+tagged. The runtime check
+([vergil-tooling#3478](https://github.com/vergil-project/vergil-tooling/issues/3478))
+catches cells that built on different runtimes, as vergil-tooling 2.1.258 did
+(amd64 on `vergil-python3.15`, arm64 on `vergil-python3.14`). The `--runtime`
+and `check-runtime` options need vergil-tooling 2.1.262 or later at the
+caller's `[dependencies].vergil` pin; `v2.1` resolves to it. The re-publish check is
 the CD backstop for a release that did not go through `vrg-release` preflight,
 which runs the same check: a package version published twice breaks the shared
 package index for every repo. Any `gh` error fails the check rather than
