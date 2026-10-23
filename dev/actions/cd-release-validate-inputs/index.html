@@ -5548,6 +5548,8 @@
       
         
       
+        
+      
     
     
     
@@ -5785,6 +5787,34 @@
     
   
     ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/cd-release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release
   
 
     
@@ -6415,7 +6445,7 @@ release job. Consuming repositories do not add it themselves.</p>
 <td><code>container-tag</code></td>
 <td>No</td>
 <td><code>""</code></td>
-<td>Container image tag.</td>
+<td>Container image tag. <code>cd-release</code> passes the release job's tag, the resolver's <code>primary-container-tag</code> from its <code>setup</code> job, never a caller input.</td>
 </tr>
 <tr>
 <td><code>registry-publish</code></td>

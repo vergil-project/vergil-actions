@@ -641,6 +641,10 @@
          <lastmod>2026-10-23</lastmod>
     </url>
     <url>
+         <loc>https://vergil-project.github.io/vergil-actions/dev/workflows/cd-release/</loc>
+         <lastmod>2026-10-23</lastmod>
+    </url>
+    <url>
          <loc>https://vergil-project.github.io/vergil-actions/dev/workflows/ci-audit/</loc>
          <lastmod>2026-10-23</lastmod>
     </url>
