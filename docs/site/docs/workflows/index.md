@@ -56,10 +56,15 @@ consumer's `ci.yml` is therefore a **thin caller** that passes only `language:`
 and `container-suffix:`. The `versions:` and `container-tag:` inputs were
 removed in [#899](https://github.com/vergil-project/vergil-actions/pull/899).
 
-Single-container jobs (`ci-quality`'s `common`, `ci-version-bump`) run on the
-resolver's primary version: `[ci].primary-version` if set, else the newest
-resolved version, at the resolver's image tag for it (`clang-20` runs on tag
-`20`).
+Single-container jobs (`ci-quality`'s `common`, `ci-version-bump`, and
+`cd-release`'s `release`) run on the resolver's primary version:
+`[ci].primary-version` if set, else the newest resolved version, on the
+resolver's image suffix and tag for it (`clang-20` runs on
+`prod-cpp-clang:20`; see
+[shared/setup/primary-suffix](../actions/shared-setup-primary-suffix.md)).
+The caller's `container-suffix` never picks an image: the matrix legs accept
+any resolved suffix as a cross-check, and the single-container jobs require
+the primary version's.
 
 Each matrixed workflow emits a stable, version-agnostic aggregate gate named
 `<kind> / evidence` — `audit / evidence`, `quality / evidence`, and

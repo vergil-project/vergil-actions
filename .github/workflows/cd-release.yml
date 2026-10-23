@@ -136,7 +136,7 @@ jobs:
       # container-suffix that disagrees with it.
       - name: Resolve primary-container-suffix
         id: suffix
-        uses: ./actions/cd/release/primary-suffix
+        uses: ./actions/shared/setup/primary-suffix
         with:
           primary-version: ${{ steps.derive.outputs.primary-version }}
           container-suffixes: ${{ steps.derive.outputs.container-suffixes }}

@@ -1,26 +1,30 @@
 #!/usr/bin/env bash
 #
-# Pick the cd-release `release` job's image suffix from the resolver's answer
-# (issue #1020, epic vergil-project/.github#407).
+# Pick a single-container job's image suffix from the resolver's answer
+# (issues #1020 and #1028, epic vergil-project/.github#407). Used by the
+# `setup` jobs of ci-quality (`common`), ci-version-bump (`version-bump`) and
+# cd-release (`release`).
 #
 # The suffix is the primary version's entry in `container-suffixes`, both from
 # `vrg-ci-resolve` by way of the shared setup action. With the resolver's
-# primary-container-tag, the release image is
+# primary-container-tag, the job's image is
 #
 #   ghcr.io/vergil-project/<prefix>-<container-suffixes[primary]>:<primary-container-tag>
 #
 # which is the image CI's primary leg runs on (clang-20 -> prod-cpp-clang:20,
-# not the unpublished prod-cpp:20 that `language: cpp` used to name).
+# not the unpublished prod-cpp:20 that `language: cpp` used to name, nor the
+# prod-base:20 that an omitted `container-suffix` used to name).
 #
 # The caller's `container-suffix` (SUFFIX) is a cross-check, not an input to the
-# image, as in actions/ci/matrix: when it is set it must equal the resolved
-# primary suffix. A mismatch means the caller's cd.yml and the repo's
-# vergil.toml disagree on the language or the primary version, and releasing
-# from the wrong image could build and publish the wrong thing, so it fails
-# loudly instead.
+# image: when it is set it must equal the resolved primary suffix. A mismatch
+# means the calling workflow (ci.yml / cd.yml) and the repo's vergil.toml
+# disagree on the language or the primary version, and running on the wrong
+# image could check, build or publish the wrong thing, so it fails loudly
+# instead.
 #
 # The logic lives here (not inline in action.yml) so it is unit-testable
-# (actions/cd/release/tests/container-tag.test.sh runs it on fixture repos).
+# (actions/shared/setup/primary-suffix/tests/image.test.sh and
+# actions/cd/release/tests/container-tag.test.sh run it on fixture repos).
 #
 # Inputs (env): PRIMARY, CONTAINER_SUFFIXES (JSON object keyed by version),
 # SUFFIX (optional).
@@ -28,7 +32,7 @@
 set -euo pipefail
 
 error() {
-  echo "::error::cd/release/primary-suffix: $*" >&2
+  echo "::error::shared/setup/primary-suffix: $*" >&2
   exit 1
 }
 
@@ -53,10 +57,10 @@ fi
 if [ -n "${SUFFIX:-}" ] && [ "$SUFFIX" != "$suffix" ]; then
   error "the caller's container-suffix '${SUFFIX}' does not match the image" \
     "suffix the resolver chose for this repo's primary version '${PRIMARY}'" \
-    "('${suffix}'). The calling cd.yml and vergil.toml" \
+    "('${suffix}'). The calling workflow (ci.yml / cd.yml) and vergil.toml" \
     "([project].primary-language, [ci]) disagree; fix whichever is wrong," \
-    "or drop container-suffix from cd.yml"
+    "or drop container-suffix from the calling workflow"
 fi
 
 echo "primary-container-suffix=${suffix}" >>"$GITHUB_OUTPUT"
-echo "Release image suffix: ${suffix} (primary version ${PRIMARY})"
+echo "Image suffix: ${suffix} (primary version ${PRIMARY})"

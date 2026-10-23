@@ -10,11 +10,11 @@ on:
         type: string
         required: false
         description: >-
-          Container image name suffix (e.g. python, go, base). Used by the
-          common job. Callers whose language is "shell" or "none" should pass
-          "base". The per-version jobs take each version's suffix from
-          vrg-ci-resolve (cpp-clang / cpp-gcc for C++) and only cross-check
-          this value: when set, it must be one of the resolved suffixes.
+          Cross-check only; it never changes an image. Every job takes its
+          image suffix from vrg-ci-resolve (cpp-clang / cpp-gcc for C++). The
+          common job runs on the primary version's suffix (issue #1028): when
+          this is set it must equal that suffix, or the setup job fails. The
+          per-version jobs accept any of the resolved suffixes.
       container-prefix:
         type: string
         required: false
@@ -74,24 +74,40 @@ jobs:
   # a caller stopped passing `container-tag`. The job's `container:` is evaluated
   # before any step runs, so the value must come from a preceding job — mirroring
   # how the matrix job and ci-version-bump's setup job resolve their image.
+  # The image suffix is the resolver's too (issue #1028): the primary version's
+  # entry in `container-suffixes`, so a C++ repo's common job runs on
+  # prod-cpp-clang:20 (as its primary leg does) rather than on whatever suffix
+  # the caller passed, or prod-base when it passed none. The caller's
+  # `container-suffix` is only a must-match cross-check, as in cd-release.
   setup:
     name: setup
     runs-on: ubuntu-latest
     outputs:
       primary-container-tag: ${{ steps.derive.outputs.primary-container-tag }}
+      primary-container-suffix: ${{ steps.suffix.outputs.primary-container-suffix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Resolve primary-container-tag with vrg-ci-resolve
+      - name: Resolve the primary version with vrg-ci-resolve
         id: derive
         uses: ./actions/shared/setup/vergil
+
+      # The primary version's image suffix. Fails when the caller passes a
+      # container-suffix that disagrees with it.
+      - name: Resolve primary-container-suffix
+        id: suffix
+        uses: ./actions/shared/setup/primary-suffix
+        with:
+          primary-version: ${{ steps.derive.outputs.primary-version }}
+          container-suffixes: ${{ steps.derive.outputs.container-suffixes }}
+          container-suffix: ${{ inputs.container-suffix }}
 
   common:
     name: common
     needs: setup
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ needs.setup.outputs.primary-container-tag }}
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -100,7 +116,7 @@ jobs:
         uses: ./actions/shared/setup/vergil
 
       # Capture the common checks' full transcript as a quality report (#925).
-      # For a language-less repo (container-suffix base, no lint/typecheck
+      # For a language-less repo (image suffix base, no lint/typecheck
       # tooling) the common checks — repo-profile, markdownlint, shellcheck,
       # yamllint, hadolint, actionlint, ansible-lint — ARE the quality gate, but
       # they emit no structured report file. Without this transcript the

@@ -1,15 +1,16 @@
-name: Resolve the release image suffix
+name: Resolve the primary image suffix
 description: >-
-  Picks the cd-release `release` job's image suffix from the resolver's
-  answer: the primary version's entry in the shared setup action's
-  `container-suffixes` output (vrg-ci-resolve; epic
-  vergil-project/.github#407, issue #1020). So clang-20 -> cpp-clang,
-  node-24 -> ts-node, 3.14 -> python, latest -> base, the same suffix CI's
-  primary leg runs on.
+  Picks a single-container job's image suffix from the resolver's answer: the
+  primary version's entry in the shared setup action's `container-suffixes`
+  output (vrg-ci-resolve; epic vergil-project/.github#407, issues #1020 and
+  #1028). So clang-20 -> cpp-clang, node-24 -> ts-node, 3.14 -> python,
+  latest -> base, the same suffix CI's primary leg runs on. Used by the
+  `setup` jobs of ci-quality (`common`), ci-version-bump (`version-bump`) and
+  cd-release (`release`).
 
-  The caller's `container-suffix` is a cross-check only, as in ci/matrix: when
-  it is set it must equal the resolved primary suffix, or the action fails.
-  It never changes the image.
+  The caller's `container-suffix` is a cross-check only: when it is set it
+  must equal the resolved primary suffix, or the action fails. It never
+  changes the image.
 
 inputs:
   primary-version:

@@ -12,8 +12,8 @@
 #
 # Two kinds of case:
 #   * structure — cd-release.yml's `setup` job runs the shared setup action
-#     and exports its primary-container-tag, and runs cd/release/primary-suffix
-#     on the setup action's primary-version and container-suffixes (with the
+#     and exports its primary-container-tag, and runs
+#     shared/setup/primary-suffix on the setup action's primary-version and container-suffixes (with the
 #     caller's container-suffix as the cross-check) and exports its
 #     primary-container-suffix; `release` needs `setup`, refuses to run
 #     without it, and takes its image suffix and tag (and its validate-inputs
@@ -33,7 +33,7 @@ repo_root="$(cd "${here}/../../../.." && pwd)"
 cd_release_yml="${repo_root}/.github/workflows/cd-release.yml"
 workflows="${repo_root}/.github/workflows"
 derive_sh="${repo_root}/actions/shared/setup/vergil/derive.sh"
-suffix_sh="${repo_root}/actions/cd/release/primary-suffix/resolve.sh"
+suffix_sh="${repo_root}/actions/shared/setup/primary-suffix/resolve.sh"
 window="${repo_root}/actions/shared/setup/vergil/tests/fixtures/window.json"
 
 for tool in yq jq vrg-ci-resolve; do
@@ -93,7 +93,7 @@ case_setup_suffix() {
     return 0
   fi
   expect "$name" "suffix step uses" "$(printf '%s\n' "$step" | yq -r '.uses')" \
-    "./actions/cd/release/primary-suffix" || return 0
+    "./actions/shared/setup/primary-suffix" || return 0
   expect "$name" "primary-version" \
     "$(printf '%s\n' "$step" | yq -r '.with."primary-version"')" \
     '${{ steps.derive.outputs.primary-version }}' || return 0
