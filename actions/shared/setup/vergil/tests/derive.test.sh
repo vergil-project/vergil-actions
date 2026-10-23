@@ -4,10 +4,13 @@
 # version resolver, `vrg-ci-resolve` (epic vergil-project/.github#407).
 #
 # Framework-free and developer-runnable: `bash derive.test.sh`. It needs the
-# real `vrg-ci-resolve` (vergil-tooling v2.1.253 or later) and `jq` on PATH.
-# It does not stub the resolver: every case runs it for real against the
-# fixture window in tests/fixtures/window.json, through VRG_VERSION_WINDOW, the
-# resolver's one sanctioned override. So no case touches the network.
+# real `vrg-ci-resolve` (vergil-tooling v2.1.259 or later, where an app that
+# pins more than one version is an error) and `jq` on PATH. Every case but one
+# runs the resolver for real against the fixture window in
+# tests/fixtures/window.json, through VRG_VERSION_WINDOW, the resolver's one
+# sanctioned override. So no case touches the network. The exception is
+# warning-passthrough, which puts a stub resolver first on PATH because the
+# released resolver no longer prints warnings.
 #
 # Each case writes a fixture vergil.toml into a temp dir, runs derive.sh with a
 # temp GITHUB_OUTPUT and VERGIL_CONFIG_DIR pointed at the fixture, and asserts
@@ -249,19 +252,56 @@ case_version_window_input() {
   pass_case "$name"
 }
 
-# A resolver warning (an app pinning two versions) stays visible as a
-# ::warning:: annotation and does not fail the step.
-case_warning_annotation() {
-  local name="warning-annotation"
-  run_derive "$(toml python application 'versions = ["3.14", "3.13"]')"
+# derive.sh passes a resolver `warning: ` line through as a ::warning::
+# annotation and still writes its outputs. The released resolver no longer
+# prints warnings (vergil-tooling#3442), so this case puts a stub
+# vrg-ci-resolve first on PATH. The stub answers with the real resolver's
+# five-key JSON shape on stdout and one warning line on stderr, and refuses any
+# argument list other than the one derive.sh passes.
+case_warning_passthrough() {
+  local name="warning-passthrough" stub
+  stub="$(mktemp -d)"
+  cat >"${stub}/vrg-ci-resolve" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "$#" -ne 4 ] || [ "$1" != "--format" ] || [ "$2" != "json" ] ||
+  [ "$3" != "--repo-root" ] || [ -z "$4" ]; then
+  echo "stub vrg-ci-resolve: unexpected arguments: $*" >&2
+  exit 2
+fi
+echo "warning: stub resolver warning for the passthrough case" >&2
+echo '{"versions":["3.14"],"primary-version":"3.14","primary-container-tag":"3.14","container-tags":{"3.14":"3.14"},"container-suffixes":{"3.14":"python"}}'
+STUB
+  chmod +x "${stub}/vrg-ci-resolve"
+  run_derive "$(toml python library '')" PATH="${stub}:${PATH}"
+  rm -rf "$stub"
   assert_ok "$name" || return 0
   case "$stderr" in
-    *"::warning::"*"builds exactly one version"*) ;;
+    *"::error::"*)
+      fail_case "$name" "a warning-only run printed an ::error::, got '$stderr'"
+      return 0
+      ;;
+    *"::warning::stub resolver warning for the passthrough case"*) ;;
     *)
       fail_case "$name" "expected a ::warning:: annotation, got '$stderr'"
-      return
+      return 0
       ;;
   esac
+  assert_eq "$name (versions)" "$(out versions)" '["3.14"]' || return 0
+  assert_eq "$name (primary)" "$(out primary-version)" "3.14" || return 0
+  assert_eq "$name (primary tag)" "$(out primary-container-tag)" "3.14" || return 0
+  assert_eq "$name (tags)" "$(out container-tags)" '{"3.14":"3.14"}' || return 0
+  assert_eq "$name (suffixes)" "$(out container-suffixes)" '{"3.14":"python"}' || return 0
+  pass_case "$name"
+}
+
+# An app pinning more than one version is a resolver error (T14,
+# vergil-tooling#3372): the real resolver fails the step with its message as
+# ::error::, and no outputs are written.
+case_app_multi_pin() {
+  local name="app-multi-pin-fails"
+  run_derive "$(toml python application 'versions = ["3.14", "3.13"]')"
+  assert_error "$name" "which builds exactly one version" || return 0
   pass_case "$name"
 }
 
@@ -311,7 +351,8 @@ case_cpp_tags
 case_explicit_primary
 case_no_language
 case_version_window_input
-case_warning_annotation
+case_warning_passthrough
+case_app_multi_pin
 case_resolver_error
 case_missing_file
 case_invalid_window
