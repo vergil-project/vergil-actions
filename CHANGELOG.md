@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.55] - 2026-10-23
+
+### Bug fixes
+
+- build every package cell on the matrix-recorded runtime and check it before signing (#1038)
+
 ## [2.1.54] - 2026-10-23
 
 ### Bug fixes
