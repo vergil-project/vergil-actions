@@ -809,6 +809,8 @@
       
         
       
+        
+      
     
     
     
@@ -861,6 +863,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.53/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.53
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4720,6 +4750,8 @@
       
         
       
+        
+      
     
     
     
@@ -4808,6 +4840,34 @@
     
   
     cd/release/validate-inputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/cd-release-primary-suffix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd/release/primary-suffix
   
 
     
@@ -6451,17 +6511,25 @@ Release. Repos with <code>[package]</code> in <code>vergil.toml</code> also buil
 <code>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;suffix&gt;:&lt;tag&gt;</code>:</p>
 <ul>
 <li><code>&lt;prefix&gt;</code> is <code>container-prefix</code> (default <code>prod</code>).</li>
-<li><code>&lt;suffix&gt;</code> is <code>container-suffix</code>, then <code>language</code>, then <code>base</code>.</li>
-<li><code>&lt;tag&gt;</code> is the resolver's <code>primary-container-tag</code>. The <code>setup</code> job runs the
-  shared <a href="../../actions/shared-setup-vergil/">setup action</a>, which calls
+<li><code>&lt;suffix&gt;</code> and <code>&lt;tag&gt;</code> are the resolver's image suffix and tag for the
+  primary version (<code>[ci].primary-version</code>, or the newest resolved version),
+  the same image CI's primary leg runs on. The <code>setup</code> job runs the shared
+  <a href="../../actions/shared-setup-vergil/">setup action</a>, which calls
   <code>vrg-ci-resolve</code> against the consumer's <code>vergil.toml</code> and the published
-  language version window. The tag is the image tag of the primary version
-  (<code>[ci].primary-version</code>, or the newest resolved version), the same version
-  CI's single-container jobs run on.</li>
+  language version window. The tag is its <code>primary-container-tag</code>; the suffix
+  is the primary version's entry in its <code>container-suffixes</code>, picked by
+  <a href="../../actions/cd-release-primary-suffix/">cd/release/primary-suffix</a>.</li>
 </ul>
-<p>So a release builds and tests on the version CI resolves today, not on a tag
-written into the caller's <code>cd.yml</code> when the repo was initialized. The caller
-passes no tag. A resolver error fails <code>setup</code>, and <code>release</code> does not run.</p>
+<p>For example <code>clang-20</code> gives <code>prod-cpp-clang:20</code>, <code>node-24</code> gives
+<code>prod-ts-node:24</code>, <code>3.14</code> gives <code>prod-python:3.14</code> and a language-less repo's
+<code>latest</code> gives <code>prod-base:latest</code>.</p>
+<p>So a release builds and tests on the image CI resolves today, not on a tag
+written into the caller's <code>cd.yml</code> when the repo was initialized, or a suffix
+guessed from <code>language</code> (<code>language: cpp</code> used to name <code>prod-cpp</code>, which is not
+published). The caller passes no tag, and needs no <code>container-suffix</code>. If it
+passes one, the value must equal the resolved suffix, or <code>setup</code> fails: the
+caller's <code>cd.yml</code> and <code>vergil.toml</code> disagree on the language. A resolver error
+fails <code>setup</code> too, and <code>release</code> does not run.</p>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -6483,7 +6551,7 @@ passes no tag. A resolver error fails <code>setup</code>, and <code>release</cod
 <td><code>container-suffix</code></td>
 <td>string</td>
 <td><code>""</code></td>
-<td>Image suffix (e.g. <code>python</code>, <code>base</code>). Defaults to <code>language</code>, then <code>base</code>.</td>
+<td>Cross-check only. The image suffix comes from the resolver. A non-empty value must equal the resolved primary suffix (e.g. <code>python</code>, <code>cpp-clang</code>, <code>base</code>), or <code>setup</code> fails. It never changes the image.</td>
 </tr>
 <tr>
 <td><code>container-tag</code></td>
@@ -6552,7 +6620,7 @@ passes no tag. A resolver error fails <code>setup</code>, and <code>release</cod
 <tbody>
 <tr>
 <td><code>setup</code></td>
-<td>Always runs. Resolves <code>primary-container-tag</code> for <code>release</code>, and warns if the caller passed <code>container-tag</code>.</td>
+<td>Always runs. Resolves <code>primary-container-suffix</code> and <code>primary-container-tag</code> for <code>release</code>, fails if the caller's <code>container-suffix</code> disagrees with the resolved suffix, and warns if the caller passed <code>container-tag</code>.</td>
 </tr>
 <tr>
 <td><code>package-matrix</code></td>
