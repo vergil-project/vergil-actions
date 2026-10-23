@@ -102,6 +102,7 @@ nav:
       - ci-test: workflows/ci-test.md
       - ci-version-bump: workflows/ci-version-bump.md
       - ci-package: workflows/ci-package.md
+      - cd-release: workflows/cd-release.md
       - cd-release packages: workflows/cd-release-packages.md
       - publish-index: workflows/publish-index.md
       - cd-docs-refresh: workflows/cd-docs-refresh.md
