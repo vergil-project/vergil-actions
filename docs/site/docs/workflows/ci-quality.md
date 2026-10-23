@@ -7,7 +7,7 @@ Code quality and linting workflow.
 | Input | Type | Required | Default | Description |
 | ------- | ------ | ---------- | --------- | ------------- |
 | `language` | string | yes | — | Primary language of the repository |
-| `container-suffix` | string | no | `<language>` | Container image name suffix (e.g. `python`, `base`) |
+| `container-suffix` | string | no | `""` | Cross-check only. Every image suffix comes from the resolver. A non-empty value must equal the primary version's resolved suffix (e.g. `python`, `cpp-clang`, `base`), or `setup` fails. It never changes an image. |
 
 ## Version matrix
 
@@ -20,8 +20,9 @@ the image's interpreter (Python, with
 [`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and then
 asserts the running toolchain with
 [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md). The
-single-container `common` job runs on the resolver's `primary-container-tag`.
-Callers are thin: they pass only `language:` and `container-suffix:`.
+single-container `common` job runs on the resolver's image for the primary
+version (see [Common checks](#common-checks)). Callers are thin: they pass
+only `language:`, and optionally `container-suffix:` as a cross-check.
 
 ## Jobs and check names
 
@@ -35,9 +36,19 @@ Callers are thin: they pass only `language:` and `container-suffix:`.
 ## Common checks
 
 The `common` job runs inside a single container on the primary version —
-`ghcr.io/vergil-project/<prefix>-<suffix>:<tag>`, where `<tag>` is the
-resolver's `primary-container-tag`. It conditionally executes each
-linter based on whether matching files exist in the repository:
+`ghcr.io/vergil-project/<prefix>-<suffix>:<tag>`, the image the primary
+`lint` and `typecheck` legs run on. The `setup` job resolves both parts with
+the shared [setup action](../actions/shared-setup-vergil.md): `<tag>` is its
+`primary-container-tag`, and `<suffix>` is the primary version's entry in its
+`container-suffixes`, picked by
+[shared/setup/primary-suffix](../actions/shared-setup-primary-suffix.md). For
+example `clang-20` gives `prod-cpp-clang:20`, `3.14` gives
+`prod-python:3.14` and a language-less repo's `latest` gives
+`prod-base:latest`. If the caller passes a `container-suffix` that differs
+from `<suffix>`, `setup` fails and `common` does not run.
+
+The job conditionally executes each linter based on whether matching files
+exist in the repository:
 
 | Tool | Condition |
 | ------ | ----------- |
