@@ -73,15 +73,18 @@ because GHAS is available on a public repository. A repository with a
 `[package]` section also requires `package / evidence`.
 
 !!! note "Version-agnostic evidence gates"
-    The matrixed workflows (`ci-audit`, `ci-quality`, `ci-test`) derive their
-    version matrix from `[ci].versions` in `vergil.toml`, so the per-version
-    legs (`unit / 3.14`, `lint / 3.13`, …) change with that set. Branch
+    The matrixed workflows (`ci-audit`, `ci-quality`, `ci-test`) take their
+    version matrix from `vrg-ci-resolve`, which resolves `vergil.toml` against
+    the published language version window, so the per-version legs
+    (`unit / 3.14`, `lint / 3.13`, …) change whenever the resolved set
+    changes: the window gains or drops a version, or the `[ci].versions` pin
+    changes. Branch
     protection therefore requires the stable `<kind> / evidence` **aggregate**
     gates — `audit / evidence`, `quality / evidence`, `test / evidence` — not
     the per-version legs. Each evidence job runs with `if: always()` and
     asserts every leg succeeded, so a failed or skipped leg fails the aggregate
-    red. Adding or dropping a version in `[ci].versions` changes the legs but
-    not the required-check set. See
+    red. A change to the resolved set changes the legs but not the
+    required-check set. See
     [Evidence gates are the required checks](required-checks.md#evidence-gates-are-the-required-checks).
 
 ### Example: vergil-actions
@@ -153,8 +156,8 @@ When adding a new CI job that should block merges:
    `vrg-github-repo-config apply` to converge the ruleset.
 4. Verify the check name matches exactly. For the matrixed workflows, require
    the stable `<kind> / evidence` aggregate (e.g. `test / evidence`), **not** the
-   per-version legs — the legs change with `[ci].versions`, the aggregate does
-   not.
+   per-version legs — the legs change with the resolved version set (the
+   window or the `[ci].versions` pin), the aggregate does not.
 
 ## Branch targeting
 

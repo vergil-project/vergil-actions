@@ -71,66 +71,75 @@ Alphabetical by job key. Always. No exceptions.
 Every consuming repo's workflow files include on line 1:
 
 ```yaml
-# https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
+# https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/README.md
 ```
 
 Rules:
 - Line 1, always — before `name:`.
 - Just the raw URL, no surrounding prose.
 - Points to the `develop` branch.
-- standard-actions' own workflow files skip this (README is co-located).
+- vergil-actions' own workflow files skip this (README is co-located).
 
 ### Standardized `workflow_call` inputs
 
 - Boolean toggles use `type: boolean` (not `type: string`).
-- Version matrix input is always named `versions` (not `go-versions`,
-  `python-versions`, etc.).
-- **`versions` and `container-tag` are optional and no longer the way to
-  set the matrix or the single-container tag.** The matrixed workflows
-  (`ci-audit`, `ci-quality`, `ci-test`) derive the version matrix from
-  `[ci].versions` in the consumer's `vergil.toml`, and the single-container
-  jobs resolve their image tag from `[ci].primary-version` (default: the
-  highest `[ci].versions` entry). Both inputs are still **accepted** for
-  back-compat — a supplied value is honored verbatim — but they are
-  deprecated and slated for removal once no consumer passes them (epic
-  [vergil-project/.github#338](https://github.com/vergil-project/.github/issues/338),
-  removal tracked in
-  [#876](https://github.com/vergil-project/vergil-actions/issues/876)). New
-  and updated `ci.yml` callers should omit them.
+- The CI workflows take no version inputs. The `versions` and
+  `container-tag` inputs were removed in
+  [#899](https://github.com/vergil-project/vergil-actions/pull/899): the
+  matrix and every image tag come from `vrg-ci-resolve`, run by the shared
+  setup action (`actions/shared/setup/vergil`), and the primary version is
+  `[ci].primary-version` or, without it, the newest resolved version. A
+  caller passes only `language:` and `container-suffix:`.
+- A composite action that takes a version list names it `versions` (not
+  `go-versions`, `python-versions`, etc.), as `actions/ci/matrix` does.
 
 ## Dynamic version matrix and evidence gates
 
-The matrixed reusable workflows (`ci-audit`, `ci-quality`, `ci-test`) read
-`[ci].versions` from the consumer's `vergil.toml` at run time — via the shared
-setup action's `versions` / `primary-version` outputs — and derive the job
-matrix themselves. A consumer's `ci.yml` is therefore a **thin caller** that
-passes only `language:` and `container-suffix:`; it no longer passes
-`versions:` or `container-tag:`.
+The matrixed reusable workflows (`ci-audit`, `ci-quality`, `ci-test`) take
+their matrix from `vrg-ci-resolve` at run time. The shared setup action runs
+the resolver, which reads the consumer's `vergil.toml` and the language
+version window that vergil-containers publishes, and applies every rule: a
+`library` builds the whole window, any other repository type is an app that
+builds one version (an app pin of more than one version is an error), C++ and
+TypeScript must pin `[ci].versions`, and a pin must lie inside the window.
+Its versions, image tags and image suffixes feed `actions/ci/matrix`. Each
+leg then pins its toolchain (Python legs with `actions/ci/toolchain/pin-python`)
+and asserts it with `actions/ci/toolchain/assert`. A consumer's `ci.yml` is
+therefore a **thin caller** that passes only `language:` and
+`container-suffix:`.
 
 Each matrixed workflow emits a stable, version-agnostic aggregate gate named
 `<kind> / evidence` — `audit / evidence`, `quality / evidence`, and
 `test / evidence`. The evidence job `needs` every matrix leg and runs with
 `if: always()`, asserting `needs.<leg>.result == 'success'`, so a failed or
 skipped leg makes the aggregate **fail red** rather than skip green. Branch
-protection requires these stable evidence gates, not the per-version legs —
-so the required-check set does not churn when `[ci].versions` changes.
+protection requires these stable evidence gates, not the per-version legs.
+The legs change whenever the resolved set changes (the window gains or drops a
+version, or the `[ci].versions` pin changes); the required-check set does not.
 
 `quality / evidence` always bundles the `common` job's transcript
 (`quality-common.log`), so a language-less repo (no lint/typecheck reports)
 still ships a real quality report rather than an `evidence.json`-only payload
 that release-time harvest would reject (#925).
 
-Single-container workflows (`ci-security`, `ci-version-bump`, `ci-docs`) run on
-the primary version = `[ci].primary-version` if set, else the highest
-`[ci].versions` entry (family-routed to the published container tag for
-`cpp`).
+Single-container jobs take their image differently:
+
+- `ci-quality`'s `common` job and `ci-version-bump` run on the primary
+  version (`[ci].primary-version`, else the newest resolved version), at the
+  image tag the resolver gives for it (`clang-20` runs on tag `20`). There is
+  no family routing in the workflows: the resolver supplies the tag.
+- `ci-security`'s Semgrep job and `ci-docs` run on `prod-base:latest`, which
+  has no per-version tags. Docs jobs set `UV_PYTHON_PREFERENCE=only-system`,
+  so uv uses the image's interpreter.
+- `ci-security`'s CodeQL and Trivy jobs run on the bare runner, with no
+  container.
 
 ## Examples
 
 ### ci.yml — Shell (no version matrix)
 
 ```yaml
-# https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
+# https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/README.md
 name: CI
 
 on:
@@ -167,19 +176,28 @@ jobs:
 
 ### ci.yml — Versioned language (full)
 
-The matrix and the single-container image tag both come from `[ci]` in the
-consumer's `vergil.toml`, so the caller passes only `language:` and
-`container-suffix:` — no `versions:` or `container-tag:`:
+The matrix and the single-container image tag both come from
+`vrg-ci-resolve`, so the caller passes only `language:` and
+`container-suffix:`. A library leaves `[ci].versions` out and builds the whole
+Python window, so a new window version is picked up without a config change:
 
 ```toml
 # vergil.toml
-[ci]
-versions = ["3.12", "3.13", "3.14"]
-# primary-version defaults to the highest entry (3.14) when unset
+[project]
+repository-type = "library"
+primary-language = "python"
+
+# No [ci].versions: a library builds every version in the window.
+# [ci].primary-version is optional; without it the primary is the newest
+# resolved version.
 ```
 
+An app (any other `repository-type`) builds one version: the newest in the
+window, or a single-entry `[ci].versions` pin. Pinning an app to more than one
+version is an error.
+
 ```yaml
-# https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
+# https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/README.md
 name: CI
 
 on:
@@ -240,34 +258,38 @@ jobs:
 
 ### ci.yml — C++ (compiler-family matrix)
 
-C++ carries its compiler family × version axis on `[ci].versions` in
-`vergil.toml` as `clang-`/`gcc-` prefixed tokens. The reusable workflows read
-that set, split each token, and route it to the matching image —
-`clang-20` → `prod-cpp-clang:20`, `gcc-14` → `prod-cpp-gcc:14` — via the
-`actions/ci/matrix` resolver. The caller still passes `container-suffix:`
-(`cpp-clang`) for the non-matrix `common` job; it no longer passes `versions:`
-or `container-tag:`, which the workflows derive from `[ci]` (the single-container
-tag is the family-routed `primary-container-tag` from `[ci].primary-version`).
+C++ carries its compiler family × version axis as `clang-`/`gcc-` prefixed
+tokens, so it must pin `[ci].versions` in `vergil.toml` until its lifecycle
+turn. `vrg-ci-resolve` checks the pin against the window and gives each token
+its image suffix and tag. `actions/ci/matrix` only joins them into an image —
+`clang-20` → `prod-cpp-clang:20`, `gcc-14` → `prod-cpp-gcc:14` — with no
+routing of its own. The caller still passes `container-suffix:` (`cpp-clang`),
+which the `common` job uses and the matrix only cross-checks against the
+resolved suffixes.
 
-Per-kind cardinality follows the gate model: `typecheck` and `unit` run
-per compiler×version (one job/gate each), while `lint` and `dependencies` run
-once on the primary (Clang) image. The emitted gate names line up with
-`github_config.desired_ci_gates_ruleset` for a cpp repo — e.g.
-`quality / lint / clang-20` (once), `quality / typecheck / clang-20`,
-`quality / typecheck / gcc-14`, `test / unit / gcc-13`,
-`audit / dependencies / clang-20` (once).
+Per-kind cardinality: `typecheck` and `unit` run per compiler×version, while
+`lint` and `dependencies` run once, on the primary version. The legs are
+informational, for example `quality / lint / clang-20` (once),
+`quality / typecheck / clang-20`, `quality / typecheck / gcc-14`,
+`test / unit / gcc-14` and `audit / dependencies / clang-20` (once). The
+required checks are the `*/evidence` gates.
 
-The compiler-family × version tokens live in `vergil.toml`:
+A pin of more than one version is valid only for a library; an app pins one
+token:
 
 ```toml
 # vergil.toml
+[project]
+repository-type = "library"
+primary-language = "cpp"
+
 [ci]
-versions = ["clang-20", "clang-19", "gcc-14", "gcc-13"]
-# primary-version defaults to the highest entry (clang-20) when unset
+versions = ["clang-20", "clang-19", "gcc-14"]
+# primary-version defaults to the newest resolved version (clang-20) when unset
 ```
 
 ```yaml
-# https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
+# https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/README.md
 name: CI
 
 on:
@@ -324,7 +346,7 @@ jobs:
 ### cd.yml — Release + Docs
 
 ```yaml
-# https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
+# https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/README.md
 name: CD
 
 on:
@@ -361,7 +383,7 @@ only through `inherit`, never through an explicit `secrets:` map
 (vergil-project/packages#6).
 
 ```yaml
-# https://github.com/wphillipmoore/standard-actions/blob/develop/.github/workflows/README.md
+# https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/README.md
 name: CD
 
 on:

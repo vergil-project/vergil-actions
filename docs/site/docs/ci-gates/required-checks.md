@@ -31,12 +31,14 @@ they are required only where GHAS is available.
 
 ### Evidence gates are the required checks
 
-The matrixed reusable workflows (`ci-audit`, `ci-quality`, `ci-test`) derive
-their version matrix from `[ci].versions` in the consumer's `vergil.toml` at run
-time (see [Reusable Workflows](../workflows/index.md)). Because the number and
-names of the per-version legs change with `[ci].versions`, the **per-version
-legs are not the required checks.** Requiring them would force a ruleset edit
-every time a version was added or dropped.
+The matrixed reusable workflows (`ci-audit`, `ci-quality`, `ci-test`) take
+their version matrix from `vrg-ci-resolve` at run time, which resolves the
+consumer's `vergil.toml` against the published language version window (see
+[Reusable Workflows](../workflows/index.md)). Because the number and names of
+the per-version legs change whenever the resolved set changes (the window
+gains or drops a version, or the `[ci].versions` pin changes), the
+**per-version legs are not the required checks.** Requiring them would force a
+ruleset edit every time a version was added or dropped.
 
 Instead, each matrixed workflow emits one stable, version-agnostic **aggregate
 gate** named `<kind> / evidence`:
@@ -62,7 +64,7 @@ than skip green — closing the "green by absence" hole where a skipped leg woul
 otherwise leave the gate unset and non-blocking. Branch protection requires
 these stable gates (plus `package / evidence` for `[package]` repos); the
 per-version legs run and appear in the checks UI but are informational, so the
-required-check set does not churn when `[ci].versions` changes.
+required-check set does not churn when the resolved version set changes.
 
 `ci-security.yml` also has an `evidence` job (`security / evidence`), but it is
 not a required check: the scanner jobs are not matrixed, so they are required

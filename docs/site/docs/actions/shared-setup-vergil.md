@@ -86,23 +86,32 @@ The action runs these steps in order:
    `vergil.toml` and the language version window that `vergil-containers`
    publishes at the `[dependencies].vergil` ref, and applies the rules:
     - `repository-type = "library"` builds the whole window; every other type
-      builds one version, the newest, and a `[ci].versions` pin of more than
-      one version is an error for it;
+      resolves as an app, which builds exactly one version: the newest, or
+      its single `[ci].versions` pin;
+    - C++ and TypeScript must pin `[ci].versions` until their lifecycle turn:
+      their versions carry a family (`clang-`/`gcc-`, `node-`), so there is no
+      single default;
     - a packaged Python app (`[package].builder = "python"`) builds the newest
-      version that has a published `vergil-python` runtime;
-    - a `[ci].versions` pin must lie inside the window;
-    - `[ci].primary-version` must name a resolved version;
+      version that has a published `vergil-python` runtime; a packaged
+      library keeps the whole window (only its deployed runtime needs a
+      published package);
+    - a `[ci].versions` pin must lie inside the window, and an app's pin must
+      name one version;
+    - `[ci].primary-version` must name a resolved version; without it the
+      primary is the newest resolved version;
     - a repository with no `[project].primary-language` builds `latest` on the
       base image.
 
    Any resolver failure fails the job, and every line of the resolver's
    message becomes an `::error::` annotation. That includes a window that
-   cannot be fetched or is invalid, a pin outside the window, an app that pins
-   more than one version, an invalid `primary-version`, and a missing or
-   invalid `vergil.toml`. It also fails when `vrg-ci-resolve` is not on `PATH`
-   (a `[dependencies].vergil` pin older than vergil-tooling 2.1.253). There is
-   no fallback. A resolver stderr line starting `warning:` becomes a `::warning::`
-   annotation and does not fail the job (the resolver prints none today).
+   cannot be fetched or is invalid, a pin outside the window, an app that
+   pins more than one version, a C++ or TypeScript repository with no pin, a
+   packaged Python repository with no published runtime among its versions,
+   an invalid `primary-version`, and a missing or invalid `vergil.toml`. It
+   also fails when `vrg-ci-resolve` is not on `PATH` (a `[dependencies].vergil`
+   pin older than vergil-tooling 2.1.253). There is no fallback. A resolver
+   stderr line starting `warning:` becomes a `::warning::` annotation and does
+   not fail the job (the resolver prints none today).
 
 The pin reading and the derivation live in `read-pin.sh` and `derive.sh` rather
 than inline YAML so they can be unit tested; see
@@ -126,7 +135,7 @@ primary-language = "python"
 vergil = "v2.1"               # vergil-tooling tag to install, and window ref
 
 [ci]
-# versions = ["3.14"]         # optional pin; must lie inside the window
+# versions = ["3.14"]         # optional pin inside the window; one entry for an app
 # primary-version = "3.13"    # optional; defaults to the newest resolved version
 ```
 

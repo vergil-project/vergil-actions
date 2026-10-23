@@ -7,7 +7,6 @@ Unit test workflow.
 | Input | Type | Required | Default | Description |
 | ------- | ------ | ---------- | --------- | ------------- |
 | `language` | string | yes | — | Primary language of the repository |
-| `versions` | string | no | `[ci].versions` from `vergil.toml` | JSON array of language versions (e.g., `'["3.12", "3.13"]'`). **Deprecated** — omit it; the matrix is derived from `[ci].versions` in the consumer's `vergil.toml`. Still accepted for back-compat (a supplied value is honored verbatim), slated for removal in [#876](https://github.com/vergil-project/vergil-actions/issues/876) |
 | `container-suffix` | string | no | `<language>` | Container image name suffix (e.g. `python`, `base`) |
 
 ## Version matrix

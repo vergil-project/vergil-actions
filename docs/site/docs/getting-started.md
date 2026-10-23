@@ -64,7 +64,7 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ci-quality.yml@v2.1
     with:
       language: python
-      versions: '["3.12", "3.13", "3.14"]'
+      container-suffix: python
 
   security:
     uses: vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1
