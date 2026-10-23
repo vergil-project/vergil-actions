@@ -29,7 +29,7 @@ rulesets.
 
 | Workflow | File | Purpose |
 | ---------- | ------ | --------- |
-| CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump); repos with `[package]` also build, sign and attach `.deb`/`.rpm` packages ([binary packages](cd-release-packages.md)) |
+| [CD Release](cd-release.md) | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump); repos with `[package]` also build, sign and attach `.deb`/`.rpm` packages ([binary packages](cd-release-packages.md)) |
 | CD Docs | `cd-docs.yml` | MkDocs documentation deployment |
 | [Publish package index](publish-index.md) | `publish-index.yml` | Signed apt/dnf package-repository site, deployed to Pages |
 | [CD Docs Refresh](cd-docs-refresh.md) | `cd-docs-refresh.yml` | Regenerate the roadmap and activity pages and redeploy the docs site, on a schedule |
@@ -53,10 +53,8 @@ repository type builds one version, and a `[ci].versions` pin must lie inside
 the window. Each leg asserts that it runs the version it was resolved for
 ([`ci/toolchain/assert`](../actions/ci-toolchain-assert.md)). A
 consumer's `ci.yml` is therefore a **thin caller** that passes only `language:`
-and `container-suffix:` — it no longer passes `versions:` or `container-tag:`.
-Those two inputs are still accepted for back-compat but are deprecated and
-slated for removal (see each workflow's inputs table and
-[#876](https://github.com/vergil-project/vergil-actions/issues/876)).
+and `container-suffix:`. The `versions:` and `container-tag:` inputs were
+removed in [#899](https://github.com/vergil-project/vergil-actions/pull/899).
 
 Single-container jobs (`ci-quality`'s `common`, `ci-version-bump`) run on the
 resolver's primary version: `[ci].primary-version` if set, else the newest
@@ -69,7 +67,8 @@ Each matrixed workflow emits a stable, version-agnostic aggregate gate named
 `if: always()`, asserting each leg's result is `success`, so a failed or skipped
 leg makes the aggregate **fail red** rather than skip green. Branch protection
 requires these stable evidence gates, not the per-version legs, so the
-required-check set does not churn when `[ci].versions` changes. See
+required-check set does not churn when the resolved version set changes (a
+new language window, or a change to the `[ci].versions` pin). See
 [Required Checks](../ci-gates/required-checks.md).
 
 `quality / evidence` always bundles the `common` job's transcript

@@ -25,7 +25,7 @@ The action needs `vergil-tooling` on `PATH`.
 | Input | Required | Default | Description |
 | ----- | -------- | ------- | ----------- |
 | `language` | No | `""` | The repository's language. Empty for repositories with no language ecosystem. |
-| `container-tag` | No | `""` | Container image tag. |
+| `container-tag` | No | `""` | Container image tag. `cd-release` passes the release job's tag, the resolver's `primary-container-tag` from its `setup` job, never a caller input. |
 | `registry-publish` | No | `"false"` | Whether publishing to a package registry is enabled (`"true"` to enable). |
 
 The action has no outputs.
