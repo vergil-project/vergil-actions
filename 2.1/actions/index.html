@@ -811,6 +811,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,6 +865,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.54/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.54
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4758,8 +4788,6 @@
       
         
       
-        
-      
     
     
     
@@ -4851,34 +4879,6 @@
     
   
     cd/release/validate-inputs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="cd-release-primary-suffix/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    cd/release/primary-suffix
   
 
     
@@ -5126,6 +5126,8 @@
       
         
       
+        
+      
     
     
     
@@ -5217,6 +5219,34 @@
     
   
     shared/setup/vergil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="shared-setup-primary-suffix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/primary-suffix
   
 
     
@@ -6501,8 +6531,6 @@ definition and optional supporting scripts.</p>
   annotated git tags and GitHub Releases.</li>
 <li><strong><a href="cd-release-validate-inputs/">cd/release/validate-inputs</a></strong>
   — Checks the <code>cd-release</code> inputs and fails early on an invalid combination.</li>
-<li><strong><a href="cd-release-primary-suffix/">cd/release/primary-suffix</a></strong>
-  — Picks the release image suffix from the resolver's primary version.</li>
 <li><strong><a href="cd-release-ci-evidence-gate/">cd/release/ci-evidence-gate</a></strong>
   — Pre-publish gate: harvests the release PR's CI evidence artifacts and
   checks they are complete before anything is published.</li>
@@ -6533,6 +6561,10 @@ definition and optional supporting scripts.</p>
   set with <code>vrg-ci-resolve</code> (<code>versions</code>, <code>primary-version</code>,
   <code>primary-container-tag</code>, <code>container-tags</code>, <code>container-suffixes</code>; auto-wired
   into the reusable workflows).</li>
+<li><strong><a href="shared-setup-primary-suffix/">shared/setup/primary-suffix</a></strong> — Picks a
+  single-container job's image suffix from the resolver's primary version,
+  with the caller's <code>container-suffix</code> as a must-match cross-check
+  (auto-wired into <code>ci-quality</code>, <code>ci-version-bump</code> and <code>cd-release</code>).</li>
 <li><strong><a href="shared-setup-system-packages/">shared/setup/system-packages</a></strong> — Installs
   a repository's declared <code>[container].system-packages</code> on CI test jobs
   (test-runtime only; auto-wired into <code>ci-test</code>).</li>

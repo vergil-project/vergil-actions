@@ -811,6 +811,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,6 +865,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.54/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.54
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4750,8 +4780,6 @@
       
         
       
-        
-      
     
     
     
@@ -4840,34 +4868,6 @@
     
   
     cd/release/validate-inputs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../actions/cd-release-primary-suffix/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    cd/release/primary-suffix
   
 
     
@@ -5112,6 +5112,8 @@
       
         
       
+        
+      
     
     
     
@@ -5200,6 +5202,34 @@
     
   
     shared/setup/vergil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/shared-setup-primary-suffix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/primary-suffix
   
 
     
@@ -6611,10 +6641,15 @@ the window. Each leg asserts that it runs the version it was resolved for
 consumer's <code>ci.yml</code> is therefore a <strong>thin caller</strong> that passes only <code>language:</code>
 and <code>container-suffix:</code>. The <code>versions:</code> and <code>container-tag:</code> inputs were
 removed in <a href="https://github.com/vergil-project/vergil-actions/pull/899">#899</a>.</p>
-<p>Single-container jobs (<code>ci-quality</code>'s <code>common</code>, <code>ci-version-bump</code>) run on the
-resolver's primary version: <code>[ci].primary-version</code> if set, else the newest
-resolved version, at the resolver's image tag for it (<code>clang-20</code> runs on tag
-<code>20</code>).</p>
+<p>Single-container jobs (<code>ci-quality</code>'s <code>common</code>, <code>ci-version-bump</code>, and
+<code>cd-release</code>'s <code>release</code>) run on the resolver's primary version:
+<code>[ci].primary-version</code> if set, else the newest resolved version, on the
+resolver's image suffix and tag for it (<code>clang-20</code> runs on
+<code>prod-cpp-clang:20</code>; see
+<a href="../actions/shared-setup-primary-suffix/">shared/setup/primary-suffix</a>).
+The caller's <code>container-suffix</code> never picks an image: the matrix legs accept
+any resolved suffix as a cross-check, and the single-container jobs require
+the primary version's.</p>
 <p>Each matrixed workflow emits a stable, version-agnostic aggregate gate named
 <code>&lt;kind&gt; / evidence</code> — <code>audit / evidence</code>, <code>quality / evidence</code>, and
 <code>test / evidence</code>. The evidence job <code>needs</code> every matrix leg and runs with

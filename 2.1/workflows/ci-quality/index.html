@@ -811,6 +811,8 @@
       
         
       
+        
+      
     
     
     
@@ -863,6 +865,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.54/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.54
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4750,8 +4780,6 @@
       
         
       
-        
-      
     
     
     
@@ -4840,34 +4868,6 @@
     
   
     cd/release/validate-inputs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../actions/cd-release-primary-suffix/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    cd/release/primary-suffix
   
 
     
@@ -5112,6 +5112,8 @@
       
         
       
+        
+      
     
     
     
@@ -5200,6 +5202,34 @@
     
   
     shared/setup/vergil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/shared-setup-primary-suffix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/primary-suffix
   
 
     
@@ -6570,8 +6600,8 @@
 <td><code>container-suffix</code></td>
 <td>string</td>
 <td>no</td>
-<td><code>&lt;language&gt;</code></td>
-<td>Container image name suffix (e.g. <code>python</code>, <code>base</code>)</td>
+<td><code>""</code></td>
+<td>Cross-check only. Every image suffix comes from the resolver. A non-empty value must equal the primary version's resolved suffix (e.g. <code>python</code>, <code>cpp-clang</code>, <code>base</code>), or <code>setup</code> fails. It never changes an image.</td>
 </tr>
 </tbody>
 </table>
@@ -6585,8 +6615,9 @@ the image's interpreter (Python, with
 <a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and then
 asserts the running toolchain with
 <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>. The
-single-container <code>common</code> job runs on the resolver's <code>primary-container-tag</code>.
-Callers are thin: they pass only <code>language:</code> and <code>container-suffix:</code>.</p>
+single-container <code>common</code> job runs on the resolver's image for the primary
+version (see <a href="#common-checks">Common checks</a>). Callers are thin: they pass
+only <code>language:</code>, and optionally <code>container-suffix:</code> as a cross-check.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -6621,9 +6652,18 @@ Callers are thin: they pass only <code>language:</code> and <code>container-suff
 </table>
 <h2 id="common-checks">Common checks<a class="headerlink" href="#common-checks" title="Permanent link">&para;</a></h2>
 <p>The <code>common</code> job runs inside a single container on the primary version —
-<code>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;suffix&gt;:&lt;tag&gt;</code>, where <code>&lt;tag&gt;</code> is the
-resolver's <code>primary-container-tag</code>. It conditionally executes each
-linter based on whether matching files exist in the repository:</p>
+<code>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;suffix&gt;:&lt;tag&gt;</code>, the image the primary
+<code>lint</code> and <code>typecheck</code> legs run on. The <code>setup</code> job resolves both parts with
+the shared <a href="../../actions/shared-setup-vergil/">setup action</a>: <code>&lt;tag&gt;</code> is its
+<code>primary-container-tag</code>, and <code>&lt;suffix&gt;</code> is the primary version's entry in its
+<code>container-suffixes</code>, picked by
+<a href="../../actions/shared-setup-primary-suffix/">shared/setup/primary-suffix</a>. For
+example <code>clang-20</code> gives <code>prod-cpp-clang:20</code>, <code>3.14</code> gives
+<code>prod-python:3.14</code> and a language-less repo's <code>latest</code> gives
+<code>prod-base:latest</code>. If the caller passes a <code>container-suffix</code> that differs
+from <code>&lt;suffix&gt;</code>, <code>setup</code> fails and <code>common</code> does not run.</p>
+<p>The job conditionally executes each linter based on whether matching files
+exist in the repository:</p>
 <table>
 <thead>
 <tr>
