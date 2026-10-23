@@ -231,9 +231,16 @@ jobs:
         shell: bash
         env:
           CELL: ${{ matrix.id }}
+          # The runtime `vrg-package matrix` resolved once for every cell
+          # (vergil-project/vergil-tooling#3478), so parallel cells cannot
+          # resolve different runtimes per architecture. A non-python builder's
+          # cell has no `runtime`; `|| ''` makes that an explicit empty string
+          # (never "null"), which vrg-package build reads as none recorded.
+          RUNTIME: ${{ matrix.runtime || '' }}
         run: |
           set -euo pipefail
-          vrg-package build --cell "$CELL" --version "$(vrg-version show)" --out dist/packages
+          vrg-package build --cell "$CELL" --runtime "$RUNTIME" \
+            --version "$(vrg-version show)" --out dist/packages
 
       - name: Upload unsigned packages
         uses: actions/upload-artifact@v7
@@ -261,6 +268,15 @@ jobs:
       run:
         shell: bash
     steps:
+      # Checkout comes first: it empties a workspace that is not yet a git
+      # repository, so it must run before the packages are downloaded into it.
+      # It and vergil-tooling are here only for the runtime check below.
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
       - name: Download unsigned packages
         uses: actions/download-artifact@v7
         with:
@@ -286,6 +302,25 @@ jobs:
           )
           sudo apt-get "${apt_opts[@]}" update
           sudo apt-get "${apt_opts[@]}" install -y --no-install-recommends rpm gnupg
+
+      # Into the workspace root, outside dist/packages, so the manifest is
+      # neither attested nor uploaded with the signed packages; `release`
+      # attaches it from the package-manifest artifact itself.
+      - name: Download package manifest
+        uses: actions/download-artifact@v7
+        with:
+          name: package-manifest
+          path: .
+
+      # vergil-project/vergil-tooling#3478: every .deb and .rpm must depend on
+      # exactly the runtime `vrg-package matrix` recorded, so a mixed-runtime
+      # release stops here, before anything is signed or tagged. Reads the
+      # packages with dpkg-deb (on the runner) and rpm (installed above). A
+      # manifest without a runtime (a non-python builder) passes.
+      - name: Check every package's runtime
+        run: |
+          set -euo pipefail
+          vrg-package check-runtime --manifest packages-manifest.json --artifacts dist/packages
 
       - name: Sign and verify rpms
         env:

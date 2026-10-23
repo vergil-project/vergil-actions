@@ -1,19 +1,29 @@
-name: Smoke - cd-release container tag
+name: Smoke - cd-release
 
-# Runs the framework-free container-tag.test.sh harness (issues #1017 and
-# #1020): the cd-release release job runs on the resolver's
-# primary-container-suffix and primary-container-tag from its `setup` job,
-# never on a caller's `container-tag` input (accepted but ignored with a
-# warning until vergil-project/vergil-tooling#3484 removes it from the
-# callers) or a suffix built from `container-suffix`/`language`; a caller's
-# `container-suffix` is only a cross-check that must match. For fixture
-# repos, the release image is vrg-ci-resolve's image for the primary version.
+# Runs the framework-free cd-release harnesses.
+#
+# container-tag.test.sh (issues #1017 and #1020): the cd-release release job
+# runs on the resolver's primary-container-suffix and primary-container-tag
+# from its `setup` job, never on a caller's `container-tag` input (accepted but
+# ignored with a warning until vergil-project/vergil-tooling#3484 removes it
+# from the callers) or a suffix built from `container-suffix`/`language`; a
+# caller's `container-suffix` is only a cross-check that must match. For
+# fixture repos, the release image is vrg-ci-resolve's image for the primary
+# version.
+#
+# package-runtime.test.sh (issue #1029, vergil-project/vergil-tooling#3478):
+# cd-release's package-build and ci-package's build pass each cell's
+# matrix-recorded runtime to `vrg-package build --runtime` ('' for a cell
+# without one, never "null"), and package-sign runs `vrg-package
+# check-runtime` on the unsigned packages before signing. It runs the real
+# `vrg-package` on offline fixtures.
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - .github/workflows/cd-release.yml
+      - .github/workflows/ci-package.yml
       - .github/workflows/smoke-cd-release.yml
       - actions/shared/setup/primary-suffix/**
       - actions/cd/release/tests/**
@@ -36,3 +46,18 @@ jobs:
       - name: Run container-tag harness
         shell: bash
         run: bash actions/cd/release/tests/container-tag.test.sh
+
+  package-runtime:
+    name: package-runtime fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      # The harness runs the real vrg-package (matrix, build --runtime and
+      # check-runtime need vergil-tooling 2.1.262 or later), so install
+      # vergil-tooling at this repo's [dependencies].vergil pin first.
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+      - name: Run package-runtime harness
+        shell: bash
+        run: bash actions/cd/release/tests/package-runtime.test.sh

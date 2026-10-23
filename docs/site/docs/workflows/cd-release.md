@@ -54,7 +54,7 @@ fails `setup` too, and `release` does not run.
 | --- | -------- |
 | `setup` | Always runs. Resolves `primary-container-suffix` and `primary-container-tag` for `release`, fails if the caller's `container-suffix` disagrees with the resolved suffix, and warns if the caller passed `container-tag`. |
 | `package-matrix` | Always runs. Resolves the package build cells; a repo without `[package]` reports none. See [binary packages](cd-release-packages.md). |
-| `package-build / <cell>`, `package-sign` | Packaged repos only. See [binary packages](cd-release-packages.md). |
+| `package-build / <cell>`, `package-sign` | Packaged repos only. Every cell builds on the runtime `package-matrix` recorded, and `package-sign` checks every package against it before signing. See [binary packages](cd-release-packages.md). |
 | `release` | Runs when `setup` and `package-matrix` succeeded, and `package-sign` too for a packaged repo. Validates the inputs, gates on the CI evidence, publishes, tags and releases, then attaches the evidence bundle. |
 
 ## Usage
