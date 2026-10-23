@@ -813,6 +813,8 @@
       
         
       
+        
+      
     
     
     
@@ -865,6 +867,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.55/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.55
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6658,7 +6688,7 @@ fails <code>setup</code> too, and <code>release</code> does not run.</p>
 </tr>
 <tr>
 <td><code>package-build / &lt;cell&gt;</code>, <code>package-sign</code></td>
-<td>Packaged repos only. See <a href="../cd-release-packages/">binary packages</a>.</td>
+<td>Packaged repos only. Every cell builds on the runtime <code>package-matrix</code> recorded, and <code>package-sign</code> checks every package against it before signing. See <a href="../cd-release-packages/">binary packages</a>.</td>
 </tr>
 <tr>
 <td><code>release</code></td>

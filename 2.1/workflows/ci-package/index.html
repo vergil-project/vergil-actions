@@ -813,6 +813,8 @@
       
         
       
+        
+      
     
     
     
@@ -865,6 +867,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.55/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.55
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5870,6 +5900,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#build-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build runtime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#toolchain-setup" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6460,6 +6501,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#build-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build runtime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#toolchain-setup" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6539,6 +6591,17 @@ with the optional <code>package-tier</code> input (<code>auto</code>, <code>full
 and <code>install-test</code> jobs all succeeded, and it records the tier that ran as
 <code>metrics.tier</code> in the <code>ci-evidence-package</code> artifact.</p>
 <p>This needs a vergil-tooling release whose <code>vrg-package matrix</code> accepts <code>--tier</code>.</p>
+<h2 id="build-runtime">Build runtime<a class="headerlink" href="#build-runtime" title="Permanent link">&para;</a></h2>
+<p>For <code>builder = "python"</code>, <code>vrg-package matrix</code> resolves the <code>vergil-python</code>
+runtime once and records it as <code>runtime</code> on every build cell
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/3478">vergil-tooling#3478</a>).
+Each <code>build / &lt;cell&gt;</code> job passes it on as
+<code>vrg-package build --cell &lt;cell&gt; --runtime &lt;runtime&gt;</code>, as <code>cd-release.yml</code>'s
+<code>package-build</code> does, so PR builds and release builds use the same runtime on
+every architecture. A cell without a <code>runtime</code> (a non-python builder) passes
+an empty <code>--runtime</code>, never <code>null</code>, which <code>vrg-package build</code> reads as none
+recorded. This needs vergil-tooling 2.1.262 or later at the caller's
+<code>[dependencies].vergil</code> pin; <code>v2.1</code> resolves to it.</p>
 <h2 id="toolchain-setup">Toolchain setup<a class="headerlink" href="#toolchain-setup" title="Permanent link">&para;</a></h2>
 <p>Each <code>build / &lt;cell&gt;</code> and <code>install-test / &lt;cell&gt;</code> job runs inside the cell's
 OS image and sets it up with
