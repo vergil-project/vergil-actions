@@ -77,6 +77,7 @@ nav:
       - CD:
           - cd/release/tag-and-release: actions/cd-release-tag-and-release.md
           - cd/release/validate-inputs: actions/cd-release-validate-inputs.md
+          - cd/release/primary-suffix: actions/cd-release-primary-suffix.md
           - cd/release/ci-evidence-gate: actions/cd-release-ci-evidence-gate.md
           - cd/release/registry-publish: actions/cd-release-registry-publish.md
           - cd/release/ci-evidence-attach: actions/cd-release-ci-evidence-attach.md

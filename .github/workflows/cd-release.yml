@@ -8,7 +8,12 @@ on:
         type: string
         default: ""
       container-suffix:
-        description: Container image suffix (e.g. python, base). Defaults to language, then "base".
+        description: >-
+          Cross-check only. The release job's image suffix is the resolver's
+          suffix for the primary version (vrg-ci-resolve's container-suffixes,
+          via the setup job; issue #1020), e.g. cpp-clang for clang-20. When
+          set, it must equal that suffix or the setup job fails; it never
+          changes the image.
         type: string
         default: ""
       container-tag:
@@ -100,13 +105,16 @@ concurrency:
 # skipped, and `release` runs exactly as before. Any package failure stops
 # `release` before anything is published or tagged.
 jobs:
-  # Resolve the release job's image tag with vrg-ci-resolve (via the shared
-  # setup action), the same way CI's single-container jobs do (the `setup`
-  # jobs in ci-quality and ci-version-bump; epic vergil-project/.github#407,
-  # issue #1017). It is the resolver's image tag for the primary version, so a
-  # release builds and tests on CI's primary version instead of a tag frozen
-  # into the caller's cd.yml. A job's `container:` is evaluated before any of
-  # its steps run, so the tag must come from a preceding job.
+  # Resolve the release job's image tag and suffix with vrg-ci-resolve (via
+  # the shared setup action), the same way CI's single-container jobs do (the
+  # `setup` jobs in ci-quality and ci-version-bump; epic
+  # vergil-project/.github#407, issues #1017 and #1020). Both are the
+  # resolver's answer for the primary version, so a release builds and tests
+  # on CI's primary image (clang-20 -> prod-cpp-clang:20) instead of a tag
+  # frozen into the caller's cd.yml or a suffix guessed from `language` (which
+  # named the unpublished prod-cpp). The caller's `container-suffix` is only a
+  # cross-check, as in ci/matrix. A job's `container:` is evaluated before any
+  # of its steps run, so both must come from a preceding job.
   setup:
     name: setup
     runs-on: ubuntu-latest
@@ -115,13 +123,24 @@ jobs:
       contents: read
     outputs:
       primary-container-tag: ${{ steps.derive.outputs.primary-container-tag }}
+      primary-container-suffix: ${{ steps.suffix.outputs.primary-container-suffix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Resolve primary-container-tag with vrg-ci-resolve
+      - name: Resolve the primary version with vrg-ci-resolve
         id: derive
         uses: ./actions/shared/setup/vergil
+
+      # The primary version's image suffix. Fails when the caller passes a
+      # container-suffix that disagrees with it.
+      - name: Resolve primary-container-suffix
+        id: suffix
+        uses: ./actions/cd/release/primary-suffix
+        with:
+          primary-version: ${{ steps.derive.outputs.primary-version }}
+          container-suffixes: ${{ steps.derive.outputs.container-suffixes }}
+          container-suffix: ${{ inputs.container-suffix }}
 
       # The container-tag input is accepted but ignored for one release, so a
       # caller that still passes it keeps working. Say so on the run summary,
@@ -363,7 +382,7 @@ jobs:
     # (no [package]). When packaging is enabled it runs only if `package-sign`
     # succeeded: a failed build cell leaves `package-sign` skipped, and skipped
     # is not success, so nothing is tagged or published. `setup` must succeed:
-    # without its resolved tag there is no image to run on.
+    # without its resolved suffix and tag there is no image to run on.
     if: >-
       ${{ !cancelled() &&
           needs.setup.result == 'success' &&
@@ -371,7 +390,7 @@ jobs:
           (needs.package-matrix.outputs.enabled != 'true' ||
            needs.package-sign.result == 'success') }}
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || inputs.language || 'base' }}:${{ needs.setup.outputs.primary-container-tag }}
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     defaults:
       run:
         shell: bash

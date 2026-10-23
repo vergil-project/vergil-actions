@@ -1,11 +1,13 @@
 name: Smoke - cd-release container tag
 
-# Runs the framework-free container-tag.test.sh harness (issue #1017): the
-# cd-release release job runs on the resolver's primary-container-tag from its
-# `setup` job, never on a caller's `container-tag` input, which is accepted
-# but ignored with a warning until vergil-project/vergil-tooling#3484 removes
-# it from the callers. For fixture repos, the release job's image tag equals
-# vrg-ci-resolve's primary-container-tag when the caller passes no tag.
+# Runs the framework-free container-tag.test.sh harness (issues #1017 and
+# #1020): the cd-release release job runs on the resolver's
+# primary-container-suffix and primary-container-tag from its `setup` job,
+# never on a caller's `container-tag` input (accepted but ignored with a
+# warning until vergil-project/vergil-tooling#3484 removes it from the
+# callers) or a suffix built from `container-suffix`/`language`; a caller's
+# `container-suffix` is only a cross-check that must match. For fixture
+# repos, the release image is vrg-ci-resolve's image for the primary version.
 
 on:
   workflow_dispatch:
@@ -13,6 +15,7 @@ on:
     paths:
       - .github/workflows/cd-release.yml
       - .github/workflows/smoke-cd-release.yml
+      - actions/cd/release/primary-suffix/**
       - actions/cd/release/tests/**
       - actions/shared/setup/vergil/**
 
