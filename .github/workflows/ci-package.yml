@@ -53,9 +53,17 @@ jobs:
         shell: bash
         env:
           CELL: ${{ matrix.id }}
+          # The runtime `vrg-package matrix` resolved once for every cell
+          # (vergil-project/vergil-tooling#3478), as cd-release.yml's
+          # package-build does, so PR builds match release builds. A non-python
+          # builder's cell has no `runtime`; `|| ''` makes that an explicit
+          # empty string (never "null"), which vrg-package build reads as none
+          # recorded.
+          RUNTIME: ${{ matrix.runtime || '' }}
         run: |
           set -euo pipefail
-          vrg-package build --cell "$CELL" --version "$(vrg-version show)" --out dist/packages
+          vrg-package build --cell "$CELL" --runtime "$RUNTIME" \
+            --version "$(vrg-version show)" --out dist/packages
 
       # One artifact per build cell holding every format it built, so both the
       # .deb and the .rpm reach install-test. A cell that built nothing is an
