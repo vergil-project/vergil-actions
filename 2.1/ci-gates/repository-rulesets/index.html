@@ -807,6 +807,8 @@
       
         
       
+        
+      
     
     
     
@@ -859,6 +861,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.52/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.52
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5443,6 +5473,8 @@
       
         
       
+        
+      
     
     
     
@@ -5680,6 +5712,34 @@
     
   
     ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/cd-release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release
   
 
     
@@ -6693,15 +6753,18 @@ because GHAS is available on a public repository. A repository with a
 <code>[package]</code> section also requires <code>package / evidence</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Version-agnostic evidence gates</p>
-<p>The matrixed workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) derive their
-version matrix from <code>[ci].versions</code> in <code>vergil.toml</code>, so the per-version
-legs (<code>unit / 3.14</code>, <code>lint / 3.13</code>, …) change with that set. Branch
+<p>The matrixed workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) take their
+version matrix from <code>vrg-ci-resolve</code>, which resolves <code>vergil.toml</code> against
+the published language version window, so the per-version legs
+(<code>unit / 3.14</code>, <code>lint / 3.13</code>, …) change whenever the resolved set
+changes: the window gains or drops a version, or the <code>[ci].versions</code> pin
+changes. Branch
 protection therefore requires the stable <code>&lt;kind&gt; / evidence</code> <strong>aggregate</strong>
 gates — <code>audit / evidence</code>, <code>quality / evidence</code>, <code>test / evidence</code> — not
 the per-version legs. Each evidence job runs with <code>if: always()</code> and
 asserts every leg succeeded, so a failed or skipped leg fails the aggregate
-red. Adding or dropping a version in <code>[ci].versions</code> changes the legs but
-not the required-check set. See
+red. A change to the resolved set changes the legs but not the
+required-check set. See
 <a href="../required-checks/#evidence-gates-are-the-required-checks">Evidence gates are the required checks</a>.</p>
 </div>
 <h3 id="example-vergil-actions">Example: vergil-actions<a class="headerlink" href="#example-vergil-actions" title="Permanent link">&para;</a></h3>
@@ -6782,8 +6845,8 @@ rolling tags fall outside the <code>v*.*.*</code> pattern.</p>
    <code>vrg-github-repo-config apply</code> to converge the ruleset.</li>
 <li>Verify the check name matches exactly. For the matrixed workflows, require
    the stable <code>&lt;kind&gt; / evidence</code> aggregate (e.g. <code>test / evidence</code>), <strong>not</strong> the
-   per-version legs — the legs change with <code>[ci].versions</code>, the aggregate does
-   not.</li>
+   per-version legs — the legs change with the resolved version set (the
+   window or the <code>[ci].versions</code> pin), the aggregate does not.</li>
 </ol>
 <h2 id="branch-targeting">Branch targeting<a class="headerlink" href="#branch-targeting" title="Permanent link">&para;</a></h2>
 <p>All rulesets use explicit branch references (<code>refs/heads/main</code>,

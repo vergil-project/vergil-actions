@@ -807,6 +807,8 @@
       
         
       
+        
+      
     
     
     
@@ -859,6 +861,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.52/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.52
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5443,6 +5473,8 @@
       
         
       
+        
+      
     
     
     
@@ -5680,6 +5712,34 @@
     
   
     ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/cd-release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release
   
 
     
@@ -6495,12 +6555,14 @@ creates when scanner results are uploaded to code scanning; see
 <a href="../security-scanning/">Security Scanning</a>. Without GHAS they never report, so
 they are required only where GHAS is available.</p>
 <h3 id="evidence-gates-are-the-required-checks">Evidence gates are the required checks<a class="headerlink" href="#evidence-gates-are-the-required-checks" title="Permanent link">&para;</a></h3>
-<p>The matrixed reusable workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) derive
-their version matrix from <code>[ci].versions</code> in the consumer's <code>vergil.toml</code> at run
-time (see <a href="../../workflows/">Reusable Workflows</a>). Because the number and
-names of the per-version legs change with <code>[ci].versions</code>, the <strong>per-version
-legs are not the required checks.</strong> Requiring them would force a ruleset edit
-every time a version was added or dropped.</p>
+<p>The matrixed reusable workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) take
+their version matrix from <code>vrg-ci-resolve</code> at run time, which resolves the
+consumer's <code>vergil.toml</code> against the published language version window (see
+<a href="../../workflows/">Reusable Workflows</a>). Because the number and names of
+the per-version legs change whenever the resolved set changes (the window
+gains or drops a version, or the <code>[ci].versions</code> pin changes), the
+<strong>per-version legs are not the required checks.</strong> Requiring them would force a
+ruleset edit every time a version was added or dropped.</p>
 <p>Instead, each matrixed workflow emits one stable, version-agnostic <strong>aggregate
 gate</strong> named <code>&lt;kind&gt; / evidence</code>:</p>
 <table>
@@ -6542,7 +6604,7 @@ than skip green — closing the "green by absence" hole where a skipped leg woul
 otherwise leave the gate unset and non-blocking. Branch protection requires
 these stable gates (plus <code>package / evidence</code> for <code>[package]</code> repos); the
 per-version legs run and appear in the checks UI but are informational, so the
-required-check set does not churn when <code>[ci].versions</code> changes.</p>
+required-check set does not churn when the resolved version set changes.</p>
 <p><code>ci-security.yml</code> also has an <code>evidence</code> job (<code>security / evidence</code>), but it is
 not a required check: the scanner jobs are not matrixed, so they are required
 directly.</p>

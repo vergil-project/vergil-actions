@@ -807,6 +807,8 @@
       
         
       
+        
+      
     
     
     
@@ -859,6 +861,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.52/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.52
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5445,6 +5475,8 @@
       
         
       
+        
+      
     
     
     
@@ -5685,6 +5717,34 @@
     
   
     ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cd-release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release
   
 
     
@@ -6431,7 +6491,7 @@ rulesets.</p>
 </thead>
 <tbody>
 <tr>
-<td>CD Release</td>
+<td><a href="cd-release/">CD Release</a></td>
 <td><code>cd-release.yml</code></td>
 <td>Full release pipeline (tag, build, publish, version bump); repos with <code>[package]</code> also build, sign and attach <code>.deb</code>/<code>.rpm</code> packages (<a href="cd-release-packages/">binary packages</a>)</td>
 </tr>
@@ -6489,10 +6549,8 @@ repository type builds one version, and a <code>[ci].versions</code> pin must li
 the window. Each leg asserts that it runs the version it was resolved for
 (<a href="../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>). A
 consumer's <code>ci.yml</code> is therefore a <strong>thin caller</strong> that passes only <code>language:</code>
-and <code>container-suffix:</code> — it no longer passes <code>versions:</code> or <code>container-tag:</code>.
-Those two inputs are still accepted for back-compat but are deprecated and
-slated for removal (see each workflow's inputs table and
-<a href="https://github.com/vergil-project/vergil-actions/issues/876">#876</a>).</p>
+and <code>container-suffix:</code>. The <code>versions:</code> and <code>container-tag:</code> inputs were
+removed in <a href="https://github.com/vergil-project/vergil-actions/pull/899">#899</a>.</p>
 <p>Single-container jobs (<code>ci-quality</code>'s <code>common</code>, <code>ci-version-bump</code>) run on the
 resolver's primary version: <code>[ci].primary-version</code> if set, else the newest
 resolved version, at the resolver's image tag for it (<code>clang-20</code> runs on tag
@@ -6503,7 +6561,8 @@ resolved version, at the resolver's image tag for it (<code>clang-20</code> runs
 <code>if: always()</code>, asserting each leg's result is <code>success</code>, so a failed or skipped
 leg makes the aggregate <strong>fail red</strong> rather than skip green. Branch protection
 requires these stable evidence gates, not the per-version legs, so the
-required-check set does not churn when <code>[ci].versions</code> changes. See
+required-check set does not churn when the resolved version set changes (a
+new language window, or a change to the <code>[ci].versions</code> pin). See
 <a href="../ci-gates/required-checks/">Required Checks</a>.</p>
 <p><code>quality / evidence</code> always bundles the <code>common</code> job's transcript
 (<code>quality-common.log</code>, the full <code>vrg-validate --check common</code> output)

@@ -807,6 +807,8 @@
       
         
       
+        
+      
     
     
     
@@ -859,6 +861,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.52/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.52
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5581,6 +5611,8 @@
       
         
       
+        
+      
     
     
     
@@ -5818,6 +5850,34 @@
     
   
     ci-package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/cd-release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    cd-release
   
 
     
@@ -6563,11 +6623,19 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
    publishes at the <code>[dependencies].vergil</code> ref, and applies the rules:</p>
 <ul>
 <li><code>repository-type = "library"</code> builds the whole window; every other type
-  builds one version, the newest;</li>
+  resolves as an app, which builds exactly one version: the newest, or
+  its single <code>[ci].versions</code> pin;</li>
+<li>C++ and TypeScript must pin <code>[ci].versions</code> until their lifecycle turn:
+  their versions carry a family (<code>clang-</code>/<code>gcc-</code>, <code>node-</code>), so there is no
+  single default;</li>
 <li>a packaged Python app (<code>[package].builder = "python"</code>) builds the newest
-  version that has a published <code>vergil-python</code> runtime;</li>
-<li>a <code>[ci].versions</code> pin must lie inside the window;</li>
-<li><code>[ci].primary-version</code> must name a resolved version;</li>
+  version that has a published <code>vergil-python</code> runtime; a packaged
+  library keeps the whole window (only its deployed runtime needs a
+  published package);</li>
+<li>a <code>[ci].versions</code> pin must lie inside the window, and an app's pin must
+  name one version;</li>
+<li><code>[ci].primary-version</code> must name a resolved version; without it the
+  primary is the newest resolved version;</li>
 <li>a repository with no <code>[project].primary-language</code> builds <code>latest</code> on the
   base image.</li>
 </ul>
@@ -6575,16 +6643,19 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 </ol>
 <p>Any resolver failure fails the job, and every line of the resolver's
    message becomes an <code>::error::</code> annotation. That includes a window that
-   cannot be fetched or is invalid, a pin outside the window, an invalid
-   <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It also fails
-   when <code>vrg-ci-resolve</code> is not on <code>PATH</code> (a <code>[dependencies].vergil</code> pin older
-   than vergil-tooling 2.1.253). There is no fallback. A resolver warning (for
-   example an app that pins more than one version) becomes a <code>::warning::</code>
-   annotation and does not fail the job.</p>
+   cannot be fetched or is invalid, a pin outside the window, an app that
+   pins more than one version, a C++ or TypeScript repository with no pin, a
+   packaged Python repository with no published runtime among its versions,
+   an invalid <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It
+   also fails when <code>vrg-ci-resolve</code> is not on <code>PATH</code> (a <code>[dependencies].vergil</code>
+   pin older than vergil-tooling 2.1.253). There is no fallback. A resolver
+   stderr line starting <code>warning:</code> becomes a <code>::warning::</code> annotation and does
+   not fail the job (the resolver prints none today).</p>
 <p>The pin reading and the derivation live in <code>read-pin.sh</code> and <code>derive.sh</code> rather
 than inline YAML so they can be unit tested; see
 <code>actions/shared/setup/vergil/tests/derive.test.sh</code>, which runs the real
-resolver against the fixture window in <code>tests/fixtures/window.json</code>, and
+resolver against the fixture window in <code>tests/fixtures/window.json</code> (one case
+stubs the resolver to test the <code>warning:</code> passthrough), and
 <code>tests/read-pin.test.sh</code>. The <code>smoke-setup-vergil</code> workflow runs those tests
 and checks the action's outputs end to end.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
@@ -6598,7 +6669,7 @@ and checks the action's outputs end to end.</p>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">vergil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"v2.1"</span><span class="w">               </span><span class="c1"># vergil-tooling tag to install, and window ref</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">[ci]</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># versions = ["3.14"]         # optional pin; must lie inside the window</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># versions = ["3.14"]         # optional pin inside the window; one entry for an app</span>
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># primary-version = "3.13"    # optional; defaults to the newest resolved version</span>
 </code></pre></div>
 <p>Leave <code>[ci].versions</code> out so the repository follows the window. Set
