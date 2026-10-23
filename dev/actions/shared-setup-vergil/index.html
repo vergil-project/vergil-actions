@@ -6563,7 +6563,8 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
    publishes at the <code>[dependencies].vergil</code> ref, and applies the rules:</p>
 <ul>
 <li><code>repository-type = "library"</code> builds the whole window; every other type
-  builds one version, the newest;</li>
+  builds one version, the newest, and a <code>[ci].versions</code> pin of more than
+  one version is an error for it;</li>
 <li>a packaged Python app (<code>[package].builder = "python"</code>) builds the newest
   version that has a published <code>vergil-python</code> runtime;</li>
 <li>a <code>[ci].versions</code> pin must lie inside the window;</li>
@@ -6575,16 +6576,17 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 </ol>
 <p>Any resolver failure fails the job, and every line of the resolver's
    message becomes an <code>::error::</code> annotation. That includes a window that
-   cannot be fetched or is invalid, a pin outside the window, an invalid
-   <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It also fails
-   when <code>vrg-ci-resolve</code> is not on <code>PATH</code> (a <code>[dependencies].vergil</code> pin older
-   than vergil-tooling 2.1.253). There is no fallback. A resolver warning (for
-   example an app that pins more than one version) becomes a <code>::warning::</code>
-   annotation and does not fail the job.</p>
+   cannot be fetched or is invalid, a pin outside the window, an app that pins
+   more than one version, an invalid <code>primary-version</code>, and a missing or
+   invalid <code>vergil.toml</code>. It also fails when <code>vrg-ci-resolve</code> is not on <code>PATH</code>
+   (a <code>[dependencies].vergil</code> pin older than vergil-tooling 2.1.253). There is
+   no fallback. A resolver stderr line starting <code>warning:</code> becomes a <code>::warning::</code>
+   annotation and does not fail the job (the resolver prints none today).</p>
 <p>The pin reading and the derivation live in <code>read-pin.sh</code> and <code>derive.sh</code> rather
 than inline YAML so they can be unit tested; see
 <code>actions/shared/setup/vergil/tests/derive.test.sh</code>, which runs the real
-resolver against the fixture window in <code>tests/fixtures/window.json</code>, and
+resolver against the fixture window in <code>tests/fixtures/window.json</code> (one case
+stubs the resolver to test the <code>warning:</code> passthrough), and
 <code>tests/read-pin.test.sh</code>. The <code>smoke-setup-vergil</code> workflow runs those tests
 and checks the action's outputs end to end.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
