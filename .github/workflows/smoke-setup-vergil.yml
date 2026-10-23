@@ -65,7 +65,7 @@ jobs:
       # The derive.sh harness runs the real resolver, so install vergil-tooling
       # at this repo's [dependencies].vergil pin first.
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.54
       - name: Run derive.sh harness
         shell: bash
         run: bash actions/shared/setup/vergil/tests/derive.test.sh
@@ -118,7 +118,7 @@ jobs:
 
       - name: Run the setup action against the fixture
         id: setup
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.54
         with:
           version-window: actions/shared/setup/vergil/tests/fixtures/window.json
 
@@ -151,7 +151,7 @@ jobs:
 
       - name: Build the matrix from the outputs
         id: matrix
-        uses: ./actions/ci/matrix
+        uses: vergil-project/vergil-actions/actions/ci/matrix@v2.1.54
         with:
           language: python
           versions: ${{ steps.setup.outputs.versions }}
