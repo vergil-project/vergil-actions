@@ -16,7 +16,7 @@
         <link rel="prev" href="../shared-security-trivy/">
       
       
-        <link rel="next" href="../shared-setup-system-packages/">
+        <link rel="next" href="../shared-setup-primary-suffix/">
       
       
         
@@ -4758,8 +4758,6 @@
       
         
       
-        
-      
     
     
     
@@ -4851,34 +4849,6 @@
     
   
     cd/release/validate-inputs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cd-release-primary-suffix/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    cd/release/primary-suffix
   
 
     
@@ -5128,6 +5098,8 @@
       
         
       
+        
+      
     
     
     
@@ -5340,6 +5312,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shared-setup-primary-suffix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/primary-suffix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -6623,7 +6623,7 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 </tr>
 <tr>
 <td><code>primary-container-tag</code></td>
-<td>The resolver's image tag for the primary version (<code>clang-20</code> has tag <code>20</code>, <code>node-24</code> has <code>24</code>, <code>3.14</code> has <code>3.14</code>). Used by the single-container <code>common</code> job in <code>ci-quality</code> and the <code>version-bump</code> job in <code>ci-version-bump</code>.</td>
+<td>The resolver's image tag for the primary version (<code>clang-20</code> has tag <code>20</code>, <code>node-24</code> has <code>24</code>, <code>3.14</code> has <code>3.14</code>). Used by the single-container <code>common</code> job in <code>ci-quality</code>, the <code>version-bump</code> job in <code>ci-version-bump</code> and the <code>release</code> job in <code>cd-release</code>.</td>
 </tr>
 <tr>
 <td><code>container-tags</code></td>
@@ -6631,7 +6631,7 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 </tr>
 <tr>
 <td><code>container-suffixes</code></td>
-<td>Compact JSON object mapping each resolved version to its image suffix, e.g. <code>{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}</code>. Passed to <a href="../ci-matrix/"><code>ci/matrix</code></a>.</td>
+<td>Compact JSON object mapping each resolved version to its image suffix, e.g. <code>{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}</code>. Passed to <a href="../ci-matrix/"><code>ci/matrix</code></a>, and to <a href="../shared-setup-primary-suffix/"><code>shared/setup/primary-suffix</code></a> for the single-container jobs' image suffix.</td>
 </tr>
 </tbody>
 </table>

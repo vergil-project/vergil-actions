@@ -4750,8 +4750,6 @@
       
         
       
-        
-      
     
     
     
@@ -4840,34 +4838,6 @@
     
   
     cd/release/validate-inputs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../actions/cd-release-primary-suffix/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    cd/release/primary-suffix
   
 
     
@@ -5112,6 +5082,8 @@
       
         
       
+        
+      
     
     
     
@@ -5200,6 +5172,34 @@
     
   
     shared/setup/vergil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/shared-setup-primary-suffix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    shared/setup/primary-suffix
   
 
     
@@ -5805,6 +5805,17 @@
     <span class="md-ellipsis">
       
         Inputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image
       
     </span>
   </a>
@@ -6441,6 +6452,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jobs-and-check-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6515,11 +6537,21 @@ stay green.</p>
 <td><code>container-suffix</code></td>
 <td>string</td>
 <td>no</td>
-<td><code>base</code></td>
-<td>Container image name suffix (e.g. <code>python</code>, <code>base</code>)</td>
+<td><code>""</code></td>
+<td>Cross-check only. The image suffix comes from the resolver. A non-empty value must equal the primary version's resolved suffix (e.g. <code>python</code>, <code>cpp-clang</code>, <code>base</code>), or <code>setup</code> fails. It never changes the image.</td>
 </tr>
 </tbody>
 </table>
+<h2 id="image">Image<a class="headerlink" href="#image" title="Permanent link">&para;</a></h2>
+<p>The <code>version-bump</code> job runs in <code>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;suffix&gt;:&lt;tag&gt;</code>,
+the resolver's image for the primary version, as in
+<a href="../ci-quality/#common-checks">ci-quality</a>'s <code>common</code> job: <code>&lt;tag&gt;</code> is the
+shared <a href="../../actions/shared-setup-vergil/">setup action</a>'s
+<code>primary-container-tag</code>, and <code>&lt;suffix&gt;</code> is the primary version's entry in its
+<code>container-suffixes</code>, picked by
+<a href="../../actions/shared-setup-primary-suffix/">shared/setup/primary-suffix</a>
+(<code>clang-20</code> gives <code>prod-cpp-clang:20</code>, a language-less repo gives
+<code>prod-base:latest</code>).</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -6533,7 +6565,7 @@ stay green.</p>
 <tr>
 <td><code>setup</code></td>
 <td><code>&lt;caller&gt; / setup</code></td>
-<td>Always runs; resolves the container tag for <code>version-bump</code></td>
+<td>Always runs; resolves the image suffix and tag for <code>version-bump</code>, and fails if the caller's <code>container-suffix</code> disagrees with the resolved suffix</td>
 </tr>
 <tr>
 <td><code>version-bump</code></td>
