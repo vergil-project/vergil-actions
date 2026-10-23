@@ -35,6 +35,8 @@ definition and optional supporting scripts.
   annotated git tags and GitHub Releases.
 - **[cd/release/validate-inputs](cd-release-validate-inputs.md)**
   — Checks the `cd-release` inputs and fails early on an invalid combination.
+- **[cd/release/primary-suffix](cd-release-primary-suffix.md)**
+  — Picks the release image suffix from the resolver's primary version.
 - **[cd/release/ci-evidence-gate](cd-release-ci-evidence-gate.md)**
   — Pre-publish gate: harvests the release PR's CI evidence artifacts and
   checks they are complete before anything is published.

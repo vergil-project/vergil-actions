@@ -1,0 +1,47 @@
+name: Resolve the release image suffix
+description: >-
+  Picks the cd-release `release` job's image suffix from the resolver's
+  answer: the primary version's entry in the shared setup action's
+  `container-suffixes` output (vrg-ci-resolve; epic
+  vergil-project/.github#407, issue #1020). So clang-20 -> cpp-clang,
+  node-24 -> ts-node, 3.14 -> python, latest -> base, the same suffix CI's
+  primary leg runs on.
+
+  The caller's `container-suffix` is a cross-check only, as in ci/matrix: when
+  it is set it must equal the resolved primary suffix, or the action fails.
+  It never changes the image.
+
+inputs:
+  primary-version:
+    description: The setup action's `primary-version` output.
+    required: true
+  container-suffixes:
+    description: >-
+      The setup action's `container-suffixes` output: JSON object mapping each
+      resolved version to its image suffix.
+    required: true
+  container-suffix:
+    description: >-
+      The calling workflow's `container-suffix`, as a cross-check only: when
+      set, it must equal the resolved primary suffix, or the action fails.
+    required: false
+    default: ""
+
+outputs:
+  primary-container-suffix:
+    description: >-
+      The image suffix of the primary version, as the resolver gives it (for
+      example cpp-clang, ts-node, python, base).
+    value: ${{ steps.resolve.outputs.primary-container-suffix }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve the primary image suffix
+      id: resolve
+      shell: bash
+      env:
+        PRIMARY: ${{ inputs.primary-version }}
+        CONTAINER_SUFFIXES: ${{ inputs.container-suffixes }}
+        SUFFIX: ${{ inputs.container-suffix }}
+      run: bash "${GITHUB_ACTION_PATH}/resolve.sh"

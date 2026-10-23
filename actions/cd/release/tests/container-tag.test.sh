@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Test that cd-release.yml runs its release job on the resolver's primary
-# container tag, not on a caller input (issue #1017, epic
+# image, suffix and tag, not on caller inputs (issues #1017 and #1020, epic
 # vergil-project/.github#407).
 #
 # Framework-free and developer-runnable: `bash container-tag.test.sh`. CI runs
@@ -12,15 +12,20 @@
 #
 # Two kinds of case:
 #   * structure — cd-release.yml's `setup` job runs the shared setup action
-#     and exports its primary-container-tag; `release` needs `setup`, refuses
-#     to run without it, and takes its image tag (and its validate-inputs tag)
-#     from it; the deprecated `container-tag` input defaults to empty and is
-#     read only by the step that warns about it; no other workflow job builds
-#     its image from a caller's `container-tag`.
+#     and exports its primary-container-tag, and runs cd/release/primary-suffix
+#     on the setup action's primary-version and container-suffixes (with the
+#     caller's container-suffix as the cross-check) and exports its
+#     primary-container-suffix; `release` needs `setup`, refuses to run
+#     without it, and takes its image suffix and tag (and its validate-inputs
+#     tag) from it; the deprecated `container-tag` input defaults to empty and
+#     is read only by the step that warns about it; no other workflow job
+#     builds its image from a caller's `container-tag`, and no cd-release job
+#     builds its image from a caller's `container-suffix` or `language`.
 #   * resolution — for a fixture repo, the release job's `container:`
-#     expression, filled in with the setup action's derive.sh outputs and a
-#     caller that passes no tag, names the image whose tag is
-#     `vrg-ci-resolve`'s primary-container-tag.
+#     expression, filled in with the setup action's derive.sh outputs and
+#     primary-suffix's resolve.sh output, names the image whose suffix and tag
+#     are `vrg-ci-resolve`'s for the primary version; and a caller
+#     container-suffix that disagrees with it fails resolve.sh loudly.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,6 +33,7 @@ repo_root="$(cd "${here}/../../../.." && pwd)"
 cd_release_yml="${repo_root}/.github/workflows/cd-release.yml"
 workflows="${repo_root}/.github/workflows"
 derive_sh="${repo_root}/actions/shared/setup/vergil/derive.sh"
+suffix_sh="${repo_root}/actions/cd/release/primary-suffix/resolve.sh"
 window="${repo_root}/actions/shared/setup/vergil/tests/fixtures/window.json"
 
 for tool in yq jq vrg-ci-resolve; do
@@ -74,6 +80,32 @@ case_setup_job() {
   pass_case "$name"
 }
 
+# The suffix step: primary-suffix on the derive step's answer, the caller's
+# container-suffix passed only as its cross-check, exported by setup.
+case_setup_suffix() {
+  local name="setup-job-derives-the-suffix" step
+  expect "$name" "setup output" \
+    "$(q '.jobs.setup.outputs."primary-container-suffix"')" \
+    '${{ steps.suffix.outputs.primary-container-suffix }}' || return 0
+  step="$(q '.jobs.setup.steps[] | select(.id == "suffix")')"
+  if [ -z "$step" ]; then
+    fail_case "$name" "setup has no step with id suffix"
+    return 0
+  fi
+  expect "$name" "suffix step uses" "$(printf '%s\n' "$step" | yq -r '.uses')" \
+    "./actions/cd/release/primary-suffix" || return 0
+  expect "$name" "primary-version" \
+    "$(printf '%s\n' "$step" | yq -r '.with."primary-version"')" \
+    '${{ steps.derive.outputs.primary-version }}' || return 0
+  expect "$name" "container-suffixes" \
+    "$(printf '%s\n' "$step" | yq -r '.with."container-suffixes"')" \
+    '${{ steps.derive.outputs.container-suffixes }}' || return 0
+  expect "$name" "container-suffix cross-check" \
+    "$(printf '%s\n' "$step" | yq -r '.with."container-suffix"')" \
+    '${{ inputs.container-suffix }}' || return 0
+  pass_case "$name"
+}
+
 case_release_uses_setup() {
   local name="release-runs-on-the-derived-tag" image if_expr validate
   if ! q '.jobs.release.needs[]' | grep -qx setup; then
@@ -89,13 +121,9 @@ case_release_uses_setup() {
       ;;
   esac
   image="$(q '.jobs.release.container')"
-  case "$image" in
-    *':${{ needs.setup.outputs.primary-container-tag }}') ;;
-    *)
-      fail_case "$name" "release container does not end in the setup job's tag: $image"
-      return 0
-      ;;
-  esac
+  expect "$name" "release container" "$image" \
+    "ghcr.io/vergil-project/\${{ inputs.container-prefix || 'prod' }}-\${{ needs.setup.outputs.primary-container-suffix }}:\${{ needs.setup.outputs.primary-container-tag }}" ||
+    return 0
   validate="$(q '.jobs.release.steps[] | select(.uses == "./actions/cd/release/validate-inputs") | .with."container-tag"')"
   expect "$name" "validate-inputs container-tag" "$validate" \
     '${{ needs.setup.outputs.primary-container-tag }}' || return 0
@@ -143,21 +171,27 @@ case_no_caller_tag_images() {
   pass_case "$name"
 }
 
-# render_release_image <derive output file> <language> — fill in the release
-# job's container expression for a caller that passes only `language`.
-render_release_image() {
-  local tag image
-  tag="$(sed -n 's/^primary-container-tag=//p' "$1")"
-  image="$(q '.jobs.release.container')"
-  image="${image//"\${{ inputs.container-prefix || 'prod' }}"/prod}"
-  image="${image//"\${{ inputs.container-suffix || inputs.language || 'base' }}"/${2:-base}}"
-  image="${image//"\${{ needs.setup.outputs.primary-container-tag }}"/$tag}"
-  printf '%s' "$image"
+# No cd-release job builds its image from the caller's container-suffix or
+# language (issue #1020): `language: cpp` named the unpublished prod-cpp.
+case_no_caller_suffix_images() {
+  local name="no-release-image-from-a-caller-suffix" hits
+  hits="$(q '[.jobs | to_entries[] | select((.value.container // "" | tostring) |
+    test("inputs\\.(container-suffix|language)")) | .key] | join(" ")')"
+  expect "$name" "jobs with an input-suffixed container" "$hits" "" || return 0
+  pass_case "$name"
 }
 
-# resolve_case <name> <language|""> <[ci] lines> <want image>
-resolve_case() {
-  local name="$1" lang="$2" ci="$3" want="$4" dir so image direct
+# Result of the last derive_fixture / run_suffix.
+dir=""
+so=""
+rc=0
+stderr=""
+suffix=""
+
+# derive_fixture <name> <language|""> <[ci] lines> — write a fixture repo to
+# $dir and run derive.sh on it into $so. Returns 1 (case failed) on error.
+derive_fixture() {
+  local name="$1" lang="$2" ci="$3"
   dir="$(mktemp -d)"
   so="$(mktemp)"
   {
@@ -171,27 +205,106 @@ resolve_case() {
     bash "$derive_sh" >/dev/null 2>&1; then
     fail_case "$name" "derive.sh failed for the fixture"
     rm -rf "$dir" "$so"
+    return 1
+  fi
+}
+
+# out <key> — a value derive.sh wrote to $so.
+out() {
+  sed -n "s/^$1=//p" "$so"
+}
+
+# run_suffix <caller container-suffix> — run primary-suffix's resolve.sh on
+# the derive outputs in $so; sets suffix (its output), rc and stderr.
+run_suffix() {
+  local o e
+  o="$(mktemp)"
+  e="$(mktemp)"
+  rc=0
+  PRIMARY="$(out primary-version)" CONTAINER_SUFFIXES="$(out container-suffixes)" \
+    SUFFIX="$1" GITHUB_OUTPUT="$o" bash "$suffix_sh" >/dev/null 2>"$e" || rc=$?
+  stderr="$(cat "$e")"
+  suffix="$(sed -n 's/^primary-container-suffix=//p' "$o")"
+  rm -f "$o" "$e"
+}
+
+# render_release_image <suffix> — fill in the release job's container
+# expression with the default prefix, <suffix> and derive's tag.
+render_release_image() {
+  local image
+  image="$(q '.jobs.release.container')"
+  image="${image//"\${{ inputs.container-prefix || 'prod' }}"/prod}"
+  image="${image//"\${{ needs.setup.outputs.primary-container-suffix }}"/$1}"
+  image="${image//"\${{ needs.setup.outputs.primary-container-tag }}"/$(out primary-container-tag)}"
+  printf '%s' "$image"
+}
+
+# resolve_case <name> <language|""> <[ci] lines> <caller suffix|""> <want image>
+resolve_case() {
+  local name="$1" lang="$2" ci="$3" caller="$4" want="$5" image direct
+  derive_fixture "$name" "$lang" "$ci" || return 0
+  run_suffix "$caller"
+  if [ "$rc" -ne 0 ]; then
+    fail_case "$name" "primary-suffix failed (exit ${rc}): ${stderr}"
+    rm -rf "$dir" "$so"
     return 0
   fi
+  image="$(render_release_image "$suffix")"
   direct="$(VRG_VERSION_WINDOW="$window" vrg-ci-resolve --format json --repo-root "$dir" |
-    jq -r '."primary-container-tag"')"
-  image="$(render_release_image "$so" "$lang")"
+    jq -r '"prod-" + ."container-suffixes"[."primary-version"] + ":" + ."primary-container-tag"')"
   rm -rf "$dir" "$so"
   expect "$name" "image" "$image" "$want" || return 0
-  expect "$name" "image tag vs vrg-ci-resolve" "${image##*:}" "$direct" || return 0
+  expect "$name" "image vs vrg-ci-resolve" "${image##*/}" "$direct" || return 0
+  pass_case "$name"
+}
+
+# mismatch_case <name> <language|""> <[ci] lines> <caller suffix> <want error>
+# — a caller container-suffix that disagrees with the resolver fails loudly.
+mismatch_case() {
+  local name="$1" lang="$2" ci="$3" caller="$4" want="$5"
+  derive_fixture "$name" "$lang" "$ci" || return 0
+  run_suffix "$caller"
+  rm -rf "$dir" "$so"
+  if [ "$rc" -eq 0 ]; then
+    fail_case "$name" "expected primary-suffix to fail, it output '${suffix}'"
+    return 0
+  fi
+  case "$stderr" in
+    *"::error::"*"$want"*) ;;
+    *)
+      fail_case "$name" "expected ::error:: containing '$want', got '$stderr'"
+      return 0
+      ;;
+  esac
+  expect "$name" "suffix output on failure" "$suffix" "" || return 0
   pass_case "$name"
 }
 
 case_setup_job
+case_setup_suffix
 case_release_uses_setup
 case_deprecated_input
 case_no_caller_tag_images
-resolve_case "python-library-resolves-primary" python "" \
+case_no_caller_suffix_images
+resolve_case "python-library-resolves-primary" python "" "" \
   "ghcr.io/vergil-project/prod-python:3.15"
-resolve_case "python-primary-override" python 'primary-version = "3.14"' \
+resolve_case "python-primary-override" python 'primary-version = "3.14"' "" \
   "ghcr.io/vergil-project/prod-python:3.14"
-resolve_case "no-language-resolves-latest" "" 'versions = ["latest"]' \
+resolve_case "python-matching-caller-suffix" python "" python \
+  "ghcr.io/vergil-project/prod-python:3.15"
+resolve_case "no-language-resolves-latest" "" 'versions = ["latest"]' "" \
   "ghcr.io/vergil-project/prod-base:latest"
+resolve_case "cpp-clang-20-resolves-prod-cpp-clang" cpp 'versions = ["clang-20"]' "" \
+  "ghcr.io/vergil-project/prod-cpp-clang:20"
+resolve_case "typescript-node-24-resolves-prod-ts-node" typescript 'versions = ["node-24"]' "" \
+  "ghcr.io/vergil-project/prod-ts-node:24"
+mismatch_case "cpp-caller-suffix-cpp-fails" cpp 'versions = ["clang-20"]' cpp \
+  "container-suffix 'cpp' does not match"
+mismatch_case "cpp-caller-suffix-non-primary-family-fails" cpp \
+  'versions = ["clang-20", "gcc-14"]' cpp-gcc \
+  "container-suffix 'cpp-gcc' does not match"
+mismatch_case "python-caller-suffix-without-language-fails" "" 'versions = ["latest"]' python \
+  "container-suffix 'python' does not match"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
