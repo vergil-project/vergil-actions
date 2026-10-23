@@ -31,7 +31,8 @@
 # answer: one window fetch, and no chance of two outputs disagreeing.
 #
 # Failure is loud and final. A resolver error (window fetch, invalid window, a
-# pin outside the window, an invalid primary-version, a missing or invalid
+# pin outside the window, an app that pins more than one version, a C++ or
+# TypeScript repo with no pin, an invalid primary-version, a missing or invalid
 # vergil.toml) fails the step with the resolver's message as `::error::`
 # annotations and writes no outputs. There is no fallback derivation.
 #
@@ -81,9 +82,11 @@ if [ "$rc" -ne 0 ]; then
   exit "$rc"
 fi
 
-# A successful run may still warn (for example an app that pins more than one
-# version). Keep each warning visible as a warning annotation; pass any other
-# line through unchanged.
+# A successful run normally prints nothing on stderr: every broken resolution
+# rule, including an app that pins more than one version, is an error and is
+# handled above. Should a resolver release print a "warning: " line on success,
+# keep it visible as a warning annotation; pass any other line through
+# unchanged.
 while IFS= read -r line || [ -n "$line" ]; do
   [ -n "$line" ] || continue
   case "$line" in

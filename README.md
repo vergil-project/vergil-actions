@@ -1,4 +1,4 @@
-# Standard Actions
+# Vergil Actions
 
 Shared GitHub Actions library for reusable CI and automation across
 repositories.
@@ -20,12 +20,21 @@ application and library repositories without workflow drift.
 
 ```text
 actions/                          Composite GitHub Actions
-  docs-deploy/                    MkDocs + mike versioned deployment
-  publish/                        Release tagging and version bumps
-  python/setup/                   Python environment with uv and caching
-  release-gates/                  Pre-merge version validation
-  security/                       CodeQL, Semgrep, Trivy scanning
-  setup/vergil-tooling/         vergil-tooling CLI installer
+  cd/docs/deploy/                 MkDocs + mike versioned deployment
+  cd/release/                     Release inputs, tagging, registry publish,
+                                  CI evidence gate and attach
+  ci/evidence/emit/               Per-gate CI evidence artifact
+  ci/matrix/                      Per-version job matrix from vrg-ci-resolve
+  ci/security/                    CodeQL and Semgrep scanning
+  ci/toolchain/                   Pin (pin-python) and assert the leg toolchain
+  ci/version-bump/                Pre-merge version divergence gate
+  local/freeze-internal-refs/     Freeze relative action refs at release
+  ops/github-config/              Branch sweep for ops-github-config
+  package/setup/                  Binary package build setup
+  shared/docs/stage/              Changelog/release-notes pages for docs
+  shared/security/trivy/          Trivy scanning
+  shared/setup/                   vergil-tooling install and version resolve,
+                                  system packages, build command
 .github/workflows/
   ci.yml                          Local CI umbrella (pull_request)
   ci-*.yml                        Reusable pre-merge CI gates
@@ -53,5 +62,5 @@ Full documentation is available at
 ## Validation
 
 ```bash
-vrg-docker-run -- vrg-validate
+vrg-container-run -- vrg-validate
 ```

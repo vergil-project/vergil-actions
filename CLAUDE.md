@@ -181,7 +181,19 @@ look in `actions/{phase}/{domain}/`. Cross-phase actions live in
 - `actions/shared/security/trivy` — Trivy vulnerability scanning
   (filesystem, SBOM, container image)
 - `actions/shared/setup/vergil` — Installs vergil-tooling
-  from the version pinned in `vergil.toml`
+  from the version pinned in `vergil.toml`, then resolves the CI version
+  set with `vrg-ci-resolve` (versions, primary version, and each version's
+  image tag and suffix)
+- `actions/ci/matrix` — Builds the per-version job matrix (version label
+  and image) from the resolver's versions, tags and suffixes, with the
+  run-once collapse for C++ and TypeScript
+- `actions/ci/toolchain/pin-python` — Pins uv to a Python leg's resolved
+  version and the image's interpreter (`UV_PYTHON`,
+  `UV_PYTHON_PREFERENCE=only-system`)
+- `actions/ci/toolchain/assert` — Fails a leg whose running interpreter or
+  toolchain is not the version CI resolved for it
+- `actions/ci/evidence/emit` — Writes a gate's `evidence.json` and uploads
+  its reports as the `ci-evidence-<gate>` artifact
 - `actions/local/freeze-internal-refs` — Freezes relative action refs
   to absolute tagged refs (repo-local)
 

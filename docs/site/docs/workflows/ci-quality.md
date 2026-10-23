@@ -7,9 +7,7 @@ Code quality and linting workflow.
 | Input | Type | Required | Default | Description |
 | ------- | ------ | ---------- | --------- | ------------- |
 | `language` | string | yes | — | Primary language of the repository |
-| `versions` | string | no | `[ci].versions` from `vergil.toml` | JSON array of language versions (e.g., `'["3.12", "3.13"]'`). **Deprecated** — omit it; the matrix is derived from `[ci].versions` in the consumer's `vergil.toml`. Still accepted for back-compat (a supplied value is honored verbatim), slated for removal in [#876](https://github.com/vergil-project/vergil-actions/issues/876) |
 | `container-suffix` | string | no | `<language>` | Container image name suffix (e.g. `python`, `base`) |
-| `container-tag` | string | no | family-routed `primary-container-tag` from `[ci]` | Container image tag for the single-container `common` job. **Deprecated** — omit it; when unset the tag is derived from `[ci].primary-version` (default: the highest `[ci].versions` entry), family-routed to the published container tag. Still accepted for back-compat, slated for removal in [#876](https://github.com/vergil-project/vergil-actions/issues/876) |
 
 ## Version matrix
 
