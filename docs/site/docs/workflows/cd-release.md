@@ -18,7 +18,7 @@ The `release` job runs in
   `vrg-ci-resolve` against the consumer's `vergil.toml` and the published
   language version window. The tag is its `primary-container-tag`; the suffix
   is the primary version's entry in its `container-suffixes`, picked by
-  [cd/release/primary-suffix](../actions/cd-release-primary-suffix.md).
+  [shared/setup/primary-suffix](../actions/shared-setup-primary-suffix.md).
 
 For example `clang-20` gives `prod-cpp-clang:20`, `node-24` gives
 `prod-ts-node:24`, `3.14` gives `prod-python:3.14` and a language-less repo's

@@ -18,8 +18,11 @@ on:
         type: string
         required: false
         description: >-
-          Container image name suffix for the version-bump job
-          (e.g. python, base). Defaults to "base".
+          Cross-check only; it never changes the image. The version-bump job
+          runs on the resolver's image suffix for the primary version
+          (vrg-ci-resolve's container-suffixes; issue #1028), e.g. cpp-clang
+          for clang-20, base for a language-less repo. When set, it must equal
+          that suffix or the setup job fails.
       container-prefix:
         type: string
         required: false
@@ -38,25 +41,40 @@ jobs:
   # nonexistent prod-cpp-clang:clang-20 (issue #893). The
   # job's `container:` is evaluated before any step runs, so the value must come
   # from a preceding job — mirroring how the matrix workflows resolve their image
-  # in a separate `matrix` job.
+  # in a separate `matrix` job. The image suffix is the resolver's too (issue
+  # #1028): the primary version's entry in `container-suffixes`, not the
+  # caller's `container-suffix` (or `base` when it passed none, which named
+  # the unpublished prod-base:<version> for a language repo). The caller's
+  # `container-suffix` is only a must-match cross-check, as in cd-release.
   setup:
     name: setup
     runs-on: ubuntu-latest
     outputs:
       primary-container-tag: ${{ steps.derive.outputs.primary-container-tag }}
+      primary-container-suffix: ${{ steps.suffix.outputs.primary-container-suffix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Resolve primary-container-tag with vrg-ci-resolve
+      - name: Resolve the primary version with vrg-ci-resolve
         id: derive
         uses: ./actions/shared/setup/vergil
+
+      # The primary version's image suffix. Fails when the caller passes a
+      # container-suffix that disagrees with it.
+      - name: Resolve primary-container-suffix
+        id: suffix
+        uses: ./actions/shared/setup/primary-suffix
+        with:
+          primary-version: ${{ steps.derive.outputs.primary-version }}
+          container-suffixes: ${{ steps.derive.outputs.container-suffixes }}
+          container-suffix: ${{ inputs.container-suffix }}
 
   version-bump:
     name: version-bump
     needs: setup
     runs-on: ubuntu-latest
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ inputs.container-suffix || 'base' }}:${{ needs.setup.outputs.primary-container-tag }}
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -83,7 +101,7 @@ jobs:
           fi
           # `python3` from PATH, not an absolute path: it is /usr/local/bin in
           # the base/python images but /usr/bin in cpp-clang, and this job runs
-          # in whichever image the caller passes (#863).
+          # in whichever image the resolver picks (#863, #1028).
           model=$(python3 -c "
           import tomllib, pathlib
           path = pathlib.Path('vergil.toml')
