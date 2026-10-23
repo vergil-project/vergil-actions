@@ -82,11 +82,10 @@ if [ "$rc" -ne 0 ]; then
   exit "$rc"
 fi
 
-# A successful run normally prints nothing on stderr: every broken resolution
-# rule, including an app that pins more than one version, is an error and is
-# handled above. Should a resolver release print a "warning: " line on success,
-# keep it visible as a warning annotation; pass any other line through
-# unchanged.
+# A successful run may still print `warning: ` lines on stderr. The resolver
+# emits none today (an app that pins more than one version is now an error,
+# not a warning), but keep any warning visible as a warning annotation and pass
+# any other line through unchanged.
 while IFS= read -r line || [ -n "$line" ]; do
   [ -n "$line" ] || continue
   case "$line" in

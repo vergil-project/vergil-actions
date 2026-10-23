@@ -109,14 +109,15 @@ The action runs these steps in order:
    packaged Python repository with no published runtime among its versions,
    an invalid `primary-version`, and a missing or invalid `vergil.toml`. It
    also fails when `vrg-ci-resolve` is not on `PATH` (a `[dependencies].vergil`
-   pin older than vergil-tooling 2.1.253). There is no fallback. Should the
-   resolver print a `warning:` line on a successful run, it becomes a
-   `::warning::` annotation and does not fail the job.
+   pin older than vergil-tooling 2.1.253). There is no fallback. A resolver
+   stderr line starting `warning:` becomes a `::warning::` annotation and does
+   not fail the job (the resolver prints none today).
 
 The pin reading and the derivation live in `read-pin.sh` and `derive.sh` rather
 than inline YAML so they can be unit tested; see
 `actions/shared/setup/vergil/tests/derive.test.sh`, which runs the real
-resolver against the fixture window in `tests/fixtures/window.json`, and
+resolver against the fixture window in `tests/fixtures/window.json` (one case
+stubs the resolver to test the `warning:` passthrough), and
 `tests/read-pin.test.sh`. The `smoke-setup-vergil` workflow runs those tests
 and checks the action's outputs end to end.
 
