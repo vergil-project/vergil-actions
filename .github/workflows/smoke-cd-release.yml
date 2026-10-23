@@ -1,0 +1,35 @@
+name: Smoke - cd-release container tag
+
+# Runs the framework-free container-tag.test.sh harness (issue #1017): the
+# cd-release release job runs on the resolver's primary-container-tag from its
+# `setup` job, never on a caller's `container-tag` input, which is accepted
+# but ignored with a warning until vergil-project/vergil-tooling#3484 removes
+# it from the callers. For fixture repos, the release job's image tag equals
+# vrg-ci-resolve's primary-container-tag when the caller passes no tag.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/cd-release.yml
+      - .github/workflows/smoke-cd-release.yml
+      - actions/cd/release/tests/**
+      - actions/shared/setup/vergil/**
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: container-tag fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      # The harness runs the real resolver, so install vergil-tooling at this
+      # repo's [dependencies].vergil pin first.
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+      - name: Run container-tag harness
+        shell: bash
+        run: bash actions/cd/release/tests/container-tag.test.sh

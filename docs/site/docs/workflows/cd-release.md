@@ -1,0 +1,66 @@
+# cd-release
+
+The release pipeline. On a push to `main` it checks the CI evidence of the
+release PR, builds and publishes the release, tags it and creates the GitHub
+Release. Repos with `[package]` in `vergil.toml` also build, sign and attach
+`.deb`/`.rpm` packages ([binary packages](cd-release-packages.md)).
+
+## Container image
+
+The `release` job runs in
+`ghcr.io/vergil-project/<prefix>-<suffix>:<tag>`:
+
+- `<prefix>` is `container-prefix` (default `prod`).
+- `<suffix>` is `container-suffix`, then `language`, then `base`.
+- `<tag>` is the resolver's `primary-container-tag`. The `setup` job runs the
+  shared [setup action](../actions/shared-setup-vergil.md), which calls
+  `vrg-ci-resolve` against the consumer's `vergil.toml` and the published
+  language version window. The tag is the image tag of the primary version
+  (`[ci].primary-version`, or the newest resolved version), the same version
+  CI's single-container jobs run on.
+
+So a release builds and tests on the version CI resolves today, not on a tag
+written into the caller's `cd.yml` when the repo was initialized. The caller
+passes no tag. A resolver error fails `setup`, and `release` does not run.
+
+## Inputs
+
+| Input | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `language` | string | `""` | Language ecosystem (`go`, `java`, `python`, `rust`). Omit it for repos with no language. |
+| `container-suffix` | string | `""` | Image suffix (e.g. `python`, `base`). Defaults to `language`, then `base`. |
+| `container-tag` | string | `""` | **Deprecated and ignored.** The tag comes from the resolver. A non-empty value only adds a `::warning::` to the run. The input is kept for one release so callers that still pass it do not fail: GitHub rejects a reusable-workflow call that passes an input the workflow does not declare. It is deleted once [vergil-tooling#3484](https://github.com/vergil-project/vergil-tooling/issues/3484) removes it from every caller. |
+| `container-prefix` | string | `prod` | Image name prefix (`prod` or `dev`). |
+| `registry-publish` | boolean | `false` | Publish build artifacts to the language's package registry. |
+| `build-command` | string | `""` | Override the ecosystem's build command. |
+| `publish-command` | string | `""` | Override the ecosystem's publish command. |
+| `attestation-subject-path` | string | `""` | Glob for build provenance attestation. Empty skips it. |
+| `sbom-output-file` | string | `""` | SBOM output path (`$VERSION` placeholder). Empty skips it. |
+| `release-artifacts` | string | `""` | Files to attach to the Release (`$VERSION` placeholder). |
+| `evidence-enforce` | boolean | `true` | `true` fails the release before publish when the CI evidence is incomplete or failed. `false` only warns, as a temporary per-repo opt-out. |
+
+## Jobs
+
+| Job | Behavior |
+| --- | -------- |
+| `setup` | Always runs. Resolves `primary-container-tag` for `release`, and warns if the caller passed `container-tag`. |
+| `package-matrix` | Always runs. Resolves the package build cells; a repo without `[package]` reports none. See [binary packages](cd-release-packages.md). |
+| `package-build / <cell>`, `package-sign` | Packaged repos only. See [binary packages](cd-release-packages.md). |
+| `release` | Runs when `setup` and `package-matrix` succeeded, and `package-sign` too for a packaged repo. Validates the inputs, gates on the CI evidence, publishes, tags and releases, then attaches the evidence bundle. |
+
+## Usage
+
+```yaml
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
+    with:
+      language: python
+      registry-publish: true
+```
+
+The caller's `permissions:` must include `actions: read` (the evidence gate
+downloads the release PR's CI evidence artifacts), `contents: write`,
+`id-token: write` and `attestations: write`. A packaged repo must pass
+`secrets: inherit`; see [binary packages](cd-release-packages.md).

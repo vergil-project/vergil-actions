@@ -29,7 +29,7 @@ rulesets.
 
 | Workflow | File | Purpose |
 | ---------- | ------ | --------- |
-| CD Release | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump); repos with `[package]` also build, sign and attach `.deb`/`.rpm` packages ([binary packages](cd-release-packages.md)) |
+| [CD Release](cd-release.md) | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump); repos with `[package]` also build, sign and attach `.deb`/`.rpm` packages ([binary packages](cd-release-packages.md)) |
 | CD Docs | `cd-docs.yml` | MkDocs documentation deployment |
 | [Publish package index](publish-index.md) | `publish-index.yml` | Signed apt/dnf package-repository site, deployed to Pages |
 | [CD Docs Refresh](cd-docs-refresh.md) | `cd-docs-refresh.yml` | Regenerate the roadmap and activity pages and redeploy the docs site, on a schedule |
