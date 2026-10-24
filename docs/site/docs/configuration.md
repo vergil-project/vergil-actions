@@ -13,8 +13,8 @@ are configured in **Settings > Secrets and variables > Actions**.
 | Secret | Required by | Purpose |
 | ------ | ----------- | ------- |
 | `PROJECT_TOKEN` | All repositories | Adds new issues to the GitHub Project via the `add-to-project` workflow |
-| `APP_CLIENT_ID` | Library repositories | GitHub App Client ID for release workflows |
-| `APP_PRIVATE_KEY` | Library repositories | GitHub App signing key for release workflows |
+| `APP_CLIENT_ID` | Every repository with an `ops.yml` or `epic-rollup.yml`, and `[package]` repositories | Client ID of the org's automation GitHub App (`<org>-automation`) |
+| `APP_PRIVATE_KEY` | Every repository with an `ops.yml` or `epic-rollup.yml`, and `[package]` repositories | Private key of the org's automation GitHub App |
 
 ### PROJECT_TOKEN
 
@@ -49,57 +49,104 @@ gh secret set PROJECT_TOKEN --repo vergil-project/<repo> --body "<token>"
 
 ### APP_CLIENT_ID and APP_PRIVATE_KEY
 
-These secrets are used together to generate a GitHub App installation token at
-publish time. The token is used by the CD release workflow to push workflow
-file changes that `GITHUB_TOKEN` cannot.
+These secrets hold the Client ID and private key of the org's **automation
+GitHub App**. Workflows pass them to `actions/create-github-app-token` to mint
+a short-lived installation token for work that `GITHUB_TOKEN` cannot do.
 
-**Why a GitHub App?** Pull requests created by the default `GITHUB_TOKEN` do not
-trigger CI workflows. This is a GitHub security measure to prevent recursive
-workflow runs. A GitHub App token acts as a separate identity, so PRs it creates
-trigger CI normally and can auto-merge.
+Each org has its own automation App, named `<org>-automation`. The App is
+**owned by the org** (registered under the org's Developer settings, not a
+personal account), and its installation covers **all repositories** in that
+org:
 
-**App permissions required:**
+| Org | App |
+| --- | --- |
+| `vergil-project` | `vergil-project-automation` |
+| `logical-minds-foundry` | `logical-minds-foundry-automation` |
+| `mnemosys-project` | `mnemosys-project-automation` |
 
-| Permission | Access | Purpose |
-| ---------- | ------ | ------- |
-| Contents | Read & write | Create branches, push commits |
-| Pull requests | Read & write | Create and merge PRs |
-| Workflows | Read & write | Push commits that modify workflow files |
+The App is an automation identity, not a per-contributor one. It is separate
+from the per-developer agent Apps described in vergil-tooling's
+[Identity Architecture](https://vergil-project.github.io/vergil-tooling/latest/guides/identity-architecture/).
+
+**Why a GitHub App?** A reusable workflow's `GITHUB_TOKEN` can carry only the
+permissions its caller grants, and the standard `ops.yml` grants just
+`contents: read` and `issues: write`. It is also limited to the repository the
+run belongs to. The
+App token supplies the extra scopes (for example Dependabot alerts or branch
+deletion) and the cross-repository reach (the org's `.github` epics, the
+org's `packages` index) these workflows need.
+
+**Who uses it.** Every repository with an `ops.yml` needs these secrets, not
+only library repositories:
+
+| Workflow | Job or step | Token scope |
+| -------- | ----------- | ----------- |
+| [`ops-github-config.yml`](workflows/ops-github-config.md) | `branch-sweep`, `github-config`, `dependabot-audit` | Calling repository only |
+| [`ops-epic-rollup.yml`](workflows/ops-epic-rollup.md) | `epic-rollup` (from the caller's `epic-rollup.yml`) | Calling repository and the epic repository |
+| [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
+| [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
+
+**App permissions required.** The table lists what each consumer needs, which
+is the minimum the App must hold. Read the App's actual permission set from
+its settings page before relying on it:
+
+| Permission | Access | Needed by |
+| ---------- | ------ | --------- |
 | Metadata | Read-only | Required by GitHub (always enabled) |
-| Dependabot alerts | Read-only | Nightly `dependabot-audit` (ops) |
+| Administration | Read-only | `github-config`: `vrg-github-repo-config audit` reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled |
+| Contents | Read & write | `branch-sweep` (deletes branch refs); `cd-release.yml` package-index dispatch to `<org>/packages`; `github-config` reads `vergil.toml` and the CI workflow |
+| Pull requests | Read-only | `branch-sweep` (decides which branches are finished) |
+| Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, relabel and link issues) |
+| Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
 
-The nightly ops run uses the same secrets to mint a token for its
-`dependabot-audit` job in `ops-github-config.yml`. That token is scoped to the
-calling repository and carries only **Dependabot alerts: Read**, which
-`vrg-dependabot-audit` needs to list the repository's open alerts. Grant the
-App this permission, then accept the updated permission on **each** of its
-installations: GitHub does not apply a new App permission to an installation
-until that installation accepts it. Until it is accepted, the job exits 2
-("could not check") and the ops run fails.
+**Administration stays read-only.** The Apps run only the read-only
+`vrg-github-repo-config audit`. `vrg-github-repo-config apply`, which changes
+settings and rulesets, is a human action that runs as the maintainer's own
+`gh` login, never as the App. Do not grant Administration: Read & write.
+
+vergil-actions' own release workflow (`cd.yml`) also uses the
+`vergil-project-automation` App token for its checkout, because the
+release tag it pushes points at the freeze-internal-refs commit, which changes
+workflow files. That needs **Workflows: Read & write** (see
+[local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)).
+That is specific to this repository; consumer workflows do not need it.
 
 **Creation steps:**
 
-1. Go to **Settings > Developer settings > GitHub Apps**.
+1. Go to the org's **Settings > Developer settings > GitHub Apps**, so the
+   App is owned by the org.
 2. Click **New GitHub App**.
-3. Set the app name and homepage URL.
+3. Name it `<org>-automation` and set the homepage URL.
 4. Under **Permissions > Repository permissions**, grant the permissions listed
    above.
 5. Disable webhooks (not needed).
 6. Create the app and note the **Client ID** from the app's settings page.
 7. Under **Private keys**, click **Generate a private key**. Save the downloaded
    `.pem` file.
-8. Under **Install App**, install it on your account and grant access to the
-   repositories that use the publish workflow.
-9. Set the secrets in each library repository:
+8. Under **Install App**, install it on the org and choose **All
+   repositories**.
+9. Make `APP_CLIENT_ID` and `APP_PRIVATE_KEY` available to every repository
+   that calls the workflows above. For example, as repository secrets:
 
 ```bash
-gh secret set APP_CLIENT_ID --repo vergil-project/<repo> --body "<client-id>"
-gh secret set APP_PRIVATE_KEY --repo vergil-project/<repo> --body "$(cat <path-to-private-key>.pem)"
+gh secret set APP_CLIENT_ID --repo <org>/<repo> --body "<client-id>"
+gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private-key>.pem)"
 ```
 
+**Changing a permission later:**
+
+1. On the App's settings page, open **Permissions & events**, change the
+   permission and save.
+2. Accept the change on the installation: **Org settings > GitHub Apps >
+   \<app\> > Configure**, then review and accept the pending permission
+   request. GitHub does not apply a new App permission to an installation
+   until it is accepted, and until then minted tokens do **not** carry it.
+   For Dependabot alerts, the `dependabot-audit` job exits 2 ("could not
+   check") on every repository and the ops run fails.
+
 **Key rotation:** Generate a new private key from the app's settings page, update
-the `APP_PRIVATE_KEY` secret in all library repositories, then revoke the old
-key.
+the `APP_PRIVATE_KEY` secret wherever it is stored for that org, then revoke the
+old key. Each org has its own App and key, so rotate per org.
 
 ## Binary package environments
 
@@ -210,9 +257,13 @@ The `GITHUB_TOKEN` is insufficient in two cases:
 
 1. **GitHub Project access** — The `GITHUB_TOKEN` cannot interact with
    user-owned Projects v2. The `PROJECT_TOKEN` (classic PAT) is required.
-2. **CI-triggering PRs** — PRs created by `GITHUB_TOKEN` do not trigger
-   workflow runs. The GitHub App token (`APP_CLIENT_ID` + `APP_PRIVATE_KEY`) is
-   required for the version bump PR to trigger CI and auto-merge.
+2. **Scopes and repositories beyond the caller's grant** — a reusable
+   workflow's `GITHUB_TOKEN` carries only what the caller grants and reaches
+   only its own repository. The org's automation App token
+   (`APP_CLIENT_ID` + `APP_PRIVATE_KEY`) is required for the nightly ops jobs
+   (config audit, branch sweep, Dependabot alert audit), the epic roll-up and
+   sweep, and the package-index dispatch. See
+   [APP_CLIENT_ID and APP_PRIVATE_KEY](#app_client_id-and-app_private_key).
 
 ## Auto-merge
 
@@ -251,7 +302,9 @@ Create three rulesets per the standard configuration:
 ### 3. Secrets
 
 - [ ] Set `PROJECT_TOKEN` (all repositories)
-- [ ] Set `APP_CLIENT_ID` and `APP_PRIVATE_KEY` (library repositories only)
+- [ ] Make `APP_CLIENT_ID` and `APP_PRIVATE_KEY` for the org's automation App
+  available to the repository (every repository with an `ops.yml`, not only
+  libraries)
 
 ```bash
 gh secret set PROJECT_TOKEN --repo vergil-project/<repo> --body "<token>"
@@ -261,11 +314,13 @@ gh secret set APP_PRIVATE_KEY --repo vergil-project/<repo> --body "$(cat <key>.p
 
 ### 4. GitHub App installation
 
-- [ ] Install the GitHub App on the new repository (library repos only)
+- [ ] Confirm the org's `<org>-automation` App installation has **All
+  repositories** access, so it already covers the new repository
+  (**Org settings > GitHub Apps > \<app\> > Configure**). There is no
+  per-repository install step.
 - [ ] Verify by checking **Settings > GitHub Apps** on the repository
-- [ ] `[package]` repositories: confirm the App is also installed on
-  `<org>/packages` with **Contents: Read & write**, so the release can
-  dispatch `package-released` to it
+- [ ] After the first nightly ops run, confirm the `dependabot-audit` job did
+  not exit 2 ("could not check")
 
 ### 4a. Binary packages (`[package]` repositories only)
 
