@@ -1,9 +1,24 @@
 name: Ops — Epic Sweep
 
-# Scheduled reconciliation sweep (epic vergil-project/.github#75, #80). Reusable
-# workflow: a caller triggers it on a schedule; it runs `vrg-epic-audit --close`
-# to catch any epic/task that missed its event-driven close (Action down, broken
-# secret, race) and close it. Idempotent — only closes provably-complete drift.
+# Scheduled reconciliation sweep (epic vergil-project/.github#75, #80, #176).
+# Reusable workflow: a caller triggers it on a schedule, or by
+# workflow_dispatch (how the one-time #176 org migration is run). It runs
+# `vrg-epic-audit --close`, which writes across the whole org in three passes:
+#   1. Drift close: closes tasks whose PR merged and epics whose children are
+#      all closed (work that missed its event-driven close: Action down,
+#      broken secret, race), and reopens an epic closed with an open child.
+#   2. Archive drain: moves the closed children of every standing epic
+#      (ad-hoc, intake, planning) into per-quarter archives.
+#   3. Orphan pass ("every issue belongs to an epic"): links body-only
+#      `Parent:` lines as native sub-issues, strips the retired
+#      triage/idea/research labels, moves a now-public repo's self-homed
+#      queue items under the org .github queues, and attaches every orphan to
+#      its home's intake epic.
+# So the sweep edits labels and sub-issue links, not only issue state. Each
+# pass acts only on provable drift, so a re-run with nothing new changes
+# nothing. If an intake or planning epic is at its cap (95 open children), the
+# orphan pass stops and the step exits 1, listing every issue it did not link:
+# a failed run can mean "run intake review", not only a broken token.
 
 on:
   workflow_call:
@@ -45,9 +60,11 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           # No 'repositories' input: mint a token for every repo the app is
-          # installed on in the org. The sweep closes drifted tasks across the
-          # code repos AND rolled-up epics in .github, so it needs org-wide
-          # issues:write, not a two-repo scope like the per-close rollup.
+          # installed on in the org. The sweep closes drifted tasks, edits
+          # labels and links or moves orphans across the code repos, AND
+          # closes, drains and attaches under epics in .github, so it needs
+          # org-wide issues:write, not a two-repo scope like the per-close
+          # rollup.
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -55,7 +72,7 @@ jobs:
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
-      - name: Reconcile epic/task drift
+      - name: Reconcile epic/task drift, drain archives, attach orphans
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           # Authorizes the automated --close (the tool is otherwise human-only);
