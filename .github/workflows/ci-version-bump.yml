@@ -58,13 +58,13 @@ jobs:
 
       - name: Resolve the primary version with vrg-ci-resolve
         id: derive
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.56
 
       # The primary version's image suffix. Fails when the caller passes a
       # container-suffix that disagrees with it.
       - name: Resolve primary-container-suffix
         id: suffix
-        uses: ./actions/shared/setup/primary-suffix
+        uses: vergil-project/vergil-actions/actions/shared/setup/primary-suffix@v2.1.56
         with:
           primary-version: ${{ steps.derive.outputs.primary-version }}
           container-suffixes: ${{ steps.derive.outputs.container-suffixes }}
@@ -117,11 +117,11 @@ jobs:
 
       - name: Install vergil-tooling
         if: steps.release-model.outputs.releases == 'true'
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.56
 
       - name: Verify version bump
         if: steps.release-model.outputs.releases == 'true'
-        uses: ./actions/ci/version-bump/version-divergence
+        uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.1.56
         with:
           head-version-command: vrg-version show
           main-version-command: vrg-version show --ref origin/main
