@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.56] - 2026-10-25
+
+### Bug fixes
+
+- match uv commands with global options in the uv pin guard (#1055)
+
+### Chores
+
+- sync the vergil-managed .gitignore block (#1053)
+- clear the yamllint comments-indentation warning in cd-release.yml (#1058)
+
+### Documentation
+
+- describe the archive drain and orphan pass the sweep now runs (#1044)
+- describe the per-org automation App and the ops-github-config workflow (#1046)
+- correct ci-security description and container-suffix docs (#1056)
+
 ## [2.1.55] - 2026-10-23
 
 ### Bug fixes
