@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.57] - 2026-10-25
+
+### Features
+
+- add the ops-upstream-refresh reusable workflow (#1063)
+
 ## [2.1.56] - 2026-10-25
 
 ### Bug fixes
