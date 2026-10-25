@@ -84,6 +84,7 @@ only library repositories:
 | [`ops-github-config.yml`](workflows/ops-github-config.md) | `branch-sweep`, `github-config`, `dependabot-audit` | Calling repository only |
 | [`ops-epic-rollup.yml`](workflows/ops-epic-rollup.md) | `epic-rollup` (from the caller's `epic-rollup.yml`) | Calling repository and the epic repository |
 | [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
+| [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `upstream-refresh` | Calling repository only |
 | [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
 
 **App permissions required.** The table lists what each consumer needs, which
@@ -94,8 +95,8 @@ its settings page before relying on it:
 | ---------- | ------ | --------- |
 | Metadata | Read-only | Required by GitHub (always enabled) |
 | Administration | Read-only | `github-config`: `vrg-github-repo-config audit` reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled |
-| Contents | Read & write | `branch-sweep` (deletes branch refs); `cd-release.yml` package-index dispatch to `<org>/packages`; `github-config` reads `vergil.toml` and the CI workflow |
-| Pull requests | Read-only | `branch-sweep` (decides which branches are finished) |
+| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `upstream-refresh` branch, and deletes it when it closes a stale refresh PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `github-config` reads `vergil.toml` and the CI workflow |
+| Pull requests | Read & write | `upstream-refresh` (opens, updates, comments on and closes the refresh PR); `branch-sweep` reads them (decides which branches are finished) |
 | Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, relabel and link issues) |
 | Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
 

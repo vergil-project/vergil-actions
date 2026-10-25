@@ -110,6 +110,7 @@ nav:
       - ops-github-config: workflows/ops-github-config.md
       - ops-epic-rollup: workflows/ops-epic-rollup.md
       - ops-epic-sweep: workflows/ops-epic-sweep.md
+      - ops-upstream-refresh: workflows/ops-upstream-refresh.md
   - CI Gate Requirements:
       - Overview: ci-gates/index.md
       - The All-Hard-Gates Principle: ci-gates/all-hard-gates.md

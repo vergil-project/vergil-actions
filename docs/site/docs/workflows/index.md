@@ -41,6 +41,7 @@ rulesets.
 | [Ops GitHub Config](ops-github-config.md) | `ops-github-config.yml` | Nightly `vrg-github-repo-config` audit, [branch sweep](../actions/ops-github-config-branch-sweep.md), and `vrg-dependabot-audit` open-alert gate |
 | [Ops Epic Rollup](ops-epic-rollup.md) | `ops-epic-rollup.yml` | Close a task's parent epic when its last task closes (called on `issues: closed`) |
 | [Ops Epic Sweep](ops-epic-sweep.md) | `ops-epic-sweep.yml` | Daily org-wide reconciliation: close epics and tasks that missed their event-driven close, drain standing epics into archives, and attach orphan issues to an epic |
+| [Ops Upstream Refresh](ops-upstream-refresh.md) | `ops-upstream-refresh.yml` | Scheduled `vrg-upstream-refresh`: run the repository's `[upstream-refresh].hook`, then open or refresh one human-merged PR, or close a stale one when nothing changed |
 
 ## Dynamic version matrix and evidence gates
 

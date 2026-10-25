@@ -1,0 +1,72 @@
+name: Ops — Upstream Refresh
+
+# Scheduled upstream refresh (epic vergil-project/.github#472, spec §5.6).
+# Reusable workflow: a caller triggers it from its own ops.yml on its own
+# schedule (or by workflow_dispatch). It runs `vrg-upstream-refresh`, which
+# runs the caller's `[upstream-refresh].hook` on a clean checkout of the
+# branch the run is on and then opens or refreshes ONE PR from the fixed
+# `upstream-refresh` branch, or closes a stale one when nothing changed. It
+# never merges; the PR's own CI checks it and a human merges it.
+#
+# The checkout uses the App token so the push and PR are App-authored. An
+# App-authored PR fires `pull_request` workflows, which the default
+# GITHUB_TOKEN cannot (GitHub recursion-suppresses its events).
+
+on:
+  workflow_call:
+    secrets:
+      APP_CLIENT_ID:
+        required: true
+      APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  upstream-refresh:
+    name: upstream-refresh
+    runs-on: ubuntu-latest
+    # A called workflow cannot exceed its caller's grant. The push and PR
+    # writes go through the App token, not GITHUB_TOKEN.
+    permissions:
+      contents: read
+    concurrency:
+      group: upstream-refresh
+      cancel-in-progress: false
+    container:
+      image: ghcr.io/vergil-project/prod-base:latest
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # No 'owner' input: the token is scoped to the calling repository
+          # only, as in vergil-containers' bump-tools.yml. The refresh writes
+          # contents and pull requests on its own repository and nowhere else.
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Mark workspace safe for git
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Set git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Run the upstream refresh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # Pass the ref through env, not inline ${{ }} in run: — that trips
+          # the semgrep run-shell-injection rule. Reference it double-quoted.
+          BASE: ${{ github.ref_name }}
+        run: vrg-upstream-refresh --base "$BASE"
