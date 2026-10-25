@@ -817,6 +817,8 @@
       
         
       
+        
+      
     
     
     
@@ -869,6 +871,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.57/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.57
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5923,6 +5953,8 @@
       
         
       
+        
+      
     
     
     
@@ -6356,6 +6388,34 @@
     
   
     ops-epic-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/ops-upstream-refresh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-upstream-refresh
   
 
     
@@ -7153,6 +7213,11 @@ only library repositories:</p>
 <td>Every repository the App is installed on in the org</td>
 </tr>
 <tr>
+<td><a href="../workflows/ops-upstream-refresh/"><code>ops-upstream-refresh.yml</code></a></td>
+<td><code>upstream-refresh</code></td>
+<td>Calling repository only</td>
+</tr>
+<tr>
 <td><a href="../workflows/cd-release-packages/"><code>cd-release.yml</code></a></td>
 <td>Package-index dispatch</td>
 <td><code>&lt;org&gt;/packages</code> only</td>
@@ -7184,12 +7249,12 @@ its settings page before relying on it:</p>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>github-config</code> reads <code>vergil.toml</code> and the CI workflow</td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>github-config</code> reads <code>vergil.toml</code> and the CI workflow</td>
 </tr>
 <tr>
 <td>Pull requests</td>
-<td>Read-only</td>
-<td><code>branch-sweep</code> (decides which branches are finished)</td>
+<td>Read &amp; write</td>
+<td><code>upstream-refresh</code> (opens, updates, comments on and closes the refresh PR); <code>branch-sweep</code> reads them (decides which branches are finished)</td>
 </tr>
 <tr>
 <td>Issues</td>

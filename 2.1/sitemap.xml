@@ -637,6 +637,10 @@
          <lastmod>2026-10-25</lastmod>
     </url>
     <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.57/</loc>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.6/</loc>
          <lastmod>2026-10-25</lastmod>
     </url>
@@ -706,6 +710,10 @@
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ops-github-config/</loc>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/workflows/ops-upstream-refresh/</loc>
          <lastmod>2026-10-25</lastmod>
     </url>
     <url>
