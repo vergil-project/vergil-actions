@@ -23,7 +23,7 @@ across all managed repositories.
 |---|---|
 | `ci-docs.yml` | Build-only MkDocs strict verification (no deploy) |
 | `ci-quality.yml` | Common linting, language-specific lint and typecheck |
-| `ci-security.yml` | Standards compliance and security scanning |
+| `ci-security.yml` | Security scanning (CodeQL, Trivy, Semgrep) |
 | `ci-test.yml` | Unit and integration tests |
 | `ci-audit.yml` | Dependency audit |
 | `ci-version-bump.yml` | Version divergence gate |
@@ -240,7 +240,6 @@ jobs:
     with:
       language: python
       run-security: ${{ inputs.run-security != false }}
-      container-suffix: python
 
   test:
     uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
@@ -263,9 +262,11 @@ tokens, so it must pin `[ci].versions` in `vergil.toml` until its lifecycle
 turn. `vrg-ci-resolve` checks the pin against the window and gives each token
 its image suffix and tag. `actions/ci/matrix` only joins them into an image —
 `clang-20` → `prod-cpp-clang:20`, `gcc-14` → `prod-cpp-gcc:14` — with no
-routing of its own. The caller still passes `container-suffix:` (`cpp-clang`),
-which the `common` job uses and the matrix only cross-checks against the
-resolved suffixes.
+routing of its own. The caller still passes `container-suffix:` (`cpp-clang`), but
+only as a cross-check: the `common` job requires it to equal the primary
+version's resolved suffix, and the matrix accepts any of the resolved
+suffixes. `ci-security` ignores `container-suffix` (a deprecated no-op), so its call
+omits it.
 
 Per-kind cardinality: `typecheck` and `unit` run per compiler×version, while
 `lint` and `dependencies` run once, on the primary version. The legs are
@@ -328,7 +329,6 @@ jobs:
       security-events: write
     with:
       language: cpp
-      container-suffix: cpp-clang
 
   test:
     uses: vergil-project/vergil-actions/.github/workflows/ci-test.yml@v2.1
