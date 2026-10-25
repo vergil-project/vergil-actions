@@ -815,6 +815,8 @@
       
         
       
+        
+      
     
     
     
@@ -867,6 +869,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.56/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.56
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5597,6 +5627,8 @@
       
         
       
+        
+      
     
     
     
@@ -5969,6 +6001,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ops-github-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ops-epic-rollup/" class="md-nav__link">
         
   
@@ -6097,6 +6157,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-a-run-fails-because-a-queue-is-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When a run fails because a queue is full
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -6564,6 +6641,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-a-run-fails-because-a-queue-is-full" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When a run fails because a queue is full
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -6606,13 +6700,28 @@
 
 
 <h1 id="ops-epic-sweep">ops-epic-sweep<a class="headerlink" href="#ops-epic-sweep" title="Permanent link">&para;</a></h1>
-<p>Scheduled epic and task reconciliation. It runs <code>vrg-epic-audit --close</code> to
-find and close work that missed its event-driven close, for example when the
-<a href="../ops-epic-rollup/"><code>ops-epic-rollup</code></a> run failed, a secret was broken or two
-closes raced.</p>
-<p>It closes only provably complete drift: epics whose tasks are all closed, and
-task issues whose PR has merged. Running it again changes nothing.</p>
-<p>The org's epic home calls it once a day; one run covers the whole org.</p>
+<p>Scheduled epic and task reconciliation. It runs <code>vrg-epic-audit --close</code>,
+which makes three passes over the whole org:</p>
+<ul>
+<li><strong>Drift close.</strong> Closes work that missed its event-driven close, for example
+  when the <a href="../ops-epic-rollup/"><code>ops-epic-rollup</code></a> run failed, a secret was
+  broken or two closes raced: epics whose tasks are all closed, and task issues
+  whose PR has merged. It also reopens an epic that was closed while a child
+  was still open.</li>
+<li><strong>Archive drain.</strong> Moves the closed children of every standing epic
+  (ad-hoc, intake and planning) into per-quarter archive epics.</li>
+<li><strong>Orphan pass.</strong> Enforces "every issue belongs to an epic": it links
+  body-only <code>Parent:</code> lines as native sub-issues, removes the retired <code>triage</code>,
+  <code>idea</code> and <code>research</code> labels, moves a now-public repository's self-homed
+  intake and planning items under the org <code>.github</code> queues, and attaches every
+  orphan to its home's intake epic.</li>
+</ul>
+<p>So the sweep changes labels and sub-issue links, not only issue state. Each
+pass acts only on provable drift, so a run with nothing new to fix changes
+nothing.</p>
+<p>The org's epic home calls it once a day; one run covers the whole org. The
+same caller's <code>workflow_dispatch</code> trigger is how the one-time migration for
+"every issue belongs to an epic" is run.</p>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -6664,8 +6773,9 @@ task issues whose PR has merged. Running it again changes nothing.</p>
 </tbody>
 </table>
 <p>The token is minted for every repository the App is installed on in the org,
-because the sweep closes tasks in the code repositories and epics in <code>.github</code>.
-The App needs <code>issues: write</code> on all of them.</p>
+because the sweep closes, relabels, links and moves issues in the code
+repositories, and closes, drains and attaches under epics in <code>.github</code>. The
+App needs <code>issues: write</code> on all of them.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -6691,6 +6801,27 @@ The App needs <code>issues: write</code> on all of them.</p>
 <li>Runs <code>vrg-epic-audit --close --window-days "$WINDOW_DAYS"</code> with the App
    token as <code>GH_TOKEN</code> and <code>VRG_EPIC_SWEEP=1</code>.</li>
 </ol>
+<p><code>vrg-epic-audit --close</code> runs its passes in this order:</p>
+<ol>
+<li>Closes drifted tasks and rolled-up epics, and reopens any epic closed with
+   an open child.</li>
+<li>Drains the ad-hoc epics, then the intake and planning epics, into
+   per-quarter archives, and closes past archives.</li>
+<li>Runs the orphan pass: links body-only <code>Parent:</code> lines natively, strips the
+   retired labels, moves now-public repositories' queue items under <code>.github</code>
+   (closing each emptied self-homed queue epic), then attaches orphans to
+   intake.</li>
+</ol>
+<p>The log prints a count line for each step, for example
+<code>Retired kind labels stripped: 41 issue(s).</code> and
+<code>Orphans attached to intake: 50.</code></p>
+<h3 id="when-a-run-fails-because-a-queue-is-full">When a run fails because a queue is full<a class="headerlink" href="#when-a-run-fails-because-a-queue-is-full" title="Permanent link">&para;</a></h3>
+<p>An intake or planning epic holds at most 95 open children. When an epic is at
+that cap, the orphan pass stops before it adds anything past it. The step
+prints every issue it did not link and exits 1, so the run fails. A failed run
+can therefore mean the queue needs attention (run intake review, or work the
+planning queue), not only a broken token or an outage. The next run attaches
+the rest once the queue has room.</p>
 <p><code>vrg-epic-audit --close</code> is otherwise a human-only action: it refuses unless
 the identity resolves to human. <code>VRG_EPIC_SWEEP=1</code> marks this scheduled run as
 the trusted automation that may close. An interactive agent session never sets

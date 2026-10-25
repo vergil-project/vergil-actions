@@ -815,6 +815,8 @@
       
         
       
+        
+      
     
     
     
@@ -867,6 +869,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.56/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.56
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5891,6 +5921,8 @@
       
         
       
+        
+      
     
     
     
@@ -6240,6 +6272,34 @@
     
   
     cd-docs-refresh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/ops-github-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-github-config
   
 
     
@@ -6990,13 +7050,13 @@ are configured in <strong>Settings &gt; Secrets and variables &gt; Actions</stro
 </tr>
 <tr>
 <td><code>APP_CLIENT_ID</code></td>
-<td>Library repositories</td>
-<td>GitHub App Client ID for release workflows</td>
+<td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and <code>[package]</code> repositories</td>
+<td>Client ID of the org's automation GitHub App (<code>&lt;org&gt;-automation</code>)</td>
 </tr>
 <tr>
 <td><code>APP_PRIVATE_KEY</code></td>
-<td>Library repositories</td>
-<td>GitHub App signing key for release workflows</td>
+<td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and <code>[package]</code> repositories</td>
+<td>Private key of the org's automation GitHub App</td>
 </tr>
 </tbody>
 </table>
@@ -7027,79 +7087,166 @@ can corrupt the secret value during encryption, causing "Bad credentials"
 errors at runtime that are difficult to diagnose.</p>
 </div>
 <h3 id="app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY<a class="headerlink" href="#app_client_id-and-app_private_key" title="Permanent link">&para;</a></h3>
-<p>These secrets are used together to generate a GitHub App installation token at
-publish time. The token is used by the CD release workflow to push workflow
-file changes that <code>GITHUB_TOKEN</code> cannot.</p>
-<p><strong>Why a GitHub App?</strong> Pull requests created by the default <code>GITHUB_TOKEN</code> do not
-trigger CI workflows. This is a GitHub security measure to prevent recursive
-workflow runs. A GitHub App token acts as a separate identity, so PRs it creates
-trigger CI normally and can auto-merge.</p>
-<p><strong>App permissions required:</strong></p>
+<p>These secrets hold the Client ID and private key of the org's <strong>automation
+GitHub App</strong>. Workflows pass them to <code>actions/create-github-app-token</code> to mint
+a short-lived installation token for work that <code>GITHUB_TOKEN</code> cannot do.</p>
+<p>Each org has its own automation App, named <code>&lt;org&gt;-automation</code>. The App is
+<strong>owned by the org</strong> (registered under the org's Developer settings, not a
+personal account), and its installation covers <strong>all repositories</strong> in that
+org:</p>
+<table>
+<thead>
+<tr>
+<th>Org</th>
+<th>App</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vergil-project</code></td>
+<td><code>vergil-project-automation</code></td>
+</tr>
+<tr>
+<td><code>logical-minds-foundry</code></td>
+<td><code>logical-minds-foundry-automation</code></td>
+</tr>
+<tr>
+<td><code>mnemosys-project</code></td>
+<td><code>mnemosys-project-automation</code></td>
+</tr>
+</tbody>
+</table>
+<p>The App is an automation identity, not a per-contributor one. It is separate
+from the per-developer agent Apps described in vergil-tooling's
+<a href="https://vergil-project.github.io/vergil-tooling/latest/guides/identity-architecture/">Identity Architecture</a>.</p>
+<p><strong>Why a GitHub App?</strong> A reusable workflow's <code>GITHUB_TOKEN</code> can carry only the
+permissions its caller grants, and the standard <code>ops.yml</code> grants just
+<code>contents: read</code> and <code>issues: write</code>. It is also limited to the repository the
+run belongs to. The
+App token supplies the extra scopes (for example Dependabot alerts or branch
+deletion) and the cross-repository reach (the org's <code>.github</code> epics, the
+org's <code>packages</code> index) these workflows need.</p>
+<p><strong>Who uses it.</strong> Every repository with an <code>ops.yml</code> needs these secrets, not
+only library repositories:</p>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Job or step</th>
+<th>Token scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../workflows/ops-github-config/"><code>ops-github-config.yml</code></a></td>
+<td><code>branch-sweep</code>, <code>github-config</code>, <code>dependabot-audit</code></td>
+<td>Calling repository only</td>
+</tr>
+<tr>
+<td><a href="../workflows/ops-epic-rollup/"><code>ops-epic-rollup.yml</code></a></td>
+<td><code>epic-rollup</code> (from the caller's <code>epic-rollup.yml</code>)</td>
+<td>Calling repository and the epic repository</td>
+</tr>
+<tr>
+<td><a href="../workflows/ops-epic-sweep/"><code>ops-epic-sweep.yml</code></a></td>
+<td><code>epic-sweep</code></td>
+<td>Every repository the App is installed on in the org</td>
+</tr>
+<tr>
+<td><a href="../workflows/cd-release-packages/"><code>cd-release.yml</code></a></td>
+<td>Package-index dispatch</td>
+<td><code>&lt;org&gt;/packages</code> only</td>
+</tr>
+</tbody>
+</table>
+<p><strong>App permissions required.</strong> The table lists what each consumer needs, which
+is the minimum the App must hold. Read the App's actual permission set from
+its settings page before relying on it:</p>
 <table>
 <thead>
 <tr>
 <th>Permission</th>
 <th>Access</th>
-<th>Purpose</th>
+<th>Needed by</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>Contents</td>
-<td>Read &amp; write</td>
-<td>Create branches, push commits</td>
-</tr>
-<tr>
-<td>Pull requests</td>
-<td>Read &amp; write</td>
-<td>Create and merge PRs</td>
-</tr>
-<tr>
-<td>Workflows</td>
-<td>Read &amp; write</td>
-<td>Push commits that modify workflow files</td>
-</tr>
 <tr>
 <td>Metadata</td>
 <td>Read-only</td>
 <td>Required by GitHub (always enabled)</td>
 </tr>
 <tr>
+<td>Administration</td>
+<td>Read-only</td>
+<td><code>github-config</code>: <code>vrg-github-repo-config audit</code> reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled</td>
+</tr>
+<tr>
+<td>Contents</td>
+<td>Read &amp; write</td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>github-config</code> reads <code>vergil.toml</code> and the CI workflow</td>
+</tr>
+<tr>
+<td>Pull requests</td>
+<td>Read-only</td>
+<td><code>branch-sweep</code> (decides which branches are finished)</td>
+</tr>
+<tr>
+<td>Issues</td>
+<td>Read &amp; write</td>
+<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, relabel and link issues)</td>
+</tr>
+<tr>
 <td>Dependabot alerts</td>
 <td>Read-only</td>
-<td>Nightly <code>dependabot-audit</code> (ops)</td>
+<td><code>dependabot-audit</code> (<code>vrg-dependabot-audit</code> lists open alerts)</td>
 </tr>
 </tbody>
 </table>
-<p>The nightly ops run uses the same secrets to mint a token for its
-<code>dependabot-audit</code> job in <code>ops-github-config.yml</code>. That token is scoped to the
-calling repository and carries only <strong>Dependabot alerts: Read</strong>, which
-<code>vrg-dependabot-audit</code> needs to list the repository's open alerts. Grant the
-App this permission, then accept the updated permission on <strong>each</strong> of its
-installations: GitHub does not apply a new App permission to an installation
-until that installation accepts it. Until it is accepted, the job exits 2
-("could not check") and the ops run fails.</p>
+<p><strong>Administration stays read-only.</strong> The Apps run only the read-only
+<code>vrg-github-repo-config audit</code>. <code>vrg-github-repo-config apply</code>, which changes
+settings and rulesets, is a human action that runs as the maintainer's own
+<code>gh</code> login, never as the App. Do not grant Administration: Read &amp; write.</p>
+<p>vergil-actions' own release workflow (<code>cd.yml</code>) also uses the
+<code>vergil-project-automation</code> App token for its checkout, because the
+release tag it pushes points at the freeze-internal-refs commit, which changes
+workflow files. That needs <strong>Workflows: Read &amp; write</strong> (see
+<a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>).
+That is specific to this repository; consumer workflows do not need it.</p>
 <p><strong>Creation steps:</strong></p>
 <ol>
-<li>Go to <strong>Settings &gt; Developer settings &gt; GitHub Apps</strong>.</li>
+<li>Go to the org's <strong>Settings &gt; Developer settings &gt; GitHub Apps</strong>, so the
+   App is owned by the org.</li>
 <li>Click <strong>New GitHub App</strong>.</li>
-<li>Set the app name and homepage URL.</li>
+<li>Name it <code>&lt;org&gt;-automation</code> and set the homepage URL.</li>
 <li>Under <strong>Permissions &gt; Repository permissions</strong>, grant the permissions listed
    above.</li>
 <li>Disable webhooks (not needed).</li>
 <li>Create the app and note the <strong>Client ID</strong> from the app's settings page.</li>
 <li>Under <strong>Private keys</strong>, click <strong>Generate a private key</strong>. Save the downloaded
    <code>.pem</code> file.</li>
-<li>Under <strong>Install App</strong>, install it on your account and grant access to the
-   repositories that use the publish workflow.</li>
-<li>Set the secrets in each library repository:</li>
+<li>Under <strong>Install App</strong>, install it on the org and choose <strong>All
+   repositories</strong>.</li>
+<li>Make <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> available to every repository
+   that calls the workflows above. For example, as repository secrets:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;path-to-private-key&gt;.pem<span class="k">)</span><span class="s2">"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;path-to-private-key&gt;.pem<span class="k">)</span><span class="s2">"</span>
 </code></pre></div>
+<p><strong>Changing a permission later:</strong></p>
+<ol>
+<li>On the App's settings page, open <strong>Permissions &amp; events</strong>, change the
+   permission and save.</li>
+<li>Accept the change on the installation: <strong>Org settings &gt; GitHub Apps &gt;
+   \<app\> > Configure</strong>, then review and accept the pending permission
+   request. GitHub does not apply a new App permission to an installation
+   until it is accepted, and until then minted tokens do <strong>not</strong> carry it.
+   For Dependabot alerts, the <code>dependabot-audit</code> job exits 2 ("could not
+   check") on every repository and the ops run fails.</li>
+</ol>
 <p><strong>Key rotation:</strong> Generate a new private key from the app's settings page, update
-the <code>APP_PRIVATE_KEY</code> secret in all library repositories, then revoke the old
-key.</p>
+the <code>APP_PRIVATE_KEY</code> secret wherever it is stored for that org, then revoke the
+old key. Each org has its own App and key, so rotate per org.</p>
 <h2 id="binary-package-environments">Binary package environments<a class="headerlink" href="#binary-package-environments" title="Permanent link">&para;</a></h2>
 <p>Repositories whose <code>vergil.toml</code> has a <code>[package]</code> section, and the
 organization's <code>&lt;org&gt;/packages</code> index repository, keep their signing key in
@@ -7233,9 +7380,13 @@ is automatically created per workflow run and scoped to the repository.</p>
 <ol>
 <li><strong>GitHub Project access</strong> — The <code>GITHUB_TOKEN</code> cannot interact with
    user-owned Projects v2. The <code>PROJECT_TOKEN</code> (classic PAT) is required.</li>
-<li><strong>CI-triggering PRs</strong> — PRs created by <code>GITHUB_TOKEN</code> do not trigger
-   workflow runs. The GitHub App token (<code>APP_CLIENT_ID</code> + <code>APP_PRIVATE_KEY</code>) is
-   required for the version bump PR to trigger CI and auto-merge.</li>
+<li><strong>Scopes and repositories beyond the caller's grant</strong> — a reusable
+   workflow's <code>GITHUB_TOKEN</code> carries only what the caller grants and reaches
+   only its own repository. The org's automation App token
+   (<code>APP_CLIENT_ID</code> + <code>APP_PRIVATE_KEY</code>) is required for the nightly ops jobs
+   (config audit, branch sweep, Dependabot alert audit), the epic roll-up and
+   sweep, and the package-index dispatch. See
+   <a href="#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>.</li>
 </ol>
 <h2 id="auto-merge">Auto-merge<a class="headerlink" href="#auto-merge" title="Permanent link">&para;</a></h2>
 <p>All managed repositories have <strong>auto-merge enabled</strong> in repository settings.
@@ -7269,7 +7420,9 @@ silently leaving <code>main</code> unprotected. See
 <h3 id="3-secrets">3. Secrets<a class="headerlink" href="#3-secrets" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Set <code>PROJECT_TOKEN</code> (all repositories)</li>
-<li>[ ] Set <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> (library repositories only)</li>
+<li>[ ] Make <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> for the org's automation App
+  available to the repository (every repository with an <code>ops.yml</code>, not only
+  libraries)</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
@@ -7277,11 +7430,13 @@ silently leaving <code>main</code> unprotected. See
 </code></pre></div>
 <h3 id="4-github-app-installation">4. GitHub App installation<a class="headerlink" href="#4-github-app-installation" title="Permanent link">&para;</a></h3>
 <ul>
-<li>[ ] Install the GitHub App on the new repository (library repos only)</li>
+<li>[ ] Confirm the org's <code>&lt;org&gt;-automation</code> App installation has <strong>All
+  repositories</strong> access, so it already covers the new repository
+  (<strong>Org settings &gt; GitHub Apps &gt; \<app\> > Configure</strong>). There is no
+  per-repository install step.</li>
 <li>[ ] Verify by checking <strong>Settings &gt; GitHub Apps</strong> on the repository</li>
-<li>[ ] <code>[package]</code> repositories: confirm the App is also installed on
-  <code>&lt;org&gt;/packages</code> with <strong>Contents: Read &amp; write</strong>, so the release can
-  dispatch <code>package-released</code> to it</li>
+<li>[ ] After the first nightly ops run, confirm the <code>dependabot-audit</code> job did
+  not exit 2 ("could not check")</li>
 </ul>
 <h3 id="4a-binary-packages-package-repositories-only">4a. Binary packages (<code>[package]</code> repositories only)<a class="headerlink" href="#4a-binary-packages-package-repositories-only" title="Permanent link">&para;</a></h3>
 <p>See <a href="#binary-package-environments">Binary package environments</a>.</p>
