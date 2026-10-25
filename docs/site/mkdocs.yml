@@ -107,6 +107,7 @@ nav:
       - cd-release packages: workflows/cd-release-packages.md
       - publish-index: workflows/publish-index.md
       - cd-docs-refresh: workflows/cd-docs-refresh.md
+      - ops-github-config: workflows/ops-github-config.md
       - ops-epic-rollup: workflows/ops-epic-rollup.md
       - ops-epic-sweep: workflows/ops-epic-sweep.md
   - CI Gate Requirements:

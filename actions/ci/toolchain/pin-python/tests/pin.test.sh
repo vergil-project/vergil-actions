@@ -147,7 +147,16 @@ case_workflows_pin_every_python_leg() {
 #
 # A backtick before `uv` marks prose (a description or doc string), not a
 # command: shell code uses $(...), never backticks.
-uv_cmd_re='(^|[^[:alnum:]_.`-])uv (run|sync|lock|pip|venv|build|publish|export|add|remove|tree|python)([[:space:]"]|$)'
+#
+# uv takes global options before its subcommand (issue #1009): `uv --quiet run`,
+# `uv -q sync`, `uv --directory d run`. uv_global_opts_re matches any run of
+# them — each an option token, optionally followed by one value token that does
+# not start with `-`. Only a subcommand in the list ends the run, so `uv tool`,
+# `uv --version` and `uv -q tool run` still do not match.
+uv_cmd_start_re='(^|[^[:alnum:]_.`-])uv'
+uv_global_opts_re='([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*'
+uv_subcmd_re='(run|sync|lock|pip|venv|build|publish|export|add|remove|tree|python)'
+uv_cmd_re="${uv_cmd_start_re}${uv_global_opts_re}[[:space:]]+${uv_subcmd_re}"'([[:space:]"]|$)'
 
 # Actions whose uv commands are pinned by their caller, not in the action.
 # The workflow check below treats a job that uses one as running uv.
@@ -163,10 +172,17 @@ caller_pinned_actions='ci/toolchain/assert/'
 #     code. Without --no-config a repo's python-downloads = "manual" breaks it.
 config_free_files='package/setup/detect.sh'
 
-# The config-ignoring form: --no-config right before or right after the
-# subcommand (`uv --no-config run ...` or `uv run --no-config ...`), so it is
-# uv's flag and never an argument of the command uv runs.
-uv_no_config_re='(^|[^[:alnum:]_.`-])uv[[:space:]]+(--no-config[[:space:]]+[a-z]+|[a-z]+[[:space:]]+--no-config)([[:space:]]|$)'
+# The config-ignoring form: --no-config among uv's options, so it is uv's flag
+# and never an argument of the command uv runs. Either among the global options
+# before the subcommand (`uv --no-config run ...`, `uv -q --directory d
+# --no-config run ...`), or among the flags right after it (`uv run --no-config
+# ...`, `uv -q run --no-project --no-config ...`). After the subcommand only
+# bare flags may precede it: a non-flag token there may be the command uv runs,
+# and --no-config after it would be that command's argument.
+uv_no_config_re="${uv_cmd_start_re}("
+uv_no_config_re+="${uv_global_opts_re}[[:space:]]+--no-config${uv_global_opts_re}[[:space:]]+${uv_subcmd_re}"
+uv_no_config_re+="|${uv_global_opts_re}[[:space:]]+${uv_subcmd_re}([[:space:]]+-[^[:space:]]+)*[[:space:]]+--no-config"
+uv_no_config_re+=')([[:space:]]|$)'
 
 # check_workflow_uv_pins <workflows dir>
 #
@@ -428,6 +444,38 @@ jobs:
   # The no-config form does not exempt any other file from the source pin.
   expect_guard "guard-fails-no-config-outside-config-free-files" fail "$wf_ok" \
     "x/run/go.sh" "$(printf '#!/usr/bin/env bash\nuv run --no-config --no-project python -c pass')"
+
+  # Global options before the subcommand (issue #1009) do not hide a uv command.
+  local wf_head='name: F\non: push\njobs:\n  docs:\n    runs-on: ubuntu-latest\n'
+  # shellcheck disable=SC2059 # wf_head is a printf format by design.
+  expect_guard "guard-fails-unpinned-uv-quiet-run" fail \
+    "$(printf "${wf_head}"'    steps:\n      - run: uv --quiet run mkdocs build')"
+  # shellcheck disable=SC2059
+  expect_guard "guard-passes-job-env-pin-uv-quiet-run" pass \
+    "$(printf "${wf_head}"'    env:\n      UV_PYTHON_PREFERENCE: only-system\n    steps:\n      - run: uv --quiet run mkdocs build')"
+  expect_guard "guard-fails-unpinned-uv-q-sync" fail "$wf_ok" \
+    "x/run/go.sh" "$(printf '#!/usr/bin/env bash\nuv -q sync --frozen')"
+  expect_guard "guard-passes-inline-pin-uv-q-sync" pass "$wf_ok" \
+    "x/run/go.sh" "$(printf '#!/usr/bin/env bash\nUV_PYTHON_PREFERENCE=only-system uv -q sync --frozen')"
+  expect_guard "guard-fails-unpinned-uv-directory-run" fail "$wf_ok" \
+    "x/run/action.yml" "$(printf 'runs:\n  using: composite\n  steps:\n    - shell: bash\n      run: uv --directory d run pytest')"
+  expect_guard "guard-passes-step-env-uv-directory-run" pass "$wf_ok" \
+    "x/run/action.yml" "$(printf 'runs:\n  using: composite\n  steps:\n    - shell: bash\n      env:\n        UV_PYTHON_PREFERENCE: only-system\n      run: uv --directory d run pytest')"
+  expect_guard "guard-passes-uv-global-opts-exempt-forms" pass "$wf_ok" \
+    "x/run/go.sh" "$(printf '#!/usr/bin/env bash\n# uv --quiet run mike here is a comment\necho "runs `uv -q sync` for you"\nuv --version\nuv -q tool install x\nuv --directory d tool run ruff')"
+
+  expect_guard "guard-fails-config-free-uv-q-run-without-no-config" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv -q run --no-project --python 3.14 python -c pass')"
+  expect_guard "guard-fails-config-free-uv-directory-run-without-no-config" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv --directory d run --no-project python -c pass')"
+  expect_guard "guard-fails-config-free-uv-q-no-config-as-argument" fail "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv -q run --no-project python tool.py --no-config')"
+  expect_guard "guard-passes-config-free-uv-q-run-no-config" pass "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv -q run --no-config --no-project python -c pass')"
+  expect_guard "guard-passes-config-free-no-config-among-globals" pass "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv -q --directory d --no-config run --no-project python -c pass')"
+  expect_guard "guard-passes-config-free-no-config-after-flags" pass "$wf_ok" \
+    "$detect" "$(printf '#!/usr/bin/env bash\nuv --quiet run --no-project --no-config python -c pass')"
 }
 
 case_pins_version_and_source

@@ -68,6 +68,13 @@ on:
         type: boolean
         default: true
     secrets:
+      # PACKAGE_SIGNING_KEY / PACKAGE_SIGNING_PASSPHRASE are NOT declared here:
+      # package-sign reads them from its `package-signing` environment. Those
+      # environment secrets reach this cross-repo reusable workflow only when
+      # the CALLER passes `secrets: inherit` (proven by a probe,
+      # vergil-project/packages#6); declaring them here makes no difference.
+      # actionlint can't see environment secrets, so its "undeclared secret"
+      # finding is ignored narrowly in .github/actionlint.yaml.
       CARGO_REGISTRY_TOKEN:
         required: false
       CENTRAL_USERNAME:
@@ -85,13 +92,6 @@ on:
         required: false
       APP_PRIVATE_KEY:
         required: false
-      # PACKAGE_SIGNING_KEY / PACKAGE_SIGNING_PASSPHRASE are NOT declared here:
-      # package-sign reads them from its `package-signing` environment. Those
-      # environment secrets reach this cross-repo reusable workflow only when
-      # the CALLER passes `secrets: inherit` (proven by a probe,
-      # vergil-project/packages#6); declaring them here makes no difference.
-      # actionlint can't see environment secrets, so its "undeclared secret"
-      # finding is ignored narrowly in .github/actionlint.yaml.
 
 concurrency:
   group: cd
