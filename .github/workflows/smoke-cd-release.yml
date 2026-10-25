@@ -42,7 +42,7 @@ jobs:
       # The harness runs the real resolver, so install vergil-tooling at this
       # repo's [dependencies].vergil pin first.
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.57
       - name: Run container-tag harness
         shell: bash
         run: bash actions/cd/release/tests/container-tag.test.sh
@@ -57,7 +57,7 @@ jobs:
       # check-runtime need vergil-tooling 2.1.262 or later), so install
       # vergil-tooling at this repo's [dependencies].vergil pin first.
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.57
       - name: Run package-runtime harness
         shell: bash
         run: bash actions/cd/release/tests/package-runtime.test.sh
