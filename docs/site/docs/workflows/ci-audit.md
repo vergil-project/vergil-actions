@@ -7,7 +7,8 @@ Dependency audit workflow.
 | Input | Type | Required | Default | Description |
 | ------- | ------ | ---------- | --------- | ------------- |
 | `language` | string | yes | — | Primary language of the repository |
-| `container-suffix` | string | no | `<language>` | Container image name suffix (e.g. `python`, `base`) |
+| `container-suffix` | string | no | `""` | Cross-check only. Each leg's image suffix comes from the resolver. A non-empty value must be one of the resolved suffixes (e.g. `python`, `cpp-clang`, `base`), or the `matrix` job fails. It never changes an image. |
+| `container-prefix` | string | no | `prod` | Image name prefix (`prod` or `dev`) |
 
 ## Secrets
 
