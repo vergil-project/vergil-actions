@@ -6682,8 +6682,15 @@
 <td><code>container-suffix</code></td>
 <td>string</td>
 <td>no</td>
-<td><code>&lt;language&gt;</code></td>
-<td>Container image name suffix (e.g. <code>python</code>, <code>base</code>)</td>
+<td><code>""</code></td>
+<td>Cross-check only. Each leg's image suffix comes from the resolver. A non-empty value must be one of the resolved suffixes (e.g. <code>python</code>, <code>cpp-clang</code>, <code>base</code>), or the <code>matrix</code> job fails. It never changes an image.</td>
+</tr>
+<tr>
+<td><code>container-prefix</code></td>
+<td>string</td>
+<td>no</td>
+<td><code>prod</code></td>
+<td>Image name prefix (<code>prod</code> or <code>dev</code>)</td>
 </tr>
 </tbody>
 </table>
