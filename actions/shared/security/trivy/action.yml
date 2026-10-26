@@ -60,6 +60,16 @@ inputs:
     required: false
     default: "true"
 
+outputs:
+  result:
+    description: >-
+      Outcome of an fs or image scan: "passed" (report written, nothing at the
+      requested severity, or exit-code 0), "findings" (report written,
+      vulnerabilities found; the step fails with the exit-code input), or
+      "error" (no report produced after the retries; the step fails). Empty
+      for sbom.
+    value: ${{ steps.scan.outputs.result }}
+
 runs:
   using: composite
   steps:
@@ -93,10 +103,19 @@ runs:
           attempt=$((attempt + 1))
         done
 
-    - name: Run Trivy filesystem scan
-      if: inputs.scan-type == 'fs'
+    # The fs and image scans share scan.sh, which tells a scan that found
+    # vulnerabilities apart from one that errored without writing a report
+    # (a dropped layer or DB download). It retries the second kind with
+    # backoff, then fails with a "scan errored" message rather than the
+    # vulnerabilities one, and never passes a scan that wrote no report
+    # (issue #1079). The logic lives in scan.sh so it is unit-testable
+    # (tests/scan.test.sh).
+    - name: Run Trivy scan
+      id: scan
+      if: inputs.scan-type == 'fs' || inputs.scan-type == 'image'
       shell: bash
       env:
+        SCAN_TYPE: ${{ inputs.scan-type }}
         TRIVY_IMAGE: ${{ inputs.trivy-image }}
         SCAN_REF: ${{ inputs.scan-ref }}
         SCANNERS: ${{ inputs.scanners }}
@@ -104,107 +123,7 @@ runs:
         EXIT_CODE: ${{ inputs.exit-code }}
         OUTPUT_FILE: ${{ inputs.output-file }}
         TRIVYIGNORES: ${{ inputs.trivyignores }}
-      run: |
-        TRIVYIGNORE_ARGS=""
-        if [ -n "$TRIVYIGNORES" ]; then
-          TRIVYIGNORE_ARGS="--ignorefile $TRIVYIGNORES"
-        fi
-        docker run --rm \
-          -v "$GITHUB_WORKSPACE:/workspace" \
-          -w /workspace \
-          -e SCANNERS \
-          -e SEVERITY \
-          -e EXIT_CODE \
-          -e OUTPUT_FILE \
-          -e SCAN_REF \
-          -e TRIVYIGNORE_ARGS \
-          --entrypoint sh \
-          "$TRIVY_IMAGE" \
-          -c '
-            set -e
-            # Skip the pip-vendored CycloneDX SBOM (pip/_vendor/bom.cdx.json).
-            # pip 26.x ships it to describe the packages pip vendors; Trivy
-            # would otherwise ingest it and report those vendored packages
-            # (e.g. setuptools, msgpack) as findings, though they are pip
-            # internals, not part of the scan target attack surface. See #796.
-            trivy fs \
-              --scanners "$SCANNERS" \
-              --severity "$SEVERITY" \
-              --exit-code 0 \
-              --format json \
-              --output /tmp/trivy-raw.json \
-              --skip-files "**/pip/_vendor/bom.cdx.json" \
-              $TRIVYIGNORE_ARGS \
-              "$SCAN_REF"
-            trivy convert \
-              --severity "$SEVERITY" \
-              --format table \
-              --exit-code 0 \
-              /tmp/trivy-raw.json
-            trivy convert \
-              --severity "$SEVERITY" \
-              --format sarif \
-              --exit-code "$EXIT_CODE" \
-              --output "/workspace/$OUTPUT_FILE" \
-              /tmp/trivy-raw.json
-          '
-
-    - name: Run Trivy image scan
-      if: inputs.scan-type == 'image'
-      shell: bash
-      env:
-        TRIVY_IMAGE: ${{ inputs.trivy-image }}
-        SCAN_REF: ${{ inputs.scan-ref }}
-        SCANNERS: ${{ inputs.scanners }}
-        SEVERITY: ${{ inputs.severity }}
-        EXIT_CODE: ${{ inputs.exit-code }}
-        OUTPUT_FILE: ${{ inputs.output-file }}
-        TRIVYIGNORES: ${{ inputs.trivyignores }}
-      run: |
-        TRIVYIGNORE_ARGS=""
-        if [ -n "$TRIVYIGNORES" ]; then
-          TRIVYIGNORE_ARGS="--ignorefile $TRIVYIGNORES"
-        fi
-        docker run --rm \
-          -v "$GITHUB_WORKSPACE:/workspace" \
-          -v /var/run/docker.sock:/var/run/docker.sock \
-          -w /workspace \
-          -e SCANNERS \
-          -e SEVERITY \
-          -e EXIT_CODE \
-          -e OUTPUT_FILE \
-          -e SCAN_REF \
-          -e TRIVYIGNORE_ARGS \
-          --entrypoint sh \
-          "$TRIVY_IMAGE" \
-          -c '
-            set -e
-            # Skip the pip-vendored CycloneDX SBOM (pip/_vendor/bom.cdx.json).
-            # pip 26.x ships it to describe the packages pip vendors; Trivy
-            # would otherwise ingest it and report those vendored packages
-            # (e.g. setuptools, msgpack) as findings, though they are pip
-            # internals, not part of the scan target attack surface. See #796.
-            trivy image \
-              --scanners "$SCANNERS" \
-              --severity "$SEVERITY" \
-              --exit-code 0 \
-              --format json \
-              --output /tmp/trivy-raw.json \
-              --skip-files "**/pip/_vendor/bom.cdx.json" \
-              $TRIVYIGNORE_ARGS \
-              "$SCAN_REF"
-            trivy convert \
-              --severity "$SEVERITY" \
-              --format table \
-              --exit-code 0 \
-              /tmp/trivy-raw.json
-            trivy convert \
-              --severity "$SEVERITY" \
-              --format sarif \
-              --exit-code "$EXIT_CODE" \
-              --output "/workspace/$OUTPUT_FILE" \
-              /tmp/trivy-raw.json
-          '
+      run: bash "${GITHUB_ACTION_PATH}/scan.sh"
 
     # Code scanning does not honor SARIF `suppressions`, so upload a filtered
     # copy with accepted-suppressed results removed (same semantics as the
@@ -224,15 +143,21 @@ runs:
         upload_file="${OUTPUT_FILE%.sarif}.upload.sarif"
         echo "upload-file=$upload_file" >> "$GITHUB_OUTPUT"
         if [ ! -f "$OUTPUT_FILE" ]; then
-          echo "::warning::$OUTPUT_FILE not found; nothing to filter (the upload step will report the missing file)"
+          # Only a scan that errored leaves no report, and the scan step has
+          # already failed with an accurate "scan errored" message. Skip the
+          # upload rather than add a second, misleading error.
+          echo "present=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::$OUTPUT_FILE not found (the scan produced no report); nothing to upload"
           exit 0
         fi
+        echo "present=true" >> "$GITHUB_OUTPUT"
         vrg-sarif-filter "$OUTPUT_FILE" "$upload_file"
 
     - name: Upload SARIF
       if: >-
         (inputs.scan-type == 'fs' || inputs.scan-type == 'image') &&
-        inputs.upload-sarif == 'true' && always()
+        inputs.upload-sarif == 'true' && always() &&
+        steps.filter.outputs.present == 'true'
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ steps.filter.outputs.upload-file }}

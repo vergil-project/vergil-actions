@@ -30,6 +30,12 @@ Runs Trivy vulnerability scanning, SBOM generation, or container image scanning.
 | `trivy-image` | No | `aquasec/trivy:0.70.0` | Docker image to use for Trivy. Override to pin a specific version. |
 | `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by `vrg-sarif-filter`; requires vergil-tooling on `PATH`; the unfiltered `output-file` is kept). Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
 
+## Outputs
+
+| Output | Description |
+| ------ | ----------- |
+| `result` | Outcome of an `fs` or `image` scan: `passed`, `findings` or `error` (see [Scan outcomes and retry](#scan-outcomes-and-retry)). Empty for `sbom`. |
+
 ## Permissions
 
 - `security-events: write` (required for SARIF upload when `scan-type` is `fs`
@@ -51,6 +57,27 @@ ingest that SBOM and report pip's **vendored** dependencies (e.g. `setuptools`,
 `msgpack`) as findings even though they are pip internals, not the scan target's
 attack surface. The `sbom` mode does **not** skip it — an SBOM should describe
 everything present.
+
+### Scan outcomes and retry
+
+The `fs` and `image` scans run through `scan.sh`, which tells three outcomes
+apart by whether the scan wrote its SARIF report:
+
+| `result` | When | Step |
+| -------- | ---- | ---- |
+| `passed` | The report was written and the scan exited 0. | Passes. |
+| `findings` | The report was written and the scan exited non-zero: Trivy found vulnerabilities at `severity` after the ignore files. | Fails with `Trivy found <severity> vulnerabilities in <scan-ref>`, using the `exit-code` input. Not retried. |
+| `error` | No attempt wrote a report: Trivy stopped before it could report, for example on a dropped image-layer download or a failed vulnerability-DB download. | Fails with `Trivy scan errored (no report produced) for <scan-ref>`. |
+
+A scan that writes no report is retried up to two more times (three attempts,
+waiting 15s and then 30s), since those download errors are usually transient.
+Any stale report is deleted before each attempt, so it cannot stand in for a
+scan that errored. A scan that never wrote a report never passes, even with
+`exit-code: "0"`. When there is no report, the SARIF upload is skipped rather
+than failing a second time on the missing file.
+
+Callers that gate on the step outcome (with `continue-on-error: true`) can read
+the `result` output to word their own failure message.
 
 ### Filesystem scan (`fs`)
 
