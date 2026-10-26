@@ -5885,6 +5885,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6687,6 +6698,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6765,8 +6787,9 @@ the image's interpreter (Python, with
 <a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and then
 asserts the running toolchain with
 <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>. The
-single-container <code>common</code> job runs on the resolver's image for the primary
-version (see <a href="#common-checks">Common checks</a>). Callers are thin: they pass
+single-container <code>common</code> and <code>custom</code> jobs run on the resolver's image for
+the primary version (see <a href="#common-checks">Common checks</a> and
+<a href="#custom-validation">Custom validation</a>). Callers are thin: they pass
 only <code>language:</code>, and optionally <code>container-suffix:</code> as a cross-check.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
@@ -6784,6 +6807,11 @@ only <code>language:</code>, and optionally <code>container-suffix:</code> as a 
 <td>Runs common linters based on file presence (single-container job on the primary version)</td>
 </tr>
 <tr>
+<td><code>custom</code></td>
+<td><code>&lt;caller&gt; / custom</code></td>
+<td>Runs the repo's custom validator with <code>vrg-validate --check custom</code>, or logs that there is none (single-container job on the primary version — informational, gated through <code>quality / evidence</code>)</td>
+</tr>
+<tr>
 <td><code>lint / &lt;version&gt;</code></td>
 <td><code>&lt;caller&gt; / lint / &lt;version&gt;</code></td>
 <td>Language-specific linting (matrix-expanded — informational, not a required check)</td>
@@ -6796,7 +6824,7 @@ only <code>language:</code>, and optionally <code>container-suffix:</code> as a 
 <tr>
 <td><code>evidence</code></td>
 <td><code>quality / evidence</code></td>
-<td>Aggregate gate — <code>needs</code> the <code>common</code>, <code>lint</code>, and <code>typecheck</code> jobs, runs <code>if: always()</code>, and asserts each succeeded; a failed/skipped leg makes it <strong>fail red</strong> rather than skip. <strong>This stable, version-agnostic gate is the required check</strong> (see <a href="../../ci-gates/required-checks/">Required Checks</a>)</td>
+<td>Aggregate gate — <code>needs</code> the <code>common</code>, <code>custom</code>, <code>lint</code>, and <code>typecheck</code> jobs, runs <code>if: always()</code>, and asserts each succeeded; a failed/skipped leg makes it <strong>fail red</strong> rather than skip. <strong>This stable, version-agnostic gate is the required check</strong> (see <a href="../../ci-gates/required-checks/">Required Checks</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -6844,6 +6872,23 @@ exist in the repository:</p>
 </tr>
 </tbody>
 </table>
+<h2 id="custom-validation">Custom validation<a class="headerlink" href="#custom-validation" title="Permanent link">&para;</a></h2>
+<p>The <code>custom</code> job runs the repository's custom validator
+(<code>scripts/bin/validate-custom</code> or <code>vrg-validate-custom</code>) in PR CI with
+<code>vrg-validate --check custom</code>, which runs the language install stage and then
+the custom stage. A repository with no custom validator gets one
+"no custom validator" line and a passing job; a validator that is present but
+not an executable regular file fails the job. Like <code>common</code>, it runs once, on
+the same image. For Python it pins uv to the primary version's interpreter
+(with <a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and
+installs the dev dependency group first, so the validator sees the repo's dev
+dependencies; <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a> then
+checks the running toolchain is the primary version.</p>
+<p>The job's transcript is uploaded as the <code>ci-evidence-quality-reports-custom</code>
+partial and bundled into <code>ci-evidence-quality</code> as <code>quality-custom.log</code>. The
+<code>evidence</code> job needs <code>custom</code>, so a failed or skipped custom stage fails
+<code>quality / evidence</code> — there is no separate required check (epic
+<a href="https://github.com/vergil-project/.github/issues/488">vergil-project/.github#488</a>).</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">quality</span><span class="p">:</span>

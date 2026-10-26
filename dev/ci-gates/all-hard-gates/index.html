@@ -6950,7 +6950,13 @@ output of <code>vrg-validate --check common</code> as <code>quality-common.log</
 markdownlint, shellcheck, yamllint, hadolint, actionlint, ansible-lint),
 uploads it as the <code>ci-evidence-quality-reports-common</code> partial, and bundles
 it into <code>ci-evidence-quality</code> for every repo. As a result, the quality gate
-is never an <code>evidence.json</code>-only payload (<a href="https://github.com/vergil-project/vergil-actions/issues/925">vergil-project/vergil-actions#925</a>).</p>
+is never an <code>evidence.json</code>-only payload (<a href="https://github.com/vergil-project/vergil-actions/issues/925">vergil-project/vergil-actions#925</a>).
+The <code>custom</code> job does the same for the repo's custom validator: it captures
+<code>vrg-validate --check custom</code> as <code>quality-custom.log</code>, uploads it as the
+<code>ci-evidence-quality-reports-custom</code> partial (tool <code>vrg-validate-custom</code>),
+and bundles it into <code>ci-evidence-quality</code>. A repo with no custom validator
+still ships the file, holding the one "no custom validator" line
+(<a href="https://github.com/vergil-project/.github/issues/488">vergil-project/.github#488</a>).</p>
 <div class="admonition note">
 <p class="admonition-title">Current residuals</p>
 <p>Two known gaps remain open, tracked as limitations rather than done: the

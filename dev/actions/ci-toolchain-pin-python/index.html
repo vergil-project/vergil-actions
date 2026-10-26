@@ -6757,7 +6757,8 @@ downloaded (epic vergil-project/.github#407, spec §6.5). uv's environment
 variables take precedence over a repository's uv settings.</p>
 <p>This action is <strong>wired automatically</strong> into every Python matrix leg of
 <code>ci-quality</code> (lint, typecheck), <code>ci-audit</code> (dependencies) and <code>ci-test</code>
-(unit), before the dependency install. Consuming repositories do not add it
+(unit), and into <code>ci-quality</code>'s single-container <code>custom</code> job (on the primary
+version), before the dependency install. Consuming repositories do not add it
 themselves. <a href="../ci-toolchain-assert/"><code>ci/toolchain/assert</code></a> is the backstop that
 checks the result.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>

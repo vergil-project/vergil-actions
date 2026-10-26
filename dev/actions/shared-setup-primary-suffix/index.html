@@ -6708,9 +6708,9 @@ the primary version's entry in the <a href="../shared-setup-vergil/">setup actio
 job's image is the one CI's primary leg runs on, for example
 <code>prod-cpp-clang:20</code> for <code>clang-20</code>.</p>
 <p>This action is <strong>wired automatically</strong> into the <code>setup</code> jobs of
-<a href="../../workflows/ci-quality/"><code>ci-quality</code></a> (for the <code>common</code> job),
-<a href="../../workflows/ci-version-bump/"><code>ci-version-bump</code></a> (for the <code>version-bump</code>
-job) and <a href="../../workflows/cd-release/"><code>cd-release</code></a> (for the <code>release</code> job).
+<a href="../../workflows/ci-quality/"><code>ci-quality</code></a> (for the <code>common</code> and <code>custom</code>
+jobs), <a href="../../workflows/ci-version-bump/"><code>ci-version-bump</code></a> (for the
+<code>version-bump</code> job) and <a href="../../workflows/cd-release/"><code>cd-release</code></a> (for the <code>release</code> job).
 Consuming repositories do not add it themselves.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resolve the primary version with vrg-ci-resolve</span>

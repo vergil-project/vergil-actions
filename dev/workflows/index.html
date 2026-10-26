@@ -6796,8 +6796,9 @@ the window. Each leg asserts that it runs the version it was resolved for
 consumer's <code>ci.yml</code> is therefore a <strong>thin caller</strong> that passes only <code>language:</code>
 and <code>container-suffix:</code>. The <code>versions:</code> and <code>container-tag:</code> inputs were
 removed in <a href="https://github.com/vergil-project/vergil-actions/pull/899">#899</a>.</p>
-<p>Single-container jobs (<code>ci-quality</code>'s <code>common</code>, <code>ci-version-bump</code>, and
-<code>cd-release</code>'s <code>release</code>) run on the resolver's primary version:
+<p>Single-container jobs (<code>ci-quality</code>'s <code>common</code> and <code>custom</code>,
+<code>ci-version-bump</code>, and <code>cd-release</code>'s <code>release</code>) run on the resolver's
+primary version:
 <code>[ci].primary-version</code> if set, else the newest resolved version, on the
 resolver's image suffix and tag for it (<code>clang-20</code> runs on
 <code>prod-cpp-clang:20</code>; see
@@ -6822,6 +6823,13 @@ quality report. Release-time harvest rejects an <code>evidence.json</code>-only 
 as incomplete, and <code>cd-release</code> follows each evidence step with an explicit
 enforcement guard, so an incomplete gate blocks the release in enforcing mode
 (see <a href="../ci-gates/all-hard-gates/#example-the-ci-evidence-gate">All Hard Gates</a>).</p>
+<p><code>quality / evidence</code> also bundles the <code>custom</code> job's transcript
+(<code>quality-custom.log</code>, the full <code>vrg-validate --check custom</code> output). The
+<code>custom</code> job runs the repo's custom validator (<code>scripts/bin/validate-custom</code>
+or <code>vrg-validate-custom</code>) in PR CI, or logs one "no custom validator" line and
+passes when the repo has none. The evidence job needs it, so a failed or
+skipped custom stage fails <code>quality / evidence</code> — no extra required check
+(epic <a href="https://github.com/vergil-project/.github/issues/488">vergil-project/.github#488</a>).</p>
 <h2 id="consuming-a-reusable-workflow">Consuming a reusable workflow<a class="headerlink" href="#consuming-a-reusable-workflow" title="Permanent link">&para;</a></h2>
 <p>Reference workflows using the full path to the workflow file with a rolling
 minor tag pin:</p>
