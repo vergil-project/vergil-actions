@@ -44,8 +44,8 @@ jobs:
           app-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           # No 'owner' input: the token is scoped to the calling repository
-          # only, as in vergil-containers' bump-tools.yml. The refresh writes
-          # contents and pull requests on its own repository and nowhere else.
+          # only. The refresh writes contents and pull requests on its own
+          # repository and nowhere else.
 
       - name: Checkout code
         uses: actions/checkout@v6
