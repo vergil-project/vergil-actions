@@ -85,6 +85,7 @@ jobs:
     outputs:
       primary-container-tag: ${{ steps.derive.outputs.primary-container-tag }}
       primary-container-suffix: ${{ steps.suffix.outputs.primary-container-suffix }}
+      primary-version: ${{ steps.derive.outputs.primary-version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -136,6 +137,65 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ci-evidence-quality-reports-common
+          path: ci-reports/
+          if-no-files-found: warn
+
+  # Run the repo's custom validator (scripts/bin/validate-custom or
+  # vrg-validate-custom) in PR CI (epic vergil-project/.github#488). Before
+  # this job it ran only in a local `vrg-validate`, so a broken validator
+  # never blocked a merge. `vrg-validate --check custom` runs the language
+  # install stage and then the custom stage, or prints one
+  # "no custom validator" line and exits 0 when the repo has none; a
+  # validator that is present but unusable fails loudly. Like `common`, it
+  # runs once on the primary version's image, and its transcript is the
+  # quality report quality-custom.log. The evidence job needs this job, so a
+  # failed or skipped custom stage fails quality / evidence — no new required
+  # check and no ruleset change. For Python, uv is pinned to the primary
+  # version's image interpreter and the dev group is installed, so the
+  # validator sees the repo's dev dependencies.
+  custom:
+    name: custom
+    needs: setup
+    runs-on: ubuntu-latest
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Pin uv to the primary Python interpreter
+        if: inputs.language == 'python'
+        uses: ./actions/ci/toolchain/pin-python
+        with:
+          version: ${{ needs.setup.outputs.primary-version }}
+
+      - name: Install dependencies
+        if: inputs.language == 'python'
+        run: uv sync --group dev --frozen
+
+      # Backstop for the pin above, as on the lint and typecheck legs: fail
+      # the job if the interpreter or toolchain it actually runs is not the
+      # primary version CI resolved.
+      - name: assert-toolchain
+        uses: ./actions/ci/toolchain/assert
+        with:
+          language: ${{ inputs.language }}
+          expected: ${{ needs.setup.outputs.primary-version }}
+
+      - name: Run custom validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-reports
+          vrg-validate --check custom 2>&1 | tee ci-reports/quality-custom.log
+
+      - name: Upload custom report evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-quality-reports-custom
           path: ci-reports/
           if-no-files-found: warn
 
@@ -283,19 +343,22 @@ jobs:
 
   evidence:
     name: evidence
-    # Runs only after the common, lint, and typecheck jobs all succeed, so the
-    # artifact's presence is itself proof the quality gate passed. The common
-    # job uploads its transcript (quality-common.log) as a partial, so every
-    # repo — including a language-less one with no lint/typecheck reports —
-    # emits at least one real report file, never an evidence.json-only
-    # payload (#925). Each lint /
+    # Runs only after the common, custom, lint, and typecheck jobs all
+    # succeed, so the artifact's presence is itself proof the quality gate
+    # passed. The common job uploads its transcript (quality-common.log) as a
+    # partial, so every repo — including a language-less one with no
+    # lint/typecheck reports — emits at least one real report file, never an
+    # evidence.json-only payload (#925). The custom job uploads its transcript
+    # (quality-custom.log) the same way, so the custom validator's run — or
+    # its "no custom validator" line — is part of the evidence (epic
+    # vergil-project/.github#488). Each lint /
     # typecheck leg uploads its version-suffixed quality-ruff.json /
     # quality-mypy.xml as a per-version partial; the step below pulls every
     # leg's reports back onto one runner so the emitted bundle carries each
     # version's reports. Those filenames are a locked contract with
     # vergil-tooling#2811 — until it releases the globs match nothing and emit
     # skips them, so the artifact carries evidence.json alone (#836).
-    needs: [common, lint, typecheck]
+    needs: [common, custom, lint, typecheck]
     # Run even when a required leg fails or is skipped (default would skip this
     # job, leaving the gate green-by-absence). The assert step below then turns
     # any non-success upstream result into a FAILED evidence job (#873, epic
@@ -313,6 +376,7 @@ jobs:
         env:
           RESULTS: |
             common=${{ needs.common.result }}
+            custom=${{ needs.custom.result }}
             lint=${{ needs.lint.result }}
             typecheck=${{ needs.typecheck.result }}
         run: |
@@ -347,6 +411,7 @@ jobs:
           gate: quality
           files: |
             evidence-reports/quality-common.log
+            evidence-reports/quality-custom.log
             evidence-reports/quality-ruff-*.json
             evidence-reports/quality-mypy-*.xml
-          tools: '[{"name": "vrg-validate-common"}, {"name": "ruff"}, {"name": "mypy"}]'
+          tools: '[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}, {"name": "ruff"}, {"name": "mypy"}]'

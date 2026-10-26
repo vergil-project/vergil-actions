@@ -120,14 +120,19 @@ version, or the `[ci].versions` pin changes); the required-check set does not.
 `quality / evidence` always bundles the `common` job's transcript
 (`quality-common.log`), so a language-less repo (no lint/typecheck reports)
 still ships a real quality report rather than an `evidence.json`-only payload
-that release-time harvest would reject (#925).
+that release-time harvest would reject (#925). It also bundles the `custom`
+job's transcript (`quality-custom.log`, the `vrg-validate --check custom`
+output): the repo's custom validator, or one "no custom validator" line when
+it has none. `quality / evidence` needs `custom`, so a failed or skipped
+custom stage fails the gate (epic vergil-project/.github#488).
 
 Single-container jobs take their image differently:
 
-- `ci-quality`'s `common` job and `ci-version-bump` run on the primary
-  version (`[ci].primary-version`, else the newest resolved version), at the
-  image tag the resolver gives for it (`clang-20` runs on tag `20`). There is
-  no family routing in the workflows: the resolver supplies the tag.
+- `ci-quality`'s `common` and `custom` jobs and `ci-version-bump` run on the
+  primary version (`[ci].primary-version`, else the newest resolved
+  version), at the image tag the resolver gives for it (`clang-20` runs on
+  tag `20`). There is no family routing in the workflows: the resolver
+  supplies the tag.
 - `ci-security`'s Semgrep job and `ci-docs` run on `prod-base:latest`, which
   has no per-version tags. Docs jobs set `UV_PYTHON_PREFERENCE=only-system`,
   so uv uses the image's interpreter.

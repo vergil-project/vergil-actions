@@ -10,8 +10,9 @@
 # (vergil-tooling v2.1) on PATH. Every resolver call reads the fixture window
 # through VRG_VERSION_WINDOW, so no case touches the network.
 #
-# The single-container jobs are ci-quality's `common`, ci-version-bump's
-# `version-bump` and cd-release's `release`. Three kinds of case:
+# The single-container jobs are ci-quality's `common` and `custom`,
+# ci-version-bump's `version-bump` and cd-release's `release`. Three kinds of
+# case:
 #   * structure — each job's workflow has a `setup` job that runs the shared
 #     setup action (id derive) and shared/setup/primary-suffix (id suffix) on
 #     its primary-version and container-suffixes, with the caller's
@@ -39,6 +40,7 @@ window="${repo_root}/actions/shared/setup/vergil/tests/fixtures/window.json"
 # <workflow file>:<job> for every single-container job.
 jobs=(
   "ci-quality.yml:common"
+  "ci-quality.yml:custom"
   "ci-version-bump.yml:version-bump"
   "cd-release.yml:release"
 )

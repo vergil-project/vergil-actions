@@ -18,9 +18,9 @@
 #                           or [ci].primary-version). Single-container jobs and
 #                           run-once kinds run on it.
 #   primary-container-tag — the image tag of the primary version (clang-20 -> 20,
-#                           3.14 -> 3.14). The single-container `common`
-#                           (ci-quality) and `version-bump` (ci-version-bump)
-#                           jobs use it as their image tag.
+#                           3.14 -> 3.14). The single-container `common` and
+#                           `custom` (ci-quality) and `version-bump`
+#                           (ci-version-bump) jobs use it as their image tag.
 #   container-tags        — compact JSON object, version token -> image tag.
 #   container-suffixes    — compact JSON object, version token -> image suffix
 #                           (clang-20 -> cpp-clang, 3.14 -> python).

@@ -185,9 +185,9 @@ look in `actions/{phase}/{domain}/`. Cross-phase actions live in
   set with `vrg-ci-resolve` (versions, primary version, and each version's
   image tag and suffix)
 - `actions/shared/setup/primary-suffix` — Picks the single-container jobs'
-  image suffix (ci-quality `common`, ci-version-bump, cd-release `release`)
-  from the resolver's primary version; the caller's `container-suffix` is a
-  must-match cross-check
+  image suffix (ci-quality `common` and `custom`, ci-version-bump,
+  cd-release `release`) from the resolver's primary version; the caller's
+  `container-suffix` is a must-match cross-check
 - `actions/ci/matrix` — Builds the per-version job matrix (version label
   and image) from the resolver's versions, tags and suffixes, with the
   run-once collapse for C++ and TypeScript

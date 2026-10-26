@@ -7,9 +7,9 @@ job's image is the one CI's primary leg runs on, for example
 `prod-cpp-clang:20` for `clang-20`.
 
 This action is **wired automatically** into the `setup` jobs of
-[`ci-quality`](../workflows/ci-quality.md) (for the `common` job),
-[`ci-version-bump`](../workflows/ci-version-bump.md) (for the `version-bump`
-job) and [`cd-release`](../workflows/cd-release.md) (for the `release` job).
+[`ci-quality`](../workflows/ci-quality.md) (for the `common` and `custom`
+jobs), [`ci-version-bump`](../workflows/ci-version-bump.md) (for the
+`version-bump` job) and [`cd-release`](../workflows/cd-release.md) (for the `release` job).
 Consuming repositories do not add it themselves.
 
 ## Usage
