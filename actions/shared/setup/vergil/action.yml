@@ -40,8 +40,8 @@ outputs:
     description: >-
       The image tag of the primary version, as the resolver gives it
       (clang-20 -> 20, node-24 -> 24, 3.14 -> 3.14, latest -> latest).
-      Consumed by the single-container jobs `common` (ci-quality) and
-      `version-bump` (ci-version-bump).
+      Consumed by the single-container jobs `common` and `custom`
+      (ci-quality) and `version-bump` (ci-version-bump).
     value: ${{ steps.derive.outputs.primary-container-tag }}
   container-tags:
     description: >-

@@ -57,8 +57,9 @@ consumer's `ci.yml` is therefore a **thin caller** that passes only `language:`
 and `container-suffix:`. The `versions:` and `container-tag:` inputs were
 removed in [#899](https://github.com/vergil-project/vergil-actions/pull/899).
 
-Single-container jobs (`ci-quality`'s `common`, `ci-version-bump`, and
-`cd-release`'s `release`) run on the resolver's primary version:
+Single-container jobs (`ci-quality`'s `common` and `custom`,
+`ci-version-bump`, and `cd-release`'s `release`) run on the resolver's
+primary version:
 `[ci].primary-version` if set, else the newest resolved version, on the
 resolver's image suffix and tag for it (`clang-20` runs on
 `prod-cpp-clang:20`; see
@@ -85,6 +86,14 @@ quality report. Release-time harvest rejects an `evidence.json`-only payload
 as incomplete, and `cd-release` follows each evidence step with an explicit
 enforcement guard, so an incomplete gate blocks the release in enforcing mode
 (see [All Hard Gates](../ci-gates/all-hard-gates.md#example-the-ci-evidence-gate)).
+
+`quality / evidence` also bundles the `custom` job's transcript
+(`quality-custom.log`, the full `vrg-validate --check custom` output). The
+`custom` job runs the repo's custom validator (`scripts/bin/validate-custom`
+or `vrg-validate-custom`) in PR CI, or logs one "no custom validator" line and
+passes when the repo has none. The evidence job needs it, so a failed or
+skipped custom stage fails `quality / evidence` — no extra required check
+(epic [vergil-project/.github#488](https://github.com/vergil-project/.github/issues/488)).
 
 ## Consuming a reusable workflow
 

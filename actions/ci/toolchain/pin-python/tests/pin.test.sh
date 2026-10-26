@@ -128,9 +128,9 @@ case_workflows_pin_every_python_leg() {
     fi
     legs=$((legs + pins))
   done
-  # ci-quality lint + typecheck, ci-audit dependencies, ci-test unit.
-  if [ "$legs" -ne 4 ]; then
-    fail_case "$name" "expected 4 pinned Python legs, found ${legs}"
+  # ci-quality lint + typecheck + custom, ci-audit dependencies, ci-test unit.
+  if [ "$legs" -ne 5 ]; then
+    fail_case "$name" "expected 5 pinned Python legs, found ${legs}"
     return 0
   fi
   pass_case "$name"

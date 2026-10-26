@@ -37,7 +37,7 @@ to detect vergil-tooling itself, `pyproject.toml`) from the working directory.
 | ------ | ----------- |
 | `versions` | The resolved versions, newest first, as a compact JSON array string, e.g. `["3.14","3.13","3.12"]`. The `matrix` job passes it to [`ci/matrix`](ci-matrix.md) to fan out per-version legs. |
 | `primary-version` | `[ci].primary-version` when it is set; otherwise the newest resolved version. |
-| `primary-container-tag` | The resolver's image tag for the primary version (`clang-20` has tag `20`, `node-24` has `24`, `3.14` has `3.14`). Used by the single-container `common` job in `ci-quality`, the `version-bump` job in `ci-version-bump` and the `release` job in `cd-release`. |
+| `primary-container-tag` | The resolver's image tag for the primary version (`clang-20` has tag `20`, `node-24` has `24`, `3.14` has `3.14`). Used by the single-container `common` and `custom` jobs in `ci-quality`, the `version-bump` job in `ci-version-bump` and the `release` job in `cd-release`. |
 | `container-tags` | Compact JSON object mapping each resolved version to its image tag, e.g. `{"clang-20":"20","gcc-14":"14"}`. Passed to [`ci/matrix`](ci-matrix.md). |
 | `container-suffixes` | Compact JSON object mapping each resolved version to its image suffix, e.g. `{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}`. Passed to [`ci/matrix`](ci-matrix.md), and to [`shared/setup/primary-suffix`](shared-setup-primary-suffix.md) for the single-container jobs' image suffix. |
 

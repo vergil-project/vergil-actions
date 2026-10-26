@@ -20,8 +20,9 @@ the image's interpreter (Python, with
 [`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and then
 asserts the running toolchain with
 [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md). The
-single-container `common` job runs on the resolver's image for the primary
-version (see [Common checks](#common-checks)). Callers are thin: they pass
+single-container `common` and `custom` jobs run on the resolver's image for
+the primary version (see [Common checks](#common-checks) and
+[Custom validation](#custom-validation)). Callers are thin: they pass
 only `language:`, and optionally `container-suffix:` as a cross-check.
 
 ## Jobs and check names
@@ -29,9 +30,10 @@ only `language:`, and optionally `container-suffix:` as a cross-check.
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
 | `common` | `<caller> / common` | Runs common linters based on file presence (single-container job on the primary version) |
+| `custom` | `<caller> / custom` | Runs the repo's custom validator with `vrg-validate --check custom`, or logs that there is none (single-container job on the primary version — informational, gated through `quality / evidence`) |
 | `lint / <version>` | `<caller> / lint / <version>` | Language-specific linting (matrix-expanded — informational, not a required check) |
 | `typecheck / <version>` | `<caller> / typecheck / <version>` | Language-specific type checking (matrix-expanded — informational, not a required check) |
-| `evidence` | `quality / evidence` | Aggregate gate — `needs` the `common`, `lint`, and `typecheck` jobs, runs `if: always()`, and asserts each succeeded; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
+| `evidence` | `quality / evidence` | Aggregate gate — `needs` the `common`, `custom`, `lint`, and `typecheck` jobs, runs `if: always()`, and asserts each succeeded; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
 
 ## Common checks
 
@@ -57,6 +59,26 @@ exist in the repository:
 | yamllint | `*.yml` or `*.yaml` files found |
 | hadolint | `Dockerfile*` files found |
 | actionlint | `.github/workflows/` directory found |
+
+## Custom validation
+
+The `custom` job runs the repository's custom validator
+(`scripts/bin/validate-custom` or `vrg-validate-custom`) in PR CI with
+`vrg-validate --check custom`, which runs the language install stage and then
+the custom stage. A repository with no custom validator gets one
+"no custom validator" line and a passing job; a validator that is present but
+not an executable regular file fails the job. Like `common`, it runs once, on
+the same image. For Python it pins uv to the primary version's interpreter
+(with [`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and
+installs the dev dependency group first, so the validator sees the repo's dev
+dependencies; [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md) then
+checks the running toolchain is the primary version.
+
+The job's transcript is uploaded as the `ci-evidence-quality-reports-custom`
+partial and bundled into `ci-evidence-quality` as `quality-custom.log`. The
+`evidence` job needs `custom`, so a failed or skipped custom stage fails
+`quality / evidence` — there is no separate required check (epic
+[vergil-project/.github#488](https://github.com/vergil-project/.github/issues/488)).
 
 ## Usage
 
