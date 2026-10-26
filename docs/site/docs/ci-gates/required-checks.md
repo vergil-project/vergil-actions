@@ -12,14 +12,13 @@ check `<caller job> / <job>`.
 
 | Required check | Produced by | Required when |
 | ---------------- | ------------- | --------------- |
-| `quality / common` | `ci-quality.yml` | Always |
+| `quality / evidence` | `ci-quality.yml` | Always |
 | `security / trivy` | `ci-security.yml` | Always |
 | `security / semgrep` | `ci-security.yml` | Always |
 | `docs / docs` | `ci-docs.yml` | The repo publishes docs (`[publish].docs`) |
 | `Trivy`, `Semgrep OSS` | GitHub code scanning (SARIF upload) | GHAS is available |
 | `security / codeql`, `CodeQL` | `ci-security.yml`, GitHub code scanning | GHAS is available and the primary language is supported by CodeQL |
 | `audit / evidence` | `ci-audit.yml` | The language has a dependency-audit check |
-| `quality / evidence` | `ci-quality.yml` | The language has a lint or typecheck check |
 | `test / evidence` | `ci-test.yml` | The language has a unit-test check |
 | `package / evidence` | `ci-package.yml` | `vergil.toml` has a `[package]` section |
 | `version / version-bump` | `ci-version-bump.yml` | The repo has a release model (not `none`) |
@@ -66,6 +65,14 @@ these stable gates (plus `package / evidence` for `[package]` repos); the
 per-version legs run and appear in the checks UI but are informational, so the
 required-check set does not churn when the resolved version set changes.
 
+`quality / evidence` also aggregates the non-matrixed `quality / common` and
+`quality / custom` jobs: it needs `common`, `custom`, `lint` and `typecheck`
+and fails if any of them did not succeed. That holds in every repo, whatever
+its language, so `quality / evidence` is required everywhere. `quality / common`
+and `quality / custom` still run but are not required on their own; a failing
+common linter or custom validator blocks the merge through `quality / evidence`,
+even in a repo with no primary language.
+
 `ci-security.yml` also has an `evidence` job (`security / evidence`), but it is
 not a required check: the scanner jobs are not matrixed, so they are required
 directly.
@@ -83,7 +90,7 @@ checks](#evidence-gates-are-the-required-checks) above).
 | ---------- | ---------------------- | ---------------- |
 | `ci-docs.yml` | `docs / docs` | `docs / docs` (repos that publish docs) |
 | `ci-security.yml` | `security / codeql`, `security / trivy`, `security / semgrep`, `security / evidence` | `security / trivy`, `security / semgrep`; `security / codeql` with GHAS and a CodeQL-supported language |
-| `ci-quality.yml` | `quality / matrix`, `quality / setup`, `quality / common`, `quality / custom`, `quality / lint / <version>`, `quality / typecheck / <version>` legs + `quality / evidence` aggregate | `quality / common`, `quality / evidence` |
+| `ci-quality.yml` | `quality / matrix`, `quality / setup`, `quality / common`, `quality / custom`, `quality / lint / <version>`, `quality / typecheck / <version>` legs + `quality / evidence` aggregate | `quality / evidence` |
 | `ci-audit.yml` | `audit / matrix`, `audit / dependencies / <version>` legs + `audit / evidence` aggregate | `audit / evidence` |
 | `ci-test.yml` | `test / matrix`, `test / unit / <version>` legs + `test / evidence` aggregate | `test / evidence` |
 | `ci-version-bump.yml` | `version / setup`, `version / version-bump` | `version / version-bump` (repos with a release model) |

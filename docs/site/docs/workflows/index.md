@@ -19,7 +19,7 @@ rulesets.
 | ---------- | ------ | --------- |
 | [CI Docs](ci-docs.md) | `ci-docs.yml` | Build-only MkDocs strict verification (no deploy) |
 | [CI Security](ci-security.md) | `ci-security.yml` | Security scanning (CodeQL, Trivy, Semgrep) |
-| [CI Quality](ci-quality.md) | `ci-quality.yml` | Common linting, language-specific lint and typecheck |
+| [CI Quality](ci-quality.md) | `ci-quality.yml` | Common linting, custom validation, language-specific lint and typecheck |
 | [CI Audit](ci-audit.md) | `ci-audit.yml` | Dependency audit |
 | [CI Test](ci-test.md) | `ci-test.yml` | Unit tests |
 | [CI Version Bump](ci-version-bump.md) | `ci-version-bump.yml` | Version divergence gate |

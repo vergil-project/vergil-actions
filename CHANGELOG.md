@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.59] - 2026-10-26
+
+### Bug fixes
+
+- retry a scan that errors without a report and report it as a scan error (#1080)
+
+### Documentation
+
+- require quality / evidence everywhere in the required-check docs (#1078)
+
 ## [2.1.58] - 2026-10-26
 
 ### Bug fixes
