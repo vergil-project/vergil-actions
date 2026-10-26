@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -819,6 +819,8 @@
       
         
       
+        
+      
     
     
     
@@ -871,6 +873,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.58/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.58
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6796,8 +6826,9 @@ the window. Each leg asserts that it runs the version it was resolved for
 consumer's <code>ci.yml</code> is therefore a <strong>thin caller</strong> that passes only <code>language:</code>
 and <code>container-suffix:</code>. The <code>versions:</code> and <code>container-tag:</code> inputs were
 removed in <a href="https://github.com/vergil-project/vergil-actions/pull/899">#899</a>.</p>
-<p>Single-container jobs (<code>ci-quality</code>'s <code>common</code>, <code>ci-version-bump</code>, and
-<code>cd-release</code>'s <code>release</code>) run on the resolver's primary version:
+<p>Single-container jobs (<code>ci-quality</code>'s <code>common</code> and <code>custom</code>,
+<code>ci-version-bump</code>, and <code>cd-release</code>'s <code>release</code>) run on the resolver's
+primary version:
 <code>[ci].primary-version</code> if set, else the newest resolved version, on the
 resolver's image suffix and tag for it (<code>clang-20</code> runs on
 <code>prod-cpp-clang:20</code>; see
@@ -6822,6 +6853,13 @@ quality report. Release-time harvest rejects an <code>evidence.json</code>-only 
 as incomplete, and <code>cd-release</code> follows each evidence step with an explicit
 enforcement guard, so an incomplete gate blocks the release in enforcing mode
 (see <a href="../ci-gates/all-hard-gates/#example-the-ci-evidence-gate">All Hard Gates</a>).</p>
+<p><code>quality / evidence</code> also bundles the <code>custom</code> job's transcript
+(<code>quality-custom.log</code>, the full <code>vrg-validate --check custom</code> output). The
+<code>custom</code> job runs the repo's custom validator (<code>scripts/bin/validate-custom</code>
+or <code>vrg-validate-custom</code>) in PR CI, or logs one "no custom validator" line and
+passes when the repo has none. The evidence job needs it, so a failed or
+skipped custom stage fails <code>quality / evidence</code> — no extra required check
+(epic <a href="https://github.com/vergil-project/.github/issues/488">vergil-project/.github#488</a>).</p>
 <h2 id="consuming-a-reusable-workflow">Consuming a reusable workflow<a class="headerlink" href="#consuming-a-reusable-workflow" title="Permanent link">&para;</a></h2>
 <p>Reference workflows using the full path to the workflow file with a rolling
 minor tag pin:</p>
@@ -6964,10 +7002,10 @@ workflow version uses the matching action versions.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "search.highlight", "search.suggest"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "search.highlight", "search.suggest"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>

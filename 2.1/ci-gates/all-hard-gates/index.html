@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -819,6 +819,8 @@
       
         
       
+        
+      
     
     
     
@@ -871,6 +873,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.58/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.58
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6950,7 +6980,13 @@ output of <code>vrg-validate --check common</code> as <code>quality-common.log</
 markdownlint, shellcheck, yamllint, hadolint, actionlint, ansible-lint),
 uploads it as the <code>ci-evidence-quality-reports-common</code> partial, and bundles
 it into <code>ci-evidence-quality</code> for every repo. As a result, the quality gate
-is never an <code>evidence.json</code>-only payload (<a href="https://github.com/vergil-project/vergil-actions/issues/925">vergil-project/vergil-actions#925</a>).</p>
+is never an <code>evidence.json</code>-only payload (<a href="https://github.com/vergil-project/vergil-actions/issues/925">vergil-project/vergil-actions#925</a>).
+The <code>custom</code> job does the same for the repo's custom validator: it captures
+<code>vrg-validate --check custom</code> as <code>quality-custom.log</code>, uploads it as the
+<code>ci-evidence-quality-reports-custom</code> partial (tool <code>vrg-validate-custom</code>),
+and bundles it into <code>ci-evidence-quality</code>. A repo with no custom validator
+still ships the file, holding the one "no custom validator" line
+(<a href="https://github.com/vergil-project/.github/issues/488">vergil-project/.github#488</a>).</p>
 <div class="admonition note">
 <p class="admonition-title">Current residuals</p>
 <p>Two known gaps remain open, tracked as limitations rather than done: the
@@ -7021,10 +7057,10 @@ manifest <code>metrics</code> object is currently empty (<code>{}</code>), and t
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
     
   </body>
