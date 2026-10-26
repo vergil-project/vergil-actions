@@ -6764,7 +6764,7 @@ check <code>&lt;caller job&gt; / &lt;job&gt;</code>.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>quality / common</code></td>
+<td><code>quality / evidence</code></td>
 <td><code>ci-quality.yml</code></td>
 <td>Always</td>
 </tr>
@@ -6797,11 +6797,6 @@ check <code>&lt;caller job&gt; / &lt;job&gt;</code>.</p>
 <td><code>audit / evidence</code></td>
 <td><code>ci-audit.yml</code></td>
 <td>The language has a dependency-audit check</td>
-</tr>
-<tr>
-<td><code>quality / evidence</code></td>
-<td><code>ci-quality.yml</code></td>
-<td>The language has a lint or typecheck check</td>
 </tr>
 <tr>
 <td><code>test / evidence</code></td>
@@ -6875,6 +6870,13 @@ otherwise leave the gate unset and non-blocking. Branch protection requires
 these stable gates (plus <code>package / evidence</code> for <code>[package]</code> repos); the
 per-version legs run and appear in the checks UI but are informational, so the
 required-check set does not churn when the resolved version set changes.</p>
+<p><code>quality / evidence</code> also aggregates the non-matrixed <code>quality / common</code> and
+<code>quality / custom</code> jobs: it needs <code>common</code>, <code>custom</code>, <code>lint</code> and <code>typecheck</code>
+and fails if any of them did not succeed. That holds in every repo, whatever
+its language, so <code>quality / evidence</code> is required everywhere. <code>quality / common</code>
+and <code>quality / custom</code> still run but are not required on their own; a failing
+common linter or custom validator blocks the merge through <code>quality / evidence</code>,
+even in a repo with no primary language.</p>
 <p><code>ci-security.yml</code> also has an <code>evidence</code> job (<code>security / evidence</code>), but it is
 not a required check: the scanner jobs are not matrixed, so they are required
 directly.</p>
@@ -6907,7 +6909,7 @@ checks</a> above).</p>
 <tr>
 <td><code>ci-quality.yml</code></td>
 <td><code>quality / matrix</code>, <code>quality / setup</code>, <code>quality / common</code>, <code>quality / custom</code>, <code>quality / lint / &lt;version&gt;</code>, <code>quality / typecheck / &lt;version&gt;</code> legs + <code>quality / evidence</code> aggregate</td>
-<td><code>quality / common</code>, <code>quality / evidence</code></td>
+<td><code>quality / evidence</code></td>
 </tr>
 <tr>
 <td><code>ci-audit.yml</code></td>

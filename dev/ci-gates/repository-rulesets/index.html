@@ -7005,7 +7005,7 @@ checks that must pass before a PR can merge.</p>
 and the condition under which each check is required.</p>
 <h3 id="example-a-public-python-library">Example: a public Python library<a class="headerlink" href="#example-a-public-python-library" title="Permanent link">&para;</a></h3>
 <p>A public Python library that publishes docs and has a release model gets:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>quality / common
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>quality / evidence
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>security / trivy
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>security / semgrep
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>docs / docs
@@ -7014,9 +7014,8 @@ and the condition under which each check is required.</p>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>security / codeql
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>CodeQL
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>audit / evidence
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>quality / evidence
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>test / evidence
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>version / version-bump
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>test / evidence
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>version / version-bump
 </code></pre></div>
 <p><code>Trivy</code>, <code>Semgrep OSS</code> and <code>CodeQL</code> are GitHub code scanning checks, required
 because GHAS is available on a public repository. A repository with a
@@ -7040,10 +7039,10 @@ required-check set. See
 <h3 id="example-vergil-actions">Example: vergil-actions<a class="headerlink" href="#example-vergil-actions" title="Permanent link">&para;</a></h3>
 <p>This repository declares no primary language in <code>vergil.toml</code> (its <code>ci.yml</code>
 passes <code>language: shell</code> to the workflows), so it gets no CodeQL checks and no
-audit, quality or test evidence gates. It requires only the always-required
-checks, the docs gate, the Trivy and Semgrep code scanning checks, and the
-version gate:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>quality / common
+audit or test evidence gates. It requires only the always-required checks
+(including <code>quality / evidence</code>), the docs gate, the Trivy and Semgrep code
+scanning checks, and the version gate:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>quality / evidence
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>security / trivy
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>security / semgrep
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>docs / docs
@@ -7052,7 +7051,8 @@ version gate:</p>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>version / version-bump
 </code></pre></div>
 <p>Shell linting (shellcheck, actionlint and the other common linters) runs
-inside <code>quality / common</code>.</p>
+inside <code>quality / common</code>, which is not required on its own: it gates the
+merge through <code>quality / evidence</code>, as does <code>quality / custom</code>.</p>
 <h2 id="tag-protection-ruleset">Tag protection ruleset<a class="headerlink" href="#tag-protection-ruleset" title="Permanent link">&para;</a></h2>
 <p>Applies to all tags matching <code>v*.*.*</code> (full semver tags such as <code>v1.1.1</code> or
 <code>v2.0.0</code>). Prevents unauthorized modification of release tags while allowing

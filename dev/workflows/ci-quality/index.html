@@ -6778,7 +6778,7 @@
 
 
 <h1 id="ci-quality">ci-quality<a class="headerlink" href="#ci-quality" title="Permanent link">&para;</a></h1>
-<p>Code quality and linting workflow.</p>
+<p>Code quality, linting and custom validation workflow.</p>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -6834,7 +6834,7 @@ only <code>language:</code>, and optionally <code>container-suffix:</code> as a 
 <tr>
 <td><code>common</code></td>
 <td><code>&lt;caller&gt; / common</code></td>
-<td>Runs common linters based on file presence (single-container job on the primary version)</td>
+<td>Runs common linters based on file presence (single-container job on the primary version — informational, gated through <code>quality / evidence</code>)</td>
 </tr>
 <tr>
 <td><code>custom</code></td>
