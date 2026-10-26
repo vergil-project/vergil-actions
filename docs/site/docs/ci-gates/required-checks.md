@@ -83,7 +83,7 @@ checks](#evidence-gates-are-the-required-checks) above).
 | ---------- | ---------------------- | ---------------- |
 | `ci-docs.yml` | `docs / docs` | `docs / docs` (repos that publish docs) |
 | `ci-security.yml` | `security / codeql`, `security / trivy`, `security / semgrep`, `security / evidence` | `security / trivy`, `security / semgrep`; `security / codeql` with GHAS and a CodeQL-supported language |
-| `ci-quality.yml` | `quality / matrix`, `quality / setup`, `quality / common`, `quality / lint / <version>`, `quality / typecheck / <version>` legs + `quality / evidence` aggregate | `quality / common`, `quality / evidence` |
+| `ci-quality.yml` | `quality / matrix`, `quality / setup`, `quality / common`, `quality / custom`, `quality / lint / <version>`, `quality / typecheck / <version>` legs + `quality / evidence` aggregate | `quality / common`, `quality / evidence` |
 | `ci-audit.yml` | `audit / matrix`, `audit / dependencies / <version>` legs + `audit / evidence` aggregate | `audit / evidence` |
 | `ci-test.yml` | `test / matrix`, `test / unit / <version>` legs + `test / evidence` aggregate | `test / evidence` |
 | `ci-version-bump.yml` | `version / setup`, `version / version-bump` | `version / version-bump` (repos with a release model) |

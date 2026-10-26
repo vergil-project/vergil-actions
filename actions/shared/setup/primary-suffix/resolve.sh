@@ -2,8 +2,8 @@
 #
 # Pick a single-container job's image suffix from the resolver's answer
 # (issues #1020 and #1028, epic vergil-project/.github#407). Used by the
-# `setup` jobs of ci-quality (`common`), ci-version-bump (`version-bump`) and
-# cd-release (`release`).
+# `setup` jobs of ci-quality (`common` and `custom`), ci-version-bump
+# (`version-bump`) and cd-release (`release`).
 #
 # The suffix is the primary version's entry in `container-suffixes`, both from
 # `vrg-ci-resolve` by way of the shared setup action. With the resolver's

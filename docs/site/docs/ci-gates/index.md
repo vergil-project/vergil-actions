@@ -17,7 +17,7 @@ grouped by workflow:
 
 | Caller job | Workflow | Purpose | Example checks |
 | ------------ | ---------- | --------- | ---------------- |
-| `quality` | `ci-quality.yml` | Common linting, language lint and typecheck | `quality / common`, `quality / evidence` |
+| `quality` | `ci-quality.yml` | Common linting, custom validation, language lint and typecheck | `quality / common`, `quality / evidence` |
 | `security` | `ci-security.yml` | SAST and vulnerability scanning | `security / codeql`, `security / trivy`, `security / semgrep` |
 | `audit` | `ci-audit.yml` | Dependency audit | `audit / evidence` |
 | `test` | `ci-test.yml` | Unit tests | `test / evidence` |

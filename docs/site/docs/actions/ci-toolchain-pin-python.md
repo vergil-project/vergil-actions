@@ -19,7 +19,8 @@ variables take precedence over a repository's uv settings.
 
 This action is **wired automatically** into every Python matrix leg of
 `ci-quality` (lint, typecheck), `ci-audit` (dependencies) and `ci-test`
-(unit), before the dependency install. Consuming repositories do not add it
+(unit), and into `ci-quality`'s single-container `custom` job (on the primary
+version), before the dependency install. Consuming repositories do not add it
 themselves. [`ci/toolchain/assert`](ci-toolchain-assert.md) is the backstop that
 checks the result.
 

@@ -193,6 +193,12 @@ markdownlint, shellcheck, yamllint, hadolint, actionlint, ansible-lint),
 uploads it as the `ci-evidence-quality-reports-common` partial, and bundles
 it into `ci-evidence-quality` for every repo. As a result, the quality gate
 is never an `evidence.json`-only payload ([vergil-project/vergil-actions#925]).
+The `custom` job does the same for the repo's custom validator: it captures
+`vrg-validate --check custom` as `quality-custom.log`, uploads it as the
+`ci-evidence-quality-reports-custom` partial (tool `vrg-validate-custom`),
+and bundles it into `ci-evidence-quality`. A repo with no custom validator
+still ships the file, holding the one "no custom validator" line
+([vergil-project/.github#488]).
 
 !!! note "Current residuals"
     Two known gaps remain open, tracked as limitations rather than done: the
@@ -202,6 +208,7 @@ is never an `evidence.json`-only payload ([vergil-project/vergil-actions#925]).
 [vergil-project/.github#140]: https://github.com/vergil-project/.github/issues/140
 [vergil-project/vergil-tooling#2812]: https://github.com/vergil-project/vergil-tooling/issues/2812
 [vergil-project/vergil-actions#925]: https://github.com/vergil-project/vergil-actions/issues/925
+[vergil-project/.github#488]: https://github.com/vergil-project/.github/issues/488
 
 ## See also
 

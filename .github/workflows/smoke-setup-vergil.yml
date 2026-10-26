@@ -20,11 +20,15 @@ name: Smoke - setup/vergil outputs
 #         the run-once collapse to the primary, and loud failure on a missing
 #         tag/suffix or a container-suffix the resolver did not choose;
 #       - shared/setup/primary-suffix image.test.sh: the single-container
-#         jobs (ci-quality common, ci-version-bump, cd-release release) run on
-#         the resolver's primary suffix and tag (C++ clang-20 ->
-#         prod-cpp-clang:20, Python unchanged, no language -> prod-base), no
+#         jobs (ci-quality common and custom, ci-version-bump, cd-release
+#         release) run on the resolver's primary suffix and tag (C++ clang-20
+#         -> prod-cpp-clang:20, Python unchanged, no language -> prod-base), no
 #         workflow job builds its image from inputs.container-suffix or
 #         inputs.language, and a mismatched caller suffix fails (issue #1028);
+#       - ci/evidence gate.test.sh: every ci-quality stage job is in the
+#         evidence job's needs and its "Assert all required legs succeeded"
+#         RESULTS, so a failed or skipped stage fails quality / evidence
+#         (epic vergil-project/.github#488);
 #       - ci/toolchain/assert assert.sh: Python and Go version checks against a
 #         fake uv/go, and the notice for other languages;
 #       - ci/toolchain/pin-python pin.sh: UV_PYTHON and
@@ -78,6 +82,9 @@ jobs:
       - name: Run shared/setup/primary-suffix image harness
         shell: bash
         run: bash actions/shared/setup/primary-suffix/tests/image.test.sh
+      - name: Run ci/evidence gate harness
+        shell: bash
+        run: bash actions/ci/evidence/tests/gate.test.sh
       - name: Run ci/toolchain/assert assert.sh harness
         shell: bash
         run: bash actions/ci/toolchain/assert/tests/assert.test.sh
