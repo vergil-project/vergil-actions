@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.58] - 2026-10-26
+
+### Bug fixes
+
+- match the per-package check-runtime message in package-runtime.test.sh (#1073)
+
+### Documentation
+
+- describe the runtime check as per package (#1070)
+
+### Features
+
+- run the custom validation stage in PR CI under quality / evidence (#1071)
+
 ## [2.1.57] - 2026-10-25
 
 ### Features
