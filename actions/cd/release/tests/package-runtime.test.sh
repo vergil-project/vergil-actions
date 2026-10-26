@@ -335,7 +335,7 @@ case_staged_cells_get_empty_runtime
 # The manifests come from the real `vrg-package matrix` runs above.
 if [ -f "${work}/python-manifest.json" ]; then
   check_case "check-runtime-passes-one-runtime" "${work}/python-manifest.json" "$same" 0 \
-    "depend on vergil-python3.14"
+    "depends on vergil-python3.14"
   check_case "check-runtime-fails-mixed-runtimes" "${work}/python-manifest.json" "$mixed" 1 \
     "depends on vergil-python3.15"
   check_case "check-runtime-fails-no-packages" "${work}/python-manifest.json" "$empty" 1 \
