@@ -207,7 +207,7 @@ CI and CD workflows live under `.github/workflows/` and are consumed via
 `workflow_call`:
 
 - `ci-docs.yml` — Build-only MkDocs strict verification (no deploy)
-- `ci-quality.yml` — Common linting, language-specific lint and typecheck
+- `ci-quality.yml` — Common linting, custom validation, language-specific lint and typecheck
 - `ci-security.yml` — Security scanning (CodeQL, Trivy, Semgrep)
 - `ci-test.yml` — Unit and integration tests
 - `ci-audit.yml` — Dependency audit

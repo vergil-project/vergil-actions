@@ -54,7 +54,7 @@ and the condition under which each check is required.
 A public Python library that publishes docs and has a release model gets:
 
 ```text
-quality / common
+quality / evidence
 security / trivy
 security / semgrep
 docs / docs
@@ -63,7 +63,6 @@ Semgrep OSS
 security / codeql
 CodeQL
 audit / evidence
-quality / evidence
 test / evidence
 version / version-bump
 ```
@@ -91,12 +90,12 @@ because GHAS is available on a public repository. A repository with a
 
 This repository declares no primary language in `vergil.toml` (its `ci.yml`
 passes `language: shell` to the workflows), so it gets no CodeQL checks and no
-audit, quality or test evidence gates. It requires only the always-required
-checks, the docs gate, the Trivy and Semgrep code scanning checks, and the
-version gate:
+audit or test evidence gates. It requires only the always-required checks
+(including `quality / evidence`), the docs gate, the Trivy and Semgrep code
+scanning checks, and the version gate:
 
 ```text
-quality / common
+quality / evidence
 security / trivy
 security / semgrep
 docs / docs
@@ -106,7 +105,8 @@ version / version-bump
 ```
 
 Shell linting (shellcheck, actionlint and the other common linters) runs
-inside `quality / common`.
+inside `quality / common`, which is not required on its own: it gates the
+merge through `quality / evidence`, as does `quality / custom`.
 
 ## Tag protection ruleset
 

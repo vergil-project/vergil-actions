@@ -1,6 +1,6 @@
 # ci-quality
 
-Code quality and linting workflow.
+Code quality, linting and custom validation workflow.
 
 ## Inputs
 
@@ -29,7 +29,7 @@ only `language:`, and optionally `container-suffix:` as a cross-check.
 
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
-| `common` | `<caller> / common` | Runs common linters based on file presence (single-container job on the primary version) |
+| `common` | `<caller> / common` | Runs common linters based on file presence (single-container job on the primary version — informational, gated through `quality / evidence`) |
 | `custom` | `<caller> / custom` | Runs the repo's custom validator with `vrg-validate --check custom`, or logs that there is none (single-container job on the primary version — informational, gated through `quality / evidence`) |
 | `lint / <version>` | `<caller> / lint / <version>` | Language-specific linting (matrix-expanded — informational, not a required check) |
 | `typecheck / <version>` | `<caller> / typecheck / <version>` | Language-specific type checking (matrix-expanded — informational, not a required check) |
