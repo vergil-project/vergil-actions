@@ -821,6 +821,8 @@
       
         
       
+        
+      
     
     
     
@@ -873,6 +875,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.59/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.59
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5387,6 +5417,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#permissions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5408,6 +5449,17 @@
   
     <nav class="md-nav" aria-label="Behavior">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scan-outcomes-and-retry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scan outcomes and retry
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#filesystem-scan-fs" class="md-nav__link">
@@ -6815,6 +6867,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#permissions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6836,6 +6899,17 @@
   
     <nav class="md-nav" aria-label="Behavior">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scan-outcomes-and-retry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scan outcomes and retry
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#filesystem-scan-fs" class="md-nav__link">
@@ -7060,6 +7134,21 @@
 </tr>
 </tbody>
 </table>
+<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Output</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>result</code></td>
+<td>Outcome of an <code>fs</code> or <code>image</code> scan: <code>passed</code>, <code>findings</code> or <code>error</code> (see <a href="#scan-outcomes-and-retry">Scan outcomes and retry</a>). Empty for <code>sbom</code>.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>security-events: write</code> (required for SARIF upload when <code>scan-type</code> is <code>fs</code>
@@ -7079,6 +7168,43 @@ ingest that SBOM and report pip's <strong>vendored</strong> dependencies (e.g. <
 <code>msgpack</code>) as findings even though they are pip internals, not the scan target's
 attack surface. The <code>sbom</code> mode does <strong>not</strong> skip it — an SBOM should describe
 everything present.</p>
+<h3 id="scan-outcomes-and-retry">Scan outcomes and retry<a class="headerlink" href="#scan-outcomes-and-retry" title="Permanent link">&para;</a></h3>
+<p>The <code>fs</code> and <code>image</code> scans run through <code>scan.sh</code>, which tells three outcomes
+apart by whether the scan wrote its SARIF report:</p>
+<table>
+<thead>
+<tr>
+<th><code>result</code></th>
+<th>When</th>
+<th>Step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>passed</code></td>
+<td>The report was written and the scan exited 0.</td>
+<td>Passes.</td>
+</tr>
+<tr>
+<td><code>findings</code></td>
+<td>The report was written and the scan exited non-zero: Trivy found vulnerabilities at <code>severity</code> after the ignore files.</td>
+<td>Fails with <code>Trivy found &lt;severity&gt; vulnerabilities in &lt;scan-ref&gt;</code>, using the <code>exit-code</code> input. Not retried.</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td>No attempt wrote a report: Trivy stopped before it could report, for example on a dropped image-layer download or a failed vulnerability-DB download.</td>
+<td>Fails with <code>Trivy scan errored (no report produced) for &lt;scan-ref&gt;</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>A scan that writes no report is retried up to two more times (three attempts,
+waiting 15s and then 30s), since those download errors are usually transient.
+Any stale report is deleted before each attempt, so it cannot stand in for a
+scan that errored. A scan that never wrote a report never passes, even with
+<code>exit-code: "0"</code>. When there is no report, the SARIF upload is skipped rather
+than failing a second time on the missing file.</p>
+<p>Callers that gate on the step outcome (with <code>continue-on-error: true</code>) can read
+the <code>result</code> output to word their own failure message.</p>
 <h3 id="filesystem-scan-fs">Filesystem scan (<code>fs</code>)<a class="headerlink" href="#filesystem-scan-fs" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Runs <code>trivy fs</code> inside the Trivy Docker container against the specified
