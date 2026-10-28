@@ -2,14 +2,11 @@
 
 ## Git hooks
 
-Configure the repository to use the shared git hooks:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-This enables the pre-commit hook that prevents direct commits to protected
-branches (`main`, `develop`).
+No git hooks are installed and there is nothing to configure. Branch and
+commit rules, including the refusal to commit directly to the protected
+branches (`develop`, `release`, `main`), are enforced by the vergil-tooling `vrg-git`
+and `vrg-commit` wrappers and by PR CI. See the vergil-tooling
+[validation matrix](https://github.com/vergil-project/vergil-tooling/blob/develop/docs/site/docs/guides/validation-matrix.md).
 
 ## Host prerequisites
 
