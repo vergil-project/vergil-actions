@@ -20,7 +20,10 @@ The `actions/` directory mirrors the workflow namespace. To find an action,
 take the workflow filename (e.g., `ci-security.yml`), split on the first `-` to
 get phase and domain (`ci` / `security`), and look in
 `actions/{phase}/{domain}/`. Cross-phase actions live in `actions/shared/`.
-Repo-local actions live in `actions/local/`.
+Repo-local actions live in `actions/local/`. Exceptions: `ci-package.yml`
+uses `actions/package/setup`, and `actions/ci/matrix`, `actions/ci/toolchain/*`
+and `actions/ci/evidence/emit` are shared building blocks with no matching
+workflow.
 
 ## Self-Referencing CI
 
