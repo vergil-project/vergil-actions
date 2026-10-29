@@ -46,7 +46,7 @@ print(ref)
 '
 
 if command -v uv >/dev/null 2>&1; then
-  ref="$(uv run --no-config --no-project --python 3.14 python -c "$read_ref" "${repo}/vergil.toml")"
+  ref="$(uv run --no-config --no-project --python 3.15 python -c "$read_ref" "${repo}/vergil.toml")"
 else
   ref="$(python3 -c "$read_ref" "${repo}/vergil.toml")"
 fi
