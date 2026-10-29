@@ -167,7 +167,7 @@ caller_pinned_actions='ci/toolchain/assert/'
 # them must instead pass --no-config on the same line, so the repo's uv
 # settings cannot reach it at all (issue #1003).
 #   package/setup/detect.sh — reads vergil.toml with `uv run --no-config
-#     --no-project --python 3.14` in raw package-build images that ship no
+#     --no-project --python 3.15` in raw package-build images that ship no
 #     Python, so it needs uv's managed interpreter; it never runs the repo's
 #     code. Without --no-config a repo's python-downloads = "manual" breaks it.
 config_free_files='package/setup/detect.sh'
