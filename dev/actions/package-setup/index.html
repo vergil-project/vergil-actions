@@ -6988,7 +6988,7 @@ in <code>ci-package.yml</code>, and <code>package-matrix</code> 5, <code>package
 <li><strong>Install vergil-tooling.</strong> <code>detect.sh</code> resolves the install spec. In
   <code>vergil-tooling</code> itself it is the checkout, so CI exercises the PR's own
   <code>vrg-package</code>. Elsewhere it is <code>[dependencies].vergil</code> from <code>vergil.toml</code>,
-  read with <code>uv run --no-config</code> under a uv-managed Python 3.14. <code>--no-config</code>
+  read with <code>uv run --no-config</code> under a uv-managed Python 3.15. <code>--no-config</code>
   ignores the repository's uv settings (<code>[tool.uv]</code>, <code>uv.toml</code>), so settings
   such as <code>python-downloads = "manual"</code> cannot stop the download.
   The tools land in uv's tool bin directory under <code>$HOME</code>, never in
