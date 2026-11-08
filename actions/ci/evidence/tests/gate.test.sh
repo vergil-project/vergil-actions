@@ -23,12 +23,10 @@ repo_root="$(cd "${here}/../../../.." && pwd)"
 workflow="${repo_root}/.github/workflows/ci-quality.yml"
 assert_step="Assert all required legs succeeded"
 
-for tool in yq; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    printf 'gate.test.sh needs %s on PATH\n' "$tool" >&2
-    exit 1
-  fi
-done
+if ! command -v yq >/dev/null 2>&1; then
+  printf 'gate.test.sh needs yq on PATH\n' >&2
+  exit 1
+fi
 if [ ! -f "$workflow" ]; then
   printf 'gate.test.sh: missing %s\n' "$workflow" >&2
   exit 1

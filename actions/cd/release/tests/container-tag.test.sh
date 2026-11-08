@@ -71,6 +71,7 @@ expect() {
 
 case_setup_job() {
   local name="setup-job-derives-the-tag" steps
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "setup output" \
     "$(q '.jobs.setup.outputs."primary-container-tag"')" \
     '${{ steps.derive.outputs.primary-container-tag }}' || return 0
@@ -84,6 +85,7 @@ case_setup_job() {
 # container-suffix passed only as its cross-check, exported by setup.
 case_setup_suffix() {
   local name="setup-job-derives-the-suffix" step
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "setup output" \
     "$(q '.jobs.setup.outputs."primary-container-suffix"')" \
     '${{ steps.suffix.outputs.primary-container-suffix }}' || return 0
@@ -94,12 +96,15 @@ case_setup_suffix() {
   fi
   expect "$name" "suffix step uses" "$(printf '%s\n' "$step" | yq -r '.uses')" \
     "./actions/shared/setup/primary-suffix" || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "primary-version" \
     "$(printf '%s\n' "$step" | yq -r '.with."primary-version"')" \
     '${{ steps.derive.outputs.primary-version }}' || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "container-suffixes" \
     "$(printf '%s\n' "$step" | yq -r '.with."container-suffixes"')" \
     '${{ steps.derive.outputs.container-suffixes }}' || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "container-suffix cross-check" \
     "$(printf '%s\n' "$step" | yq -r '.with."container-suffix"')" \
     '${{ inputs.container-suffix }}' || return 0
@@ -125,6 +130,7 @@ case_release_uses_setup() {
     "ghcr.io/vergil-project/\${{ inputs.container-prefix || 'prod' }}-\${{ needs.setup.outputs.primary-container-suffix }}:\${{ needs.setup.outputs.primary-container-tag }}" ||
     return 0
   validate="$(q '.jobs.release.steps[] | select(.uses == "./actions/cd/release/validate-inputs") | .with."container-tag"')"
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "validate-inputs container-tag" "$validate" \
     '${{ needs.setup.outputs.primary-container-tag }}' || return 0
   pass_case "$name"
@@ -147,6 +153,7 @@ case_deprecated_input() {
   fi
   expect "$name" "warning condition" \
     "$(printf '%s\n' "$warn" | yq -r '.if')" "inputs.container-tag != ''" || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "warning env" \
     "$(printf '%s\n' "$warn" | yq -r '.env.CALLER_TAG')" '${{ inputs.container-tag }}' || return 0
   case "$(printf '%s\n' "$warn" | yq -r '.run')" in
