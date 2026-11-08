@@ -339,6 +339,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: uv run mkdocs build'
+  # shellcheck disable=SC2016 # fixture file content; the $ is meant literally
   job_env='name: F
 on: push
 jobs:
@@ -419,6 +420,7 @@ jobs:
     "x/run/action.yml" "$(printf 'runs:\n  using: composite\n  steps:\n    - shell: bash\n      env:\n        UV_PYTHON_PREFERENCE: only-system\n      run: uv run mike deploy')"
   expect_guard "guard-passes-inline-pin" pass "$wf_ok" \
     "x/run/go.sh" "$(printf '#!/usr/bin/env bash\nUV_PYTHON_PREFERENCE=only-system uv sync --frozen')"
+  # shellcheck disable=SC2016 # fixture file content; the $ is meant literally
   expect_guard "guard-ignores-comments-and-prose" pass "$wf_ok" \
     "x/run/action.yml" "$(printf 'description: runs `uv sync` for you\nruns:\n  using: composite\n  steps:\n    # uv run mike here is a comment\n    - shell: bash\n      run: uv tool install x')"
   expect_guard "guard-skips-action-tests" pass "$wf_ok" \
@@ -427,10 +429,12 @@ jobs:
   # Config-free files (issue #1003): detect.sh must use the config-ignoring
   # form, and the source pin is no substitute for it.
   local detect='package/setup/detect.sh'
+  # shellcheck disable=SC2016 # fixture file content; the $ is meant literally
   expect_guard "guard-passes-config-free-no-config" pass "$wf_ok" \
     "$detect" "$(printf '#!/usr/bin/env bash\nref="$(uv run --no-config --no-project --python 3.14 python -c "$x")"')"
   expect_guard "guard-passes-config-free-global-no-config" pass "$wf_ok" \
     "$detect" "$(printf '#!/usr/bin/env bash\nuv --no-config run --no-project --python 3.14 python -c pass')"
+  # shellcheck disable=SC2016 # fixture file content; the $ is meant literally
   expect_guard "guard-fails-config-free-without-no-config" fail "$wf_ok" \
     "$detect" "$(printf '#!/usr/bin/env bash\nref="$(uv run --no-project --python 3.14 python -c "$x")"')"
   expect_guard "guard-fails-config-free-pin-instead" fail "$wf_ok" \
@@ -461,6 +465,7 @@ jobs:
     "x/run/action.yml" "$(printf 'runs:\n  using: composite\n  steps:\n    - shell: bash\n      run: uv --directory d run pytest')"
   expect_guard "guard-passes-step-env-uv-directory-run" pass "$wf_ok" \
     "x/run/action.yml" "$(printf 'runs:\n  using: composite\n  steps:\n    - shell: bash\n      env:\n        UV_PYTHON_PREFERENCE: only-system\n      run: uv --directory d run pytest')"
+  # shellcheck disable=SC2016 # fixture file content; the $ is meant literally
   expect_guard "guard-passes-uv-global-opts-exempt-forms" pass "$wf_ok" \
     "x/run/go.sh" "$(printf '#!/usr/bin/env bash\n# uv --quiet run mike here is a comment\necho "runs `uv -q sync` for you"\nuv --version\nuv -q tool install x\nuv --directory d tool run ruff')"
 

@@ -98,6 +98,7 @@ table() {
 }
 
 {
+  # shellcheck disable=SC2016 # the backticks are a Markdown code span, not a command substitution
   printf '## Finished-branch sweep: `%s`\n\n' "$REPO"
 
   if [ "$n_merged" -gt 0 ]; then
@@ -128,6 +129,7 @@ table() {
     printf '> [!CAUTION]\n> %s\n\n' "$(printf '%s' "$problem" | html_escape)"
   fi
   if [ "$status" -ne 0 ]; then
+    # shellcheck disable=SC2016 # the backticks are a Markdown code span, not a command substitution
     printf '> [!CAUTION]\n> `vrg-branch-sweep` exited %s. See the full output below.\n\n' "$status"
   fi
 
