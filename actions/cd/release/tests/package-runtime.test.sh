@@ -106,8 +106,8 @@ build_case() {
   expect "$name" "CELL env" "$(printf '%s\n' "$step" | yq -r '.env.CELL')" \
     '${{ matrix.id }}' || return 0
   run="$(printf '%s\n' "$step" | yq -r '.run' | tr -d '\\\n')"
+  # shellcheck disable=SC2016 # the pattern is literal shell text the run step must contain
   case "$run" in
-    # shellcheck disable=SC2016 # literal shell text the run step must contain
     *'vrg-package build --cell "$CELL" --runtime "$RUNTIME"'*'--version "$(vrg-version show)" --out dist/packages'*) ;;
     *)
       fail_case "$name" "the build command does not pass --runtime \"\$RUNTIME\": ${run}"
