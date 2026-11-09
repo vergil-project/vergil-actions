@@ -450,6 +450,41 @@ case_host_packaged_leaves_no_bootstrap_source() {
   pass_case "$name"
 }
 
+# expect_uv_left_on_path: the pinned uv is installed into RUNNER_TEMP and added
+# to GITHUB_PATH, so later steps (which have always had uv) still find it.
+expect_uv_left_on_path() {
+  if [ ! -x "${case_dir}/runner-temp/uv/bin/uv" ]; then
+    fail_case "$1" "uv not installed into RUNNER_TEMP/uv/bin"
+    return 1
+  fi
+  if ! grep -qx "${case_dir}/runner-temp/uv/bin" "${case_dir}/github-path"; then
+    fail_case "$1" "RUNNER_TEMP/uv/bin not added to GITHUB_PATH"
+    return 1
+  fi
+}
+
+case_host_packaged_leaves_uv_on_path() {
+  local name="host_packaged_leaves_uv_on_path"
+  new_case
+  FAKE_CANDIDATE="2.1.7-1"
+  run_script -- v2.1
+  expect_status "$name" 0 || return
+  expect_calls "$name" "install -y vergil-tooling [boot=no]" || return
+  expect_uv_left_on_path "$name" || return
+  pass_case "$name"
+}
+
+case_container_packaged_leaves_uv_on_path() {
+  local name="container_packaged_leaves_uv_on_path"
+  new_case; as_container; with_vergil_source; with_core_python
+  FAKE_CANDIDATE="2.1.7-1"
+  run_script -- v2.1
+  expect_status "$name" 0 || return
+  expect_calls "$name" "install -y vergil-tooling [" || return
+  expect_uv_left_on_path "$name" || return
+  pass_case "$name"
+}
+
 case_host_bootstrap_source_content() {
   local name="host_bootstrap_source_content"
   new_case
@@ -718,6 +753,8 @@ case_container_apt_update_failure || true
 case_packaged_check_refuses_foreign_interpreter || true
 case_host_packaged || true
 case_host_packaged_leaves_no_bootstrap_source || true
+case_host_packaged_leaves_uv_on_path || true
+case_container_packaged_leaves_uv_on_path || true
 case_host_bootstrap_source_content || true
 case_host_fingerprint_mismatch || true
 case_host_two_primary_keys || true

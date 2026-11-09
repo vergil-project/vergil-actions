@@ -32,9 +32,12 @@
 # checks that `vrg-whoami` runs from /usr/bin on a venv whose interpreter lives
 # under /opt/vergil/python/.
 #
-# Whenever a path needs uv and none is on PATH, uv is installed from its release
-# tarball at UV_VERSION, checked against the SHA-256 pinned below, into
-# $RUNNER_TEMP/uv/bin (added to GITHUB_PATH). uv is never installed with pip.
+# Every path leaves uv on PATH, including the packaged installs, which do not
+# need it themselves: the action has always provided uv, and later steps (and
+# the scripts they run) rely on it. When none is on PATH, uv is installed from
+# its release tarball at UV_VERSION, checked against the SHA-256 pinned below,
+# into $RUNNER_TEMP/uv/bin (added to GITHUB_PATH). uv is never installed with
+# pip.
 #
 # Usage: install-tooling.sh [<tag>]
 #   <tag> defaults to the [dependencies].vergil pin, read by read-pin.sh. It is
@@ -453,6 +456,7 @@ container_install() {
       apt_get update
       check_candidate "$tag" "$kind"
       packaged_install "$tag" "$kind"
+      ensure_uv
       ;;
     neither)
       log "uv tool install from git (image without the vergil apt repository)"
@@ -472,6 +476,7 @@ host_install() {
   write_pin "$tag" "$kind"
   check_candidate "$tag" "$kind"
   packaged_install "$tag" "$kind"
+  ensure_uv
 }
 
 main() {
