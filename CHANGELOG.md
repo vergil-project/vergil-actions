@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.60] - 2026-11-09
+
+### Bug fixes
+
+- clear the shellcheck findings now that every *.sh file is checked (#1103)
+- sync guard.sh with the packaged hook guard shim (#1105)
+
+### Chores
+
+- sync the vergil-managed .gitignore block (#1085)
+- sync the vergil-managed .gitignore block (#1093)
+- run the package setup driver on Python 3.15 (#1095)
+
+### Documentation
+
+- steering and settings sweep (epic 558) (#1091)
+- retire the standards-and-conventions page and AGENTS.md bootstrap guide (#1096)
+- sync the template's build/ exception line (#1098)
+- describe the vrg-release back-merge bump in place of st-merge-when-green (#1100)
+
+### Refactoring
+
+- remove the Maven Central publish path and Java branches (#1107)
+
 ## [2.1.59] - 2026-10-26
 
 ### Bug fixes
