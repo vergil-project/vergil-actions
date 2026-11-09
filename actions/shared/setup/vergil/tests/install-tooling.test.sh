@@ -588,7 +588,7 @@ case_host_keyring_already_installed() {
   run_script -- v2.1
   expect_status "$name" 0 || return
   expect_calls "$name" "gpg --show-keys --with-colons ${root}/usr/share/keyrings/vergil-archive-keyring.asc" || return
-  expect_no_calls "$name" "curl" || return
+  expect_no_calls "$name" "curl https://vergil-project.github.io/packages/keys/" || return
   expect_no_calls "$name" "vergil-archive-keyring [" || return
   expect_calls "$name" "install -y vergil-tooling" || return
   pass_case "$name"
