@@ -45,7 +45,7 @@ jobs:
       # Always from git: this job rebuilds and re-signs the vergil apt index,
       # so it must never install from the index it is about to repair.
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.61
         with:
           install-source: git
 
