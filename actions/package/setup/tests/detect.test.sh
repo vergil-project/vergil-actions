@@ -232,7 +232,7 @@ vergil = "v2.1"')"
     stubdir="$(mktemp -d)"
     argv="${stubdir}/argv"
     printf '%s\n' '#!/usr/bin/env bash' \
-      'printf "%s\n" "$*" >>"$(dirname "$0")/argv"' \
+      "printf '%s\\n' \"\$*\" >>'${argv}'" \
       'echo v2.1' >"${stubdir}/uv"
     chmod +x "${stubdir}/uv"
     out="$(PATH="${stubdir}:${PATH}" VRG_DRIVER_PYTHON="$version" \
