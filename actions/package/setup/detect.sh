@@ -10,11 +10,15 @@
 #       vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@<ref>
 #     where <ref> is [dependencies].vergil from vergil.toml.
 #
-# Usage: detect.sh [REPO_DIR]   (default: .)
+# Usage: VRG_DRIVER_PYTHON=<version> detect.sh [REPO_DIR]   (default: .)
+#
+# VRG_DRIVER_PYTHON is the driver vergil-tooling's Python version. The setup
+# action sets it from its `python` input, the only place the version is
+# written. Unset or empty is fatal; there is no default.
 #
 # Reading vergil.toml needs a Python with tomllib (3.11+). Raw ubuntu/UBI images
-# ship none, so it runs under uv's managed Python when uv is on PATH, else
-# python3. A missing vergil.toml or [dependencies].vergil is fatal.
+# ship none, so it runs under uv's managed VRG_DRIVER_PYTHON when uv is on
+# PATH, else python3. A missing vergil.toml or [dependencies].vergil is fatal.
 #
 # --no-config stops uv reading the repo's uv settings ([tool.uv] in
 # pyproject.toml, uv.toml), which --no-project does not. A repo may set
@@ -23,6 +27,11 @@
 # change which one it picks (issue #1003). Reading vergil.toml never runs the
 # repo's code, so its uv settings have no say in this interpreter.
 set -euo pipefail
+
+if [ -z "${VRG_DRIVER_PYTHON:-}" ]; then
+  echo "detect.sh: VRG_DRIVER_PYTHON must be set" >&2
+  exit 1
+fi
 
 repo="${1:-.}"
 
@@ -46,7 +55,7 @@ print(ref)
 '
 
 if command -v uv >/dev/null 2>&1; then
-  ref="$(uv run --no-config --no-project --python 3.15 python -c "$read_ref" "${repo}/vergil.toml")"
+  ref="$(uv run --no-config --no-project --python "$VRG_DRIVER_PYTHON" python -c "$read_ref" "${repo}/vergil.toml")"
 else
   ref="$(python3 -c "$read_ref" "${repo}/vergil.toml")"
 fi

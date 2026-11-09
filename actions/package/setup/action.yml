@@ -14,6 +14,13 @@ inputs:
       Install nFPM ("true" in build cells; install-test cells leave it off).
     required: false
     default: "false"
+  python:
+    description: >-
+      Python version for the driver vergil-tooling: the interpreter
+      `uv tool install` runs it under, and the one detect.sh reads
+      vergil.toml with. This is the only place the version is written.
+    required: false
+    default: "3.15"
 
 runs:
   using: composite
@@ -91,11 +98,13 @@ runs:
     # that must not resolve this copy of vergil-tooling (spec §8.1).
     - name: Install vergil-tooling
       shell: bash
+      env:
+        VRG_DRIVER_PYTHON: ${{ inputs.python }}
       run: |
         set -euo pipefail
         spec="$(bash "${GITHUB_ACTION_PATH}/detect.sh" .)"
         echo "Installing vergil-tooling: ${spec}"
-        uv tool install --python 3.15 "$spec"
+        uv tool install --python "$VRG_DRIVER_PYTHON" "$spec"
         bin_dir="$(uv tool dir --bin)"
         echo "$bin_dir" >> "$GITHUB_PATH"
         "${bin_dir}/vrg-package" --help >/dev/null
