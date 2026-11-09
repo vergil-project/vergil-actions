@@ -24,6 +24,7 @@ Consuming repositories do not add it themselves.
 | Input | Default | Description |
 | ----- | ------- | ----------- |
 | `nfpm` | `"false"` | Install nFPM. Build cells pass `"true"`; install-test cells leave it off. |
+| `python` | `"3.15"` | Python version for the driver `vergil-tooling`. It is the only place the version is written: the install step passes it to `uv tool install --python` and to `detect.sh` as `VRG_DRIVER_PYTHON`. |
 
 ## Managed toolchain images
 
@@ -182,7 +183,9 @@ in `ci-package.yml`, and `package-matrix` 5, `package-build` 30 and
 - **Install vergil-tooling.** `detect.sh` resolves the install spec. In
   `vergil-tooling` itself it is the checkout, so CI exercises the PR's own
   `vrg-package`. Elsewhere it is `[dependencies].vergil` from `vergil.toml`,
-  read with `uv run --no-config` under a uv-managed Python 3.15. `--no-config`
+  read with `uv run --no-config` under a uv-managed Python of the `python`
+  input's version. `detect.sh` fails if `VRG_DRIVER_PYTHON` is unset or empty;
+  there is no default. `--no-config`
   ignores the repository's uv settings (`[tool.uv]`, `uv.toml`), so settings
   such as `python-downloads = "manual"` cannot stop the download.
   The tools land in uv's tool bin directory under `$HOME`, never in

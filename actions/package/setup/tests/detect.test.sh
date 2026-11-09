@@ -12,7 +12,14 @@
 #
 # Each case writes fixture pyproject.toml / vergil.toml files into a temp dir,
 # runs detect.sh against it, and asserts the printed spec (or the failure).
+#
+# detect.sh takes the driver Python from VRG_DRIVER_PYTHON, which the action
+# sets from its `python` input. The harness exports it for every case; the
+# driver-python cases unset it or check that uv is given it.
 set -euo pipefail
+
+driver_python="3.15"
+export VRG_DRIVER_PYTHON="$driver_python"
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 detect_sh="${here}/../detect.sh"
@@ -184,6 +191,67 @@ case_ignores_uv_toml() {
   run_in_configured_repo "ignores-uv-toml" uv.toml "$uv_settings"
 }
 
+# ---------------------------------------------------------------------------
+# Case 8: VRG_DRIVER_PYTHON unset or empty is fatal; there is no default.
+# ---------------------------------------------------------------------------
+case_driver_python_unset_fails() {
+  local name="driver_python_unset_fails" dir err out stderr rc value
+  for value in unset empty; do
+    dir="$(fixture '' '[dependencies]
+vergil = "v2.1"')"
+    err="$(mktemp)"
+    rc=0
+    if [ "$value" = unset ]; then
+      out="$(env -u VRG_DRIVER_PYTHON bash "$detect_sh" "$dir" 2>"$err")" || rc=$?
+    else
+      out="$(VRG_DRIVER_PYTHON="" bash "$detect_sh" "$dir" 2>"$err")" || rc=$?
+    fi
+    stderr="$(cat "$err")"
+    rm -rf "$dir" "$err"
+    if [ "$rc" -ne 1 ]; then
+      fail_case "$name" "${value}: expected exit 1, got ${rc} (stdout '${out}')"
+      return
+    fi
+    assert_eq "$name" "$stderr" "detect.sh: VRG_DRIVER_PYTHON must be set" || return
+    assert_eq "$name" "$out" "" || return
+  done
+  pass_case "$name"
+}
+
+# ---------------------------------------------------------------------------
+# Case 9: detect.sh asks uv for the driver Python it was given. A `uv` stub
+# first on PATH records its argv and prints the ref uv would have read. The
+# stub runs no Python, so the second, made-up version proves detect.sh passes
+# on whatever it is given rather than a version of its own.
+# ---------------------------------------------------------------------------
+case_driver_python_used() {
+  local name="driver_python_used" dir stubdir argv out recorded version
+  for version in "$driver_python" 3.99; do
+    dir="$(fixture '' '[dependencies]
+vergil = "v2.1"')"
+    stubdir="$(mktemp -d)"
+    argv="${stubdir}/argv"
+    printf '%s\n' '#!/usr/bin/env bash' \
+      "printf '%s\\n' \"\$*\" >>'${argv}'" \
+      'echo v2.1' >"${stubdir}/uv"
+    chmod +x "${stubdir}/uv"
+    out="$(PATH="${stubdir}:${PATH}" VRG_DRIVER_PYTHON="$version" \
+      bash "$detect_sh" "$dir")"
+    recorded="$(cat "$argv" 2>/dev/null || true)"
+    rm -rf "$dir" "$stubdir"
+    assert_eq "$name" "$out" \
+      "vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1" || return
+    case " ${recorded} " in
+      *" --python ${version} "*) ;;
+      *)
+        fail_case "$name" "uv argv lacks '--python ${version}': '${recorded}'"
+        return
+        ;;
+    esac
+  done
+  pass_case "$name"
+}
+
 case_self_repo
 case_consumer_repo
 case_consumer_no_pyproject
@@ -191,6 +259,8 @@ case_missing_vergil_toml
 case_missing_dependency
 case_ignores_pyproject_uv_settings
 case_ignores_uv_toml
+case_driver_python_unset_fails
+case_driver_python_used
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
