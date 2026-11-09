@@ -48,7 +48,6 @@ assert_maps "cpp->c-cpp" cpp c-cpp
 # Valid CodeQL identifiers pass through unchanged.
 assert_maps "python passthrough" python python
 assert_maps "go passthrough" go go
-assert_maps "java passthrough" java java
 
 # Missing LANGUAGE fails closed (set -u / :? guard), never emitting a silent
 # empty mapping.

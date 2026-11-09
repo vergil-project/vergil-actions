@@ -37,7 +37,7 @@ supports:
 
 - `registry-publish` is `"true"` but the language has no publish command
   (e.g. `go`, `cpp`, `typescript`).
-- `container-tag` is set but the language is not one of `python`, `java`,
+- `container-tag` is set but the language is not one of `python`,
   `rust` or `go`.
 
 It passes without checking when `language` is empty. A language that

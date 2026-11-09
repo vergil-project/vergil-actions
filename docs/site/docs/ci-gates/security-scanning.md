@@ -84,7 +84,7 @@ Security scan results appear in the repository's **Security** tab:
 CodeQL performs deep semantic analysis of source code. It understands data flow,
 control flow, and language-specific patterns.
 
-- **Languages supported**: Python, Go, Ruby, Java, JavaScript/TypeScript, and more.
+- **Languages scanned**: Python, Go, Rust, C++ and TypeScript.
 - **Query suite**: `+security-extended` (default) includes the standard security
   queries plus extended checks.
 - **Autobuild**: CodeQL automatically detects the build system and compiles the

@@ -248,7 +248,7 @@ permissions:
 | `contents: read` | CI (test, lint, validate) |
 | `contents: write` | Documentation deployment, publish (tagging) |
 | `security-events: write` | CodeQL, Semgrep, Trivy (SARIF upload) |
-| `attestations: write` | Build provenance attestation (Python, Java) |
+| `attestations: write` | Build provenance attestation (Python) |
 | `id-token: write` | OIDC-based publishing (PyPI trusted publisher) |
 | `pull-requests: write` | Publish workflow (version bump PR creation) |
 

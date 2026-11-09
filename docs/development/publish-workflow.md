@@ -37,7 +37,7 @@ Steps 1-8 use only GitHub-native capabilities (tags, releases, attestations)
 and shared actions. They must always succeed when a new version is merged to
 main.
 
-Step 9 (publishing to PyPI, Maven Central, RubyGems, etc.) depends on external
+Step 9 (publishing to PyPI, crates.io, etc.) depends on external
 credentials and services. If it runs before tagging:
 
 - A registry outage or credential issue blocks the entire release pipeline
@@ -71,7 +71,7 @@ jobs:
     steps:
       # ... build, attest, SBOM, tag steps ...
 
-      # Secret-based credentials (Ruby, Java)
+      # Secret-based credentials (Rust)
       - name: Publish to registry
         if: steps.registry_check.outputs.status == 'not_found' && env.HAS_REGISTRY_KEY == 'true'
         env:
