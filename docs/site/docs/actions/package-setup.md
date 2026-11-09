@@ -25,9 +25,55 @@ Consuming repositories do not add it themselves.
 | ----- | ------- | ----------- |
 | `nfpm` | `"false"` | Install nFPM. Build cells pass `"true"`; install-test cells leave it off. |
 
+## Managed toolchain images
+
+A managed package toolchain image (`prod-pkg-ubuntu` or `prod-pkg-rhel`,
+built by vergil-containers; epic
+[vergil-project/.github#607](https://github.com/vergil-project/.github/issues/607))
+ships the OS prerequisites, `uv` and nFPM preinstalled. It says so in a
+marker file, `/etc/vergil/package-toolchain`. The action's first step looks
+for that file:
+
+- **Marker present.** The OS prerequisites, `uv` and nFPM install steps are
+  skipped. `check-toolchain.sh` checks the image against the marker instead
+  (with `--nfpm` when `nfpm: "true"`), then the action adds the workspace to
+  git's `safe.directory` and installs `vergil-tooling` as usual.
+- **Marker absent.** A raw `ubuntu` or UBI image. Every step runs as
+  described below, unchanged.
+
+### The marker contract
+
+The image writes one `<tool> <version>` line per tool, separated by a single
+space. `<tool>` is a command name. `<version>` is the first
+`[0-9]+(\.[0-9]+)+` token of the standard output of `<tool> --version`. The
+marker always lists `uv`, `nfpm`, `curl`, `git`, `gpg`, `tar` and `gzip`:
+
+```text
+uv 0.12.23
+nfpm 2.47.0
+curl 8.5.0
+git 2.43.0
+gpg 2.4.4
+tar 1.35
+gzip 1.12
+```
+
+`check-toolchain.sh` passes only when every listed tool is on `PATH` at its
+listed version and, with `--nfpm`, the marker lists `nfpm`. A marker that
+lies never falls back to installing. The script fails the job with one
+`::error::` line per problem, after checking every line, if a tool is
+missing, at another version, or prints no version. It also fails if `nfpm`
+is needed but not listed, or if the marker is empty, malformed or lists a
+tool twice.
+
+`actions/package/setup/tests/check-toolchain.test.sh` exercises the script
+against fixture markers (`VRG_TOOLCHAIN_MARKER`) and stub tools, with no root
+and no container. The `Smoke - setup/vergil outputs` workflow runs it on
+every PR that touches this action.
+
 ## OS prerequisites
 
-The first step runs `os-prereqs.sh`, which keeps package jobs off slow apt
+On a raw image, the first install step runs `os-prereqs.sh`, which keeps package jobs off slow apt
 mirrors and makes any apt stall fail fast instead of hanging the job.
 
 ### apt images (Ubuntu, Debian)
