@@ -825,6 +825,8 @@
       
         
       
+        
+      
     
     
     
@@ -877,6 +879,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.61/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.61
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5682,6 +5712,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#managed-toolchain-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managed toolchain images
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed toolchain images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-marker-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The marker contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#os-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6803,6 +6861,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#managed-toolchain-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managed toolchain images
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed toolchain images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-marker-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The marker contract
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#os-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6921,10 +7007,54 @@ Consuming repositories do not add it themselves.</p>
 <td><code>"false"</code></td>
 <td>Install nFPM. Build cells pass <code>"true"</code>; install-test cells leave it off.</td>
 </tr>
+<tr>
+<td><code>python</code></td>
+<td><code>"3.15"</code></td>
+<td>Python version for the driver <code>vergil-tooling</code>. It is the only place the version is written: the install step passes it to <code>uv tool install --python</code> and to <code>detect.sh</code> as <code>VRG_DRIVER_PYTHON</code>.</td>
+</tr>
 </tbody>
 </table>
+<h2 id="managed-toolchain-images">Managed toolchain images<a class="headerlink" href="#managed-toolchain-images" title="Permanent link">&para;</a></h2>
+<p>A managed package toolchain image (<code>prod-pkg-ubuntu</code> or <code>prod-pkg-rhel</code>,
+built by vergil-containers; epic
+<a href="https://github.com/vergil-project/.github/issues/607">vergil-project/.github#607</a>)
+ships the OS prerequisites, <code>uv</code> and nFPM preinstalled. It says so in a
+marker file, <code>/etc/vergil/package-toolchain</code>. The action's first step looks
+for that file:</p>
+<ul>
+<li><strong>Marker present.</strong> The OS prerequisites, <code>uv</code> and nFPM install steps are
+  skipped. <code>check-toolchain.sh</code> checks the image against the marker instead
+  (with <code>--nfpm</code> when <code>nfpm: "true"</code>), then the action adds the workspace to
+  git's <code>safe.directory</code> and installs <code>vergil-tooling</code> as usual.</li>
+<li><strong>Marker absent.</strong> A raw <code>ubuntu</code> or UBI image. Every step runs as
+  described below, unchanged.</li>
+</ul>
+<h3 id="the-marker-contract">The marker contract<a class="headerlink" href="#the-marker-contract" title="Permanent link">&para;</a></h3>
+<p>The image writes one <code>&lt;tool&gt; &lt;version&gt;</code> line per tool, separated by a single
+space. <code>&lt;tool&gt;</code> is a command name. <code>&lt;version&gt;</code> is the first
+<code>[0-9]+(\.[0-9]+)+</code> token of the standard output of <code>&lt;tool&gt; --version</code>. The
+marker always lists <code>uv</code>, <code>nfpm</code>, <code>curl</code>, <code>git</code>, <code>gpg</code>, <code>tar</code> and <code>gzip</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv 0.12.23
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>nfpm 2.47.0
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>curl 8.5.0
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>git 2.43.0
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>gpg 2.4.4
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>tar 1.35
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>gzip 1.12
+</code></pre></div>
+<p><code>check-toolchain.sh</code> passes only when every listed tool is on <code>PATH</code> at its
+listed version and, with <code>--nfpm</code>, the marker lists <code>nfpm</code>. A marker that
+lies never falls back to installing. The script fails the job with one
+<code>::error::</code> line per problem, after checking every line, if a tool is
+missing, at another version, or prints no version. It also fails if <code>nfpm</code>
+is needed but not listed, or if the marker is empty, malformed or lists a
+tool twice.</p>
+<p><code>actions/package/setup/tests/check-toolchain.test.sh</code> exercises the script
+against fixture markers (<code>VRG_TOOLCHAIN_MARKER</code>) and stub tools, with no root
+and no container. The <code>Smoke - setup/vergil outputs</code> workflow runs it on
+every PR that touches this action.</p>
 <h2 id="os-prerequisites">OS prerequisites<a class="headerlink" href="#os-prerequisites" title="Permanent link">&para;</a></h2>
-<p>The first step runs <code>os-prereqs.sh</code>, which keeps package jobs off slow apt
+<p>On a raw image, the first install step runs <code>os-prereqs.sh</code>, which keeps package jobs off slow apt
 mirrors and makes any apt stall fail fast instead of hanging the job.</p>
 <h3 id="apt-images-ubuntu-debian">apt images (Ubuntu, Debian)<a class="headerlink" href="#apt-images-ubuntu-debian" title="Permanent link">&para;</a></h3>
 <ol>
@@ -6935,9 +7065,9 @@ mirrors and makes any apt stall fail fast instead of hanging the job.</p>
    then writes that file in the format GitHub's hosted runner images use
    (<a href="https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/configure-apt-sources.sh"><code>configure-apt-sources.sh</code></a>),
    one tab-separated entry per line:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>http://azure.archive.ubuntu.com/ubuntu/    priority:1
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>http://archive.ubuntu.com/ubuntu/          priority:2
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>http://security.ubuntu.com/ubuntu/         priority:3
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>http://azure.archive.ubuntu.com/ubuntu/    priority:1
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>http://archive.ubuntu.com/ubuntu/          priority:2
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>http://security.ubuntu.com/ubuntu/         priority:3
 </code></pre></div>
 <p>apt tries the in-region Azure mirror first and moves down the list when
 a mirror fails. A failing Azure mirror therefore falls back instead of
@@ -6960,11 +7090,11 @@ rather than appending to it, so a re-run is a no-op.
    architecture other than <code>x86_64</code> are not touched.
 3. <strong>Fail-fast apt.</strong> The script writes
    <code>/etc/apt/apt.conf.d/80-vergil-fast-fail</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Acquire::Retries "3";
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>Acquire::Retries::Delay "false";
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Acquire::http::Timeout "20";
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Acquire::https::Timeout "20";
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>DPkg::Lock::Timeout "60";
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Acquire::Retries "3";
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Acquire::Retries::Delay "false";
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Acquire::http::Timeout "20";
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Acquire::https::Timeout "20";
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>DPkg::Lock::Timeout "60";
 </code></pre></div>
 <p>Every later apt call in the job inherits it, including the ones
 <code>vergil-tooling</code> makes during build and install-test.</p>
@@ -7018,7 +7148,9 @@ in <code>ci-package.yml</code>, and <code>package-matrix</code> 5, <code>package
 <li><strong>Install vergil-tooling.</strong> <code>detect.sh</code> resolves the install spec. In
   <code>vergil-tooling</code> itself it is the checkout, so CI exercises the PR's own
   <code>vrg-package</code>. Elsewhere it is <code>[dependencies].vergil</code> from <code>vergil.toml</code>,
-  read with <code>uv run --no-config</code> under a uv-managed Python 3.15. <code>--no-config</code>
+  read with <code>uv run --no-config</code> under a uv-managed Python of the <code>python</code>
+  input's version. <code>detect.sh</code> fails if <code>VRG_DRIVER_PYTHON</code> is unset or empty;
+  there is no default. <code>--no-config</code>
   ignores the repository's uv settings (<code>[tool.uv]</code>, <code>uv.toml</code>), so settings
   such as <code>python-downloads = "manual"</code> cannot stop the download.
   The tools land in uv's tool bin directory under <code>$HOME</code>, never in
