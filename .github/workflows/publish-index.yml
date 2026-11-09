@@ -42,8 +42,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      # Always from git: this job rebuilds and re-signs the vergil apt index,
+      # so it must never install from the index it is about to repair.
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
+        with:
+          install-source: git
 
       - name: Install index tools
         shell: bash
