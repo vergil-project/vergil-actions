@@ -1,10 +1,17 @@
 name: Install vergil-tooling
 description: >-
-  Reads the pinned vergil version from vergil.toml
-  and installs it via `uv tool install`. When the consumer repo is
-  vergil-tooling itself, runs `uv sync` (pinned to the image's interpreter
-  with UV_PYTHON_PREFERENCE=only-system) to install from source so CI
-  validates the PR's code instead of the released version.
+  Reads the pinned vergil version from vergil.toml and installs vergil-tooling
+  through install-tooling.sh, which chooses the install path by explicit
+  checks and logs the one it took: the packaged install from the vergil apt
+  repository (on a host runner, after setting up that repository with its key
+  checked against the pinned fingerprint; in a container job, when the image
+  has both the vergil apt source and a core Python), `uv tool install` from
+  git (a dev tag, an image with neither, or `install-source: git`), or, when
+  the consumer repo is vergil-tooling itself, `uv sync` (pinned to the image's
+  interpreter with UV_PYTHON_PREFERENCE=only-system) so CI validates the PR's
+  code instead of the released version. A path that needs uv and finds none
+  installs a pinned, hash-checked uv release; uv is never installed with pip
+  (epic vergil-project/.github#649).
 
   Then resolves the CI version set by calling the single resolver,
   `vrg-ci-resolve`, against the published language version window, and
@@ -14,6 +21,15 @@ description: >-
   hardcoded inputs (epics vergil-project/.github#338 and #407).
 
 inputs:
+  install-source:
+    description: >-
+      `auto` (the default) chooses the install path from the tag and the
+      environment. `git` always installs vergil-tooling with `uv tool install`
+      from git, never from the vergil apt repository: for the job that rebuilds
+      that repository's index (publish-index's build-index), which must not
+      depend on the index it is about to repair.
+    required: false
+    default: auto
   version-window:
     description: >-
       Path to a local window.json for the resolver to read instead of the
@@ -62,40 +78,16 @@ runs:
       shell: bash
       run: git config --global --add safe.directory "${GITHUB_WORKSPACE:-$(pwd)}"
 
-    - name: Check for uv
-      id: check-uv
-      shell: bash
-      run: |
-        if command -v uv &>/dev/null; then
-          echo "found=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "found=false" >> "$GITHUB_OUTPUT"
-        fi
-
-    - name: Install uv
-      if: steps.check-uv.outputs.found == 'false'
-      shell: bash
-      run: pip install --break-system-packages uv
-
+    # install-tooling.sh reads the [dependencies].vergil pin itself, through
+    # read-pin.sh (which emits the ::error:: annotation when it is missing or
+    # invalid), and logs which install path it took. Its `uv tool install`
+    # commands need no UV_PYTHON_PREFERENCE pin: uv tool commands ignore a
+    # project's uv settings; its self-repo `uv sync` carries the pin.
     - name: Install vergil-tooling
       shell: bash
-      run: |
-        if grep -q '^name = "vergil-tooling"' pyproject.toml 2>/dev/null; then
-          echo "Consumer repo is vergil-tooling itself — installing from source"
-          # A project command, so it honours the repo's uv settings: pin the
-          # interpreter source to the image's Python (never a download; epic
-          # vergil-project/.github#407 spec §6.5, issue #1002). The
-          # `uv tool install` below needs no pin: uv tool commands ignore a
-          # project's uv settings.
-          UV_PYTHON_PREFERENCE=only-system uv sync --frozen --group dev
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-          exit 0
-        fi
-
-        # read-pin.sh emits the ::error:: annotation and exits non-zero when
-        # vergil.toml or [dependencies].vergil is missing, invalid, or empty.
-        TAG=$(bash "${GITHUB_ACTION_PATH}/read-pin.sh") || exit 1
-        uv tool install "vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@${TAG}"
+      env:
+        INSTALL_SOURCE: ${{ inputs.install-source }}
+      run: bash "${GITHUB_ACTION_PATH}/install-tooling.sh"
 
     # Calls vrg-ci-resolve (installed by the step above). A step-level env key
     # cannot be set conditionally, so the optional `version-window` input rides

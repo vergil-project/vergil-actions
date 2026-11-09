@@ -16,6 +16,13 @@ name: Smoke - setup/vergil outputs
 #       - read-pin.sh: the pinned [dependencies].vergil tag, and a clean
 #         ::error:: for a missing file, missing key, or empty/invalid value
 #         (issue #977);
+#       - install-tooling.sh: the install path chosen from the tag and the
+#         environment (packaged in a container with the vergil apt source and
+#         a core Python, uv from git with neither, a refusal with one; on a
+#         host runner the vergil apt repository bootstrapped with the pinned
+#         key fingerprint and the bootstrap source removed; the dev-tag,
+#         self-repo and install-source: git paths), the apt candidate check,
+#         and the pinned, hash-checked uv (epic vergil-project/.github#649);
 #       - ci/matrix resolve.sh: images from the resolver's tags and suffixes,
 #         the run-once collapse to the primary, and loud failure on a missing
 #         tag/suffix or a container-suffix the resolver did not choose;
@@ -81,6 +88,9 @@ jobs:
       - name: Run read-pin.sh harness
         shell: bash
         run: bash actions/shared/setup/vergil/tests/read-pin.test.sh
+      - name: Run install-tooling.sh harness
+        shell: bash
+        run: bash actions/shared/setup/vergil/tests/install-tooling.test.sh
       - name: Run ci/matrix resolve.sh harness
         shell: bash
         run: bash actions/ci/matrix/tests/resolve.test.sh
