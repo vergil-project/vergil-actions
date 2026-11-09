@@ -16,7 +16,7 @@ language.
 
 | Name | Required | Default | Description |
 | ------ | ---------- | --------- | ------------- |
-| `language` | **Yes** | — | CodeQL language to analyze (e.g. `python`, `javascript`, `go`, `java`). |
+| `language` | **Yes** | — | Language to analyze: `python`, `go`, `rust`, `cpp` or `typescript`. |
 | `queries` | No | `+security-extended` | Query suite to run. |
 
 ## Permissions

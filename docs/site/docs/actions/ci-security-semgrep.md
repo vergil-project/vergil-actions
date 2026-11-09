@@ -16,7 +16,7 @@ rulesets.
 
 | Name | Required | Default | Description |
 | ------ | ---------- | --------- | ------------- |
-| `language` | **Yes** | — | Language ruleset to enable (maps to `p/<language>`, e.g. `python`, `java`, `golang`). |
+| `language` | **Yes** | — | Language ruleset to enable (maps to `p/<language>`, e.g. `python`, `golang`). |
 | `extra-config` | No | `""` | Additional Semgrep config strings, space-separated (e.g. `p/owasp-top-ten`). |
 | `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by `vrg-sarif-filter`; requires vergil-tooling on `PATH`). Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
 

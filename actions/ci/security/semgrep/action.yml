@@ -8,7 +8,7 @@ inputs:
   language:
     description: >-
       Language ruleset to enable (maps to "p/<language>", e.g. "python",
-      "java", "golang"). Languages without a Semgrep registry ruleset
+      "golang"). Languages without a Semgrep registry ruleset
       are silently skipped.
     required: true
   extra-config:

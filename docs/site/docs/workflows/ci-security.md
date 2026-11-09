@@ -7,7 +7,7 @@ that bundles their SARIF results for the release harvester.
 
 | Input | Type | Required | Default | Description |
 | ------- | ------ | ---------- | --------- | ------------- |
-| `language` | string | yes | — | Language for the security scanners (e.g., `python`, `go`, `java`) |
+| `language` | string | yes | — | Language for the security scanners (e.g., `python`, `go`, `rust`) |
 | `run-security` | boolean | no | `true` | Run the scanner jobs (CodeQL, Trivy, Semgrep) |
 | `run-codeql` | boolean | no | `true` | Run CodeQL analysis (disable for languages CodeQL does not support, such as `shell`) |
 | `upload-sarif` | boolean | no | `true` | Upload scanner SARIF to GitHub code scanning (disable on private repos without GHAS; see below) |
