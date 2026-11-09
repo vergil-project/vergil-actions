@@ -6977,6 +6977,11 @@ Consuming repositories do not add it themselves.</p>
 <td><code>"false"</code></td>
 <td>Install nFPM. Build cells pass <code>"true"</code>; install-test cells leave it off.</td>
 </tr>
+<tr>
+<td><code>python</code></td>
+<td><code>"3.15"</code></td>
+<td>Python version for the driver <code>vergil-tooling</code>. It is the only place the version is written: the install step passes it to <code>uv tool install --python</code> and to <code>detect.sh</code> as <code>VRG_DRIVER_PYTHON</code>.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="managed-toolchain-images">Managed toolchain images<a class="headerlink" href="#managed-toolchain-images" title="Permanent link">&para;</a></h2>
@@ -7113,7 +7118,9 @@ in <code>ci-package.yml</code>, and <code>package-matrix</code> 5, <code>package
 <li><strong>Install vergil-tooling.</strong> <code>detect.sh</code> resolves the install spec. In
   <code>vergil-tooling</code> itself it is the checkout, so CI exercises the PR's own
   <code>vrg-package</code>. Elsewhere it is <code>[dependencies].vergil</code> from <code>vergil.toml</code>,
-  read with <code>uv run --no-config</code> under a uv-managed Python 3.15. <code>--no-config</code>
+  read with <code>uv run --no-config</code> under a uv-managed Python of the <code>python</code>
+  input's version. <code>detect.sh</code> fails if <code>VRG_DRIVER_PYTHON</code> is unset or empty;
+  there is no default. <code>--no-config</code>
   ignores the repository's uv settings (<code>[tool.uv]</code>, <code>uv.toml</code>), so settings
   such as <code>python-downloads = "manual"</code> cannot stop the download.
   The tools land in uv's tool bin directory under <code>$HOME</code>, never in
