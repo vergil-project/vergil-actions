@@ -7,8 +7,8 @@
 # so this is a self-contained, framework-free, developer-runnable harness: run
 # it directly with `bash detect.test.sh`. It needs uv on PATH: the cases for
 # the repo's uv settings (issue #1003) test detect.sh's uv path and fail
-# without it. They may download a managed Python 3.14 into a temp dir when no
-# system 3.14 is on PATH, as in the package images.
+# without it. They may download a managed Python 3.15 into a temp dir when no
+# system 3.15 is on PATH, as in the package images.
 #
 # Each case writes fixture pyproject.toml / vergil.toml files into a temp dir,
 # runs detect.sh against it, and asserts the printed spec (or the failure).
@@ -137,7 +137,7 @@ repository-type = "library"')"
 #
 # UV_PYTHON_INSTALL_DIR is a fresh empty dir, so no managed Python exists:
 # without --no-config, uv honours the settings and fails ("Python downloads
-# are set to 'manual'"). With it, uv uses a system 3.14 if there is one, else
+# are set to 'manual'"). With it, uv uses a system 3.15 if there is one, else
 # downloads one, as in the package images. The uv environment variables that
 # would mask or change that are unset. The case needs uv: detect.sh only reads
 # uv settings on its uv path, so without uv it fails rather than pass vacuously.

@@ -25,7 +25,6 @@ if [ -n "${credential}" ]; then
   # Env var the publish tool reads -> cd-release secret that feeds it.
   case "${credential}" in
     CARGO_REGISTRY_TOKEN) secret=CARGO_REGISTRY_TOKEN ;;
-    MAVEN_GPG_PASSPHRASE) secret=GPG_PASSPHRASE ;;
     *)
       echo "::error::vrg-ecosystem-resolve names the credential ${credential}, which registry-publish does not provide (vergil-tooling and vergil-actions disagree on the credential name) — refusing to publish"
       exit 1

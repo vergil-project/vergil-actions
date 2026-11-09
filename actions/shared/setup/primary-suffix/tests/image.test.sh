@@ -94,9 +94,11 @@ case_structure() {
     fail_case "$name" "no workflow ${wf}"
     return 0
   fi
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "setup primary-container-tag output" \
     "$(q "$wf" '.jobs.setup.outputs."primary-container-tag"')" \
     '${{ steps.derive.outputs.primary-container-tag }}' || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "setup primary-container-suffix output" \
     "$(q "$wf" '.jobs.setup.outputs."primary-container-suffix"')" \
     '${{ steps.suffix.outputs.primary-container-suffix }}' || return 0
@@ -110,12 +112,15 @@ case_structure() {
   fi
   expect "$name" "suffix step uses" "$(printf '%s\n' "$step" | yq -r '.uses')" \
     "./actions/shared/setup/primary-suffix" || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "primary-version" \
     "$(printf '%s\n' "$step" | yq -r '.with."primary-version"')" \
     '${{ steps.derive.outputs.primary-version }}' || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "container-suffixes" \
     "$(printf '%s\n' "$step" | yq -r '.with."container-suffixes"')" \
     '${{ steps.derive.outputs.container-suffixes }}' || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "container-suffix cross-check" \
     "$(printf '%s\n' "$step" | yq -r '.with."container-suffix"')" \
     '${{ inputs.container-suffix }}' || return 0

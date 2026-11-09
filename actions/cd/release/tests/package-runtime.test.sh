@@ -84,6 +84,7 @@ build_case() {
   expect "$name" "matrix include" \
     "$(yq -r ".jobs.\"${job}\".strategy.matrix.include" "$wf")" \
     "\${{ fromJSON(needs.${mjob}.outputs.build) }}" || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "matrix job build output" \
     "$(yq -r ".jobs.\"${mjob}\".outputs.build" "$wf")" \
     '${{ steps.resolve.outputs.build }}' || return 0
@@ -101,9 +102,11 @@ build_case() {
   fi
   expect "$name" "RUNTIME env" "$(printf '%s\n' "$step" | yq -r '.env.RUNTIME')" \
     "$runtime_expr" || return 0
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "CELL env" "$(printf '%s\n' "$step" | yq -r '.env.CELL')" \
     '${{ matrix.id }}' || return 0
   run="$(printf '%s\n' "$step" | yq -r '.run' | tr -d '\\\n')"
+  # shellcheck disable=SC2016 # the pattern is literal shell text the run step must contain
   case "$run" in
     *'vrg-package build --cell "$CELL" --runtime "$RUNTIME"'*'--version "$(vrg-version show)" --out dist/packages'*) ;;
     *)
@@ -327,6 +330,7 @@ deb "${mixed}/fixture-tool_1.0.0-1_arm64.deb" arm64 'vergil-python3.14 (>= 3.14.
 build_case "cd-release-package-build-passes-runtime" "$cd_release_yml" \
   package-build package-matrix \
   "vrg-package matrix --github-output --manifest packages-manifest.json"
+# shellcheck disable=SC2016 # literal command text the step must contain
 build_case "ci-package-build-passes-runtime" "$ci_package_yml" \
   build matrix 'vrg-package matrix --github-output --tier "$TIER"'
 case_sign_checks_runtime

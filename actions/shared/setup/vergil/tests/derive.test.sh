@@ -58,9 +58,8 @@ toml() {
   printf '%s\n' "${4:-}"
 }
 
-# Result of the last run_derive: exit status, stdout, stderr, and GITHUB_OUTPUT.
+# Result of the last run_derive: exit status, stderr, and GITHUB_OUTPUT.
 rc=0
-stdout=""
 stderr=""
 output=""
 
@@ -74,11 +73,10 @@ output=""
 #   --uv-lock      — add an empty uv.lock next to vergil.toml (a packaged
 #                    Python repo must have one).
 run_derive() {
-  local dir out err so window_var="VRG_VERSION_WINDOW"
+  local dir out err window_var="VRG_VERSION_WINDOW"
   dir="$(mktemp -d)"
   out="$(mktemp)"
   err="$(mktemp)"
-  so="$(mktemp)"
   if [ "$1" != "__NO_FILE__" ]; then
     printf '%s\n' "$1" >"${dir}/vergil.toml"
   fi
@@ -95,11 +93,10 @@ run_derive() {
   env -u VRG_VERSION_WINDOW -u VERSION_WINDOW \
     GITHUB_OUTPUT="$out" VERGIL_CONFIG_DIR="$dir" \
     "${window_var}=${window}" "$@" \
-    bash "$derive_sh" >"$so" 2>"$err" || rc=$?
-  stdout="$(cat "$so")"
+    bash "$derive_sh" >/dev/null 2>"$err" || rc=$?
   stderr="$(cat "$err")"
   output="$(cat "$out")"
-  rm -rf "$dir" "$out" "$err" "$so"
+  rm -rf "$dir" "$out" "$err"
 }
 
 # out <key> — a value from the last run's GITHUB_OUTPUT.

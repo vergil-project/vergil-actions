@@ -1,7 +1,7 @@
 # CD workflow ordering
 
 Each consuming repository has a `cd.yml` workflow that runs on push to
-`main`. While the specific build, publish, and version-bump steps are
+`main`. While the specific build and publish steps are
 language-specific, the **ordering of phases** must be consistent across all
 repositories.
 
@@ -26,8 +26,10 @@ repositories.
 7. Generate SBOM
 8. Tag and release                      (GitHub tag + release with artifacts)
 9. Publish to public registry           (optional, gated on credentials)
-10. Version bump PR                     (bumps version on develop)
 ```
+
+The version bump on `develop` follows CD, driven by `vrg-release` rather
+than by `cd.yml` (see [Version bump PR](#version-bump-pr)).
 
 ## Why this order matters
 
@@ -35,12 +37,12 @@ Steps 1-8 use only GitHub-native capabilities (tags, releases, attestations)
 and shared actions. They must always succeed when a new version is merged to
 main.
 
-Step 9 (publishing to PyPI, Maven Central, RubyGems, etc.) depends on external
+Step 9 (publishing to PyPI, crates.io, etc.) depends on external
 credentials and services. If it runs before tagging:
 
 - A registry outage or credential issue blocks the entire release pipeline
 - No tag is created, so the docs site has no release content
-- No version bump PR is filed, so develop falls out of sync
+- `vrg-release` never reaches its version bump, so develop falls out of sync
 - The SBOM is never generated or attached to a release
 
 By placing the registry publish **after** the tag, the release is recorded in
@@ -69,7 +71,7 @@ jobs:
     steps:
       # ... build, attest, SBOM, tag steps ...
 
-      # Secret-based credentials (Ruby, Java)
+      # Secret-based credentials (Rust)
       - name: Publish to registry
         if: steps.registry_check.outputs.status == 'not_found' && env.HAS_REGISTRY_KEY == 'true'
         env:
@@ -97,45 +99,16 @@ publish mechanism.
 
 ## Version bump PR
 
-The `version-bump-pr` action computes the next patch version, creates a branch
-from develop that merges main, updates the version file, and opens a PR. The
-release workflow agent drives the merge via `st-merge-when-green`. Key
-configuration points:
-
-### Regex quoting
-
-The action interpolates `version-regex` into a Python raw string `r'...'`.
-Single quotes in the regex will break the Python string. Use `\x27` (regex hex
-escape) instead of literal `'`:
-
-```yaml
-# Wrong — single quotes conflict with Python r'...' wrapper
-version-regex: "(VERSION\\s*=\\s*').*(')"
-
-# Correct — \x27 is interpreted by the regex engine as '
-version-regex: '(VERSION\s*=\s*\x27).*(\x27)'
-```
-
-Double quotes work naturally since Go and Python use them:
-
-```yaml
-version-regex: '(Version\s*=\s*\").*(\"\s*)'
-```
-
-### Lock file updates
-
-Languages with lock files (Ruby's `Gemfile.lock`, Python's `uv.lock`) must
-include `post-bump-command` and `extra-files` so the lock file stays in sync:
-
-```yaml
-# Ruby
-post-bump-command: bundle lock --update mq-rest-admin
-extra-files: Gemfile.lock
-
-# Python
-post-bump-command: uv lock --upgrade && uv export --no-hashes -o requirements.txt
-extra-files: uv.lock requirements.txt requirements-dev.txt
-```
+The version bump on `develop` is not a step in `cd.yml`. It is the
+`back-merge-bump` stage of `vrg-release`, the vergil-tooling release
+orchestrator, which runs once CD on `main` has confirmed the release. The
+stage creates a `release/post-<version>` branch from `main`, bumps the
+version there with `vrg-version bump` (which also refreshes the lock file
+for languages that have one), and opens a PR to `develop`. `vrg-release`
+then waits for that PR's checks and merges it with a merge commit, so `main`
+stays contained in `develop`. The
+[releasing guide](https://github.com/vergil-project/vergil-tooling/blob/develop/docs/site/docs/guides/releasing.md#the-vrg-release-pipeline)
+in vergil-tooling lists every stage.
 
 ## Idempotency gates
 

@@ -113,16 +113,6 @@ expect_refused "rust-token-unset-fails" \
   CREDENTIAL_SECRET=CARGO_REGISTRY_TOKEN
 
 # ---------------------------------------------------------------------------
-# Java: maven-gpg-plugin reads MAVEN_GPG_PASSPHRASE, fed by GPG_PASSPHRASE.
-# ---------------------------------------------------------------------------
-expect_published "java-passphrase-set-publishes" \
-  CREDENTIAL_SECRET=MAVEN_GPG_PASSPHRASE MAVEN_GPG_PASSPHRASE=pass
-
-expect_refused "java-passphrase-missing-fails" \
-  "MAVEN_GPG_PASSPHRASE.*GPG_PASSPHRASE secret" \
-  CREDENTIAL_SECRET=MAVEN_GPG_PASSPHRASE MAVEN_GPG_PASSPHRASE=
-
-# ---------------------------------------------------------------------------
 # No credential named (e.g. Python via PyPI trusted publishing, or a
 # publish-command override for a language with no credential): publish runs and
 # the tool itself authenticates or fails.
@@ -187,7 +177,6 @@ case_wiring() {
   pass_case "${name}"
 }
 case_wiring CARGO_REGISTRY_TOKEN cargo-registry-token CARGO_REGISTRY_TOKEN
-case_wiring MAVEN_GPG_PASSPHRASE gpg-passphrase GPG_PASSPHRASE
 
 # Ruby support was removed (vergil-tooling#3388): no RubyGems wiring remains.
 case_no_ruby() {

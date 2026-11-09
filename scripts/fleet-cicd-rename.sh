@@ -19,7 +19,6 @@ REPOS=(
   mq-rest-admin-python
   mq-rest-admin-go
   mq-rest-admin-ruby
-  mq-rest-admin-java
   mq-rest-admin-rust
   mq-rest-admin-common
   mq-rest-admin-dev-environment
@@ -81,7 +80,6 @@ rename_repo() {
     sed -i.bak \
       -e 's/go-versions:/versions:/' \
       -e 's/ruby-versions:/versions:/' \
-      -e 's/java-versions:/versions:/' \
       -e 's/rust-versions:/versions:/' \
       -e 's/python-versions:/versions:/' \
       "$wf/ci.yml"
