@@ -40,14 +40,27 @@ trap 'rm -rf "$work"' EXIT
 # ---------------------------------------------------------------------------
 # The fake uv tarball, holding both architectures' directories.
 # ---------------------------------------------------------------------------
+# write_stub <path>: an executable bash script whose body is stdin.
+write_stub() {
+  {
+    echo '#!/usr/bin/env bash'
+    cat
+  } >"$1"
+  chmod +x "$1"
+}
+
 build_uv_tarball() {
   local d="${work}/uvsrc" t
   for t in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
     mkdir -p "${d}/uv-${t}"
-    printf '#!/usr/bin/env bash\necho "uv $*" >>"$CALLS"\n[ "${1:-}" = --version ] && echo "uv 0.0.0-fake"\nexit 0\n' \
-      >"${d}/uv-${t}/uv"
-    printf '#!/usr/bin/env bash\nexit 0\n' >"${d}/uv-${t}/uvx"
-    chmod +x "${d}/uv-${t}/uv" "${d}/uv-${t}/uvx"
+    write_stub "${d}/uv-${t}/uv" <<'STUB'
+echo "uv $*" >>"$CALLS"
+[ "${1:-}" = --version ] && echo "uv 0.0.0-fake"
+exit 0
+STUB
+    write_stub "${d}/uv-${t}/uvx" <<'STUB'
+exit 0
+STUB
   done
   tar -czf "${work}/uv.tar.gz" -C "$d" uv-x86_64-unknown-linux-gnu uv-aarch64-unknown-linux-gnu
 }
@@ -73,24 +86,29 @@ bad_script="$(make_script "$(printf 'f%.0s' $(seq 64))")"
 stubs="${work}/stubs"
 mkdir -p "$stubs"
 
-write_stub() {
-  printf '#!/usr/bin/env bash\n%s\n' "$2" >"${stubs}/$1"
-  chmod +x "${stubs}/$1"
-}
-
 # sudo runs the command, logging it.
-write_stub sudo 'echo "sudo $*" >>"$CALLS"; exec "$@"'
+write_stub "${stubs}/sudo" <<'STUB'
+echo "sudo $*" >>"$CALLS"
+exec "$@"
+STUB
 
 # dpkg-query -W -f=<fmt> <pkg>: installed when $STATE/dpkg/<pkg> exists.
-write_stub dpkg-query 'pkg="${!#}"
+write_stub "${stubs}/dpkg-query" <<'STUB'
+pkg="${!#}"
 if [ -e "$STATE/dpkg/$pkg" ]; then printf "install ok installed"; exit 0; fi
-exit 1'
+exit 1
+STUB
 
 # gpg --show-keys --with-colons <file>: the colons in $FAKE_GPG_OUT.
-write_stub gpg 'echo "gpg $*" >>"$CALLS"; cat "$FAKE_GPG_OUT"'
+write_stub "${stubs}/gpg" <<'STUB'
+echo "gpg $*" >>"$CALLS"
+cat "$FAKE_GPG_OUT"
+STUB
 
 # curl ... -o <file> <url>: the key or the fake uv tarball.
-write_stub curl 'out=""; url=""
+write_stub "${stubs}/curl" <<'STUB'
+out=""
+url=""
 while [ $# -gt 0 ]; do
   case "$1" in -o) out="$2"; shift 2 ;; -*) shift ;; *) url="$1"; shift ;; esac
 done
@@ -99,15 +117,19 @@ case "$url" in
   *.asc) echo "FAKE KEY" >"$out" ;;
   *uv-*.tar.gz) cp "$FAKE_UV_TARBALL" "$out" ;;
   *) exit 22 ;;
-esac'
+esac
+STUB
 
 # apt-cache policy vergil-tooling: the candidate in $FAKE_CANDIDATE.
-write_stub apt-cache 'echo "apt-cache $*" >>"$CALLS"
-printf "vergil-tooling:\n  Installed: (none)\n  Candidate: %s\n" "${FAKE_CANDIDATE:-(none)}"'
+write_stub "${stubs}/apt-cache" <<'STUB'
+echo "apt-cache $*" >>"$CALLS"
+printf "vergil-tooling:\n  Installed: (none)\n  Candidate: %s\n" "${FAKE_CANDIDATE:-(none)}"
+STUB
 
 # apt-get: logs whether a bootstrap source exists at the call, fails an update
 # on request, and simulates the keyring and vergil-tooling installs.
-write_stub apt-get 'boot=no
+write_stub "${stubs}/apt-get" <<'STUB'
+boot=no
 [ -e "$VRG_ROOT/etc/apt/sources.list.d/vergil-bootstrap.sources" ] && boot=yes
 echo "apt-get $* [boot=$boot]" >>"$CALLS"
 case " $* " in
@@ -115,6 +137,8 @@ case " $* " in
 esac
 case " $* " in
   *" install "*vergil-archive-keyring*)
+    # Keep the bootstrap source this install read, for the content check.
+    cp "$VRG_ROOT/etc/apt/sources.list.d/vergil-bootstrap.sources" "$STATE/boot-copy" 2>/dev/null || true
     mkdir -p "$STATE/dpkg" "$VRG_ROOT/etc/apt/sources.list.d" "$VRG_ROOT/usr/share/keyrings"
     touch "$STATE/dpkg/vergil-archive-keyring"
     echo "Types: deb" >"$VRG_ROOT/etc/apt/sources.list.d/vergil.sources"
@@ -127,13 +151,16 @@ case " $* " in
     chmod +x "$venv/bin/vrg-whoami"
     ln -sf "$venv/bin/vrg-whoami" "$VRG_ROOT/usr/bin/vrg-whoami" ;;
 esac
-exit 0'
+exit 0
+STUB
 
 # uv on PATH (only when a case asks for it).
 uvstubs="${work}/uvstubs"
 mkdir -p "$uvstubs"
-printf '#!/usr/bin/env bash\necho "uv $*" >>"$CALLS"\nexit 0\n' >"${uvstubs}/uv"
-chmod +x "${uvstubs}/uv"
+write_stub "${uvstubs}/uv" <<'STUB'
+echo "uv $*" >>"$CALLS"
+exit 0
+STUB
 
 # ---------------------------------------------------------------------------
 # Fixtures and the runner
@@ -427,14 +454,9 @@ case_host_bootstrap_source_content() {
   local name="host_bootstrap_source_content"
   new_case
   FAKE_CANDIDATE="2.1.7-1"
-  # Capture the bootstrap source when the keyring install runs.
-  local copy="${case_dir}/boot-copy"
-  write_stub apt-get-capture "cp \"\$VRG_ROOT/etc/apt/sources.list.d/vergil-bootstrap.sources\" \"$copy\" 2>/dev/null || true"
-  mv "${stubs}/apt-get" "${stubs}/apt-get.real"
-  write_stub apt-get "case \" \$* \" in *vergil-archive-keyring*) \"${stubs}/apt-get-capture\" ;; esac; exec \"${stubs}/apt-get.real\" \"\$@\""
+  # The apt-get stub copies the bootstrap source when the keyring install runs.
+  local copy="${case_dir}/state/boot-copy"
   run_script -- v2.1
-  mv "${stubs}/apt-get.real" "${stubs}/apt-get"
-  rm -f "${stubs}/apt-get-capture"
   expect_status "$name" 0 || return
   local want
   want="$(printf 'Types: deb\nURIs: https://vergil-project.github.io/packages/deb\nSuites: noble\nComponents: main\nSigned-By: %s/etc/apt/keyrings/vergil-bootstrap.asc' "$root")"
