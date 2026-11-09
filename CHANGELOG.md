@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.61] - 2026-11-09
+
+### Chores
+
+- bump image tags
+
+### Features
+
+- skip the toolchain install in a managed package toolchain image (#1115)
+- install vergil-tooling from its package, and never install uv with pip (#1117)
+
+### Refactoring
+
+- take the driver Python from one action input (#1116)
+
 ## [2.1.60] - 2026-11-09
 
 ### Bug fixes

@@ -16,6 +16,13 @@ name: Smoke - setup/vergil outputs
 #       - read-pin.sh: the pinned [dependencies].vergil tag, and a clean
 #         ::error:: for a missing file, missing key, or empty/invalid value
 #         (issue #977);
+#       - install-tooling.sh: the install path chosen from the tag and the
+#         environment (packaged in a container with the vergil apt source and
+#         a core Python, uv from git with neither, a refusal with one; on a
+#         host runner the vergil apt repository bootstrapped with the pinned
+#         key fingerprint and the bootstrap source removed; the dev-tag,
+#         self-repo and install-source: git paths), the apt candidate check,
+#         and the pinned, hash-checked uv (epic vergil-project/.github#649);
 #       - ci/matrix resolve.sh: images from the resolver's tags and suffixes,
 #         the run-once collapse to the primary, and loud failure on a missing
 #         tag/suffix or a container-suffix the resolver did not choose;
@@ -40,7 +47,12 @@ name: Smoke - setup/vergil outputs
 #       - the package setup action's detect.sh (self-repo vs.
 #         [dependencies].vergil install spec; epic vergil-project/.github#356)
 #         and os-prereqs.sh (apt mirror list on x86_64, fail-fast apt, one
-#         apt-get update, bounded dnf; issue #931).
+#         apt-get update, bounded dnf; issue #931);
+#       - the package setup action's check-toolchain.sh: a managed toolchain
+#         image's /etc/vergil/package-toolchain marker against the tools on
+#         PATH, failing on a missing or mismatched tool, a missing nfpm when
+#         nFPM is needed, and an empty or malformed marker (epic
+#         vergil-project/.github#607).
 #   * action-e2e — calls the setup action against a Python library fixture and
 #     a fixture window (the `version-window` input), asserts all five outputs
 #     are wired through action.yml, and feeds them to ci/matrix.
@@ -76,6 +88,9 @@ jobs:
       - name: Run read-pin.sh harness
         shell: bash
         run: bash actions/shared/setup/vergil/tests/read-pin.test.sh
+      - name: Run install-tooling.sh harness
+        shell: bash
+        run: bash actions/shared/setup/vergil/tests/install-tooling.test.sh
       - name: Run ci/matrix resolve.sh harness
         shell: bash
         run: bash actions/ci/matrix/tests/resolve.test.sh
@@ -97,6 +112,9 @@ jobs:
       - name: Run package setup os-prereqs.sh harness
         shell: bash
         run: bash actions/package/setup/tests/os-prereqs.test.sh
+      - name: Run package setup check-toolchain.sh harness
+        shell: bash
+        run: bash actions/package/setup/tests/check-toolchain.test.sh
 
   action-e2e:
     name: action outputs (Python library fixture)

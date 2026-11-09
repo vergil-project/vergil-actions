@@ -69,7 +69,7 @@ jobs:
     # language images (prod-go, prod-rust, …) are published per-version only —
     # there is no prod-<lang>:latest tag to default to. The bare ubuntu-latest
     # runner ships all the toolchains autobuild needs, and ./actions/shared/setup/vergil
-    # installs uv there for the SARIF-evaluation step. See issue #658.
+    # installs vergil-tooling there for the SARIF-evaluation step. See issue #658.
     permissions:
       contents: read
       security-events: write

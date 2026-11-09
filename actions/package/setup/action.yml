@@ -14,16 +14,61 @@ inputs:
       Install nFPM ("true" in build cells; install-test cells leave it off).
     required: false
     default: "false"
+  python:
+    description: >-
+      Python version for the driver vergil-tooling: the interpreter
+      `uv tool install` runs it under, and the one detect.sh reads
+      vergil.toml with. This is the only place the version is written.
+    required: false
+    default: "3.15"
 
 runs:
   using: composite
   steps:
+    # A managed package toolchain image (vergil-containers' prod-pkg-ubuntu
+    # and prod-pkg-rhel; epic vergil-project/.github#607) ships the OS
+    # prerequisites, uv and nFPM preinstalled and says so in
+    # /etc/vergil/package-toolchain. With the marker, the OS prerequisites, uv
+    # and nFPM steps are skipped and check-toolchain.sh verifies the image
+    # instead. Without it (a raw ubuntu or UBI image), they run as before.
+    - name: Detect a managed toolchain image
+      id: toolchain
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -f /etc/vergil/package-toolchain ]; then
+          echo "managed=true" >> "$GITHUB_OUTPUT"
+          echo "Managed toolchain image; /etc/vergil/package-toolchain lists:"
+          cat /etc/vergil/package-toolchain
+        else
+          echo "managed=false" >> "$GITHUB_OUTPUT"
+          echo "Raw image: no /etc/vergil/package-toolchain"
+        fi
+
+    # A marker that lies (a listed tool missing or at another version, or no
+    # nfpm when this cell needs it) fails the job here; it never falls through
+    # to the raw-image installs. tests/check-toolchain.test.sh exercises it.
+    - name: Check the toolchain image
+      if: steps.toolchain.outputs.managed == 'true'
+      shell: bash
+      env:
+        NEED_NFPM: ${{ inputs.nfpm }}
+      run: |
+        set -euo pipefail
+        args=()
+        if [ "$NEED_NFPM" = "true" ]; then
+          args+=(--nfpm)
+        fi
+        bash "${GITHUB_ACTION_PATH}/check-toolchain.sh" "${args[@]}"
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
     # os-prereqs.sh points x86_64 Ubuntu containers at an apt mirror list
     # (Azure first, then archive.ubuntu.com), writes a fail-fast apt config
     # every later apt call in the job inherits, and runs one apt-get update /
     # one install (bounded dnf on UBI). Logic lives in the script so
     # tests/os-prereqs.test.sh can exercise it.
     - name: Install OS prerequisites
+      if: steps.toolchain.outputs.managed != 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -34,6 +79,7 @@ runs:
     # archive it downloads, so the uv binary is pinned transitively. Bump both
     # values together from the release's uv-installer.sh.
     - name: Install uv
+      if: steps.toolchain.outputs.managed != 'true'
       shell: bash
       env:
         UV_VERSION: "0.12.23"
@@ -52,11 +98,13 @@ runs:
     # that must not resolve this copy of vergil-tooling (spec §8.1).
     - name: Install vergil-tooling
       shell: bash
+      env:
+        VRG_DRIVER_PYTHON: ${{ inputs.python }}
       run: |
         set -euo pipefail
         spec="$(bash "${GITHUB_ACTION_PATH}/detect.sh" .)"
         echo "Installing vergil-tooling: ${spec}"
-        uv tool install --python 3.15 "$spec"
+        uv tool install --python "$VRG_DRIVER_PYTHON" "$spec"
         bin_dir="$(uv tool dir --bin)"
         echo "$bin_dir" >> "$GITHUB_PATH"
         "${bin_dir}/vrg-package" --help >/dev/null
@@ -64,7 +112,7 @@ runs:
     # Bump NFPM_VERSION and both sums together, from the release's
     # checksums.txt (https://github.com/goreleaser/nfpm/releases).
     - name: Install nFPM
-      if: inputs.nfpm == 'true'
+      if: inputs.nfpm == 'true' && steps.toolchain.outputs.managed != 'true'
       shell: bash
       env:
         NFPM_VERSION: "2.47.0"
