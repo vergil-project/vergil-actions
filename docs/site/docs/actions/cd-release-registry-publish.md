@@ -72,11 +72,11 @@ The derived commands come from vergil-tooling's language registry:
    with `scan-type: sbom`. Skipped when `sbom-output-file` is empty.
 6. **Publish.** Runs only when `registry-publish` is `"true"` and there is a
    publish command. The step sets `CARGO_REGISTRY_TOKEN` from the
-   `cargo-registry-token` input, then runs `publish.sh`. When the ecosystem names a credential variable and that
-   variable is empty, the step fails with an `::error::` naming the
-   `cd-release` secret to set (or telling you to turn `registry-publish`
-   off): `CARGO_REGISTRY_TOKEN` comes from the `CARGO_REGISTRY_TOKEN` secret.
-   A requested
+   `cargo-registry-token` input, then runs `publish.sh`. When the ecosystem
+   names a credential variable and that variable is empty, the step fails
+   with an `::error::` naming the `cd-release` secret to set (or telling you
+   to turn `registry-publish` off): `CARGO_REGISTRY_TOKEN` comes from the
+   `CARGO_REGISTRY_TOKEN` secret. A requested
    publish that cannot happen never lets the release report success. A
    credential variable this action does not set also fails the step, since
    it means vergil-tooling and vergil-actions disagree on the name. Python
