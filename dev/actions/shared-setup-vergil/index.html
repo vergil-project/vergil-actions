@@ -7213,8 +7213,9 @@ resolved version.</p>
 <li><a href="../shared-setup-system-packages/"><code>shared/setup/system-packages</code></a> and
   <a href="../shared-setup-build-command/"><code>shared/setup/build-command</code></a> — test-job
   steps that run after this one and need <code>vergil-tooling</code> on <code>PATH</code>.</li>
-<li><a href="../package-setup/"><code>package/setup</code></a> — installs <code>vergil-tooling</code> and the
-  package toolchain in package build and install-test containers instead.</li>
+<li><a href="../package-setup/"><code>package/setup</code></a> — checks the package toolchain image
+  and installs only <code>vergil-tooling</code> in package build and install-test
+  containers instead.</li>
 </ul>
 
 
