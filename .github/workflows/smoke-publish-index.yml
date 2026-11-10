@@ -1,0 +1,30 @@
+name: Smoke - publish/index/live-check
+
+# Runs the framework-free live-check.test.sh harness for the publish-index
+# post-deploy live check (issue #1123): the manifest of signed InRelease and
+# repomd.xml digests the build records, and the verify loop the deploy job
+# runs against a fake Pages origin (live at once, live after retries, a stale
+# deployment, 404s, fetch errors, cache busting, and refusal of a bad
+# manifest or an empty page_url), plus the wiring in publish-index.yml.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - actions/publish/index/**
+      - .github/workflows/publish-index.yml
+      - .github/workflows/smoke-publish-index.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: live-check.sh fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run live-check.sh harness
+        shell: bash
+        run: bash actions/publish/index/live-check/tests/live-check.test.sh

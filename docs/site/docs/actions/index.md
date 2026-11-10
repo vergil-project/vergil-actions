@@ -84,6 +84,14 @@ definition and optional supporting scripts.
   on x86_64 Ubuntu, fail-fast apt, a single `apt-get update`), a pinned `uv`,
   `vergil-tooling`, and nFPM.
 
+### Publish
+
+- **[publish/index/live-check](publish-index-live-check.md)** — Records the
+  digests of the signed package index a `publish-index` run built, then checks
+  that GitHub Pages serves exactly those files after the deploy. It fails
+  within minutes if Pages is still serving an older deployment (auto-wired
+  into `publish-index`).
+
 ### Local
 
 Actions used only by this repository's own workflows, not by consumers.
