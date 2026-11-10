@@ -827,6 +827,8 @@
       
         
       
+        
+      
     
     
     
@@ -879,6 +881,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.62/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.62
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4643,6 +4673,8 @@
       
         
       
+        
+      
     
     
     
@@ -5671,7 +5703,7 @@
   <span class="md-ellipsis">
     
   
-    Local
+    Publish
   
 
     
@@ -5684,6 +5716,98 @@
         
         <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Publish
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/publish-index-live-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    publish/index/live-check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -6161,6 +6285,17 @@
     <span class="md-ellipsis">
       
         Attestation verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-deploy-live-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-deploy live check
       
     </span>
   </a>
@@ -6741,6 +6876,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#post-deploy-live-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-deploy live check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#caller-requirements" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6784,6 +6930,7 @@
 <code>build-index</code> job runs <code>vrg-package index --config packages.toml --keys keys
 --out _site</code>, which verifies, retains, indexes and signs the product releases.
 Its <code>deploy</code> job then publishes the site with the Actions-based Pages deploy.
+Last, it checks that Pages serves the index this run built (below).
 The workflow takes no inputs. Runs are serialized by the <code>publish-index</code>
 concurrency group. Unlike the other reusable workflows, it runs directly on
 <code>ubuntu-latest</code> rather than in a vergil container image.</p>
@@ -6794,6 +6941,17 @@ concurrency group. Unlike the other reusable workflows, it runs directly on
 source ref <code>refs/heads/main</code>. An asset whose build provenance was not attested
 by <code>cd-release.yml</code> running on a product's <code>main</code> branch fails the index
 build. Each <code>.rpm</code>'s org signature is checked as well.</p>
+<h2 id="post-deploy-live-check">Post-deploy live check<a class="headerlink" href="#post-deploy-live-check" title="Permanent link">&para;</a></h2>
+<p>GitHub Pages can report a deployment <code>success</code> while it goes on serving the
+previous deployment
+(<a href="https://github.com/vergil-project/packages/issues/46">vergil-project/packages#46</a>).
+So <code>build-index</code> records the sha256 of every signed <code>InRelease</code> and
+<code>repomd.xml</code> it built. After the deploy, <code>deploy</code> fetches each of those files
+from the deployment's <code>page_url</code>, with a cache-busting query string, until all
+of them match. If they still do not match after about five minutes, the job
+fails with an <code>::error::</code> that names the run and shows what was served. Re-run
+the workflow; if the fault repeats, raise it with GitHub Support. See
+<a href="../../actions/publish-index-live-check/">publish/index/live-check</a>.</p>
 <h2 id="caller-requirements">Caller requirements<a class="headerlink" href="#caller-requirements" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Pages source set to "GitHub Actions".</strong> The <code>deploy</code> job publishes with
