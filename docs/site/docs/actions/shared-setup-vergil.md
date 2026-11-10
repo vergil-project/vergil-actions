@@ -192,5 +192,6 @@ resolved version.
 - [`shared/setup/system-packages`](shared-setup-system-packages.md) and
   [`shared/setup/build-command`](shared-setup-build-command.md) — test-job
   steps that run after this one and need `vergil-tooling` on `PATH`.
-- [`package/setup`](package-setup.md) — installs `vergil-tooling` and the
-  package toolchain in package build and install-test containers instead.
+- [`package/setup`](package-setup.md) — checks the package toolchain image
+  and installs only `vergil-tooling` in package build and install-test
+  containers instead.
