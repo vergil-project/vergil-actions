@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.62] - 2026-11-10
+
+### Chores
+
+- sync the managed .claude/settings.json (#1122)
+
+### Features
+
+- fail fast when the deployed package index is not the one just built (#1125)
+
+### Refactoring
+
+- require a package toolchain image (#1124)
+
 ## [2.1.61] - 2026-11-09
 
 ### Chores
