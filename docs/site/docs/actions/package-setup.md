@@ -1,10 +1,13 @@
 # package/setup
 
-Installs the package toolchain inside an arbitrary package build or
-install-test container: the OS prerequisites, a pinned `uv`, `vergil-tooling`,
-and (for build cells) a checksum-pinned nFPM. The containers are raw `ubuntu`
-or UBI images that ship neither Python nor `vergil-tooling`, and must run as
-root (the GitHub Actions container default).
+Checks a package toolchain image and installs `vergil-tooling` in it, inside a
+package build or install-test container. Package jobs run only in a vergil
+package toolchain image, `prod-pkg-ubuntu` or `prod-pkg-rhel`, built by
+vergil-containers (epic
+[vergil-project/.github#607](https://github.com/vergil-project/.github/issues/607)).
+The image ships the OS prerequisites, `uv` and nFPM preinstalled, but no
+Python and no `vergil-tooling`. The container must run as root (the GitHub
+Actions container default).
 
 This action is **wired automatically** into the `build` and `install-test`
 jobs of `ci-package.yml` and the `package-build` jobs of `cd-release.yml`.
@@ -23,26 +26,34 @@ Consuming repositories do not add it themselves.
 
 | Input | Default | Description |
 | ----- | ------- | ----------- |
-| `nfpm` | `"false"` | Install nFPM. Build cells pass `"true"`; install-test cells leave it off. |
+| `nfpm` | `"false"` | Require nFPM in the toolchain image. Build cells pass `"true"`; install-test cells leave it off. |
 | `python` | `"3.15"` | Python version for the driver `vergil-tooling`. It is the only place the version is written: the install step passes it to `uv tool install --python` and to `detect.sh` as `VRG_DRIVER_PYTHON`. |
 
-## Managed toolchain images
+## Steps
 
-A managed package toolchain image (`prod-pkg-ubuntu` or `prod-pkg-rhel`,
-built by vergil-containers; epic
-[vergil-project/.github#607](https://github.com/vergil-project/.github/issues/607))
-ships the OS prerequisites, `uv` and nFPM preinstalled. It says so in a
-marker file, `/etc/vergil/package-toolchain`. The action's first step looks
-for that file:
+1. **Check the toolchain image.** `check-toolchain.sh` checks the image
+   against its marker file, `/etc/vergil/package-toolchain` (with `--nfpm`
+   when `nfpm: "true"`). The step then adds the workspace to git's
+   `safe.directory`.
+2. **Install vergil-tooling.** `detect.sh` resolves the install spec. In
+   `vergil-tooling` itself it is the checkout, so CI exercises the PR's own
+   `vrg-package`. Elsewhere it is `[dependencies].vergil` from `vergil.toml`,
+   read with `uv run --no-config` under a uv-managed Python of the `python`
+   input's version. `detect.sh` fails if `VRG_DRIVER_PYTHON` is unset or empty;
+   there is no default. `--no-config` ignores the repository's uv settings
+   (`[tool.uv]`, `uv.toml`), so settings such as `python-downloads = "manual"`
+   cannot stop the download. The tools land in uv's tool bin directory under
+   `$HOME`, never in `/usr/local/bin`. That way install-test smoke checks,
+   which run with a system-only `PATH`, cannot resolve this copy.
 
-- **Marker present.** The OS prerequisites, `uv` and nFPM install steps are
-  skipped. `check-toolchain.sh` checks the image against the marker instead
-  (with `--nfpm` when `nfpm: "true"`), then the action adds the workspace to
-  git's `safe.directory` and installs `vergil-tooling` as usual.
-- **Marker absent.** A raw `ubuntu` or UBI image. Every step runs as
-  described below, unchanged.
+The action installs no OS packages, `uv` or nFPM itself. A job in a raw
+`ubuntu` or UBI image fails at the first step:
 
-### The marker contract
+```text
+::error::package jobs require a vergil package toolchain image; /etc/vergil/package-toolchain not found
+```
+
+## The marker contract
 
 The image writes one `<tool> <version>` line per tool, separated by a single
 space. `<tool>` is a command name. `<version>` is the first
@@ -59,137 +70,39 @@ tar 1.35
 gzip 1.12
 ```
 
-`check-toolchain.sh` passes only when every listed tool is on `PATH` at its
-listed version and, with `--nfpm`, the marker lists `nfpm`. A marker that
-lies never falls back to installing. The script fails the job with one
-`::error::` line per problem, after checking every line, if a tool is
-missing, at another version, or prints no version. It also fails if `nfpm`
-is needed but not listed, or if the marker is empty, malformed or lists a
-tool twice.
+`check-toolchain.sh` passes only when the marker lists `uv`, `curl`, `git`,
+`gpg`, `tar` and `gzip`, every listed tool is on `PATH` at its listed version
+and, with `--nfpm`, the marker lists `nfpm`. `nfpm` is required only with
+`--nfpm`, since install-test cells need no nFPM. The script never falls back
+to installing anything. It fails the job with one `::error::` line per
+problem, after checking every line, if the marker is missing, leaves out a
+required tool, or lists a tool that is missing, at another version, or prints
+no version. It also fails if `nfpm` is needed but not listed, or if the marker
+is empty, malformed or lists a tool twice.
 
 `actions/package/setup/tests/check-toolchain.test.sh` exercises the script
 against fixture markers (`VRG_TOOLCHAIN_MARKER`) and stub tools, with no root
 and no container. The `Smoke - setup/vergil outputs` workflow runs it on
 every PR that touches this action.
 
-## OS prerequisites
+## apt behaviour
 
-On a raw image, the first install step runs `os-prereqs.sh`, which keeps package jobs off slow apt
-mirrors and makes any apt stall fail fast instead of hanging the job.
+The apt mirror list (on amd64) and the fail-fast apt config
+(`/etc/apt/apt.conf.d/80-vergil-fast-fail`, on every architecture) are part of
+the `prod-pkg-ubuntu` image, so every apt call `vergil-tooling` makes during
+build and install-test inherits them. vergil-containers writes them, and
+checks them when it builds the image.
 
-### apt images (Ubuntu, Debian)
-
-1. **Mirror list on x86_64.** The script rewrites the Ubuntu archive and
-   security URIs, including any that already point at
-   `azure.archive.ubuntu.com`, to `mirror+file:/etc/apt/apt-mirrors.txt`. It
-   then writes that file in the format GitHub's hosted runner images use
-   ([`configure-apt-sources.sh`](https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/configure-apt-sources.sh)),
-   one tab-separated entry per line:
-
-    ```text
-    http://azure.archive.ubuntu.com/ubuntu/    priority:1
-    http://archive.ubuntu.com/ubuntu/          priority:2
-    http://security.ubuntu.com/ubuntu/         priority:3
-    ```
-
-    apt tries the in-region Azure mirror first and moves down the list when
-    a mirror fails. A failing Azure mirror therefore falls back instead of
-    failing the job. On its own, a container image's default,
-    `archive.ubuntu.com`, has stalled amd64 package builds for more than ten
-    minutes.
-
-    The hosts and priorities match runner-images, with one deliberate
-    difference: the fallbacks use `http://`, not `https://`. A fresh
-    container has no CA certificates until this script installs
-    `ca-certificates`, so an `https://` fallback fails with "No system
-    certificates available". `http://` is the image's own default, and apt
-    still verifies every index against the archive's signed `InRelease`.
-
-    The script rewrites both the deb822
-    `/etc/apt/sources.list.d/ubuntu.sources` (24.04 and later) and the legacy
-    `/etc/apt/sources.list`, before the first `apt-get update`. It writes the
-    mirror list only when it rewrites a sources file, and overwrites the list
-    rather than appending to it, so a re-run is a no-op.
-2. **arm64 is left alone.** arm64 images use `ports.ubuntu.com`, which none
-   of the listed mirrors serve, and which is already fast. Sources on any
-   architecture other than `x86_64` are not touched.
-3. **Fail-fast apt.** The script writes
-   `/etc/apt/apt.conf.d/80-vergil-fast-fail`:
-
-    ```text
-    Acquire::Retries "3";
-    Acquire::Retries::Delay "false";
-    Acquire::http::Timeout "20";
-    Acquire::https::Timeout "20";
-    DPkg::Lock::Timeout "60";
-    ```
-
-    Every later apt call in the job inherits it, including the ones
-    `vergil-tooling` makes during build and install-test.
-
-    `Acquire::Retries::Delay "false"` is required for the mirror list to
-    work. With apt's default delayed retries, apt 2.4 to 2.8 (Ubuntu 22.04
-    and 24.04) deadlocks after a mirror-list failover: it fetches the
-    fallback's `InRelease` files and then waits forever, and the timeouts
-    never fire ([LP #2003851](https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2003851)).
-    This is what hung `vergil-tooling` CD run 37678748594 for 21,578 seconds
-    in `package-sign`, on a runner whose own sources are this mirror list.
-    The same hang reproduces in an `ubuntu:24.04` container with the Azure
-    mirror unreachable. With undelayed retries, the same failover completes
-    in seconds.
-4. **One update, one install.** The script runs exactly one `apt-get update`.
-   It then installs every prerequisite the package tooling needs in a single
-   call: `ca-certificates curl git tar gzip gnupg`. Because they are all
-   present, `vergil-tooling`'s own bootstrap does not need to install them
-   again.
-
-### dnf images (UBI)
-
-One `dnf install` with `--setopt=retries=3 --setopt=timeout=20` installs
-`ca-certificates /usr/bin/curl /usr/bin/gpg git tar gzip`. curl and gpg are
-named by path, as `vergil-tooling` names them. UBI ships `curl-minimal`, which
-conflicts with the full `curl` package, and a path resolves to whichever
-package provides the file.
-
-An image with neither `apt-get` nor `dnf` fails the step.
-
-### Tests
-
-The logic lives in `os-prereqs.sh` rather than inline YAML so that it can be
-tested. `actions/package/setup/tests/os-prereqs.test.sh` runs it against
-fixture `/etc` trees with recording `apt-get`/`dnf` stubs, so it needs neither
-root nor a container. It covers the deb822 x86_64 rewrite and the exact
-mirror-list contents, migrating Azure-pinned sources to the list, arm64 left
-untouched, the legacy `sources.list`, idempotence across two runs, an x86_64
-image with no Ubuntu sources, the dnf path, and package-manager detection.
-The `Smoke - setup/vergil outputs` workflow runs it on every PR that touches
-this action.
-
-### Job timeouts and the runner host
+## Job timeouts and the runner host
 
 `package-sign` in `cd-release.yml` installs `rpm` and `gnupg` on the runner
-host itself, not in a container. It passes the same fail-fast options on the
+host itself, not in a container. It passes fail-fast options on the
 command line (`-o Acquire::Retries=3 -o Acquire::Retries::Delay=false
 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20
--o DPkg::Lock::Timeout=60`). Every package job also sets `timeout-minutes`
-as a backstop: `matrix` 5, `build` 30, `install-test` 15 and `evidence` 5
-in `ci-package.yml`, and `package-matrix` 5, `package-build` 30 and
-`package-sign` 15 in `cd-release.yml`.
-
-## Other steps
-
-- **Install uv.** Downloads the release's `uv-installer.sh`, verifies it
-  against a pinned sha256, and installs `uv` into `/usr/local/bin`.
-- **Install vergil-tooling.** `detect.sh` resolves the install spec. In
-  `vergil-tooling` itself it is the checkout, so CI exercises the PR's own
-  `vrg-package`. Elsewhere it is `[dependencies].vergil` from `vergil.toml`,
-  read with `uv run --no-config` under a uv-managed Python of the `python`
-  input's version. `detect.sh` fails if `VRG_DRIVER_PYTHON` is unset or empty;
-  there is no default. `--no-config`
-  ignores the repository's uv settings (`[tool.uv]`, `uv.toml`), so settings
-  such as `python-downloads = "manual"` cannot stop the download.
-  The tools land in uv's tool bin directory under `$HOME`, never in
-  `/usr/local/bin`. That way install-test smoke checks, which run with a
-  system-only `PATH`, cannot resolve this copy.
-- **Install nFPM** (only when `nfpm: "true"`). Downloads the release tarball
-  for the runner's architecture and verifies it against a pinned sha256.
+-o DPkg::Lock::Timeout=60`). `Acquire::Retries::Delay "false"` avoids an apt
+2.4 to 2.8 deadlock after a mirror failover, in which the timeouts never fire
+([LP #2003851](https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2003851)).
+Every package job also sets `timeout-minutes` as a backstop: `matrix` 5,
+`build` 30, `install-test` 15 and `evidence` 5 in `ci-package.yml`, and
+`package-matrix` 5, `package-build` 30 and `package-sign` 15 in
+`cd-release.yml`.

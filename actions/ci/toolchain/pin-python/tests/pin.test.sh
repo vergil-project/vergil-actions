@@ -168,7 +168,7 @@ caller_pinned_actions='ci/toolchain/assert/'
 # settings cannot reach it at all (issue #1003).
 #   package/setup/detect.sh — reads vergil.toml with `uv run --no-config
 #     --no-project --python "$VRG_DRIVER_PYTHON"` (the setup action's
-#     `python` input) in raw package-build images that ship no Python, so it
+#     `python` input) in package toolchain images that ship no Python, so it
 #     needs uv's managed interpreter; it never runs the repo's code. Without
 #     --no-config a repo's python-downloads = "manual" breaks it.
 config_free_files='package/setup/detect.sh'

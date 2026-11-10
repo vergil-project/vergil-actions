@@ -61,14 +61,14 @@ recorded. This needs vergil-tooling 2.1.262 or later at the caller's
 ## Toolchain setup
 
 Each `build / <cell>` and `install-test / <cell>` job runs inside the cell's
-OS image and sets it up with
-[`package/setup`](../actions/package-setup.md). On x86_64 Ubuntu images
-that action points apt at a mirror list, as GitHub's hosted runners do: the
-Azure mirror first, then `archive.ubuntu.com` and `security.ubuntu.com` as
-fallbacks. On every apt image it writes a fail-fast apt config (3 undelayed
-retries, 20-second timeouts, a 60-second dpkg lock wait) that all later apt
-calls in the job inherit, and it runs a single `apt-get update`. arm64 cells
-keep `ports.ubuntu.com`. UBI cells install through one bounded `dnf` call.
+package toolchain image (`prod-pkg-ubuntu` or `prod-pkg-rhel`, which the
+caller's vergil-tooling names) and sets it up with
+[`package/setup`](../actions/package-setup.md). That action checks the image
+against its `/etc/vergil/package-toolchain` marker and installs
+`vergil-tooling`; it installs no toolchain itself, so a cell in a raw image
+fails at once. The `prod-pkg-ubuntu` image carries the apt mirror list (on
+amd64) and a fail-fast apt config (3 undelayed retries, 20-second timeouts,
+a 60-second dpkg lock wait) that every apt call in the job inherits.
 
 Every package job sets `timeout-minutes`, in both `ci-package.yml` (`matrix`
 5, `build` 30, `install-test` 15, `evidence` 5) and `cd-release.yml`

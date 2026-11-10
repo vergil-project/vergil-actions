@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# Check a managed package toolchain image against its marker file (epic
-# vergil-project/.github#607, issue vergil-project/vergil-actions#1088).
+# Check a package toolchain image against its marker file (epic
+# vergil-project/.github#607, issues vergil-project/vergil-actions#1088 and
+# #1090).
 #
-# A toolchain image built by vergil-containers (prod-pkg-ubuntu, prod-pkg-rhel)
-# ships its toolchain preinstalled and writes /etc/vergil/package-toolchain.
-# The package setup action skips its own installs when that marker exists and
-# runs this script instead, so an image whose marker lies fails the job here
-# rather than falling through to a raw-image install.
+# Package jobs run only in a toolchain image built by vergil-containers
+# (prod-pkg-ubuntu, prod-pkg-rhel), which ships its toolchain preinstalled and
+# writes /etc/vergil/package-toolchain. The package setup action installs no
+# toolchain of its own; it runs this script first, so a raw image (no marker)
+# or an image whose marker lies or falls short fails the job here.
 #
 # The marker contract (the images write it; this script reads it):
 #   - one "<tool> <version>" line per tool, separated by a single space;
@@ -21,9 +22,11 @@
 # Usage: check-toolchain.sh [--nfpm]
 #   --nfpm  the job needs nFPM (build cells): fail unless the marker lists it.
 #
-# Exits 0 when every listed tool is on PATH at its listed version (and nfpm is
-# listed, with --nfpm). Otherwise prints one ::error:: line per problem, after
-# checking everything, and exits 1.
+# Exits 0 when the marker lists uv, curl, git, gpg, tar and gzip (and nfpm,
+# with --nfpm) and every listed tool is on PATH at its listed version.
+# Otherwise prints one ::error:: line per problem, after checking everything,
+# and exits 1. nfpm is required only with --nfpm: install-test cells need no
+# nFPM.
 #
 # The script uses only bash builtins, so it runs before any tool is trusted.
 # Test seam: VRG_TOOLCHAIN_MARKER (default /etc/vergil/package-toolchain).
@@ -44,7 +47,7 @@ for arg in "$@"; do
 done
 
 if [ ! -f "$marker" ]; then
-  echo "::error::toolchain marker ${marker} not found" >&2
+  echo "::error::package jobs require a vergil package toolchain image; ${marker} not found" >&2
   exit 1
 fi
 
@@ -98,6 +101,12 @@ done <"$marker"
 if [ "$entries" -eq 0 ] && [ "$errors" -eq 0 ]; then
   error "toolchain marker ${marker} is empty: a toolchain image must list its tools"
 fi
+
+for tool in uv curl git gpg tar gzip; do
+  if [ -z "${listed[$tool]+set}" ]; then
+    error "toolchain marker ${marker} does not list ${tool}, which every package toolchain image must provide"
+  fi
+done
 
 if [ "$need_nfpm" = true ] && [ -z "${listed[nfpm]+set}" ]; then
   error "nfpm is required (nfpm: \"true\"), but toolchain marker ${marker} does not list nfpm"
