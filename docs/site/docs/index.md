@@ -24,7 +24,7 @@ releases.
 | Shared / Security | [trivy](actions/shared-security-trivy.md) | Vulnerability scanning and SBOM generation |
 | Shared / Docs | [stage](actions/shared-docs-stage.md) | Stage changelog and release-notes pages for the docs build |
 | Shared / Setup | [vergil](actions/shared-setup-vergil.md), [system-packages](actions/shared-setup-system-packages.md), [build-command](actions/shared-setup-build-command.md) | vergil-tooling install and CI version set; test-job system packages and build command |
-| Package | [setup](actions/package-setup.md) | Package toolchain for package build and install-test containers |
+| Package | [setup](actions/package-setup.md) | Package toolchain image check and vergil-tooling install for package build and install-test containers |
 | Local | [freeze-internal-refs](actions/local-freeze-internal-refs.md) | Pin this repository's internal action refs to the release tag (used only by its own `cd.yml`) |
 
 ## Reusable workflows

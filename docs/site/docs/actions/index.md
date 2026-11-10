@@ -79,10 +79,11 @@ definition and optional supporting scripts.
 
 ### Package
 
-- **[package/setup](package-setup.md)** — Installs the package toolchain in a
-  package build or install-test container: OS prerequisites (apt mirror list
-  on x86_64 Ubuntu, fail-fast apt, a single `apt-get update`), a pinned `uv`,
-  `vergil-tooling`, and nFPM.
+- **[package/setup](package-setup.md)** — Checks a package toolchain image
+  (`prod-pkg-ubuntu` or `prod-pkg-rhel`) against its
+  `/etc/vergil/package-toolchain` marker and installs `vergil-tooling` in it,
+  inside a package build or install-test container. It installs no OS
+  packages, `uv` or nFPM (auto-wired into `ci-package` and `cd-release`).
 
 ### Publish
 
