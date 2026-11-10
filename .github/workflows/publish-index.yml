@@ -9,7 +9,12 @@ name: Publish package index
 #     verifies every asset's build attestation (and every .rpm's org
 #     signature), applies retention, writes the apt and dnf metadata, signs it,
 #     and enforces the size guard. All logic lives in vergil-tooling.
-#   * deploy — publishes the site through the Actions-based Pages deploy.
+#     It then records the sha256 of every signed InRelease and repomd.xml as
+#     the job's index-manifest output (actions/publish/index/live-check).
+#   * deploy — publishes the site through the Actions-based Pages deploy, then
+#     fetches those files from the deployed page_url with a cache-busting
+#     query until they match, failing within about five minutes if Pages is
+#     still serving an older deployment (issue #1123).
 #
 # The signing subkey lives in the caller's `index-signing` environment, which
 # admits only `develop`: `repository_dispatch` and `schedule` always run on the
@@ -38,6 +43,8 @@ jobs:
     permissions:
       contents: read
       attestations: read
+    outputs:
+      index-manifest: ${{ steps.manifest.outputs.manifest }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -66,6 +73,15 @@ jobs:
           PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
         run: vrg-package index --config packages.toml --keys keys --out _site
 
+      # The sha256 of every signed InRelease and repomd.xml just built: what
+      # the deploy job's live check expects Pages to serve.
+      - name: Record the index manifest
+        id: manifest
+        uses: ./actions/publish/index/live-check
+        with:
+          mode: manifest
+          site: _site
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
@@ -85,3 +101,13 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      # Pages can report a deployment success while its origin keeps serving
+      # the previous one (vergil-project/packages#46). Fail here, within
+      # minutes, unless the deployed site serves the files build-index built.
+      - name: Verify the deployed index is live
+        uses: ./actions/publish/index/live-check
+        with:
+          mode: verify
+          base-url: ${{ steps.deployment.outputs.page_url }}
+          manifest: ${{ needs.build-index.outputs.index-manifest }}

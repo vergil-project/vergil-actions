@@ -35,7 +35,7 @@ across all managed repositories.
 |---|---|
 | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump). Repos with `[package]` also build their `.deb`/`.rpm` packages, sign the `.rpm`s in the main-only `package-signing` environment, attest them, attach them (plus `packages-manifest.json`) to the Release, and dispatch `package-released` to `<owner>/packages`; such callers must pass `secrets: inherit` |
 | `cd-docs.yml` | MkDocs documentation deployment |
-| `publish-index.yml` | Rebuild, verify and sign the apt/dnf package-repository site from the releases in `packages.toml` and deploy it to GitHub Pages (called only from an `<org>/packages` repo; `index-signing` environment, develop only; caller passes `secrets: inherit`) |
+| `publish-index.yml` | Rebuild, verify and sign the apt/dnf package-repository site from the releases in `packages.toml` and deploy it to GitHub Pages, then fail within minutes unless Pages serves the index just built (called only from an `<org>/packages` repo; `index-signing` environment, develop only; caller passes `secrets: inherit`) |
 
 ## Formatting Rules
 

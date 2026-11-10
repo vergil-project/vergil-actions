@@ -4,6 +4,7 @@
 `build-index` job runs `vrg-package index --config packages.toml --keys keys
 --out _site`, which verifies, retains, indexes and signs the product releases.
 Its `deploy` job then publishes the site with the Actions-based Pages deploy.
+Last, it checks that Pages serves the index this run built (below).
 The workflow takes no inputs. Runs are serialized by the `publish-index`
 concurrency group. Unlike the other reusable workflows, it runs directly on
 `ubuntu-latest` rather than in a vergil container image.
@@ -16,6 +17,19 @@ Before indexing, `vrg-package index` verifies every downloaded `.deb` and
 source ref `refs/heads/main`. An asset whose build provenance was not attested
 by `cd-release.yml` running on a product's `main` branch fails the index
 build. Each `.rpm`'s org signature is checked as well.
+
+## Post-deploy live check
+
+GitHub Pages can report a deployment `success` while it goes on serving the
+previous deployment
+([vergil-project/packages#46](https://github.com/vergil-project/packages/issues/46)).
+So `build-index` records the sha256 of every signed `InRelease` and
+`repomd.xml` it built. After the deploy, `deploy` fetches each of those files
+from the deployment's `page_url`, with a cache-busting query string, until all
+of them match. If they still do not match after about five minutes, the job
+fails with an `::error::` that names the run and shows what was served. Re-run
+the workflow; if the fault repeats, raise it with GitHub Support. See
+[publish/index/live-check](../actions/publish-index-live-check.md).
 
 ## Caller requirements
 
