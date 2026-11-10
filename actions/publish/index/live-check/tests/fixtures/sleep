@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#
+# Fake sleep for live-check.test.sh: logs its argument to FAKE_SLEEP_LOG and
+# returns at once.
+set -euo pipefail
+printf '%s\n' "$*" >>"${FAKE_SLEEP_LOG}"

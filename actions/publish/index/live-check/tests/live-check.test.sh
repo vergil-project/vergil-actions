@@ -44,46 +44,10 @@ sha() {
   fi
 }
 
-# Fakes ----------------------------------------------------------------------
+# Fakes (tests/fixtures/curl and tests/fixtures/sleep), first on PATH.
 bin="${work}/bin"
 mkdir -p "${bin}"
-printf '%s\n' \
-  '#!/usr/bin/env bash' \
-  'set -euo pipefail' \
-  'hdr="" out="" url="" args=()' \
-  'while [ "$#" -gt 0 ]; do' \
-  '  case "$1" in' \
-  '    --dump-header) hdr="$2"; shift 2 ;;' \
-  '    --output) out="$2"; shift 2 ;;' \
-  '    --write-out | --max-time) shift 2 ;;' \
-  '    --header) args+=("$2"); shift 2 ;;' \
-  '    --*) shift ;;' \
-  '    *) url="$1"; shift ;;' \
-  '  esac' \
-  'done' \
-  'printf "%s|%s\n" "$url" "${args[*]}" >> "${FAKE_CURL_LOG}"' \
-  'query="${url#*\?vrg-live-check=}"' \
-  'round="$(printf "%s" "$query" | cut -d- -f2)"' \
-  'path="${url%%\?*}"' \
-  'path="${path#"${FAKE_BASE}"}"' \
-  'dir="${FAKE_ROOT}/${round}"' \
-  '[ -d "$dir" ] || dir="${FAKE_ROOT}/default"' \
-  'if [ -f "${dir}/.curl-exit" ]; then' \
-  '  echo "curl: (6) Could not resolve host" >&2' \
-  '  exit "$(cat "${dir}/.curl-exit")"' \
-  'fi' \
-  'if [ -f "${dir}/${path}" ]; then' \
-  '  printf "HTTP/2 200\r\nlast-modified: %s\r\nx-cache: MISS\r\n\r\n" "$(cat "${dir}/.last-modified" 2>/dev/null || echo unknown)" > "$hdr"' \
-  '  cp "${dir}/${path}" "$out"' \
-  '  printf 200' \
-  'else' \
-  '  printf "HTTP/2 404\r\nx-cache: HIT\r\n\r\n" > "$hdr"' \
-  '  printf "not found" > "$out"' \
-  '  printf 404' \
-  'fi' >"${bin}/curl"
-printf '%s\n' \
-  '#!/usr/bin/env bash' \
-  'printf "%s\n" "$*" >> "${FAKE_SLEEP_LOG}"' >"${bin}/sleep"
+cp "${here}/fixtures/curl" "${here}/fixtures/sleep" "${bin}/"
 chmod +x "${bin}/curl" "${bin}/sleep"
 
 # make_site <dir> <tag> — a built site whose InRelease/repomd.xml content
@@ -415,12 +379,12 @@ case_wiring() {
   local name="wiring-publish-index"
   local want
   for want in \
-    'index-manifest: ${{ steps.manifest.outputs.manifest }}' \
+    "index-manifest: \${{ steps.manifest.outputs.manifest }}" \
     'uses: ./actions/publish/index/live-check' \
     'mode: manifest' \
     'mode: verify' \
-    'base-url: ${{ steps.deployment.outputs.page_url }}' \
-    'manifest: ${{ needs.build-index.outputs.index-manifest }}'; do
+    "base-url: \${{ steps.deployment.outputs.page_url }}" \
+    "manifest: \${{ needs.build-index.outputs.index-manifest }}"; do
     if ! grep -qF -- "$want" "$workflow"; then
       fail_case "$name" "publish-index.yml lacks: ${want}"
       return
