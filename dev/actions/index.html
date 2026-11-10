@@ -4645,6 +4645,8 @@
       
         
       
+        
+      
     
     
     
@@ -5694,7 +5696,7 @@
   <span class="md-ellipsis">
     
   
-    Local
+    Publish
   
 
     
@@ -5707,6 +5709,101 @@
         
         <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Publish
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="publish-index-live-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    publish/index/live-check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -6735,6 +6832,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#publish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publish
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#local" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6849,6 +6957,14 @@ definition and optional supporting scripts.</p>
   package build or install-test container: OS prerequisites (apt mirror list
   on x86_64 Ubuntu, fail-fast apt, a single <code>apt-get update</code>), a pinned <code>uv</code>,
   <code>vergil-tooling</code>, and nFPM.</li>
+</ul>
+<h3 id="publish">Publish<a class="headerlink" href="#publish" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><a href="publish-index-live-check/">publish/index/live-check</a></strong> — Records the
+  digests of the signed package index a <code>publish-index</code> run built, then checks
+  that GitHub Pages serves exactly those files after the deploy. It fails
+  within minutes if Pages is still serving an older deployment (auto-wired
+  into <code>publish-index</code>).</li>
 </ul>
 <h3 id="local">Local<a class="headerlink" href="#local" title="Permanent link">&para;</a></h3>
 <p>Actions used only by this repository's own workflows, not by consumers.</p>
