@@ -6926,7 +6926,7 @@ composite action or script that runs one must pin it on the step's <code>env</co
 inline on the command line. There are two exceptions:</p>
 <ul>
 <li><code>ci/toolchain/assert</code> is pinned by its caller.</li>
-<li><code>package/setup/detect.sh</code> reads <code>vergil.toml</code> in raw package-build images
+<li><code>package/setup/detect.sh</code> reads <code>vergil.toml</code> in package toolchain images
   that ship no Python, so it needs uv's managed interpreter. Instead of the
   pin, every uv command in it must pass <code>--no-config</code>, so the repository's uv
   settings cannot reach it at all (issue #1003). Without it, a repository that

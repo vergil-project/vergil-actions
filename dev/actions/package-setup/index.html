@@ -5712,18 +5712,17 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#managed-toolchain-images" class="md-nav__link">
+  <a href="#steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Managed toolchain images
+        Steps
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Managed toolchain images">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-marker-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5733,78 +5732,23 @@
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#apt-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apt behaviour
+      
+    </span>
+  </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#os-prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OS prerequisites
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="OS prerequisites">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#apt-images-ubuntu-debian" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        apt images (Ubuntu, Debian)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dnf-images-ubi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        dnf images (UBI)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#job-timeouts-and-the-runner-host" class="md-nav__link">
     <span class="md-ellipsis">
       
         Job timeouts and the runner host
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#other-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Other steps
       
     </span>
   </a>
@@ -6861,18 +6805,17 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#managed-toolchain-images" class="md-nav__link">
+  <a href="#steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Managed toolchain images
+        Steps
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Managed toolchain images">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-marker-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6882,78 +6825,23 @@
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#apt-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        apt behaviour
+      
+    </span>
+  </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#os-prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OS prerequisites
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="OS prerequisites">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#apt-images-ubuntu-debian" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        apt images (Ubuntu, Debian)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dnf-images-ubi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        dnf images (UBI)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#job-timeouts-and-the-runner-host" class="md-nav__link">
     <span class="md-ellipsis">
       
         Job timeouts and the runner host
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#other-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Other steps
       
     </span>
   </a>
@@ -6978,11 +6866,14 @@
 
 
 <h1 id="packagesetup">package/setup<a class="headerlink" href="#packagesetup" title="Permanent link">&para;</a></h1>
-<p>Installs the package toolchain inside an arbitrary package build or
-install-test container: the OS prerequisites, a pinned <code>uv</code>, <code>vergil-tooling</code>,
-and (for build cells) a checksum-pinned nFPM. The containers are raw <code>ubuntu</code>
-or UBI images that ship neither Python nor <code>vergil-tooling</code>, and must run as
-root (the GitHub Actions container default).</p>
+<p>Checks a package toolchain image and installs <code>vergil-tooling</code> in it, inside a
+package build or install-test container. Package jobs run only in a vergil
+package toolchain image, <code>prod-pkg-ubuntu</code> or <code>prod-pkg-rhel</code>, built by
+vergil-containers (epic
+<a href="https://github.com/vergil-project/.github/issues/607">vergil-project/.github#607</a>).
+The image ships the OS prerequisites, <code>uv</code> and nFPM preinstalled, but no
+Python and no <code>vergil-tooling</code>. The container must run as root (the GitHub
+Actions container default).</p>
 <p>This action is <strong>wired automatically</strong> into the <code>build</code> and <code>install-test</code>
 jobs of <code>ci-package.yml</code> and the <code>package-build</code> jobs of <code>cd-release.yml</code>.
 Consuming repositories do not add it themselves.</p>
@@ -7005,7 +6896,7 @@ Consuming repositories do not add it themselves.</p>
 <tr>
 <td><code>nfpm</code></td>
 <td><code>"false"</code></td>
-<td>Install nFPM. Build cells pass <code>"true"</code>; install-test cells leave it off.</td>
+<td>Require nFPM in the toolchain image. Build cells pass <code>"true"</code>; install-test cells leave it off.</td>
 </tr>
 <tr>
 <td><code>python</code></td>
@@ -7014,151 +6905,71 @@ Consuming repositories do not add it themselves.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="managed-toolchain-images">Managed toolchain images<a class="headerlink" href="#managed-toolchain-images" title="Permanent link">&para;</a></h2>
-<p>A managed package toolchain image (<code>prod-pkg-ubuntu</code> or <code>prod-pkg-rhel</code>,
-built by vergil-containers; epic
-<a href="https://github.com/vergil-project/.github/issues/607">vergil-project/.github#607</a>)
-ships the OS prerequisites, <code>uv</code> and nFPM preinstalled. It says so in a
-marker file, <code>/etc/vergil/package-toolchain</code>. The action's first step looks
-for that file:</p>
-<ul>
-<li><strong>Marker present.</strong> The OS prerequisites, <code>uv</code> and nFPM install steps are
-  skipped. <code>check-toolchain.sh</code> checks the image against the marker instead
-  (with <code>--nfpm</code> when <code>nfpm: "true"</code>), then the action adds the workspace to
-  git's <code>safe.directory</code> and installs <code>vergil-tooling</code> as usual.</li>
-<li><strong>Marker absent.</strong> A raw <code>ubuntu</code> or UBI image. Every step runs as
-  described below, unchanged.</li>
-</ul>
-<h3 id="the-marker-contract">The marker contract<a class="headerlink" href="#the-marker-contract" title="Permanent link">&para;</a></h3>
+<h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Check the toolchain image.</strong> <code>check-toolchain.sh</code> checks the image
+   against its marker file, <code>/etc/vergil/package-toolchain</code> (with <code>--nfpm</code>
+   when <code>nfpm: "true"</code>). The step then adds the workspace to git's
+   <code>safe.directory</code>.</li>
+<li><strong>Install vergil-tooling.</strong> <code>detect.sh</code> resolves the install spec. In
+   <code>vergil-tooling</code> itself it is the checkout, so CI exercises the PR's own
+   <code>vrg-package</code>. Elsewhere it is <code>[dependencies].vergil</code> from <code>vergil.toml</code>,
+   read with <code>uv run --no-config</code> under a uv-managed Python of the <code>python</code>
+   input's version. <code>detect.sh</code> fails if <code>VRG_DRIVER_PYTHON</code> is unset or empty;
+   there is no default. <code>--no-config</code> ignores the repository's uv settings
+   (<code>[tool.uv]</code>, <code>uv.toml</code>), so settings such as <code>python-downloads = "manual"</code>
+   cannot stop the download. The tools land in uv's tool bin directory under
+   <code>$HOME</code>, never in <code>/usr/local/bin</code>. That way install-test smoke checks,
+   which run with a system-only <code>PATH</code>, cannot resolve this copy.</li>
+</ol>
+<p>The action installs no OS packages, <code>uv</code> or nFPM itself. A job in a raw
+<code>ubuntu</code> or UBI image fails at the first step:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>::error::package jobs require a vergil package toolchain image; /etc/vergil/package-toolchain not found
+</code></pre></div>
+<h2 id="the-marker-contract">The marker contract<a class="headerlink" href="#the-marker-contract" title="Permanent link">&para;</a></h2>
 <p>The image writes one <code>&lt;tool&gt; &lt;version&gt;</code> line per tool, separated by a single
 space. <code>&lt;tool&gt;</code> is a command name. <code>&lt;version&gt;</code> is the first
 <code>[0-9]+(\.[0-9]+)+</code> token of the standard output of <code>&lt;tool&gt; --version</code>. The
 marker always lists <code>uv</code>, <code>nfpm</code>, <code>curl</code>, <code>git</code>, <code>gpg</code>, <code>tar</code> and <code>gzip</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv 0.12.23
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>nfpm 2.47.0
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>curl 8.5.0
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>git 2.43.0
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>gpg 2.4.4
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>tar 1.35
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>gzip 1.12
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv 0.12.23
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>nfpm 2.47.0
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>curl 8.5.0
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>git 2.43.0
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>gpg 2.4.4
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>tar 1.35
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>gzip 1.12
 </code></pre></div>
-<p><code>check-toolchain.sh</code> passes only when every listed tool is on <code>PATH</code> at its
-listed version and, with <code>--nfpm</code>, the marker lists <code>nfpm</code>. A marker that
-lies never falls back to installing. The script fails the job with one
-<code>::error::</code> line per problem, after checking every line, if a tool is
-missing, at another version, or prints no version. It also fails if <code>nfpm</code>
-is needed but not listed, or if the marker is empty, malformed or lists a
-tool twice.</p>
+<p><code>check-toolchain.sh</code> passes only when the marker lists <code>uv</code>, <code>curl</code>, <code>git</code>,
+<code>gpg</code>, <code>tar</code> and <code>gzip</code>, every listed tool is on <code>PATH</code> at its listed version
+and, with <code>--nfpm</code>, the marker lists <code>nfpm</code>. <code>nfpm</code> is required only with
+<code>--nfpm</code>, since install-test cells need no nFPM. The script never falls back
+to installing anything. It fails the job with one <code>::error::</code> line per
+problem, after checking every line, if the marker is missing, leaves out a
+required tool, or lists a tool that is missing, at another version, or prints
+no version. It also fails if <code>nfpm</code> is needed but not listed, or if the marker
+is empty, malformed or lists a tool twice.</p>
 <p><code>actions/package/setup/tests/check-toolchain.test.sh</code> exercises the script
 against fixture markers (<code>VRG_TOOLCHAIN_MARKER</code>) and stub tools, with no root
 and no container. The <code>Smoke - setup/vergil outputs</code> workflow runs it on
 every PR that touches this action.</p>
-<h2 id="os-prerequisites">OS prerequisites<a class="headerlink" href="#os-prerequisites" title="Permanent link">&para;</a></h2>
-<p>On a raw image, the first install step runs <code>os-prereqs.sh</code>, which keeps package jobs off slow apt
-mirrors and makes any apt stall fail fast instead of hanging the job.</p>
-<h3 id="apt-images-ubuntu-debian">apt images (Ubuntu, Debian)<a class="headerlink" href="#apt-images-ubuntu-debian" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p><strong>Mirror list on x86_64.</strong> The script rewrites the Ubuntu archive and
-   security URIs, including any that already point at
-   <code>azure.archive.ubuntu.com</code>, to <code>mirror+file:/etc/apt/apt-mirrors.txt</code>. It
-   then writes that file in the format GitHub's hosted runner images use
-   (<a href="https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/configure-apt-sources.sh"><code>configure-apt-sources.sh</code></a>),
-   one tab-separated entry per line:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>http://azure.archive.ubuntu.com/ubuntu/    priority:1
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>http://archive.ubuntu.com/ubuntu/          priority:2
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>http://security.ubuntu.com/ubuntu/         priority:3
-</code></pre></div>
-<p>apt tries the in-region Azure mirror first and moves down the list when
-a mirror fails. A failing Azure mirror therefore falls back instead of
-failing the job. On its own, a container image's default,
-<code>archive.ubuntu.com</code>, has stalled amd64 package builds for more than ten
-minutes.</p>
-<p>The hosts and priorities match runner-images, with one deliberate
-difference: the fallbacks use <code>http://</code>, not <code>https://</code>. A fresh
-container has no CA certificates until this script installs
-<code>ca-certificates</code>, so an <code>https://</code> fallback fails with "No system
-certificates available". <code>http://</code> is the image's own default, and apt
-still verifies every index against the archive's signed <code>InRelease</code>.</p>
-<p>The script rewrites both the deb822
-<code>/etc/apt/sources.list.d/ubuntu.sources</code> (24.04 and later) and the legacy
-<code>/etc/apt/sources.list</code>, before the first <code>apt-get update</code>. It writes the
-mirror list only when it rewrites a sources file, and overwrites the list
-rather than appending to it, so a re-run is a no-op.
-2. <strong>arm64 is left alone.</strong> arm64 images use <code>ports.ubuntu.com</code>, which none
-   of the listed mirrors serve, and which is already fast. Sources on any
-   architecture other than <code>x86_64</code> are not touched.
-3. <strong>Fail-fast apt.</strong> The script writes
-   <code>/etc/apt/apt.conf.d/80-vergil-fast-fail</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Acquire::Retries "3";
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>Acquire::Retries::Delay "false";
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Acquire::http::Timeout "20";
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Acquire::https::Timeout "20";
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>DPkg::Lock::Timeout "60";
-</code></pre></div>
-<p>Every later apt call in the job inherits it, including the ones
-<code>vergil-tooling</code> makes during build and install-test.</p>
-<p><code>Acquire::Retries::Delay "false"</code> is required for the mirror list to
-work. With apt's default delayed retries, apt 2.4 to 2.8 (Ubuntu 22.04
-and 24.04) deadlocks after a mirror-list failover: it fetches the
-fallback's <code>InRelease</code> files and then waits forever, and the timeouts
-never fire (<a href="https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2003851">LP #2003851</a>).
-This is what hung <code>vergil-tooling</code> CD run 37678748594 for 21,578 seconds
-in <code>package-sign</code>, on a runner whose own sources are this mirror list.
-The same hang reproduces in an <code>ubuntu:24.04</code> container with the Azure
-mirror unreachable. With undelayed retries, the same failover completes
-in seconds.
-4. <strong>One update, one install.</strong> The script runs exactly one <code>apt-get update</code>.
-   It then installs every prerequisite the package tooling needs in a single
-   call: <code>ca-certificates curl git tar gzip gnupg</code>. Because they are all
-   present, <code>vergil-tooling</code>'s own bootstrap does not need to install them
-   again.</p>
-</li>
-</ol>
-<h3 id="dnf-images-ubi">dnf images (UBI)<a class="headerlink" href="#dnf-images-ubi" title="Permanent link">&para;</a></h3>
-<p>One <code>dnf install</code> with <code>--setopt=retries=3 --setopt=timeout=20</code> installs
-<code>ca-certificates /usr/bin/curl /usr/bin/gpg git tar gzip</code>. curl and gpg are
-named by path, as <code>vergil-tooling</code> names them. UBI ships <code>curl-minimal</code>, which
-conflicts with the full <code>curl</code> package, and a path resolves to whichever
-package provides the file.</p>
-<p>An image with neither <code>apt-get</code> nor <code>dnf</code> fails the step.</p>
-<h3 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h3>
-<p>The logic lives in <code>os-prereqs.sh</code> rather than inline YAML so that it can be
-tested. <code>actions/package/setup/tests/os-prereqs.test.sh</code> runs it against
-fixture <code>/etc</code> trees with recording <code>apt-get</code>/<code>dnf</code> stubs, so it needs neither
-root nor a container. It covers the deb822 x86_64 rewrite and the exact
-mirror-list contents, migrating Azure-pinned sources to the list, arm64 left
-untouched, the legacy <code>sources.list</code>, idempotence across two runs, an x86_64
-image with no Ubuntu sources, the dnf path, and package-manager detection.
-The <code>Smoke - setup/vergil outputs</code> workflow runs it on every PR that touches
-this action.</p>
-<h3 id="job-timeouts-and-the-runner-host">Job timeouts and the runner host<a class="headerlink" href="#job-timeouts-and-the-runner-host" title="Permanent link">&para;</a></h3>
+<h2 id="apt-behaviour">apt behaviour<a class="headerlink" href="#apt-behaviour" title="Permanent link">&para;</a></h2>
+<p>The apt mirror list (on amd64) and the fail-fast apt config
+(<code>/etc/apt/apt.conf.d/80-vergil-fast-fail</code>, on every architecture) are part of
+the <code>prod-pkg-ubuntu</code> image, so every apt call <code>vergil-tooling</code> makes during
+build and install-test inherits them. vergil-containers writes them, and
+checks them when it builds the image.</p>
+<h2 id="job-timeouts-and-the-runner-host">Job timeouts and the runner host<a class="headerlink" href="#job-timeouts-and-the-runner-host" title="Permanent link">&para;</a></h2>
 <p><code>package-sign</code> in <code>cd-release.yml</code> installs <code>rpm</code> and <code>gnupg</code> on the runner
-host itself, not in a container. It passes the same fail-fast options on the
+host itself, not in a container. It passes fail-fast options on the
 command line (<code>-o Acquire::Retries=3 -o Acquire::Retries::Delay=false
 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20
--o DPkg::Lock::Timeout=60</code>). Every package job also sets <code>timeout-minutes</code>
-as a backstop: <code>matrix</code> 5, <code>build</code> 30, <code>install-test</code> 15 and <code>evidence</code> 5
-in <code>ci-package.yml</code>, and <code>package-matrix</code> 5, <code>package-build</code> 30 and
-<code>package-sign</code> 15 in <code>cd-release.yml</code>.</p>
-<h2 id="other-steps">Other steps<a class="headerlink" href="#other-steps" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Install uv.</strong> Downloads the release's <code>uv-installer.sh</code>, verifies it
-  against a pinned sha256, and installs <code>uv</code> into <code>/usr/local/bin</code>.</li>
-<li><strong>Install vergil-tooling.</strong> <code>detect.sh</code> resolves the install spec. In
-  <code>vergil-tooling</code> itself it is the checkout, so CI exercises the PR's own
-  <code>vrg-package</code>. Elsewhere it is <code>[dependencies].vergil</code> from <code>vergil.toml</code>,
-  read with <code>uv run --no-config</code> under a uv-managed Python of the <code>python</code>
-  input's version. <code>detect.sh</code> fails if <code>VRG_DRIVER_PYTHON</code> is unset or empty;
-  there is no default. <code>--no-config</code>
-  ignores the repository's uv settings (<code>[tool.uv]</code>, <code>uv.toml</code>), so settings
-  such as <code>python-downloads = "manual"</code> cannot stop the download.
-  The tools land in uv's tool bin directory under <code>$HOME</code>, never in
-  <code>/usr/local/bin</code>. That way install-test smoke checks, which run with a
-  system-only <code>PATH</code>, cannot resolve this copy.</li>
-<li><strong>Install nFPM</strong> (only when <code>nfpm: "true"</code>). Downloads the release tarball
-  for the runner's architecture and verifies it against a pinned sha256.</li>
-</ul>
+-o DPkg::Lock::Timeout=60</code>). <code>Acquire::Retries::Delay "false"</code> avoids an apt
+2.4 to 2.8 deadlock after a mirror failover, in which the timeouts never fire
+(<a href="https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2003851">LP #2003851</a>).
+Every package job also sets <code>timeout-minutes</code> as a backstop: <code>matrix</code> 5,
+<code>build</code> 30, <code>install-test</code> 15 and <code>evidence</code> 5 in <code>ci-package.yml</code>, and
+<code>package-matrix</code> 5, <code>package-build</code> 30 and <code>package-sign</code> 15 in
+<code>cd-release.yml</code>.</p>
 
 
 

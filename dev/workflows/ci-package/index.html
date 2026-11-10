@@ -6844,14 +6844,14 @@ recorded. This needs vergil-tooling 2.1.262 or later at the caller's
 <code>[dependencies].vergil</code> pin; <code>v2.1</code> resolves to it.</p>
 <h2 id="toolchain-setup">Toolchain setup<a class="headerlink" href="#toolchain-setup" title="Permanent link">&para;</a></h2>
 <p>Each <code>build / &lt;cell&gt;</code> and <code>install-test / &lt;cell&gt;</code> job runs inside the cell's
-OS image and sets it up with
-<a href="../../actions/package-setup/"><code>package/setup</code></a>. On x86_64 Ubuntu images
-that action points apt at a mirror list, as GitHub's hosted runners do: the
-Azure mirror first, then <code>archive.ubuntu.com</code> and <code>security.ubuntu.com</code> as
-fallbacks. On every apt image it writes a fail-fast apt config (3 undelayed
-retries, 20-second timeouts, a 60-second dpkg lock wait) that all later apt
-calls in the job inherit, and it runs a single <code>apt-get update</code>. arm64 cells
-keep <code>ports.ubuntu.com</code>. UBI cells install through one bounded <code>dnf</code> call.</p>
+package toolchain image (<code>prod-pkg-ubuntu</code> or <code>prod-pkg-rhel</code>, which the
+caller's vergil-tooling names) and sets it up with
+<a href="../../actions/package-setup/"><code>package/setup</code></a>. That action checks the image
+against its <code>/etc/vergil/package-toolchain</code> marker and installs
+<code>vergil-tooling</code>; it installs no toolchain itself, so a cell in a raw image
+fails at once. The <code>prod-pkg-ubuntu</code> image carries the apt mirror list (on
+amd64) and a fail-fast apt config (3 undelayed retries, 20-second timeouts,
+a 60-second dpkg lock wait) that every apt call in the job inherits.</p>
 <p>Every package job sets <code>timeout-minutes</code>, in both <code>ci-package.yml</code> (<code>matrix</code>
 5, <code>build</code> 30, <code>install-test</code> 15, <code>evidence</code> 5) and <code>cd-release.yml</code>
 (<code>package-matrix</code> 5, <code>package-build</code> 30, <code>package-sign</code> 15). A normal build
