@@ -295,7 +295,7 @@ case_verify_cache_busting() {
   cp -R "${d}/old" "${d}/served/default"
   run_verify "$d" --manifest "${d}/manifest" --attempts 2 --interval 0
   local bad
-  bad="$(grep -vE '^https://example\.test/packages/[^?]+\?vrg-live-check=[0-9]+-[12]-[0-9]+\|Cache-Control: no-cache Pragma: no-cache$' "${d}/curl.log" || true)"
+  bad="$(grep -vE '^https://example\.test/packages/[^?]+\?vrg-live-check=[0-9]+-[12]-[0-9]+[|]Cache-Control: no-cache Pragma: no-cache$' "${d}/curl.log" || true)"
   if [ -n "$bad" ]; then
     fail_case "$name" "request without cache busting: ${bad}"
     return

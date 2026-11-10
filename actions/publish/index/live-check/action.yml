@@ -62,12 +62,15 @@ runs:
         SITE: ${{ inputs.site }}
       run: |
         set -euo pipefail
-        manifest="$(bash "${GITHUB_ACTION_PATH}/live-check.sh" manifest "$SITE")"
-        printf '%s\n' "$manifest"
+        # To a file, not a command substitution, so a refusal's ::error::
+        # reaches the log.
+        manifest_file="$(mktemp)"
+        bash "${GITHUB_ACTION_PATH}/live-check.sh" manifest "$SITE" > "$manifest_file"
+        cat "$manifest_file"
         delim="vrg_live_check_$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
         {
           echo "manifest<<${delim}"
-          printf '%s\n' "$manifest"
+          cat "$manifest_file"
           echo "${delim}"
         } >> "$GITHUB_OUTPUT"
 
