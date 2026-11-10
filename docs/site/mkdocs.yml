@@ -92,6 +92,8 @@ nav:
           - shared/docs/stage: actions/shared-docs-stage.md
       - Package:
           - package/setup: actions/package-setup.md
+      - Publish:
+          - publish/index/live-check: actions/publish-index-live-check.md
       - Local:
           - local/freeze-internal-refs: actions/local-freeze-internal-refs.md
   - Reusable Workflows:

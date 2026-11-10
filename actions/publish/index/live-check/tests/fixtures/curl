@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+#
+# Fake curl for live-check.test.sh: a fake GitHub Pages origin.
+#
+# Serves <FAKE_ROOT>/<round>/<path>, else <FAKE_ROOT>/default/<path>, where
+# <round> is the second field of the vrg-live-check cache-busting query and
+# <path> is the URL with FAKE_BASE and the query removed. Writes a header dump
+# (Last-Modified from the tree's .last-modified file, X-Cache: MISS) and prints
+# the HTTP status like --write-out '%{http_code}'. A missing file is a 404. A
+# tree holding .curl-exit makes curl fail with that exit code. Every request
+# is logged to FAKE_CURL_LOG as "<url>|<request headers>".
+set -euo pipefail
+
+hdr="" out="" url=""
+headers=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --dump-header) hdr="$2"; shift 2 ;;
+    --output) out="$2"; shift 2 ;;
+    --write-out | --max-time) shift 2 ;;
+    --header) headers+=("$2"); shift 2 ;;
+    --*) shift ;;
+    *) url="$1"; shift ;;
+  esac
+done
+
+printf '%s|%s\n' "$url" "${headers[*]}" >>"${FAKE_CURL_LOG}"
+
+query="${url#*\?vrg-live-check=}"
+round="$(printf '%s' "$query" | cut -d- -f2)"
+path="${url%%\?*}"
+path="${path#"${FAKE_BASE}"}"
+dir="${FAKE_ROOT}/${round}"
+[ -d "$dir" ] || dir="${FAKE_ROOT}/default"
+
+if [ -f "${dir}/.curl-exit" ]; then
+  echo "curl: (6) Could not resolve host" >&2
+  exit "$(cat "${dir}/.curl-exit")"
+fi
+
+if [ -f "${dir}/${path}" ]; then
+  modified="unknown"
+  [ -f "${dir}/.last-modified" ] && modified="$(cat "${dir}/.last-modified")"
+  printf 'HTTP/2 200\r\nlast-modified: %s\r\nx-cache: MISS\r\n\r\n' "$modified" >"$hdr"
+  cp "${dir}/${path}" "$out"
+  printf '200'
+else
+  printf 'HTTP/2 404\r\nx-cache: HIT\r\n\r\n' >"$hdr"
+  printf 'not found' >"$out"
+  printf '404'
+fi

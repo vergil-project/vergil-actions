@@ -1,0 +1,95 @@
+name: Publish index live check
+description: >-
+  Prove that GitHub Pages serves the package index this run built
+  (issue vergil-project/vergil-actions#1123). `mode: manifest` records the
+  sha256 of every signed InRelease and every repomd.xml in the built site, as
+  the `manifest` output. `mode: verify` fetches each of those files from the
+  deployed site, with a cache-busting query string, until all of them match,
+  and fails with an ::error:: naming the deployment and what was served if
+  they do not within the retry window (about five minutes by default).
+  Auto-wired into publish-index.yml.
+
+inputs:
+  mode:
+    description: "`manifest` (after the build) or `verify` (after the deploy)."
+    required: true
+  site:
+    description: "manifest: the built site directory."
+    required: false
+    default: _site
+  base-url:
+    description: "verify: the deployed site's base URL (the deploy step's page_url output)."
+    required: false
+    default: ""
+  manifest:
+    description: "verify: the manifest output of a `mode: manifest` run."
+    required: false
+    default: ""
+  attempts:
+    description: "verify: rounds of fetches before failing."
+    required: false
+    default: "30"
+  interval:
+    description: "verify: seconds between rounds."
+    required: false
+    default: "10"
+
+outputs:
+  manifest:
+    description: >-
+      manifest: one "<sha256> <path>" line per InRelease and repomd.xml in the
+      site, path relative to the site root.
+    value: ${{ steps.manifest.outputs.manifest }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check the mode
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+      run: |
+        case "$MODE" in
+          manifest | verify) ;;
+          *) echo "::error::live-check: mode must be manifest or verify, got '${MODE}'"; exit 1 ;;
+        esac
+
+    - name: Record the index manifest
+      id: manifest
+      if: inputs.mode == 'manifest'
+      shell: bash
+      env:
+        SITE: ${{ inputs.site }}
+      run: |
+        set -euo pipefail
+        # To a file, not a command substitution, so a refusal's ::error::
+        # reaches the log.
+        manifest_file="$(mktemp)"
+        bash "${GITHUB_ACTION_PATH}/live-check.sh" manifest "$SITE" > "$manifest_file"
+        cat "$manifest_file"
+        delim="vrg_live_check_$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"
+        {
+          echo "manifest<<${delim}"
+          cat "$manifest_file"
+          echo "${delim}"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Verify the deployed index is live
+      if: inputs.mode == 'verify'
+      shell: bash
+      env:
+        BASE_URL: ${{ inputs.base-url }}
+        MANIFEST: ${{ inputs.manifest }}
+        ATTEMPTS: ${{ inputs.attempts }}
+        INTERVAL: ${{ inputs.interval }}
+        DEPLOYMENT: >-
+          the Pages deployment of ${{ github.repository }} run
+          ${{ github.run_id }} attempt ${{ github.run_attempt }}
+      run: |
+        set -euo pipefail
+        manifest_file="$(mktemp)"
+        printf '%s\n' "$MANIFEST" > "$manifest_file"
+        bash "${GITHUB_ACTION_PATH}/live-check.sh" verify \
+          --base-url "$BASE_URL" --manifest "$manifest_file" \
+          --deployment "$DEPLOYMENT" \
+          --attempts "$ATTEMPTS" --interval "$INTERVAL"

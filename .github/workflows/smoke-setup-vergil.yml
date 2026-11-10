@@ -45,13 +45,12 @@ name: Smoke - setup/vergil outputs
 #         job or composite action pinning the interpreter source with
 #         UV_PYTHON_PREFERENCE=only-system (issue #1002);
 #       - the package setup action's detect.sh (self-repo vs.
-#         [dependencies].vergil install spec; epic vergil-project/.github#356)
-#         and os-prereqs.sh (apt mirror list on x86_64, fail-fast apt, one
-#         apt-get update, bounded dnf; issue #931);
-#       - the package setup action's check-toolchain.sh: a managed toolchain
+#         [dependencies].vergil install spec; epic vergil-project/.github#356);
+#       - the package setup action's check-toolchain.sh: a package toolchain
 #         image's /etc/vergil/package-toolchain marker against the tools on
-#         PATH, failing on a missing or mismatched tool, a missing nfpm when
-#         nFPM is needed, and an empty or malformed marker (epic
+#         PATH, failing on a missing marker (a raw image), a required tool
+#         the marker leaves out, a missing or mismatched tool, a missing nfpm
+#         when nFPM is needed, and an empty or malformed marker (epic
 #         vergil-project/.github#607).
 #   * action-e2e — calls the setup action against a Python library fixture and
 #     a fixture window (the `version-window` input), asserts all five outputs
@@ -109,9 +108,6 @@ jobs:
       - name: Run package setup detect.sh harness
         shell: bash
         run: bash actions/package/setup/tests/detect.test.sh
-      - name: Run package setup os-prereqs.sh harness
-        shell: bash
-        run: bash actions/package/setup/tests/os-prereqs.test.sh
       - name: Run package setup check-toolchain.sh harness
         shell: bash
         run: bash actions/package/setup/tests/check-toolchain.test.sh
