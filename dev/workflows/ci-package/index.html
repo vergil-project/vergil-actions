@@ -6229,6 +6229,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#container-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container prefix
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6886,6 +6897,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#container-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container prefix
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6969,7 +6991,8 @@ recorded. This needs vergil-tooling 2.1.262 or later at the caller's
 <h2 id="toolchain-setup">Toolchain setup<a class="headerlink" href="#toolchain-setup" title="Permanent link">&para;</a></h2>
 <p>Each <code>build / &lt;cell&gt;</code> and <code>install-test / &lt;cell&gt;</code> job runs inside the cell's
 package toolchain image (<code>prod-pkg-ubuntu</code> or <code>prod-pkg-rhel</code>, which the
-caller's vergil-tooling names) and sets it up with
+caller's vergil-tooling names, or their <code>dev-pkg-</code> variants with
+<a href="#container-prefix"><code>container-prefix: dev</code></a>) and sets it up with
 <a href="../../actions/package-setup/"><code>package/setup</code></a>. That action checks the image
 against its <code>/etc/vergil/package-toolchain</code> marker and installs
 <code>vergil-tooling</code>; it installs no toolchain itself, so a cell in a raw image
@@ -6981,6 +7004,23 @@ a 60-second dpkg lock wait) that every apt call in the job inherits.</p>
 (<code>package-matrix</code> 5, <code>package-build</code> 30, <code>package-sign</code> 15). A normal build
 takes about 45 seconds, so a stall fails the job in minutes rather than
 running to GitHub's 6-hour limit.</p>
+<h2 id="container-prefix">Container prefix<a class="headerlink" href="#container-prefix" title="Permanent link">&para;</a></h2>
+<p><code>vrg-package matrix</code> names every cell's image
+<code>ghcr.io/vergil-project/prod-pkg-&lt;distro&gt;:&lt;version&gt;</code>. The optional
+<code>container-prefix</code> input (<code>prod</code> or <code>dev</code>; default <code>prod</code>, which an empty
+value also means) picks the image
+variant: with <code>dev</code>, the <code>matrix</code> job rewrites the <code>prod-pkg-</code> start of each
+image in its <code>build</code> and <code>test</code> outputs to <code>dev-pkg-</code>, so the build and
+install-test jobs run on the development package images. Nothing else in the
+outputs changes, and with <code>prod</code> they are passed on unchanged. Any other
+value, or a missing or malformed <code>vrg-package matrix</code> output, fails the
+<code>matrix</code> job. The job log lists the image each cell will use.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">jobs</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">package</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/ci-package.yml@v2.1</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">container-prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span><span class="w">  </span><span class="c1"># optional; omit for prod</span>
+</code></pre></div>
 
 
 
