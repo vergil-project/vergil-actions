@@ -154,6 +154,13 @@ esac
 exit 0
 STUB
 
+# git ls-remote: the refs in $FAKE_GIT_REFS (a file), or exit 128 when unset.
+write_stub "${stubs}/git" <<'STUB'
+echo "git $*" >>"$CALLS"
+[ -n "${FAKE_GIT_REFS:-}" ] || exit 128
+cat "$FAKE_GIT_REFS"
+STUB
+
 # uv on PATH (only when a case asks for it).
 uvstubs="${work}/uvstubs"
 mkdir -p "$uvstubs"
@@ -191,7 +198,7 @@ new_case() {
   touch "${case_dir}/state/dpkg/ca-certificates"
   : >"${case_dir}/calls"
   : >"${case_dir}/github-path"
-  unset FAKE_CANDIDATE FAKE_APT_UPDATE_FAIL FAKE_VENV_HOME
+  unset FAKE_CANDIDATE FAKE_APT_UPDATE_FAIL FAKE_VENV_HOME FAKE_GIT_REFS
   export FAKE_GPG_OUT="$one_key"
 }
 
@@ -232,6 +239,7 @@ run_script() {
       FAKE_GPG_OUT="$FAKE_GPG_OUT" ${FAKE_CANDIDATE:+FAKE_CANDIDATE="$FAKE_CANDIDATE"} \
       ${FAKE_APT_UPDATE_FAIL:+FAKE_APT_UPDATE_FAIL=1} \
       ${FAKE_VENV_HOME:+FAKE_VENV_HOME="$FAKE_VENV_HOME"} \
+      ${FAKE_GIT_REFS:+FAKE_GIT_REFS="$FAKE_GIT_REFS"} \
       "${extra[@]}" bash "$s" "$@"
   ) >/dev/null 2>"$err" || status=$?
   stderr="$(cat "$err")"
@@ -649,15 +657,60 @@ case_self_repo_host_installs_pinned_uv() {
   pass_case "$name"
 }
 
+# with_git_refs <tag>...: the tags git ls-remote lists, one ref line each.
+with_git_refs() {
+  local t
+  export FAKE_GIT_REFS="${case_dir}/git-refs"
+  : >"$FAKE_GIT_REFS"
+  for t in "$@"; do
+    printf '0123456789abcdef0123456789abcdef01234567\trefs/tags/%s\n' "$t" >>"$FAKE_GIT_REFS"
+  done
+}
+
 case_install_source_git_line_tag() {
   local name="install_source_git_line_tag"
   new_case
+  # Numeric, not lexical, order; other lines and pre-release tags ignored.
+  with_git_refs v2.1.9 v2.1.299 v2.1.30 v2.10.400 v2.1.300-rc1
   run_script --env INSTALL_SOURCE=git -- v2.1
   expect_status "$name" 0 || return
   expect_stderr "$name" "install-source: git" || return
-  expect_calls "$name" "uv tool install vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1" || return
+  expect_stderr "$name" "the newest v2.1 release is v2.1.299" || return
+  expect_calls "$name" "git ls-remote --tags --refs https://github.com/vergil-project/vergil-tooling refs/tags/v2.1.*" || return
+  expect_calls "$name" "uv tool install vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1.299" || return
   expect_no_calls "$name" "apt-get" || return
   expect_no_calls "$name" "vergil.asc" || return
+  pass_case "$name"
+}
+
+case_install_source_git_lookup_failure() {
+  local name="install_source_git_lookup_failure"
+  new_case
+  run_script --env INSTALL_SOURCE=git -- v2.1
+  expect_status "$name" 1 || return
+  expect_stderr "$name" "::error::vergil-tooling: could not list the v2.1.* tags" || return
+  expect_nothing_installed "$name" || return
+  pass_case "$name"
+}
+
+case_install_source_git_no_release() {
+  local name="install_source_git_no_release"
+  new_case
+  with_git_refs v2.2.1 v2.1.0-rc1
+  run_script --env INSTALL_SOURCE=git -- v2.1
+  expect_status "$name" 1 || return
+  expect_stderr "$name" "::error::vergil-tooling: no v2.1.Z release tag" || return
+  expect_nothing_installed "$name" || return
+  pass_case "$name"
+}
+
+case_install_source_git_exact_tag() {
+  local name="install_source_git_exact_tag"
+  new_case
+  run_script --env INSTALL_SOURCE=git -- v2.1.7
+  expect_status "$name" 0 || return
+  expect_calls "$name" "uv tool install vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1.7" || return
+  expect_no_calls "$name" "git ls-remote" || return
   pass_case "$name"
 }
 
@@ -767,6 +820,9 @@ case_host_keyring_without_source_reinstalls || true
 case_host_unregistered_codename || true
 case_self_repo_host_installs_pinned_uv || true
 case_install_source_git_line_tag || true
+case_install_source_git_lookup_failure || true
+case_install_source_git_no_release || true
+case_install_source_git_exact_tag || true
 case_install_source_invalid || true
 case_dev_tag_installs_pinned_uv || true
 case_dev_tag_container_binds_core_python || true

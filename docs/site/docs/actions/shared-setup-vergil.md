@@ -29,7 +29,7 @@ to detect vergil-tooling itself, `pyproject.toml`) from the working directory.
 
 | Input | Required | Default | Description |
 | ----- | -------- | ------- | ----------- |
-| `install-source` | No | `auto` | `auto` chooses the install path from the tag and the environment (below). `git` always installs vergil-tooling with `uv tool install` from git and never touches the vergil apt repository. `publish-index`'s `build-index` job sets it, because it rebuilds that repository's index and must not install from the index it is about to repair. Any other value fails the job. |
+| `install-source` | No | `auto` | `auto` chooses the install path from the tag and the environment (below). `git` always installs vergil-tooling with `uv tool install` from git and never touches the vergil apt repository; with a line pin (`vX.Y`) it installs the newest `vX.Y.Z` release tag in that line rather than the floating `vX.Y` tag. `publish-index`'s `build-index` job sets it, because it rebuilds that repository's index and must not install from the index it is about to repair. Any other value fails the job. |
 | `version-window` | No | `""` | Path to a local `window.json` for the resolver to read instead of the published window. When set, the Derive step exports it as `VRG_VERSION_WINDOW`, the resolver's one sanctioned override. For tests only: leave it empty in real workflows. |
 
 ## Outputs
@@ -62,7 +62,13 @@ The action runs these steps in order:
       commands ignore a project's uv settings.
     - Otherwise it reads `[dependencies].vergil` from `vergil.toml` (e.g.
       `v2.1`) and installs vergil-tooling at that tag:
-        - **`install-source: git`:** `uv tool install` from git, whatever the
+        - **`install-source: git`:** `uv tool install` from git. A release
+          line pin (`vX.Y`) installs the newest `vX.Y.Z` tag in that line,
+          listed with `git ls-remote`, not the floating `vX.Y` tag: a release
+          dispatches the package-index rebuild before it moves `vX.Y`, and
+          the rebuild must run the release that triggered it (issue #1144).
+          A failed tag lookup, or a line with no `vX.Y.Z` tag, fails the job;
+          it never falls back to `vX.Y`. An exact or dev pin installs at that
           tag.
         - **A dev tag** (anything but `vX.Y` or `vX.Y.Z`, such as `develop`):
           `uv tool install` from git. Where the job has both the vergil apt
