@@ -32,6 +32,12 @@ name: Smoke - setup/vergil outputs
 #         -> prod-cpp-clang:20, Python unchanged, no language -> prod-base), no
 #         workflow job builds its image from inputs.container-suffix or
 #         inputs.language, and a mismatched caller suffix fails (issue #1028);
+#       - container-prefix.test.sh: every reusable workflow that runs a job
+#         in a vergil image takes its prefix from its own container-prefix
+#         input (a `<prefix>-` container line, or a matrix image from
+#         ci/matrix or package/image-prefix given the input), passes the
+#         input on to the workflows it calls, declares it, and names no
+#         `prod-` image literally (issue #1134);
 #       - ci/evidence gate.test.sh: every ci-quality stage job is in the
 #         evidence job's needs and its "Assert all required legs succeeded"
 #         RESULTS, so a failed or skipped stage fails quality / evidence
@@ -96,6 +102,9 @@ jobs:
       - name: Run shared/setup/primary-suffix image harness
         shell: bash
         run: bash actions/shared/setup/primary-suffix/tests/image.test.sh
+      - name: Run container-prefix harness
+        shell: bash
+        run: bash actions/shared/setup/primary-suffix/tests/container-prefix.test.sh
       - name: Run ci/evidence gate harness
         shell: bash
         run: bash actions/ci/evidence/tests/gate.test.sh
