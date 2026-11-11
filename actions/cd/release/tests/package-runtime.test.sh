@@ -16,11 +16,12 @@
 # Three kinds of case:
 #   * structure — cd-release.yml's package-build and ci-package.yml's build
 #     take their matrix from the matrix job's `build` output, which comes from
-#     `vrg-package matrix` (in ci-package.yml by way of its `images` step,
-#     which package-image-prefix.test.sh covers), and pass the cell's `runtime` to `vrg-package build
-#     --runtime` through an env var whose expression yields '' (never "null")
-#     for a cell without one. package-sign downloads the unsigned packages and
-#     the package-manifest artifact, installs rpm, and runs `vrg-package
+#     `vrg-package matrix` by way of the matrix job's `images` step (the
+#     container prefix, which package-image-prefix.test.sh covers), and pass
+#     the cell's `runtime` to `vrg-package build --runtime` through an env
+#     var whose expression yields '' (never "null") for a cell without one.
+#     package-sign downloads the unsigned packages and the package-manifest
+#     artifact, installs rpm, and runs `vrg-package
 #     check-runtime` on them before "Sign and verify rpms".
 #   * runtime flow — for a python fixture, every build cell `vrg-package
 #     matrix` writes carries the manifest's runtime, so the build env gets
@@ -329,7 +330,7 @@ deb "${mixed}/fixture-tool_1.0.0-1_amd64.deb" amd64 'vergil-python3.15 (>= 3.15.
 deb "${mixed}/fixture-tool_1.0.0-1_arm64.deb" arm64 'vergil-python3.14 (>= 3.14.8+20261001)'
 
 build_case "cd-release-package-build-passes-runtime" "$cd_release_yml" \
-  package-build package-matrix resolve \
+  package-build package-matrix images \
   "vrg-package matrix --github-output --manifest packages-manifest.json"
 # shellcheck disable=SC2016 # literal command text the step must contain
 build_case "ci-package-build-passes-runtime" "$ci_package_yml" \

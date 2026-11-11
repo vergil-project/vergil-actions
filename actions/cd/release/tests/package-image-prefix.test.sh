@@ -1,31 +1,37 @@
 #!/usr/bin/env bash
 #
-# Test ci-package.yml's `container-prefix` input (issue #1132): the matrix
-# job's "Apply container prefix" step rewrites the
-# `ghcr.io/vergil-project/prod-pkg-` start of every cell's image in the
-# `vrg-package matrix` outputs to `<prefix>-pkg-`, passes the outputs on byte
-# for byte with the default `prod`, and fails on any other prefix or on a
-# missing or malformed output.
+# Test the `container-prefix` input of the package jobs in ci-package.yml
+# (issue #1132) and cd-release.yml (issue #1134). Each workflow's matrix job
+# runs the shared actions/package/image-prefix action as its `images` step,
+# which rewrites the `ghcr.io/vergil-project/prod-pkg-` start of every cell's
+# image in the `vrg-package matrix` outputs to `<prefix>-pkg-`, passes the
+# outputs on byte for byte with the default `prod`, and fails on any other
+# prefix or on a missing or malformed output.
 #
 # Framework-free and developer-runnable: `bash package-image-prefix.test.sh`.
 # CI runs it from .github/workflows/smoke-cd-release.yml. It needs `yq`
 # (mikefarah v4, preinstalled on GitHub's ubuntu runners) and `jq`, and
 # touches no network.
 #
-# Two kinds of case:
-#   * structure — the input is declared (string, optional, default prod), the
-#     matrix job's `build` and `test` outputs come from the `images` step,
-#     which runs after the resolve step and the [package] check and takes the
-#     prefix and the resolved outputs through env (never interpolated into
-#     its script), and the build and install-test jobs run in each cell's
-#     `image`.
-#   * behaviour — the step's own script, read from the workflow, runs against
-#     fixture outputs with a scratch $GITHUB_OUTPUT.
+# Three kinds of case:
+#   * structure, per workflow — the input is declared (string, optional,
+#     default prod), the matrix job's package outputs come from the `images`
+#     step, which runs actions/package/image-prefix after the resolve step
+#     (and, in ci-package.yml, after the [package] check) with the workflow's
+#     prefix and the resolved outputs, and the package jobs run in each
+#     cell's `image`.
+#   * structure, the action — its inputs reach apply.sh through env (never
+#     interpolated into its script) and its outputs come from that step.
+#   * behaviour — the action's apply.sh runs against fixture outputs with a
+#     scratch $GITHUB_OUTPUT.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${here}/../../../.." && pwd)"
-wf="${repo_root}/.github/workflows/ci-package.yml"
+workflows="${repo_root}/.github/workflows"
+action_dir="${repo_root}/actions/package/image-prefix"
+action_yml="${action_dir}/action.yml"
+script="${action_dir}/apply.sh"
 
 for tool in yq jq; do
   if ! command -v "$tool" >/dev/null 2>&1; then
@@ -55,14 +61,12 @@ expect() {
   fi
 }
 
-step_q() {
-  yq -r ".jobs.matrix.steps[] | select(.id == \"images\") | $1" "$wf"
-}
-
-case_input_declared() {
-  local name="container-prefix-input-declared" q='.on.workflow_call.inputs."container-prefix"'
+# input_case <workflow file> — the workflow declares the input.
+input_case() {
+  local wf="${workflows}/$1" name="$1-container-prefix-input-declared"
+  local q='.on.workflow_call.inputs."container-prefix"'
   expect "$name" "type" "$(yq -r "${q}.type" "$wf")" "string" || return 0
-  expect "$name" "required" "$(yq -r "${q}.required" "$wf")" "false" || return 0
+  expect "$name" "required" "$(yq -r "${q}.required // false" "$wf")" "false" || return 0
   expect "$name" "default" "$(yq -r "${q}.default" "$wf")" "prod" || return 0
   case "$(yq -r "${q}.description" "$wf")" in
     *"prod or dev"*) ;;
@@ -74,75 +78,103 @@ case_input_declared() {
   pass_case "$name"
 }
 
-case_wiring() {
-  local name="images-step-wiring" names idx at_resolve="" at_require="" at_images="" run
+# wiring_case <workflow file> <matrix job> <after step> <outputs> <job:output>...
+# — <matrix job>'s <outputs> (comma-separated) come from its `images` step,
+# which runs actions/package/image-prefix after the step whose id or name is
+# <after step>, with the workflow's prefix and the resolve step's outputs;
+# each <job> runs in its cell's image, from the matrix job's <output>.
+wiring_case() {
+  local file="$1" mjob="$2" after="$3" outs="$4"
+  shift 4
+  local wf="${workflows}/${file}" name="${file}-images-step-wiring"
+  local out out_list pair job key names idx at_resolve="" at_after="" at_images=""
+  local step=".jobs.\"${mjob}\".steps[] | select(.id == \"images\")"
+  expect "$name" "images step uses" "$(yq -r "${step} | .uses" "$wf")" \
+    "./actions/package/image-prefix" || return 0
   # shellcheck disable=SC2016 # literal GitHub Actions expressions the workflow must contain
   {
-    expect "$name" "build output" "$(yq -r '.jobs.matrix.outputs.build' "$wf")" \
-      '${{ steps.images.outputs.build }}' || return 0
-    expect "$name" "test output" "$(yq -r '.jobs.matrix.outputs.test' "$wf")" \
-      '${{ steps.images.outputs.test }}' || return 0
-    expect "$name" "PREFIX env" "$(step_q .env.PREFIX)" '${{ inputs.container-prefix }}' || return 0
-    expect "$name" "BUILD env" "$(step_q .env.BUILD)" '${{ steps.resolve.outputs.build }}' || return 0
-    expect "$name" "TEST env" "$(step_q .env.TEST)" '${{ steps.resolve.outputs.test }}' || return 0
-    expect "$name" "build container" "$(yq -r '.jobs.build.container' "$wf")" \
-      '${{ matrix.image }}' || return 0
-    expect "$name" "install-test container" "$(yq -r '.jobs."install-test".container' "$wf")" \
-      '${{ matrix.image }}' || return 0
-    expect "$name" "build matrix" "$(yq -r '.jobs.build.strategy.matrix.include' "$wf")" \
-      '${{ fromJSON(needs.matrix.outputs.build) }}' || return 0
-    expect "$name" "install-test matrix" \
-      "$(yq -r '.jobs."install-test".strategy.matrix.include' "$wf")" \
-      '${{ fromJSON(needs.matrix.outputs.test) }}' || return 0
+    expect "$name" "container-prefix input" \
+      "$(yq -r "${step} | .with.\"container-prefix\"" "$wf")" \
+      '${{ inputs.container-prefix }}' || return 0
+    expect "$name" "build input" "$(yq -r "${step} | .with.build" "$wf")" \
+      '${{ steps.resolve.outputs.build }}' || return 0
+    expect "$name" "test input" "$(yq -r "${step} | .with.test" "$wf")" \
+      '${{ steps.resolve.outputs.test }}' || return 0
   }
-  run="$(step_q .run)"
-  # shellcheck disable=SC2016 # a literal expression opener the script must not contain
-  case "$run" in
-    *'${{'*)
-      fail_case "$name" "the images step interpolates an expression into its script"
-      return 0
-      ;;
-  esac
-  mapfile -t names < <(yq -r '.jobs.matrix.steps[] | (.id // .name)' "$wf")
+  IFS=, read -r -a out_list <<<"$outs"
+  for out in "${out_list[@]}"; do
+    expect "$name" "${out} output" "$(yq -r ".jobs.\"${mjob}\".outputs.${out}" "$wf")" \
+      "\${{ steps.images.outputs.${out} }}" || return 0
+  done
+  for pair in "$@"; do
+    job="${pair%%:*}"
+    key="${pair#*:}"
+    # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
+    expect "$name" "${job} container" "$(yq -r ".jobs.\"${job}\".container" "$wf")" \
+      '${{ matrix.image }}' || return 0
+    expect "$name" "${job} matrix" "$(yq -r ".jobs.\"${job}\".strategy.matrix.include" "$wf")" \
+      "\${{ fromJSON(needs.${mjob}.outputs.${key}) }}" || return 0
+  done
+  mapfile -t names < <(yq -r ".jobs.\"${mjob}\".steps[] | (.id // .name)" "$wf")
   for idx in "${!names[@]}"; do
     case "${names[$idx]}" in
       resolve) at_resolve="$idx" ;;
-      "Require a [package] section") at_require="$idx" ;;
       images) at_images="$idx" ;;
     esac
+    if [ "${names[$idx]}" = "$after" ]; then
+      at_after="$idx"
+    fi
   done
-  if [ -z "$at_resolve" ] || [ -z "$at_require" ] || [ -z "$at_images" ]; then
-    fail_case "$name" "the matrix job lacks the resolve, [package] check or images step: ${names[*]}"
+  if [ -z "$at_resolve" ] || [ -z "$at_after" ] || [ -z "$at_images" ]; then
+    fail_case "$name" "the ${mjob} job lacks the resolve, '${after}' or images step: ${names[*]}"
     return 0
   fi
-  if ! [ "$at_resolve" -lt "$at_require" ] || ! [ "$at_require" -lt "$at_images" ]; then
-    fail_case "$name" "the images step must follow the resolve step and the [package] check: ${names[*]}"
+  if [ "$at_resolve" -gt "$at_after" ] || ! [ "$at_after" -lt "$at_images" ]; then
+    fail_case "$name" "the images step must follow the resolve step and '${after}': ${names[*]}"
     return 0
   fi
   pass_case "$name"
 }
 
-# Fixtures and the step's script.
+case_action_wiring() {
+  local name="image-prefix-action-wiring" step='.runs.steps[] | select(.id == "apply")'
+  expect "$name" "runs using" "$(yq -r '.runs.using' "$action_yml")" "composite" || return 0
+  # shellcheck disable=SC2016 # literal GitHub Actions expressions the action must contain
+  {
+    expect "$name" "PREFIX env" "$(yq -r "${step} | .env.PREFIX" "$action_yml")" \
+      '${{ inputs.container-prefix }}' || return 0
+    expect "$name" "BUILD env" "$(yq -r "${step} | .env.BUILD" "$action_yml")" \
+      '${{ inputs.build }}' || return 0
+    expect "$name" "TEST env" "$(yq -r "${step} | .env.TEST" "$action_yml")" \
+      '${{ inputs.test }}' || return 0
+    expect "$name" "run" "$(yq -r "${step} | .run" "$action_yml")" \
+      'bash "${GITHUB_ACTION_PATH}/apply.sh"' || return 0
+    expect "$name" "build output" "$(yq -r '.outputs.build.value' "$action_yml")" \
+      '${{ steps.apply.outputs.build }}' || return 0
+    expect "$name" "test output" "$(yq -r '.outputs.test.value' "$action_yml")" \
+      '${{ steps.apply.outputs.test }}' || return 0
+  }
+  expect "$name" "build required" "$(yq -r '.inputs.build.required' "$action_yml")" "true" || return 0
+  expect "$name" "test required" "$(yq -r '.inputs.test.required' "$action_yml")" "true" || return 0
+  pass_case "$name"
+}
+
+# Fixtures.
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-script="${work}/images.sh"
-step_q .run >"$script"
-if [ ! -s "$script" ]; then
-  fail_case "images-step-script" "ci-package.yml's matrix job has no images step script"
-fi
 
 # Spaces after ':' and ',' are not what `jq -c` writes, so a passed-through
 # value can be told from a re-serialized one.
 build_in='[{"id": "ubuntu-24.04-amd64", "runner": "ubuntu-24.04", "image": "ghcr.io/vergil-project/prod-pkg-ubuntu:24.04", "runtime": "3.14.8"}, {"id": "rhel-9-arm64", "runner": "ubuntu-24.04-arm", "image": "ghcr.io/vergil-project/prod-pkg-rhel:9"}]'
 test_in='[{"id": "test-ubuntu-24.04-amd64", "runner": "ubuntu-24.04", "image": "ghcr.io/vergil-project/prod-pkg-ubuntu:24.04", "format": "deb"}]'
 
-# run_step <prefix> <build> <test> — runs the step's script with that env and
-# a fresh $GITHUB_OUTPUT; sets rc, log and gho (the output file).
+# run_step <prefix> <build> <test> — runs apply.sh with that env and a fresh
+# $GITHUB_OUTPUT; sets rc, log and gho (the output file).
 run_step() {
   gho="${work}/github-output"
   : >"$gho"
   rc=0
-  log="$(PREFIX="$1" BUILD="$2" TEST="$3" GITHUB_OUTPUT="$gho" bash -e "$script" 2>&1)" || rc=$?
+  log="$(PREFIX="$1" BUILD="$2" TEST="$3" GITHUB_OUTPUT="$gho" bash "$script" 2>&1)" || rc=$?
 }
 
 # output <key> — the value the step wrote for <key>.
@@ -207,6 +239,21 @@ case_dev_rewrites() {
   pass_case "$name"
 }
 
+# A repo without [package] (cd-release.yml runs the step for every caller)
+# has `[]` outputs: passed on as `[]` with either prefix.
+case_empty_matrix() {
+  local name="$1" prefix="$2"
+  run_step "$prefix" "[]" "[]"
+  expect "$name" "exit status" "$rc" "0" || {
+    printf '%s\n' "$log" >&2
+    return 0
+  }
+  expect "$name" "build output" "$(output build)" "[]" || return 0
+  expect "$name" "test output" "$(output test)" "[]" || return 0
+  expect "$name" "output lines" "$(wc -l <"$gho" | tr -d ' ')" "2" || return 0
+  pass_case "$name"
+}
+
 # refuse_case <name> <prefix> <build> <test> <want log text>
 refuse_case() {
   local name="$1"
@@ -229,12 +276,21 @@ refuse_case() {
   pass_case "$name"
 }
 
-case_input_declared
-case_wiring
-if [ -s "$script" ]; then
+input_case ci-package.yml
+input_case cd-release.yml
+wiring_case ci-package.yml matrix "Require a [package] section" build,test \
+  build:build install-test:test
+wiring_case cd-release.yml package-matrix resolve build \
+  package-build:build
+case_action_wiring
+if [ ! -s "$script" ]; then
+  fail_case "image-prefix-script" "actions/package/image-prefix/apply.sh is missing or empty"
+else
   case_prod_passes_through "prod-passes-outputs-through-byte-for-byte" prod
   case_prod_passes_through "empty-prefix-means-prod" ""
   case_dev_rewrites
+  case_empty_matrix "prod-passes-an-empty-matrix-through" prod
+  case_empty_matrix "dev-passes-an-empty-matrix-through" dev
   refuse_case "rejects-an-unknown-prefix" staging "$build_in" "$test_in" \
     "invalid container-prefix input 'staging' (expected prod or dev)"
   refuse_case "rejects-a-prefix-with-a-path" "dev-pkg-x/../prod" "$build_in" "$test_in" \
