@@ -84,6 +84,10 @@ definition and optional supporting scripts.
   `/etc/vergil/package-toolchain` marker and installs `vergil-tooling` in it,
   inside a package build or install-test container. It installs no OS
   packages, `uv` or nFPM (auto-wired into `ci-package` and `cd-release`).
+- **[package/image-prefix](package-image-prefix.md)** — Applies a workflow's
+  `container-prefix` to the `vrg-package matrix` outputs, so the package jobs
+  run on the `<prefix>-pkg-*` images (auto-wired into `ci-package` and
+  `cd-release`).
 
 ### Publish
 

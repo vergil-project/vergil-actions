@@ -14,6 +14,13 @@ name: Ops — Upstream Refresh
 
 on:
   workflow_call:
+    inputs:
+      container-prefix:
+        type: string
+        required: false
+        default: prod
+        description: >-
+          Container image name prefix (prod or dev). Defaults to "prod".
     secrets:
       APP_CLIENT_ID:
         required: true
@@ -35,7 +42,7 @@ jobs:
       group: upstream-refresh
       cancel-in-progress: false
     container:
-      image: ghcr.io/vergil-project/prod-base:latest
+      image: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
         id: app-token

@@ -142,10 +142,15 @@ ghcr.io/vergil-project/<prefix>-<suffix>:<tag>
 ```
 
 The **prefix** defaults to `prod` and selects which image variant to use.
-Every reusable workflow accepts a `container-prefix` input that overrides
-this default. The Docker images are part of the development and deployment
-environment only — there is no runtime dependency on them from the
-artifacts these workflows produce.
+Every reusable workflow that runs a job in one of these images accepts a
+`container-prefix` input that overrides this default for every image it
+uses, including the package toolchain images of `ci-package` and
+`cd-release` (`<prefix>-pkg-*`). Each workflow file reads only its own
+input, so a caller can switch its CI and its release separately.
+(`publish-index` runs on the bare runner and has no such input.) The
+Docker images are part of the development and deployment environment only —
+there is no runtime dependency on them from the artifacts these workflows
+produce.
 
 ### Overriding the prefix
 

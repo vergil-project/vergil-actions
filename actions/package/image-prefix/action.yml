@@ -1,0 +1,44 @@
+name: Apply the container prefix to a package matrix
+description: >-
+  Applies a reusable workflow's `container-prefix` to the `build` and `test`
+  outputs of `vrg-package matrix` (vergil-project/vergil-actions#1132 and
+  #1134). Only the `ghcr.io/vergil-project/prod-pkg-` start of each cell's
+  `image` changes, to `<prefix>-pkg-`; with the default `prod` (or an empty
+  value) both outputs are passed on byte for byte. Any other prefix, or a
+  missing or malformed output, fails. Used by the matrix jobs of
+  ci-package.yml (`matrix`) and cd-release.yml (`package-matrix`).
+
+inputs:
+  container-prefix:
+    description: >-
+      The calling workflow's `container-prefix` (prod or dev). Empty means
+      prod.
+    required: false
+    default: prod
+  build:
+    description: The `vrg-package matrix` `build` output (a one-line JSON array).
+    required: true
+  test:
+    description: The `vrg-package matrix` `test` output (a one-line JSON array).
+    required: true
+
+outputs:
+  build:
+    description: The `build` output with the prefix applied to each cell's image.
+    value: ${{ steps.apply.outputs.build }}
+  test:
+    description: The `test` output with the prefix applied to each cell's image.
+    value: ${{ steps.apply.outputs.test }}
+
+runs:
+  using: composite
+  steps:
+    # The inputs arrive via env and are never interpolated into the script.
+    - name: Apply container prefix
+      id: apply
+      shell: bash
+      env:
+        PREFIX: ${{ inputs.container-prefix }}
+        BUILD: ${{ inputs.build }}
+        TEST: ${{ inputs.test }}
+      run: bash "${GITHUB_ACTION_PATH}/apply.sh"

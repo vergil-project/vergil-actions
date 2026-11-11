@@ -33,7 +33,7 @@ across all managed repositories.
 
 | Workflow | Purpose |
 |---|---|
-| `cd-release.yml` | Full release pipeline (tag, build, publish, version bump). Repos with `[package]` also build their `.deb`/`.rpm` packages, sign the `.rpm`s in the main-only `package-signing` environment, attest them, attach them (plus `packages-manifest.json`) to the Release, and dispatch `package-released` to `<owner>/packages`; such callers must pass `secrets: inherit` |
+| `cd-release.yml` | Full release pipeline (tag, build, publish, version bump). Repos with `[package]` also build their `.deb`/`.rpm` packages, sign the `.rpm`s in the main-only `package-signing` environment, attest them, attach them (plus `packages-manifest.json`) to the Release, and dispatch `package-released` to `<owner>/packages`; such callers must pass `secrets: inherit`. `container-prefix` input: `prod` (default) or `dev`, picks the release job's image and runs the `package-build` cells on the `<prefix>-pkg-*` images |
 | `cd-docs.yml` | MkDocs documentation deployment |
 | `publish-index.yml` | Rebuild, verify and sign the apt/dnf package-repository site from the releases in `packages.toml` and deploy it to GitHub Pages, then fail within minutes unless Pages serves the index just built (called only from an `<org>/packages` repo; `index-signing` environment, develop only; caller passes `secrets: inherit`) |
 
@@ -92,6 +92,18 @@ Rules:
   caller passes only `language:` and `container-suffix:`.
 - A composite action that takes a version list names it `versions` (not
   `go-versions`, `python-versions`, etc.), as `actions/ci/matrix` does.
+- Every reusable workflow that runs a job in a `ghcr.io/vergil-project`
+  image declares `container-prefix` (`type: string`, `required: false`,
+  `default: prod`) and takes every such image's prefix from it: a
+  `ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-…`
+  container line, a matrix image from `actions/ci/matrix` or
+  `actions/package/image-prefix` given the input, or the input passed on to
+  a called workflow. No reusable workflow names a `prod-` image literally,
+  and each file reads only its own input, so a caller sets its CI and its
+  release separately
+  ([#1134](https://github.com/vergil-project/vergil-actions/issues/1134);
+  `actions/shared/setup/primary-suffix/tests/container-prefix.test.sh`
+  checks it).
 
 ## Dynamic version matrix and evidence gates
 

@@ -92,6 +92,7 @@ nav:
           - shared/docs/stage: actions/shared-docs-stage.md
       - Package:
           - package/setup: actions/package-setup.md
+          - package/image-prefix: actions/package-image-prefix.md
       - Publish:
           - publish/index/live-check: actions/publish-index-live-check.md
       - Local:
