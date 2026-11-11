@@ -23,7 +23,9 @@ Each consumer calls it from its own `ops.yml` on its own schedule.
 
 ## Inputs
 
-None.
+| Input | Type | Required | Default | Description |
+| ----- | ---- | -------- | ------- | ----------- |
+| `container-prefix` | string | no | `prod` | Container image name prefix (`prod` or `dev`) |
 
 ## Secrets
 
@@ -45,7 +47,8 @@ on that repository.
 
 ## Behavior
 
-The `upstream-refresh` job runs in `ghcr.io/vergil-project/prod-base:latest`,
+The `upstream-refresh` job runs in
+`ghcr.io/vergil-project/<container-prefix>-base:latest` (`prod-base` by default),
 in the concurrency group `upstream-refresh` (a new run waits for a running
 one; neither is cancelled):
 

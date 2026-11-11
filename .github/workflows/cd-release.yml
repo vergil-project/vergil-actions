@@ -28,7 +28,10 @@ on:
         type: string
         default: ""
       container-prefix:
-        description: Container image name prefix (prod or dev). Defaults to "prod".
+        description: >-
+          Container image name prefix (prod or dev). Defaults to "prod". It
+          picks the release job's image and, for repos with [package], the
+          package-build cells' `<prefix>-pkg-*` images (issue #1134).
         type: string
         default: prod
       registry-publish:
@@ -154,7 +157,7 @@ jobs:
       contents: read
     outputs:
       enabled: ${{ steps.resolve.outputs.enabled }}
-      build: ${{ steps.resolve.outputs.build }}
+      build: ${{ steps.images.outputs.build }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -183,6 +186,23 @@ jobs:
         run: |
           set -euo pipefail
           vrg-package matrix --github-output --manifest packages-manifest.json
+
+      # Apply the caller's container-prefix to every build cell's image
+      # (issue #1134), with the same shared action as ci-package.yml's matrix
+      # job (#1132), so a caller can release on the `dev-pkg-` images. Only
+      # the `ghcr.io/vergil-project/prod-pkg-` start of an `image` changes;
+      # with the default `prod` the outputs are passed on byte for byte. Any
+      # other prefix, or a missing or malformed output, fails the job and so
+      # the release. It runs for a repo without [package] too, whose outputs
+      # are `[]`. actions/cd/release/tests/package-image-prefix.test.sh
+      # covers it.
+      - name: Apply container prefix
+        id: images
+        uses: ./actions/package/image-prefix
+        with:
+          container-prefix: ${{ inputs.container-prefix }}
+          build: ${{ steps.resolve.outputs.build }}
+          test: ${{ steps.resolve.outputs.test }}
 
       - name: Upload package manifest
         if: steps.resolve.outputs.enabled == 'true'

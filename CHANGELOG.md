@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.64] - 2026-11-11
+
+### Documentation
+
+- describe the retention-first index build order in the header (#1140)
+
+### Features
+
+- make container-prefix a universal tunable, starting with cd-release.yml's package jobs (#1139)
+
 ## [2.1.63] - 2026-11-11
 
 ### Documentation

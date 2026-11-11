@@ -5,8 +5,8 @@ also builds, signs and attaches the repo's `.deb`/`.rpm` packages:
 
 | Job | Behavior |
 | --- | -------- |
-| `package-matrix` | Always runs. `vrg-package check-unpublished --version <version>` first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without `[package]` passes. Then `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest. For each `builder = "python"` package it resolves the `vergil-python` runtime once, and records it as `runtime` on that package's build cells and in the manifest's `runtimes` map. With several `[[package]]` entries, cell ids are package-qualified (`<name>--<id>`). |
-| `package-build / <cell>` | One job per build cell, on the cell's runner inside the cell's package toolchain image (`prod-pkg-ubuntu` or `prod-pkg-rhel`), set up with [`package/setup`](../actions/package-setup.md) as in `ci-package.yml`. It runs `vrg-package build --cell <cell> --runtime <runtime>` with the cell's recorded `runtime`, so every cell of a package builds on the same runtime. A cell without one (a non-python builder) passes an empty `--runtime`, never `null`. The packages are unsigned. |
+| `package-matrix` | Always runs. `vrg-package check-unpublished --version <version>` first refuses the release if any package it would publish (same name, full version, arch and format) was already published by an earlier release; a repo without `[package]` passes. Then `vrg-package matrix --github-output --manifest packages-manifest.json` resolves the build cells and writes the release manifest, and [`package/image-prefix`](../actions/package-image-prefix.md) applies the caller's [`container-prefix`](#container-prefix) to each cell's image. For each `builder = "python"` package it resolves the `vergil-python` runtime once, and records it as `runtime` on that package's build cells and in the manifest's `runtimes` map. With several `[[package]]` entries, cell ids are package-qualified (`<name>--<id>`). |
+| `package-build / <cell>` | One job per build cell, on the cell's runner inside the cell's package toolchain image (`prod-pkg-ubuntu` or `prod-pkg-rhel`, or their `dev-pkg-` variants with [`container-prefix: dev`](#container-prefix)), set up with [`package/setup`](../actions/package-setup.md) as in `ci-package.yml`. It runs `vrg-package build --cell <cell> --runtime <runtime>` with the cell's recorded `runtime`, so every cell of a package builds on the same runtime. A cell without one (a non-python builder) passes an empty `--runtime`, never `null`. The packages are unsigned. |
 | `package-sign` | Declares the `package-signing` environment. Before signing anything it runs `vrg-package check-runtime --manifest packages-manifest.json --artifacts dist/packages`, which fails unless every `.deb` and `.rpm` of each `python` package depends on exactly the runtime the manifest records for that package (packages with no recorded runtime are not checked). It then signs every `.rpm` with the org signing subkey and verifies each signature, then attests the provenance of every package. |
 | `release` | Runs only if `package-sign` succeeded. It attaches the signed packages and `packages-manifest.json` to the Release, then dispatches `package-released` to `<owner>/packages`. |
 
@@ -61,5 +61,33 @@ jobs:
     with:
       language: python
     # Required: environment secrets only reach the reusable workflow with inherit.
+    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
+```
+
+## Container prefix
+
+The `package-build` cells run on the images `vrg-package matrix` names,
+`ghcr.io/vergil-project/prod-pkg-<distro>:<version>`. The workflow's
+`container-prefix` input, which also picks the `release` job's image, applies
+to them too, by the same [`package/image-prefix`](../actions/package-image-prefix.md)
+action `ci-package.yml` uses: with `dev`, the `package-matrix` job rewrites
+the `prod-pkg-` start of each cell's image to `dev-pkg-`, so the release
+builds its packages on the development package images. Nothing else in the
+matrix changes, and with `prod` (the default, which an empty value also
+means) it is passed on unchanged. Any other value, or a missing or malformed
+`vrg-package matrix` output, fails `package-matrix`, and so the release
+before anything is built. The job log lists the image each cell will use.
+
+The input is set per workflow file, so a caller can run its package CI
+(`ci-package.yml`) and its release on different images. `dev` is a
+temporary setting: remove it once the production images serve again.
+
+```yaml
+jobs:
+  release:
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
+    with:
+      language: python
+      container-prefix: dev  # optional; omit for prod
     secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
 ```

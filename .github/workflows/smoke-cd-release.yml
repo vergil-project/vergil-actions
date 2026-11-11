@@ -18,11 +18,13 @@ name: Smoke - cd-release
 # check-runtime` on the unsigned packages before signing. It runs the real
 # `vrg-package` on offline fixtures.
 #
-# package-image-prefix.test.sh (issue #1132): ci-package's `container-prefix`
-# input rewrites only the `prod-pkg-` start of each cell's image in the
-# `vrg-package matrix` outputs, passes them on byte for byte with the default
-# `prod`, and refuses any other prefix or a missing or malformed output. It
-# runs the workflow step's own script on fixture outputs.
+# package-image-prefix.test.sh (issues #1132 and #1134): the
+# `container-prefix` input of ci-package and cd-release, applied by their
+# matrix jobs through the shared package/image-prefix action, rewrites only
+# the `prod-pkg-` start of each cell's image in the `vrg-package matrix`
+# outputs, passes them on byte for byte with the default `prod`, and refuses
+# any other prefix or a missing or malformed output. It checks both
+# workflows' wiring and runs the action's apply.sh on fixture outputs.
 
 on:
   workflow_dispatch:
@@ -33,6 +35,7 @@ on:
       - .github/workflows/smoke-cd-release.yml
       - actions/shared/setup/primary-suffix/**
       - actions/cd/release/tests/**
+      - actions/package/image-prefix/**
       - actions/shared/setup/vergil/**
 
 permissions:
