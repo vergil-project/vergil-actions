@@ -5635,6 +5635,8 @@
       
         
       
+        
+      
     
     
     
@@ -5698,6 +5700,34 @@
     
   
     package/setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="package-image-prefix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    package/image-prefix
   
 
     
@@ -7018,6 +7048,10 @@ definition and optional supporting scripts.</p>
   <code>/etc/vergil/package-toolchain</code> marker and installs <code>vergil-tooling</code> in it,
   inside a package build or install-test container. It installs no OS
   packages, <code>uv</code> or nFPM (auto-wired into <code>ci-package</code> and <code>cd-release</code>).</li>
+<li><strong><a href="package-image-prefix/">package/image-prefix</a></strong> — Applies a workflow's
+  <code>container-prefix</code> to the <code>vrg-package matrix</code> outputs, so the package jobs
+  run on the <code>&lt;prefix&gt;-pkg-*</code> images (auto-wired into <code>ci-package</code> and
+  <code>cd-release</code>).</li>
 </ul>
 <h3 id="publish">Publish<a class="headerlink" href="#publish" title="Permanent link">&para;</a></h3>
 <ul>

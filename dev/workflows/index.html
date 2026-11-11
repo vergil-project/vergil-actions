@@ -5618,6 +5618,8 @@
       
         
       
+        
+      
     
     
     
@@ -5678,6 +5680,34 @@
     
   
     package/setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/package-image-prefix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    package/image-prefix
   
 
     
@@ -7139,10 +7169,15 @@ it requests.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ghcr.io/vergil-project/&lt;prefix&gt;-&lt;suffix&gt;:&lt;tag&gt;
 </code></pre></div>
 <p>The <strong>prefix</strong> defaults to <code>prod</code> and selects which image variant to use.
-Every reusable workflow accepts a <code>container-prefix</code> input that overrides
-this default. The Docker images are part of the development and deployment
-environment only — there is no runtime dependency on them from the
-artifacts these workflows produce.</p>
+Every reusable workflow that runs a job in one of these images accepts a
+<code>container-prefix</code> input that overrides this default for every image it
+uses, including the package toolchain images of <code>ci-package</code> and
+<code>cd-release</code> (<code>&lt;prefix&gt;-pkg-*</code>). Each workflow file reads only its own
+input, so a caller can switch its CI and its release separately.
+(<code>publish-index</code> runs on the bare runner and has no such input.) The
+Docker images are part of the development and deployment environment only —
+there is no runtime dependency on them from the artifacts these workflows
+produce.</p>
 <h3 id="overriding-the-prefix">Overriding the prefix<a class="headerlink" href="#overriding-the-prefix" title="Permanent link">&para;</a></h3>
 <p>To test against development Docker images, pass <code>container-prefix: dev</code>
 to the reusable workflow calls in the consumer's <code>ci.yml</code>, <code>cd.yml</code>, or
