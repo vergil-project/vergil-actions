@@ -62,7 +62,8 @@ recorded. This needs vergil-tooling 2.1.262 or later at the caller's
 
 Each `build / <cell>` and `install-test / <cell>` job runs inside the cell's
 package toolchain image (`prod-pkg-ubuntu` or `prod-pkg-rhel`, which the
-caller's vergil-tooling names) and sets it up with
+caller's vergil-tooling names, or their `dev-pkg-` variants with
+[`container-prefix: dev`](#container-prefix)) and sets it up with
 [`package/setup`](../actions/package-setup.md). That action checks the image
 against its `/etc/vergil/package-toolchain` marker and installs
 `vergil-tooling`; it installs no toolchain itself, so a cell in a raw image
@@ -75,3 +76,24 @@ Every package job sets `timeout-minutes`, in both `ci-package.yml` (`matrix`
 (`package-matrix` 5, `package-build` 30, `package-sign` 15). A normal build
 takes about 45 seconds, so a stall fails the job in minutes rather than
 running to GitHub's 6-hour limit.
+
+## Container prefix
+
+`vrg-package matrix` names every cell's image
+`ghcr.io/vergil-project/prod-pkg-<distro>:<version>`. The optional
+`container-prefix` input (`prod` or `dev`; default `prod`, which an empty
+value also means) picks the image
+variant: with `dev`, the `matrix` job rewrites the `prod-pkg-` start of each
+image in its `build` and `test` outputs to `dev-pkg-`, so the build and
+install-test jobs run on the development package images. Nothing else in the
+outputs changes, and with `prod` they are passed on unchanged. Any other
+value, or a missing or malformed `vrg-package matrix` output, fails the
+`matrix` job. The job log lists the image each cell will use.
+
+```yaml
+jobs:
+  package:
+    uses: vergil-project/vergil-actions/.github/workflows/ci-package.yml@v2.1
+    with:
+      container-prefix: dev  # optional; omit for prod
+```

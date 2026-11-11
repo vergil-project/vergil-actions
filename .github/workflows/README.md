@@ -27,7 +27,7 @@ across all managed repositories.
 | `ci-test.yml` | Unit and integration tests |
 | `ci-audit.yml` | Dependency audit |
 | `ci-version-bump.yml` | Version divergence gate |
-| `ci-package.yml` | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only; gate `package / evidence`; `package-tier` input: `auto`/`full`/`reduced`, auto = full on release PRs and non-PR events, reduced on other PRs) |
+| `ci-package.yml` | Build and install-test `.deb`/`.rpm` packages (repos with `[package]` only; gate `package / evidence`; `package-tier` input: `auto`/`full`/`reduced`, auto = full on release PRs and non-PR events, reduced on other PRs; `container-prefix` input: `prod` (default) or `dev`, runs the build and install-test jobs on the `<prefix>-pkg-*` images) |
 
 ### CD (post-merge)
 
