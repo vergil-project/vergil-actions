@@ -833,6 +833,8 @@
       
         
       
+        
+      
     
     
     
@@ -885,6 +887,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.65/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.65
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7117,7 +7147,7 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <td><code>install-source</code></td>
 <td>No</td>
 <td><code>auto</code></td>
-<td><code>auto</code> chooses the install path from the tag and the environment (below). <code>git</code> always installs vergil-tooling with <code>uv tool install</code> from git and never touches the vergil apt repository. <code>publish-index</code>'s <code>build-index</code> job sets it, because it rebuilds that repository's index and must not install from the index it is about to repair. Any other value fails the job.</td>
+<td><code>auto</code> chooses the install path from the tag and the environment (below). <code>git</code> always installs vergil-tooling with <code>uv tool install</code> from git and never touches the vergil apt repository; with a line pin (<code>vX.Y</code>) it installs the newest <code>vX.Y.Z</code> release tag in that line rather than the floating <code>vX.Y</code> tag. <code>publish-index</code>'s <code>build-index</code> job sets it, because it rebuilds that repository's index and must not install from the index it is about to repair. Any other value fails the job.</td>
 </tr>
 <tr>
 <td><code>version-window</code></td>
@@ -7179,7 +7209,13 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
   commands ignore a project's uv settings.</li>
 <li>Otherwise it reads <code>[dependencies].vergil</code> from <code>vergil.toml</code> (e.g.
   <code>v2.1</code>) and installs vergil-tooling at that tag:<ul>
-<li><strong><code>install-source: git</code>:</strong> <code>uv tool install</code> from git, whatever the
+<li><strong><code>install-source: git</code>:</strong> <code>uv tool install</code> from git. A release
+  line pin (<code>vX.Y</code>) installs the newest <code>vX.Y.Z</code> tag in that line,
+  listed with <code>git ls-remote</code>, not the floating <code>vX.Y</code> tag: a release
+  dispatches the package-index rebuild before it moves <code>vX.Y</code>, and
+  the rebuild must run the release that triggered it (issue #1144).
+  A failed tag lookup, or a line with no <code>vX.Y.Z</code> tag, fails the job;
+  it never falls back to <code>vX.Y</code>. An exact or dev pin installs at that
   tag.</li>
 <li><strong>A dev tag</strong> (anything but <code>vX.Y</code> or <code>vX.Y.Z</code>, such as <code>develop</code>):
   <code>uv tool install</code> from git. Where the job has both the vergil apt
