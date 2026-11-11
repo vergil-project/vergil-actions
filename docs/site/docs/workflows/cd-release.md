@@ -39,7 +39,7 @@ fails `setup` too, and `release` does not run.
 | `language` | string | `""` | Language ecosystem (`go`, `python`, `rust`). Omit it for repos with no language. |
 | `container-suffix` | string | `""` | Cross-check only. The image suffix comes from the resolver. A non-empty value must equal the resolved primary suffix (e.g. `python`, `cpp-clang`, `base`), or `setup` fails. It never changes the image. |
 | `container-tag` | string | `""` | **Deprecated and ignored.** The tag comes from the resolver. A non-empty value only adds a `::warning::` to the run. The input is kept for one release so callers that still pass it do not fail: GitHub rejects a reusable-workflow call that passes an input the workflow does not declare. It is deleted once [vergil-tooling#3484](https://github.com/vergil-project/vergil-tooling/issues/3484) removes it from every caller. |
-| `container-prefix` | string | `prod` | Image name prefix (`prod` or `dev`). |
+| `container-prefix` | string | `prod` | Image name prefix (`prod` or `dev`). It picks the `release` job's image and, for repos with `[package]`, the `<prefix>-pkg-*` images of the `package-build` cells ([binary packages](cd-release-packages.md#container-prefix)). |
 | `registry-publish` | boolean | `false` | Publish build artifacts to the language's package registry. |
 | `build-command` | string | `""` | Override the ecosystem's build command. |
 | `publish-command` | string | `""` | Override the ecosystem's publish command. |

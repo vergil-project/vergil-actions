@@ -88,7 +88,12 @@ image in its `build` and `test` outputs to `dev-pkg-`, so the build and
 install-test jobs run on the development package images. Nothing else in the
 outputs changes, and with `prod` they are passed on unchanged. Any other
 value, or a missing or malformed `vrg-package matrix` output, fails the
-`matrix` job. The job log lists the image each cell will use.
+`matrix` job. The job log lists the image each cell will use. The rewrite is
+the [`package/image-prefix`](../actions/package-image-prefix.md) action,
+which `cd-release.yml` runs on its package cells as well
+([binary packages](cd-release-packages.md#container-prefix)). Each workflow
+reads its own input, so a caller can move its package CI to the `dev-`
+images without moving its release, or the other way round.
 
 ```yaml
 jobs:
