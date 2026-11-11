@@ -12,10 +12,22 @@ name: CI Package
 # `package-tier` input overrides the automatic choice. The tier that ran is
 # recorded in the gate's evidence (`metrics.tier`). Requires a vergil-tooling
 # release whose `vrg-package matrix` accepts `--tier`.
+#
+# Container prefix (vergil-project/vergil-actions#1132): `vrg-package matrix`
+# names every cell's image `ghcr.io/vergil-project/prod-pkg-<distro>:<version>`.
+# The `container-prefix` input swaps that `prod-pkg-` for `<prefix>-pkg-`, so a
+# caller can run the build and install-test jobs on the `dev-` package images.
+# With the default `prod` the matrix outputs are passed on unchanged.
 
 on:
   workflow_call:
     inputs:
+      container-prefix:
+        type: string
+        required: false
+        default: prod
+        description: >-
+          Container image name prefix (prod or dev). Defaults to "prod".
       package-tier:
         description: >-
           Package matrix tier: "auto" (default; full for release PRs into main
@@ -173,8 +185,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      build: ${{ steps.resolve.outputs.build }}
-      test: ${{ steps.resolve.outputs.test }}
+      build: ${{ steps.images.outputs.build }}
+      test: ${{ steps.images.outputs.test }}
       tier: ${{ steps.tier.outputs.tier }}
     steps:
       # Decide the matrix tier. Event context arrives via env and is never
@@ -229,3 +241,68 @@ jobs:
         run: |
           echo "::error::ci-package.yml was called but vergil.toml has no [package] section; only repos with [package] may call it"
           exit 1
+
+      # Apply the caller's container-prefix to every cell's image. Only the
+      # `ghcr.io/vergil-project/prod-pkg-` start of an `image` changes; with
+      # the default `prod` each output is passed on byte for byte. Any other
+      # prefix, or a missing or malformed output, fails the job. The inputs
+      # arrive via env and are never interpolated into the script.
+      # actions/cd/release/tests/package-image-prefix.test.sh runs this step.
+      - name: Apply container prefix
+        id: images
+        shell: bash
+        env:
+          PREFIX: ${{ inputs.container-prefix }}
+          BUILD: ${{ steps.resolve.outputs.build }}
+          TEST: ${{ steps.resolve.outputs.test }}
+        run: |
+          set -euo pipefail
+          # An empty input means the default, as `inputs.container-prefix ||
+          # 'prod'` does in the other reusable workflows.
+          prefix="${PREFIX:-prod}"
+          case "$prefix" in
+            prod|dev) ;;
+            *)
+              echo "::error::invalid container-prefix input '${prefix}' (expected prod or dev)"
+              exit 1
+              ;;
+          esac
+          from="ghcr.io/vergil-project/prod-pkg-"
+          to="ghcr.io/vergil-project/${prefix}-pkg-"
+          echo "container prefix: ${prefix}"
+          # Check and rewrite both outputs before writing either, so a bad
+          # one leaves no half-set outputs behind.
+          lines=()
+          for pair in build:BUILD test:TEST; do
+            key="${pair%%:*}"
+            var="${pair#*:}"
+            value="${!var}"
+            if [ -z "$value" ]; then
+              echo "::error::vrg-package matrix wrote no '${key}' output"
+              exit 1
+            fi
+            if [[ "$value" == *$'\n'* ]] ||
+              ! printf '%s' "$value" | jq -e \
+                'type == "array" and all(.[]; type == "object" and (.image | type) == "string")' \
+                >/dev/null 2>&1; then
+              echo "::error::vrg-package matrix's '${key}' output is not a one-line JSON array of cells with a string image"
+              exit 1
+            fi
+            if [ "$prefix" = prod ]; then
+              out="$value"
+            else
+              out="$(printf '%s' "$value" | jq -c --arg from "$from" --arg to "$to" \
+                'map(if (.image | startswith($from)) then .image = $to + (.image | ltrimstr($from)) else . end)')"
+            fi
+            cells="$(printf '%s' "$out" | jq -r '.[] | [(.id // "(no id)" | tostring), .image] | @tsv')"
+            if [ -n "$cells" ]; then
+              while IFS=$'\t' read -r id image; do
+                echo "${key} / ${id}: ${image}"
+                if [[ "$image" != "$to"* ]]; then
+                  echo "::warning::${key} / ${id}: image '${image}' is not under '${from}', so container-prefix '${prefix}' leaves it unchanged"
+                fi
+              done < <(printf '%s\n' "$cells")
+            fi
+            lines+=("${key}=${out}")
+          done
+          printf '%s\n' "${lines[@]}" >> "$GITHUB_OUTPUT"

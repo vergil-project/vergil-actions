@@ -16,7 +16,8 @@
 # Three kinds of case:
 #   * structure — cd-release.yml's package-build and ci-package.yml's build
 #     take their matrix from the matrix job's `build` output, which comes from
-#     `vrg-package matrix`, and pass the cell's `runtime` to `vrg-package build
+#     `vrg-package matrix` (in ci-package.yml by way of its `images` step,
+#     which package-image-prefix.test.sh covers), and pass the cell's `runtime` to `vrg-package build
 #     --runtime` through an env var whose expression yields '' (never "null")
 #     for a cell without one. package-sign downloads the unsigned packages and
 #     the package-manifest artifact, installs rpm, and runs `vrg-package
@@ -76,18 +77,18 @@ expect() {
   fi
 }
 
-# build_case <name> <workflow> <build job> <matrix job> <resolve run> — the
-# build job's matrix is the matrix job's `build` output, from its `resolve`
-# step running <resolve run>, and "Build packages" passes the cell's runtime.
+# build_case <name> <workflow> <build job> <matrix job> <output step>
+# <resolve run> — the build job's matrix is the matrix job's `build` output,
+# taken from its <output step> step, the matrix job's `resolve` step runs
+# <resolve run>, and "Build packages" passes the cell's runtime.
 build_case() {
-  local name="$1" wf="$2" job="$3" mjob="$4" want_resolve="$5" step run
+  local name="$1" wf="$2" job="$3" mjob="$4" out_step="$5" want_resolve="$6" step run
   expect "$name" "matrix include" \
     "$(yq -r ".jobs.\"${job}\".strategy.matrix.include" "$wf")" \
     "\${{ fromJSON(needs.${mjob}.outputs.build) }}" || return 0
-  # shellcheck disable=SC2016 # a literal GitHub Actions expression the workflow must contain
   expect "$name" "matrix job build output" \
     "$(yq -r ".jobs.\"${mjob}\".outputs.build" "$wf")" \
-    '${{ steps.resolve.outputs.build }}' || return 0
+    "\${{ steps.${out_step}.outputs.build }}" || return 0
   case "$(yq -r ".jobs.\"${mjob}\".steps[] | select(.id == \"resolve\") | .run" "$wf")" in
     *"$want_resolve"*) ;;
     *)
@@ -328,11 +329,11 @@ deb "${mixed}/fixture-tool_1.0.0-1_amd64.deb" amd64 'vergil-python3.15 (>= 3.15.
 deb "${mixed}/fixture-tool_1.0.0-1_arm64.deb" arm64 'vergil-python3.14 (>= 3.14.8+20261001)'
 
 build_case "cd-release-package-build-passes-runtime" "$cd_release_yml" \
-  package-build package-matrix \
+  package-build package-matrix resolve \
   "vrg-package matrix --github-output --manifest packages-manifest.json"
 # shellcheck disable=SC2016 # literal command text the step must contain
 build_case "ci-package-build-passes-runtime" "$ci_package_yml" \
-  build matrix 'vrg-package matrix --github-output --tier "$TIER"'
+  build matrix images 'vrg-package matrix --github-output --tier "$TIER"'
 case_sign_checks_runtime
 case_python_cells_carry_runtime
 case_staged_cells_get_empty_runtime
