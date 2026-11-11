@@ -27,7 +27,10 @@ inputs:
       environment. `git` always installs vergil-tooling with `uv tool install`
       from git, never from the vergil apt repository: for the job that rebuilds
       that repository's index (publish-index's build-index), which must not
-      depend on the index it is about to repair.
+      depend on the index it is about to repair. With a line pin (vX.Y) it
+      installs the newest vX.Y.Z release tag in that line, not the floating
+      vX.Y tag, so the rebuild a release dispatches runs that release even
+      before vX.Y moves; a failed tag lookup fails the job.
     required: false
     default: auto
   version-window:
