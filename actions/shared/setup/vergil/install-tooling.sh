@@ -9,7 +9,12 @@
 #     test, so `uv sync` installs it from source, as before.
 #   * install-source: git (publish-index's build-index, which rebuilds the
 #     vergil apt index and so never installs from it): `uv tool install` from
-#     git, whatever the tag.
+#     git. A line pin (vX.Y) installs the newest vX.Y.Z tag in that line, found
+#     with `git ls-remote`, not the floating vX.Y tag: a release dispatches the
+#     index rebuild before vX.Y moves, and the rebuild must run the release
+#     that triggered it (issue #1144). A failed lookup, or a line with no
+#     release, fails the job; it never falls back to vX.Y. An exact or dev pin
+#     installs at that tag.
 #   * A dev tag (anything but vX.Y or vX.Y.Z): `uv tool install` from git. Where
 #     both the vergil apt source and a core Python (/opt/vergil/python/*) are
 #     present, it runs on the core Python (`--python`); where neither is,
@@ -416,11 +421,28 @@ self_repo_install() {
   echo "${GITHUB_WORKSPACE}/.venv/bin" >>"$GITHUB_PATH"
 }
 
+# newest_release <line>: the newest vX.Y.Z tag in the vX.Y line <line>, from
+# the vergil-tooling repository's tags.
+newest_release() {
+  local line="$1" refs newest
+  refs="$(git ls-remote --tags --refs "$GIT_URL" "refs/tags/${line}.*")" ||
+    die "could not list the ${line}.* tags of ${GIT_URL}"
+  newest="$(printf '%s\n' "$refs" |
+    sed -n "s#^[0-9a-f]*[[:space:]]*refs/tags/\(${line//./\\.}\.[0-9][0-9]*\)\$#\1#p" |
+    sort -t. -k3,3n | tail -n 1)"
+  [ -n "$newest" ] || die "no ${line}.Z release tag in ${GIT_URL}"
+  echo "$newest"
+}
+
 git_source_install() {
-  local tag="$1"
-  log "uv tool install from git (${tag}; install-source: git, never the vergil apt repository)"
+  local tag="$1" kind="$2" ref="$1"
+  if [ "$kind" = line ]; then
+    ref="$(newest_release "$tag")"
+    log "the newest ${tag} release is ${ref}"
+  fi
+  log "uv tool install from git (${ref}; install-source: git, never the vergil apt repository)"
   ensure_uv
-  uv_git_install "$tag"
+  uv_git_install "$ref"
 }
 
 dev_install() {
@@ -499,7 +521,7 @@ main() {
   kind="$(classify "$tag")"
 
   if [ "$install_source" = git ]; then
-    git_source_install "$tag"
+    git_source_install "$tag" "$kind"
   elif [ "$kind" = dev ]; then
     dev_install "$tag"
   elif is_host; then

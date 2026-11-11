@@ -51,7 +51,10 @@ jobs:
         uses: actions/checkout@v6
 
       # Always from git: this job rebuilds and re-signs the vergil apt index,
-      # so it must never install from the index it is about to repair.
+      # so it must never install from the index it is about to repair. With
+      # the caller's vX.Y pin, `git` installs the newest vX.Y.Z release, not
+      # the floating vX.Y tag: a release dispatches this rebuild before it
+      # moves vX.Y, and the rebuild must run that release (issue #1144).
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
         with:
