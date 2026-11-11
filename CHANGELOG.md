@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.63] - 2026-11-11
+
+### Documentation
+
+- describe package/setup as a toolchain image check, not an installer (#1131)
+
+### Features
+
+- add a container-prefix input to ci-package.yml (#1133)
+
 ## [2.1.62] - 2026-11-10
 
 ### Chores
