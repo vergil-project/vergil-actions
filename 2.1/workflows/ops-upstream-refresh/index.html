@@ -831,6 +831,8 @@
       
         
       
+        
+      
     
     
     
@@ -883,6 +885,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.64/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5618,6 +5648,8 @@
       
         
       
+        
+      
     
     
     
@@ -5678,6 +5710,34 @@
     
   
     package/setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/package-image-prefix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    package/image-prefix
   
 
     
@@ -7020,7 +7080,26 @@ vergil-tooling <code>upstream-refresh</code> configuration reference for the hoo
 contract.</p>
 <p>Each consumer calls it from its own <code>ops.yml</code> on its own schedule.</p>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
-<p>None.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>container-prefix</code></td>
+<td>string</td>
+<td>no</td>
+<td><code>prod</code></td>
+<td>Container image name prefix (<code>prod</code> or <code>dev</code>)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -7065,7 +7144,8 @@ on that repository.</p>
 </tbody>
 </table>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
-<p>The <code>upstream-refresh</code> job runs in <code>ghcr.io/vergil-project/prod-base:latest</code>,
+<p>The <code>upstream-refresh</code> job runs in
+<code>ghcr.io/vergil-project/&lt;container-prefix&gt;-base:latest</code> (<code>prod-base</code> by default),
 in the concurrency group <code>upstream-refresh</code> (a new run waits for a running
 one; neither is cancelled):</p>
 <ol>

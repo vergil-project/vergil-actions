@@ -831,6 +831,8 @@
       
         
       
+        
+      
     
     
     
@@ -883,6 +885,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.64/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5618,6 +5648,8 @@
       
         
       
+        
+      
     
     
     
@@ -5678,6 +5710,34 @@
     
   
     package/setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/package-image-prefix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    package/image-prefix
   
 
     
@@ -7017,7 +7077,7 @@ fails <code>setup</code> too, and <code>release</code> does not run.</p>
 <td><code>container-prefix</code></td>
 <td>string</td>
 <td><code>prod</code></td>
-<td>Image name prefix (<code>prod</code> or <code>dev</code>).</td>
+<td>Image name prefix (<code>prod</code> or <code>dev</code>). It picks the <code>release</code> job's image and, for repos with <code>[package]</code>, the <code>&lt;prefix&gt;-pkg-*</code> images of the <code>package-build</code> cells (<a href="../cd-release-packages/#container-prefix">binary packages</a>).</td>
 </tr>
 <tr>
 <td><code>registry-publish</code></td>

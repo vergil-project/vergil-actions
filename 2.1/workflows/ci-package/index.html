@@ -831,6 +831,8 @@
       
         
       
+        
+      
     
     
     
@@ -883,6 +885,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.64/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5618,6 +5648,8 @@
       
         
       
+        
+      
     
     
     
@@ -5678,6 +5710,34 @@
     
   
     package/setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/package-image-prefix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    package/image-prefix
   
 
     
@@ -7044,7 +7104,12 @@ image in its <code>build</code> and <code>test</code> outputs to <code>dev-pkg-<
 install-test jobs run on the development package images. Nothing else in the
 outputs changes, and with <code>prod</code> they are passed on unchanged. Any other
 value, or a missing or malformed <code>vrg-package matrix</code> output, fails the
-<code>matrix</code> job. The job log lists the image each cell will use.</p>
+<code>matrix</code> job. The job log lists the image each cell will use. The rewrite is
+the <a href="../../actions/package-image-prefix/"><code>package/image-prefix</code></a> action,
+which <code>cd-release.yml</code> runs on its package cells as well
+(<a href="../cd-release-packages/#container-prefix">binary packages</a>). Each workflow
+reads its own input, so a caller can move its package CI to the <code>dev-</code>
+images without moving its release, or the other way round.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">package</span><span class="p">:</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/ci-package.yml@v2.1</span>
