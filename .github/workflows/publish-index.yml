@@ -5,10 +5,11 @@ name: Publish package index
 # package-repository site from the product releases listed in the caller's
 # `packages.toml` and deploys it to GitHub Pages.
 #
-#   * build-index — `vrg-package index` collects each product's releases,
-#     verifies every asset's build attestation (and every .rpm's org
-#     signature), applies retention, writes the apt and dnf metadata, signs it,
-#     and enforces the size guard. All logic lives in vergil-tooling.
+#   * build-index — `vrg-package index` selects each product's retained
+#     releases from one release listing, then downloads and verifies only
+#     those: every asset's build attestation (and every .rpm's org
+#     signature). It writes the apt and dnf metadata, signs it, and enforces
+#     the size guard. All logic lives in vergil-tooling.
 #     It then records the sha256 of every signed InRelease and repomd.xml as
 #     the job's index-manifest output (actions/publish/index/live-check).
 #   * deploy — publishes the site through the Actions-based Pages deploy, then
