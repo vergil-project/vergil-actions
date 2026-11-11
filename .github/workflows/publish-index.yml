@@ -52,7 +52,7 @@ jobs:
       # Always from git: this job rebuilds and re-signs the vergil apt index,
       # so it must never install from the index it is about to repair.
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.63
         with:
           install-source: git
 
@@ -77,7 +77,7 @@ jobs:
       # the deploy job's live check expects Pages to serve.
       - name: Record the index manifest
         id: manifest
-        uses: ./actions/publish/index/live-check
+        uses: vergil-project/vergil-actions/actions/publish/index/live-check@v2.1.63
         with:
           mode: manifest
           site: _site
@@ -106,7 +106,7 @@ jobs:
       # the previous one (vergil-project/packages#46). Fail here, within
       # minutes, unless the deployed site serves the files build-index built.
       - name: Verify the deployed index is live
-        uses: ./actions/publish/index/live-check
+        uses: vergil-project/vergil-actions/actions/publish/index/live-check@v2.1.63
         with:
           mode: verify
           base-url: ${{ steps.deployment.outputs.page_url }}
