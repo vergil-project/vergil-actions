@@ -17,6 +17,12 @@ name: Smoke - cd-release
 # without one, never "null"), and package-sign runs `vrg-package
 # check-runtime` on the unsigned packages before signing. It runs the real
 # `vrg-package` on offline fixtures.
+#
+# package-image-prefix.test.sh (issue #1132): ci-package's `container-prefix`
+# input rewrites only the `prod-pkg-` start of each cell's image in the
+# `vrg-package matrix` outputs, passes them on byte for byte with the default
+# `prod`, and refuses any other prefix or a missing or malformed output. It
+# runs the workflow step's own script on fixture outputs.
 
 on:
   workflow_dispatch:
@@ -46,6 +52,16 @@ jobs:
       - name: Run container-tag harness
         shell: bash
         run: bash actions/cd/release/tests/container-tag.test.sh
+
+  package-image-prefix:
+    name: package-image-prefix fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run package-image-prefix harness
+        shell: bash
+        run: bash actions/cd/release/tests/package-image-prefix.test.sh
 
   package-runtime:
     name: package-runtime fixtures
