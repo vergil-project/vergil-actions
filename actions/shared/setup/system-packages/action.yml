@@ -1,6 +1,6 @@
 name: Install repo system packages
 description: >-
-  Install the Debian packages a repo declares in [container].system-packages,
+  Install the Ubuntu packages a repo declares in [container].system-packages,
   read through vrg-container-system-packages. Test-runtime dependency: this runs
   only on jobs that execute the repo's tests. Bounded retry around apt (mirror
   flake); fail-closed with a package + platform message on a missing candidate.
