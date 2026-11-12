@@ -178,13 +178,17 @@ release.
 
 ## Container system packages
 
-A repository can declare extra Debian packages under `[container].system-packages`
+A repository can declare extra Ubuntu packages under `[container].system-packages`
 in its `vergil.toml`. On CI, the [`ci-test`](workflows/ci-test.md) workflow
 installs those packages on its **test jobs** (via the
 [`shared/setup/system-packages`](actions/shared-setup-system-packages.md)
 action), so tests run against the same system dependencies as the local dev
 container. The key's schema and semantics are documented on the vergil-tooling
 side: [`container-config` reference](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/).
+Every image a test job runs in is built on Ubuntu 24.04, and the GitHub-hosted
+runners are `ubuntu-24.04`; vergil-containers'
+[OS usage](https://vergil-project.github.io/vergil-containers/latest/operations/os-usage/)
+page lists the OS of every image and runner, and why it was chosen.
 
 ## Container build command
 

@@ -87,8 +87,8 @@ every PR that touches this action.
 
 ## apt behaviour
 
-The apt mirror list (on amd64) and the fail-fast apt config
-(`/etc/apt/apt.conf.d/80-vergil-fast-fail`, on every architecture) are part of
+The apt mirror list and the fail-fast apt config
+(`/etc/apt/apt.conf.d/80-vergil-fast-fail`), on both architectures, are part of
 the `prod-pkg-ubuntu` image, so every apt call `vergil-tooling` makes during
 build and install-test inherits them. vergil-containers writes them, and
 checks them when it builds the image.

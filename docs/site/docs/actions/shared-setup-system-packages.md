@@ -1,6 +1,6 @@
 # shared/setup/system-packages
 
-Installs the Debian packages a repository declares under
+Installs the Ubuntu packages a repository declares under
 `[container].system-packages` in its `vergil.toml`, so that CI test jobs run
 against the same system dependencies as the local dev container.
 
