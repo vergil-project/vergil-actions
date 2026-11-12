@@ -26,7 +26,7 @@ jobs:
   # repo with no consumer change.
   branch-sweep:
     name: branch-sweep
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
@@ -56,7 +56,7 @@ jobs:
 
   github-config:
     name: github-config
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
@@ -84,7 +84,7 @@ jobs:
   # fail the job. A public repo's log carries counts only, never package names.
   dependabot-audit:
     name: dependabot-audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token

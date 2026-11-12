@@ -38,7 +38,7 @@ concurrency:
 jobs:
   build-index:
     name: build-index
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # develop-only: dispatch/schedule run on the default branch (spec §7.4).
     environment: index-signing
     permissions:
@@ -94,7 +94,7 @@ jobs:
   deploy:
     name: deploy
     needs: build-index
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

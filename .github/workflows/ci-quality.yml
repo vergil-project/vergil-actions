@@ -30,7 +30,7 @@ jobs:
   # consumes `all`.
   matrix:
     name: matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       all: ${{ steps.resolve.outputs.all }}
       once: ${{ steps.resolve.outputs.once }}
@@ -81,7 +81,7 @@ jobs:
   # `container-suffix` is only a must-match cross-check, as in cd-release.
   setup:
     name: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       primary-container-tag: ${{ steps.derive.outputs.primary-container-tag }}
       primary-container-suffix: ${{ steps.suffix.outputs.primary-container-suffix }}
@@ -107,7 +107,7 @@ jobs:
   common:
     name: common
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     steps:
       - name: Checkout code
@@ -156,7 +156,7 @@ jobs:
   custom:
     name: custom
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     steps:
       - name: Checkout code
@@ -202,7 +202,7 @@ jobs:
   lint:
     name: lint / ${{ matrix.version }}
     needs: matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ${{ matrix.image }}
     strategy:
       matrix:
@@ -270,7 +270,7 @@ jobs:
   typecheck:
     name: typecheck / ${{ matrix.version }}
     needs: matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ${{ matrix.image }}
     strategy:
       matrix:
@@ -364,7 +364,7 @@ jobs:
     # any non-success upstream result into a FAILED evidence job (#873, epic
     # vergil-project/.github#338).
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Fail red (not skip) when any required matrix leg did not succeed. Uses
       # needs.<job>.result — for a matrix job that is 'success' only when every

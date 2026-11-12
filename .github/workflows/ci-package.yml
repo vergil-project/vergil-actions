@@ -93,7 +93,7 @@ jobs:
     # Run even when a required leg fails or is skipped, so the assert step
     # below turns it into a red gate instead of a green-by-absence skip.
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Assert all required legs succeeded
@@ -182,7 +182,7 @@ jobs:
 
   matrix:
     name: matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       build: ${{ steps.images.outputs.build }}

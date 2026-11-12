@@ -48,7 +48,7 @@ jobs:
   # `container-suffix` is only a must-match cross-check, as in cd-release.
   setup:
     name: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       primary-container-tag: ${{ steps.derive.outputs.primary-container-tag }}
       primary-container-suffix: ${{ steps.suffix.outputs.primary-container-suffix }}
@@ -73,7 +73,7 @@ jobs:
   version-bump:
     name: version-bump
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     steps:
       - name: Checkout code

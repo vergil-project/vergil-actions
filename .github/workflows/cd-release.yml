@@ -112,7 +112,7 @@ jobs:
   # of its steps run, so both must come from a preceding job.
   setup:
     name: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -151,7 +151,7 @@ jobs:
 
   package-matrix:
     name: package-matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -269,7 +269,7 @@ jobs:
     name: package-sign
     needs: [package-matrix, package-build]
     if: needs.package-matrix.outputs.enabled == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: package-signing
     permissions:
@@ -436,7 +436,7 @@ jobs:
           needs.package-matrix.result == 'success' &&
           (needs.package-matrix.outputs.enabled != 'true' ||
            needs.package-sign.result == 'success') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     defaults:
       run:

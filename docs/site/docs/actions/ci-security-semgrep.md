@@ -87,7 +87,7 @@ the rule does not apply to them regardless of the backlog above.
 ```yaml
 jobs:
   semgrep:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       security-events: write
       contents: read
