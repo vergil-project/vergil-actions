@@ -137,7 +137,7 @@ input degrades the destination, not the scanning.
   `ghcr.io/vergil-project/<container-prefix>-base:latest` container
   (`prod-base` by default). Semgrep never executes the target code, so it
   needs no language runtime.
-- The `codeql` and `trivy` jobs run directly on `ubuntu-latest`, with no
+- The `codeql` and `trivy` jobs run directly on `ubuntu-24.04`, with no
   container. CodeQL autobuild for compiled languages needs the language
   toolchains that the runner provides.
 - Each scanner job uploads its **unfiltered** SARIF as an evidence partial

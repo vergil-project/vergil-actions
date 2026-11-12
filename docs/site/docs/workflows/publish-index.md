@@ -7,7 +7,7 @@ Its `deploy` job then publishes the site with the Actions-based Pages deploy.
 Last, it checks that Pages serves the index this run built (below).
 The workflow takes no inputs. Runs are serialized by the `publish-index`
 concurrency group. Unlike the other reusable workflows, it runs directly on
-`ubuntu-latest` rather than in a vergil container image.
+`ubuntu-24.04` rather than in a vergil container image.
 
 ## Attestation verification
 

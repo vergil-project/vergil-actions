@@ -18,7 +18,7 @@ permissions:
 jobs:
   build:
     name: docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Single-container job, language-agnostic. It runs the mkdocs build (via
     # `uv run mkdocs` for python repos), which needs no pinned language runtime,
     # so it uses the shared prod-base image. That image is published ONLY with

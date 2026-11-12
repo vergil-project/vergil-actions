@@ -33,7 +33,7 @@ permissions:
 jobs:
   upstream-refresh:
     name: upstream-refresh
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # A called workflow cannot exceed its caller's grant. The push and PR
     # writes go through the App token, not GITHUB_TOKEN.
     permissions:

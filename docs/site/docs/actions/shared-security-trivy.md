@@ -110,7 +110,7 @@ the `result` output to word their own failure message.
 ```yaml
 jobs:
   trivy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       security-events: write
       contents: read
