@@ -7721,13 +7721,17 @@ installed on <code>&lt;org&gt;/packages</code> with <strong>Contents: Read &amp;
 <code>cd-release.yml</code> can dispatch <code>package-released</code> to it after a packaged
 release.</p>
 <h2 id="container-system-packages">Container system packages<a class="headerlink" href="#container-system-packages" title="Permanent link">&para;</a></h2>
-<p>A repository can declare extra Debian packages under <code>[container].system-packages</code>
+<p>A repository can declare extra Ubuntu packages under <code>[container].system-packages</code>
 in its <code>vergil.toml</code>. On CI, the <a href="../workflows/ci-test/"><code>ci-test</code></a> workflow
 installs those packages on its <strong>test jobs</strong> (via the
 <a href="../actions/shared-setup-system-packages/"><code>shared/setup/system-packages</code></a>
 action), so tests run against the same system dependencies as the local dev
 container. The key's schema and semantics are documented on the vergil-tooling
-side: <a href="https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/"><code>container-config</code> reference</a>.</p>
+side: <a href="https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/"><code>container-config</code> reference</a>.
+Every image a test job runs in is built on Ubuntu 24.04, and the GitHub-hosted
+runners are <code>ubuntu-24.04</code>; vergil-containers'
+<a href="https://vergil-project.github.io/vergil-containers/latest/operations/os-usage/">OS usage</a>
+page lists the OS of every image and runner, and why it was chosen.</p>
 <h2 id="container-build-command">Container build command<a class="headerlink" href="#container-build-command" title="Permanent link">&para;</a></h2>
 <p>A repository can declare a build step under <code>[container].build-command</code> in its
 <code>vergil.toml</code>. On CI, the <a href="../workflows/ci-test/"><code>ci-test</code></a> workflow runs that
