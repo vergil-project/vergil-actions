@@ -67,12 +67,14 @@ jobs:
           # rollup.
           #
           # No permission-* inputs yet: the only automation token left
-          # unscoped (vergil-project/vergil-actions#1153). Besides Issues
-          # write, Pull requests read and Contents read, the security-records
-          # pass needs Repository security advisories write to sync advisory
-          # states in the org .github, and create-github-app-token has no
-          # input for that permission. Scoping the token would drop it and
-          # fail the pass, so how to scope this job awaits a ruling.
+          # unscoped, on purpose. Besides Issues write, Pull requests read
+          # and Contents read, the security-records pass needs Repository
+          # security advisories write to sync advisory states in the org
+          # .github, and create-github-app-token has no input for that
+          # permission. Scoping the token would drop it and fail the pass.
+          # Tracked follow-up: vergil-project/vergil-actions#1159 scopes this
+          # token once vergil-project/vergil-tooling#4313 moves the
+          # advisory-state sync out of --close.
 
       - name: Checkout code
         uses: actions/checkout@v6

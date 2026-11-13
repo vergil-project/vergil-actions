@@ -175,7 +175,7 @@ requests only what it needs:
 | `ops-github-config.yml` | `github-config` | `administration: read`, `contents: read` (the read-only `audit`) |
 | `ops-github-config.yml` | `dependabot-audit` | `vulnerability-alerts: read` |
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
-| `ops-epic-sweep.yml` | `epic-sweep` | Not yet scoped: it uses `issues: write`, `pull-requests: read`, `contents: read` and Repository security advisories write, and `actions/create-github-app-token` has no input for the last. How to scope it is still open (vergil-project/vergil-actions#1153) |
+| `ops-epic-sweep.yml` | `epic-sweep` | Not yet scoped: it uses `issues: write`, `pull-requests: read`, `contents: read` and Repository security advisories write, and `actions/create-github-app-token` has no input for the last. It stays unscoped on purpose until the tracked follow-up vergil-project/vergil-actions#1159 scopes it, once vergil-project/vergil-tooling#4313 moves the advisory-state sync out of `--close` |
 | `ops-upstream-refresh.yml` | `upstream-refresh` | `contents: write`, `pull-requests: write` |
 | `cd-release.yml` | Package-index dispatch | `contents: write` |
 | `cd.yml` (vergil-actions only) | `release` | `contents: write`, `workflows: write` |
