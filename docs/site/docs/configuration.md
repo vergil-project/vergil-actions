@@ -63,6 +63,7 @@ org:
 | `vergil-project` | `vergil-project-automation` |
 | `logical-minds-foundry` | `logical-minds-foundry-automation` |
 | `mnemosys-project` | `mnemosys-project-automation` |
+| `mq-rest-admin-project` | `mq-rest-admin-project-automation` |
 
 The App is an automation identity, not a per-contributor one. It is separate
 from the per-developer agent Apps described in vergil-tooling's
