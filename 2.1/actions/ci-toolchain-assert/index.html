@@ -843,6 +843,8 @@
       
         
       
+        
+      
     
     
     
@@ -895,6 +897,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.70/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.70
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7273,6 +7303,10 @@ not add it themselves.</p>
 <td>Runs <code>go env GOVERSION</code> in the module (so a <code>toolchain</code> switch in <code>go.mod</code> is what gets reported) and compares its <code>x.y</code> (<code>go1.26.3</code> is <code>1.26</code>).</td>
 </tr>
 <tr>
+<td><code>rust</code></td>
+<td>Runs <code>rustc --version</code> in the repository checkout (so a rustup override would be what gets reported) and compares its <code>x.y</code> (<code>rustc 1.100.0</code> is <code>1.100</code>).</td>
+</tr>
+<tr>
 <td>Any other</td>
 <td>No check yet; prints a <code>::notice::</code> saying so and passes.</td>
 </tr>
@@ -7284,7 +7318,7 @@ with an <code>::error::</code> annotation, when <code>expected</code> is not an 
 toolchain cannot be asked for its version.</p>
 <h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h2>
 <p>The logic is in <code>assert.sh</code> next to <code>action.yml</code>, so it can be unit tested
-(<code>tests/assert.test.sh</code>, which fakes <code>uv</code> and <code>go</code>). The
+(<code>tests/assert.test.sh</code>, which fakes <code>uv</code>, <code>go</code> and <code>rustc</code>). The
 <code>smoke-setup-vergil</code> workflow runs the tests.</p>
 <h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
