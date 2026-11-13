@@ -130,10 +130,10 @@ token is scoped, as [Token scoping](#token-scoping) describes.
 9. Make `APP_CLIENT_ID` and `APP_PRIVATE_KEY` available to every repository
    that calls the workflows above. For example, as repository secrets:
 
-```bash
-gh secret set APP_CLIENT_ID --repo <org>/<repo> --body "<client-id>"
-gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private-key>.pem)"
-```
+    ```bash
+    gh secret set APP_CLIENT_ID --repo <org>/<repo> --body "<client-id>"
+    gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private-key>.pem)"
+    ```
 
 10. Set the org-level Actions variable `VRG_AUTOMATION_APP` to the App's
     slug (`<org>-automation`), visible to all repositories. It names the
@@ -141,9 +141,9 @@ gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private
     `github-config` job passes it to vergil-tooling, which checks that the
     job's token was minted by that App before it does any automation work.
 
-```bash
-gh variable set VRG_AUTOMATION_APP --org <org> --visibility all --body "<org>-automation"
-```
+    ```bash
+    gh variable set VRG_AUTOMATION_APP --org <org> --visibility all --body "<org>-automation"
+    ```
 
 **Changing a permission later:**
 
