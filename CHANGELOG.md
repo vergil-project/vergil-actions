@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.68] - 2026-11-13
+
+### CI
+
+- scope the epic-sweep token and drop the App's security advisories permission (#1169)
+
 ## [2.1.67] - 2026-11-13
 
 ### Bug fixes
