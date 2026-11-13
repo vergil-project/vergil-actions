@@ -4,7 +4,7 @@
 # version CI resolved for it.
 #
 # Framework-free and developer-runnable: `bash assert.test.sh`. Each case puts
-# a fake `uv` or `go` first on PATH, printing a chosen version (or failing),
+# a fake `uv`, `go` or `rustc` first on PATH, printing a chosen version (or failing),
 # runs assert.sh, and asserts the exit status and the annotation.
 set -euo pipefail
 
@@ -30,7 +30,7 @@ stderr=""
 calls=""
 
 # run_assert <language> <expected> <tool> <tool stdout> [<tool exit status>]
-# Fakes <tool> (uv or go) to print <tool stdout> and exit with the status, and
+# Fakes <tool> (uv, go or rustc) to print <tool stdout> and exit with the status, and
 # records the arguments it was called with in $calls.
 run_assert() {
   local bin so se log
@@ -157,6 +157,60 @@ case_go_fails() {
   pass_case "$name"
 }
 
+case_rust_match() {
+  local name="assert_rust_match_passes"
+  run_assert rust 1.99 rustc "rustc 1.99.1 (abc123def 2026-10-01)"
+  assert_pass "$name" || return 0
+  assert_eq_calls "$name" "--version" || return 0
+  case "$stdout" in
+    *"assert-toolchain: rust 1.99 matches the resolved version 1.99"*) ;;
+    *)
+      fail_case "$name" "expected the match line in the log, got '$stdout'"
+      return 0
+      ;;
+  esac
+  pass_case "$name"
+}
+
+case_rust_mismatch() {
+  local name="rust-mismatch-fails"
+  run_assert rust 1.98 rustc "rustc 1.99.1 (abc123def 2026-10-01)"
+  assert_fail "$name" "CI resolved 1.98 but the job runs 1.99" || return 0
+  pass_case "$name"
+}
+
+case_rust_three_digit_minor() {
+  local name="rust-three-digit-minor-passes"
+  run_assert rust 1.100 rustc "rustc 1.100.0 (abc123def 2027-08-01)"
+  assert_pass "$name" || return 0
+  pass_case "$name"
+}
+
+case_rust_three_digit_minor_mismatch() {
+  local name="rust-1.100-against-1.10-fails"
+  run_assert rust 1.10 rustc "rustc 1.100.0 (abc123def 2027-08-01)"
+  assert_fail "$name" "CI resolved 1.10 but the job runs 1.100" || return 0
+  pass_case "$name"
+}
+
+case_rust_fails() {
+  local name="rust-rustc-fails"
+  run_assert rust 1.99 rustc "error: toolchain is not installed" 1
+  assert_fail "$name" \
+    "assert-toolchain: cannot ask rustc for its version: error: toolchain is not installed" \
+    || return 0
+  pass_case "$name"
+}
+
+case_rust_garbage() {
+  local name="rust-unparseable-version"
+  run_assert rust 1.99 rustc "rustc unknown"
+  assert_fail "$name" \
+    "assert-toolchain: rustc --version gave 'rustc unknown', which has no x.y version" \
+    || return 0
+  pass_case "$name"
+}
+
 case_bad_expected() {
   local name="expected-not-x-y"
   run_assert python latest uv 3.14
@@ -191,6 +245,12 @@ case_go_match
 case_go_minor_only
 case_go_mismatch
 case_go_fails
+case_rust_match
+case_rust_mismatch
+case_rust_three_digit_minor
+case_rust_three_digit_minor_mismatch
+case_rust_fails
+case_rust_garbage
 case_bad_expected
 case_other_language
 

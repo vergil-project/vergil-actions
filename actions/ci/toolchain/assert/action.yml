@@ -5,8 +5,8 @@ description: >-
   A repo's own files can pick the interpreter behind Vergil's back, so a leg
   could otherwise pass on a version it never ran. Python is checked with
   `uv run --frozen python` (pin uv with ci/toolchain/pin-python first; the
-  interpreter's path is logged too) and Go
-  with `go env GOVERSION`; every other language is a no-op with a notice.
+  interpreter's path is logged too), Go with `go env GOVERSION` and Rust
+  with `rustc --version`; every other language is a no-op with a notice.
 
 inputs:
   language:
