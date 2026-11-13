@@ -69,6 +69,7 @@ tags `HEAD`, so the frozen refs exist only at the release tag; `develop` and
 ## Permissions
 
 The step itself only edits and commits locally. Because it changes files under
-`.github/workflows`, `cd.yml` checks out with a GitHub App token that has
-`workflows: write`: `GITHUB_TOKEN` cannot push a tag whose commit changes
+`.github/workflows`, `cd.yml` checks out with a GitHub App token that
+requests `contents: write` and `workflows: write`: `GITHUB_TOKEN` cannot push
+a tag whose commit changes
 workflow files.

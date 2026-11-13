@@ -705,6 +705,9 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: packages
+          # A repository_dispatch needs Contents write on the target repo and
+          # nothing more.
+          permission-contents: write
 
       - name: Dispatch package index
         if: steps.dispatch_token.outcome == 'success'

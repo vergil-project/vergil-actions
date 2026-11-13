@@ -42,6 +42,9 @@ jobs:
           repositories: |
             ${{ github.event.repository.name }}
             ${{ inputs.epic-repo }}
+          # The rollup reads the task and its parent epic and closes the epic
+          # (or files it under a standing epic's archive): Issues write only.
+          permission-issues: write
 
       - name: Checkout code
         uses: actions/checkout@v6

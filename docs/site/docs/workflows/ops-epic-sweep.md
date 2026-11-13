@@ -41,7 +41,10 @@ same caller's `workflow_dispatch` trigger is how the one-time migration for
 The token is minted for every repository the App is installed on in the org,
 because the sweep closes, relabels, links and moves issues in the code
 repositories, and closes, drains and attaches under epics in `.github`. The
-App needs `issues: write` on all of them.
+App needs `issues: write` on all of them. It also needs `pull-requests: read`
+(the merged-PR search), `contents: read` (each repository's `vergil.toml`) and
+`repository-advisories: write` (the security-records pass syncs advisory
+states in `.github`).
 
 ## Jobs and check names
 
@@ -53,7 +56,9 @@ App needs `issues: write` on all of them.
 
 The `epic-sweep` job runs in `ghcr.io/vergil-project/<prefix>-base:latest`:
 
-1. Mints an App token for the caller's org, with no repository restriction.
+1. Mints an App token for the caller's org, with no repository restriction,
+   requesting only `issues: write`, `pull-requests: read`, `contents: read`
+   and `repository-advisories: write`.
 2. Checks out the repository and installs vergil-tooling.
 3. Runs `vrg-epic-audit --close --window-days "$WINDOW_DAYS"` with the App
    token as `GH_TOKEN` and `VRG_EPIC_SWEEP=1`.
