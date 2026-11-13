@@ -96,7 +96,7 @@ permissions:
 | ---------- | ------ | --------- |
 | Metadata | Read-only | Required by GitHub (always enabled) |
 | Administration | Read & write | `github-config`. Today it runs the read-only `vrg-github-repo-config audit`, which reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled. The automatic fleet sync moves it to `vrg-github-repo-config update`, which converges settings and rulesets, so the App needs write |
-| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `upstream-refresh` branch, and deletes it when it closes a stale refresh PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` reads `vergil.toml`; `epic-sweep` reads each repository's `vergil.toml` |
+| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `upstream-refresh` branch, and deletes it when it closes a stale refresh PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` reads `vergil.toml`, and requests write because GitHub returns a repository's merge settings only to a token with Contents read and write; `epic-sweep` reads each repository's `vergil.toml` |
 | Pull requests | Read & write | `upstream-refresh` (opens, updates, comments on and closes the refresh PR); `branch-sweep` and `epic-sweep` read them |
 | Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues) |
 | Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); the automatic fleet sync, whose PRs can change files under `.github/workflows/` |
@@ -172,7 +172,7 @@ requests only what it needs:
 | Workflow | Job or step | Requested permissions |
 | -------- | ----------- | --------------------- |
 | `ops-github-config.yml` | `branch-sweep` | `contents: write`, `pull-requests: read` |
-| `ops-github-config.yml` | `github-config` | `administration: read`, `contents: read` (the read-only `audit`) |
+| `ops-github-config.yml` | `github-config` | `administration: read`, `contents: write` (the read-only `audit`: [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository) returns the merge settings only with Contents read and write) |
 | `ops-github-config.yml` | `dependabot-audit` | `vulnerability-alerts: read` |
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
 | `ops-epic-sweep.yml` | `epic-sweep` | Not yet scoped: it uses `issues: write`, `pull-requests: read`, `contents: read` and Repository security advisories write, and `actions/create-github-app-token` has no input for the last. It stays unscoped on purpose until the tracked follow-up vergil-project/vergil-actions#1159 scopes it, once vergil-project/vergil-tooling#4313 moves the advisory-state sync out of `--close` |
