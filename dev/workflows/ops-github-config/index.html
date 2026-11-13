@@ -6647,6 +6647,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#bypass-probe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bypass-probe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dependabot-audit" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7269,6 +7280,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#bypass-probe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bypass-probe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dependabot-audit" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7326,13 +7348,16 @@
 <h1 id="ops-github-config">ops-github-config<a class="headerlink" href="#ops-github-config" title="Permanent link">&para;</a></h1>
 <p>Nightly per-repository ops checks. Every managed repository's <code>ops.yml</code> calls
 this workflow on a schedule, and it runs three independent jobs against the
-calling repository:</p>
+calling repository, plus a temporary fourth on manual dispatch only:</p>
 <ul>
 <li><strong><code>branch-sweep</code></strong> deletes branches whose pull-request work is finished.</li>
 <li><strong><code>github-config</code></strong> audits the repository's GitHub configuration with
   <code>vrg-github-repo-config audit</code>.</li>
 <li><strong><code>dependabot-audit</code></strong> fails when the repository has any open Dependabot
   alert, at any severity.</li>
+<li><strong><code>bypass-probe</code></strong> (dispatch from <code>develop</code> only, temporary) prints what an
+  automation App token reads back from the repository's "Tag protection"
+  ruleset.</li>
 </ul>
 <p>The jobs do not depend on each other, so one failing does not stop the
 others. Each one mints its own GitHub App token from the org's automation App
@@ -7406,6 +7431,11 @@ scoped to the calling repository only.</p>
 <td><code>&lt;caller&gt; / dependabot-audit</code></td>
 <td>Runs <code>vrg-dependabot-audit --repo &lt;calling repo&gt;</code></td>
 </tr>
+<tr>
+<td><code>bypass-probe</code></td>
+<td><code>&lt;caller&gt; / bypass-probe</code></td>
+<td>On <code>workflow_dispatch</code> from <code>develop</code> only: prints the "Tag protection" ruleset's bypass actors, whether <code>VRG_AUTOMATION_APP</code> is set, and the token's login</td>
+</tr>
 </tbody>
 </table>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
@@ -7444,6 +7474,11 @@ the same pattern:</p>
 <td><code>vulnerability-alerts: read</code> only (<strong>Dependabot alerts: Read</strong>)</td>
 <td>List the repository's open Dependabot alerts</td>
 </tr>
+<tr>
+<td><code>bypass-probe</code></td>
+<td><code>administration: write</code>, <code>metadata: read</code></td>
+<td>Read a ruleset's <code>bypass_actors</code>, which GitHub returns only to a caller that can edit the ruleset. Minted only after the job has checked it runs from <code>develop</code></td>
+</tr>
 </tbody>
 </table>
 <p>The org's automation App holds more than any one job requests, Administration
@@ -7462,8 +7497,8 @@ caller's <code>ops.yml</code> grants (the standard <code>ops.yml</code> grants <
 <code>vergil-project/vergil-tooling/github-config</code>), with
 <code>cancel-in-progress: false</code>. A new run of a job waits for a running one of
 the same job in the same repository and neither is cancelled, so a scheduled
-run and a manual dispatch never overlap. The three jobs stay independent of
-each other.</p>
+run and a manual dispatch never overlap. The jobs stay independent of each
+other.</p>
 <h3 id="git-credentials">Git credentials<a class="headerlink" href="#git-credentials" title="Permanent link">&para;</a></h3>
 <p>The <code>github-config</code> job runs <code>gh auth setup-git</code> with the App token as
 <code>GH_TOKEN</code> before the tool runs. git then gets its HTTPS credentials from
@@ -7483,6 +7518,25 @@ configuration and exits non-zero when they differ or the configuration cannot
 be read. It never changes anything. To converge a
 repository, a human runs <code>vrg-github-repo-config apply</code> (see
 <a href="../../ci-gates/repository-rulesets/">Repository Rulesets</a>).</p>
+<h3 id="bypass-probe">bypass-probe<a class="headerlink" href="#bypass-probe" title="Permanent link">&para;</a></h3>
+<p>A temporary probe for the automatic fleet sync (epic
+<a href="https://github.com/vergil-project/.github/issues/1064">vergil-project/.github#1064</a>).
+It checks, before that epic builds on them, that an automation App token reads
+a ruleset's bypass actors and that the token's GraphQL login is the App's.
+The epic removes the job once its ops switch lands.</p>
+<p>It runs only on <code>workflow_dispatch</code>, so nightly scheduled runs skip it. Its
+first step fails unless the run's ref is <code>refs/heads/develop</code>, before any
+token is minted, and it checks out <code>develop</code>. It then prints:</p>
+<ul>
+<li><code>VRG_AUTOMATION_APP set: yes</code> or <code>no</code>, from the <code>VRG_AUTOMATION_APP</code>
+  Actions variable. The value itself is never printed;</li>
+<li><code>login: &lt;login&gt;</code>, the GraphQL <code>viewer { login }</code> of the App token;</li>
+<li>one <code>&lt;actor_type&gt; &lt;actor_id&gt;</code> line per bypass actor of the repository's
+  "Tag protection" ruleset, then <code>bypass_actors entries: &lt;n&gt;</code>.</li>
+</ul>
+<p>It fails when the repository does not have exactly one ruleset named "Tag
+protection", or when that ruleset's response has no <code>bypass_actors</code> field. A
+missing field is never counted as an empty list.</p>
 <h3 id="dependabot-audit">dependabot-audit<a class="headerlink" href="#dependabot-audit" title="Permanent link">&para;</a></h3>
 <p>The fleet runs Dependabot <strong>report-only</strong> (epic
 <a href="https://github.com/vergil-project/.github/issues/420">vergil-project/.github#420</a>):
