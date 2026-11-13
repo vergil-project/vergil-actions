@@ -43,7 +43,8 @@ the same pattern:
 
 1. Mints an App token with `actions/create-github-app-token`. None of the
    jobs passes an `owner` or `repositories` input, so each token is scoped to
-   the calling repository alone.
+   the calling repository alone, and each passes explicit `permission-*`
+   inputs, so it carries only the permissions that job needs.
 2. Checks out the repository and installs vergil-tooling.
 3. Runs its command with the App token as `GH_TOKEN`.
 
@@ -52,18 +53,38 @@ the same pattern:
 | Job | Requested App permissions | Why |
 | --- | ------------------------- | --- |
 | `branch-sweep` | `contents: write`, `pull-requests: read` | Delete a branch ref, and read pull requests to decide which branches are finished |
-| `github-config` | None requested, so the token carries the installation's full permission set (still limited to the calling repository) | The audit reads repository settings, branch protection, rulesets, Actions permissions, whether vulnerability alerts are enabled, and the repository's `vergil.toml` and CI workflow |
+| `github-config` | `administration: read`, `contents: read` | The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's `vergil.toml` (Contents). It makes no Issues call |
 | `dependabot-audit` | `vulnerability-alerts: read` only (**Dependabot alerts: Read**) | List the repository's open Dependabot alerts |
+
+The org's automation App holds more than any one job requests, Administration
+write included (see
+[App permissions](../configuration.md#app_client_id-and-app_private_key)).
+Without the `permission-*` inputs a minted token would carry all of it, so
+every job asks only for its own set (see
+[Token scoping](../configuration.md#token-scoping)).
 
 `GITHUB_TOKEN` cannot do this work. This workflow requests only
 `contents: read` for it, and a called workflow can never hold more than its
 caller's `ops.yml` grants (the standard `ops.yml` grants `contents: read` and
 `issues: write`). Neither can delete a branch or read Dependabot alerts.
 
-The audit is read-only, and the App's **Administration** permission is
-**Read-only** to match. `vrg-github-repo-config apply`, which changes settings
-and rulesets, is a human action run under the maintainer's own `gh` login,
-never by this workflow.
+### Concurrency
+
+Each job runs in its own per-repository concurrency group,
+`${{ github.repository }}/<job>` (for example
+`vergil-project/vergil-tooling/github-config`), with
+`cancel-in-progress: false`. A new run of a job waits for a running one of
+the same job in the same repository and neither is cancelled, so a scheduled
+run and a manual dispatch never overlap. The three jobs stay independent of
+each other.
+
+### Git credentials
+
+The `github-config` job runs `gh auth setup-git` with the App token as
+`GH_TOKEN` before the tool runs. git then gets its HTTPS credentials from
+`gh`, so any `git clone` or `git push` vergil-tooling makes authenticates as
+the App with this job's scoped token, not with the checkout's
+`GITHUB_TOKEN`.
 
 ### branch-sweep
 

@@ -25,13 +25,19 @@ jobs:
       # Generate the App token first so checkout can use it. The freeze-
       # internal-refs step below modifies .github/workflows/*.yml, and
       # GITHUB_TOKEN is forbidden from pushing workflow-file changes.
-      # The App (APP_CLIENT_ID/APP_PRIVATE_KEY) has workflows:write granted.
+      # The App (APP_CLIENT_ID/APP_PRIVATE_KEY) holds workflows:write.
       - name: Generate app token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Scoped to this repo only, with only what the release needs:
+          # Contents write to fetch and push the release tags, and Workflows
+          # write because the tagged commit changes .github/workflows/*.yml.
+          # The GitHub Release itself is created with GITHUB_TOKEN.
+          permission-contents: write
+          permission-workflows: write
 
       - name: Checkout code
         uses: actions/checkout@v6
