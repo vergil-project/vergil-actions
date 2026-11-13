@@ -26,7 +26,12 @@ jobs:
   # repo with no consumer change.
   branch-sweep:
     name: branch-sweep
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    # One run of this job per repository at a time, queued, never cancelled:
+    # a scheduled run and a dispatch never overlap.
+    concurrency:
+      group: ${{ github.repository }}/branch-sweep
+      cancel-in-progress: false
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
@@ -56,7 +61,10 @@ jobs:
 
   github-config:
     name: github-config
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: ${{ github.repository }}/github-config
+      cancel-in-progress: false
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
@@ -65,12 +73,28 @@ jobs:
         with:
           app-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Scoped to the calling repo only (no owner/repositories input),
+          # with only what the read-only audit reads: Administration read
+          # (repository settings, rulesets, Actions permissions, whether
+          # vulnerability alerts are on) and Contents read (vergil.toml and
+          # the workflow files). No Issues permission: the repo-config code
+          # makes no Issues call.
+          permission-administration: read
+          permission-contents: read
 
       - name: Checkout code
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
+
+      # Route git's HTTPS credentials through gh, which reads GH_TOKEN, so a
+      # git clone or push the tooling runs authenticates as the App with this
+      # job's scoped token.
+      - name: Configure git to use the App token
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh auth setup-git
 
       - name: Audit GitHub configuration
         env:
@@ -84,7 +108,10 @@ jobs:
   # fail the job. A public repo's log carries counts only, never package names.
   dependabot-audit:
     name: dependabot-audit
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: ${{ github.repository }}/dependabot-audit
+      cancel-in-progress: false
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token

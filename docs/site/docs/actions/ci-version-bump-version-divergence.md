@@ -46,7 +46,7 @@ the step if the two versions are identical.
 jobs:
   version-gate:
     name: "release: version-divergence"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: vergil-project/vergil-actions/actions/ci/version-bump/version-divergence@v2.1

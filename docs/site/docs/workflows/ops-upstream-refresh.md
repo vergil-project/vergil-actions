@@ -52,7 +52,8 @@ The `upstream-refresh` job runs in
 in the concurrency group `upstream-refresh` (a new run waits for a running
 one; neither is cancelled):
 
-1. Mints an App token scoped to the calling repository.
+1. Mints an App token scoped to the calling repository, requesting only
+   `contents: write` and `pull-requests: write`.
 2. Checks out the repository with that token, so the push and the PR are
    App-authored. An App-authored PR triggers `pull_request` workflows, which
    a `GITHUB_TOKEN` push does not.

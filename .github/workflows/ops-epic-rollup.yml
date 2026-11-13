@@ -29,7 +29,7 @@ permissions:
 jobs:
   epic-rollup:
     name: epic-rollup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
@@ -42,6 +42,9 @@ jobs:
           repositories: |
             ${{ github.event.repository.name }}
             ${{ inputs.epic-repo }}
+          # The rollup reads the task and its parent epic and closes the epic
+          # (or files it under a standing epic's archive): Issues write only.
+          permission-issues: write
 
       - name: Checkout code
         uses: actions/checkout@v6

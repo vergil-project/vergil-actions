@@ -63,7 +63,7 @@ available), then reference the env var in the step condition:
 ```yaml
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       # Evaluated in expression context where secrets are available.
       # Produces 'true' or 'false' as a string.

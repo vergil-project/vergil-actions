@@ -41,7 +41,10 @@ same caller's `workflow_dispatch` trigger is how the one-time migration for
 The token is minted for every repository the App is installed on in the org,
 because the sweep closes, relabels, links and moves issues in the code
 repositories, and closes, drains and attaches under epics in `.github`. The
-App needs `issues: write` on all of them.
+App needs `issues: write` on all of them. It also needs `pull-requests: read`
+(the merged-PR search), `contents: read` (each repository's `vergil.toml`) and
+Repository security advisories write (the security-records pass syncs advisory
+states in `.github`).
 
 ## Jobs and check names
 

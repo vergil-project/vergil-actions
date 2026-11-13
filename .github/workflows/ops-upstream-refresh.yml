@@ -33,7 +33,7 @@ permissions:
 jobs:
   upstream-refresh:
     name: upstream-refresh
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # A called workflow cannot exceed its caller's grant. The push and PR
     # writes go through the App token, not GITHUB_TOKEN.
     permissions:
@@ -52,7 +52,11 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           # No 'owner' input: the token is scoped to the calling repository
           # only. The refresh writes contents and pull requests on its own
-          # repository and nowhere else.
+          # repository and nowhere else: Contents write (push and delete the
+          # upstream-refresh branch) and Pull requests write (open, update,
+          # comment on and close the refresh PR).
+          permission-contents: write
+          permission-pull-requests: write
 
       - name: Checkout code
         uses: actions/checkout@v6

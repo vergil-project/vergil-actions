@@ -63,11 +63,11 @@ jobs:
     # scanning, which on private repos requires GHAS. upload-sarif: false
     # signals code scanning is unavailable, so CodeQL cannot run at all.
     if: ${{ inputs.run-security && inputs.run-codeql && inputs.upload-sarif }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # No container: CodeQL autobuild for compiled languages (go, rust)
     # needs the language toolchain on PATH. The prod-base image has none, and
     # language images (prod-go, prod-rust, …) are published per-version only —
-    # there is no prod-<lang>:latest tag to default to. The bare ubuntu-latest
+    # there is no prod-<lang>:latest tag to default to. The bare ubuntu-24.04
     # runner ships all the toolchains autobuild needs, and ./actions/shared/setup/vergil
     # installs vergil-tooling there for the SARIF-evaluation step. See issue #658.
     permissions:
@@ -100,7 +100,7 @@ jobs:
   trivy:
     name: trivy
     if: ${{ inputs.run-security }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       security-events: write
@@ -137,7 +137,7 @@ jobs:
   semgrep:
     name: semgrep
     if: ${{ inputs.run-security }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Single-container job, language-agnostic. Semgrep is a static analyzer that
     # never executes the target code, so it needs no pinned language runtime and
     # runs in the shared prod-base image. That image is published ONLY with the
@@ -216,7 +216,7 @@ jobs:
       ${{ always() && needs.trivy.result == 'success' &&
       needs.semgrep.result == 'success' &&
       (needs.codeql.result == 'success' || needs.codeql.result == 'skipped') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       actions: read

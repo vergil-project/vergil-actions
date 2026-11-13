@@ -86,31 +86,32 @@ only library repositories:
 | [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
 | [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `upstream-refresh` | Calling repository only |
 | [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
+| vergil-actions' own `cd.yml` | `release` | vergil-actions only |
 
-**App permissions required.** The table lists what each consumer needs, which
-is the minimum the App must hold. Read the App's actual permission set from
-its settings page before relying on it:
+**App permissions.** Every org's automation App is configured identically,
+and this table is that configuration. Each org's App must hold exactly these
+permissions:
 
 | Permission | Access | Needed by |
 | ---------- | ------ | --------- |
 | Metadata | Read-only | Required by GitHub (always enabled) |
-| Administration | Read-only | `github-config`: `vrg-github-repo-config audit` reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled |
-| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `upstream-refresh` branch, and deletes it when it closes a stale refresh PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `github-config` reads `vergil.toml` and the CI workflow |
-| Pull requests | Read & write | `upstream-refresh` (opens, updates, comments on and closes the refresh PR); `branch-sweep` reads them (decides which branches are finished) |
-| Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, relabel and link issues) |
+| Administration | Read & write | `github-config`. Today it runs the read-only `vrg-github-repo-config audit`, which reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled. The automatic fleet sync moves it to `vrg-github-repo-config update`, which converges settings and rulesets, so the App needs write |
+| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `upstream-refresh` branch, and deletes it when it closes a stale refresh PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` reads `vergil.toml`; `epic-sweep` reads each repository's `vergil.toml` |
+| Pull requests | Read & write | `upstream-refresh` (opens, updates, comments on and closes the refresh PR); `branch-sweep` and `epic-sweep` read them |
+| Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues) |
+| Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); the automatic fleet sync, whose PRs can change files under `.github/workflows/` |
+| Repository security advisories | Read & write | `epic-sweep` (the security-records pass syncs advisory states in the org's `.github`) |
 | Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
 
-**Administration stays read-only.** The Apps run only the read-only
-`vrg-github-repo-config audit`. `vrg-github-repo-config apply`, which changes
-settings and rulesets, is a human action that runs as the maintainer's own
-`gh` login, never as the App. Do not grant Administration: Read & write.
-
-vergil-actions' own release workflow (`cd.yml`) also uses the
-`vergil-project-automation` App token for its checkout, because the
-release tag it pushes points at the freeze-internal-refs commit, which changes
-workflow files. That needs **Workflows: Read & write** (see
-[local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)).
-That is specific to this repository; consumer workflows do not need it.
+**Why Administration and Workflows are write.** The automatic fleet sync (epic
+[vergil-project/.github#1064](https://github.com/vergil-project/.github/issues/1064))
+has the nightly `github-config` job converge each repository itself and open
+one auto-merging pull request for any managed file that has drifted from its
+master copy. The automation identity does only this mechanized work, never
+anything an AI agent does (that epic's spec, §3). Converging settings and
+rulesets needs Administration write, and a sync PR that touches a workflow
+file needs Workflows write. These rights are safe to hold only because every
+token is scoped, as [Token scoping](#token-scoping) describes.
 
 **Creation steps:**
 
@@ -129,10 +130,20 @@ That is specific to this repository; consumer workflows do not need it.
 9. Make `APP_CLIENT_ID` and `APP_PRIVATE_KEY` available to every repository
    that calls the workflows above. For example, as repository secrets:
 
-```bash
-gh secret set APP_CLIENT_ID --repo <org>/<repo> --body "<client-id>"
-gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private-key>.pem)"
-```
+    ```bash
+    gh secret set APP_CLIENT_ID --repo <org>/<repo> --body "<client-id>"
+    gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private-key>.pem)"
+    ```
+
+10. Set the org-level Actions variable `VRG_AUTOMATION_APP` to the App's
+    slug (`<org>-automation`), visible to all repositories. It names the
+    automation App. Once the automatic fleet sync is switched on, the
+    `github-config` job passes it to vergil-tooling, which checks that the
+    job's token was minted by that App before it does any automation work.
+
+    ```bash
+    gh variable set VRG_AUTOMATION_APP --org <org> --visibility all --body "<org>-automation"
+    ```
 
 **Changing a permission later:**
 
@@ -148,6 +159,41 @@ gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private
 **Key rotation:** Generate a new private key from the app's settings page, update
 the `APP_PRIVATE_KEY` secret wherever it is stored for that org, then revoke the
 old key. Each org has its own App and key, so rotate per org.
+
+### Token scoping
+
+GitHub gives a token minted from an App **every** permission the App's
+installation holds, unless the token asks for less. Once the App holds
+Administration write, an unscoped token would carry it into every job.
+So every `actions/create-github-app-token` step in vergil-actions but one (the
+`epic-sweep` row below) passes explicit `permission-*` inputs, and each job
+requests only what it needs:
+
+| Workflow | Job or step | Requested permissions |
+| -------- | ----------- | --------------------- |
+| `ops-github-config.yml` | `branch-sweep` | `contents: write`, `pull-requests: read` |
+| `ops-github-config.yml` | `github-config` | `administration: read`, `contents: read` (the read-only `audit`) |
+| `ops-github-config.yml` | `dependabot-audit` | `vulnerability-alerts: read` |
+| `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
+| `ops-epic-sweep.yml` | `epic-sweep` | Not yet scoped: it uses `issues: write`, `pull-requests: read`, `contents: read` and Repository security advisories write, and `actions/create-github-app-token` has no input for the last. It stays unscoped on purpose until the tracked follow-up vergil-project/vergil-actions#1159 scopes it, once vergil-project/vergil-tooling#4313 moves the advisory-state sync out of `--close` |
+| `ops-upstream-refresh.yml` | `upstream-refresh` | `contents: write`, `pull-requests: write` |
+| `cd-release.yml` | Package-index dispatch | `contents: write` |
+| `cd.yml` (vergil-actions only) | `release` | `contents: write`, `workflows: write` |
+
+Metadata: Read is always included. Only the `github-config` job is ever to
+request Administration write, once it runs `update`. A repository-local
+workflow that mints an automation App token follows the same rule.
+
+A token can only narrow what the installation already holds: a step that
+requests a permission the installation lacks, or has not accepted yet, fails
+to mint and the job goes red.
+
+Each job in `ops-github-config.yml` also runs in its own per-repository
+concurrency group, `<owner>/<repo>/<job>`, which queues and never cancels: a
+scheduled run and a dispatch of the same job never overlap. The
+`github-config` job runs `gh auth setup-git` with the App token before the
+tool runs, so the `git clone` and `git push` the tooling makes authenticate
+as the App with that job's scoped token.
 
 ## Binary package environments
 
@@ -178,13 +224,17 @@ release.
 
 ## Container system packages
 
-A repository can declare extra Debian packages under `[container].system-packages`
+A repository can declare extra Ubuntu packages under `[container].system-packages`
 in its `vergil.toml`. On CI, the [`ci-test`](workflows/ci-test.md) workflow
 installs those packages on its **test jobs** (via the
 [`shared/setup/system-packages`](actions/shared-setup-system-packages.md)
 action), so tests run against the same system dependencies as the local dev
 container. The key's schema and semantics are documented on the vergil-tooling
 side: [`container-config` reference](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/).
+Every image a test job runs in is built on Ubuntu 24.04, and the GitHub-hosted
+runners are `ubuntu-24.04`; vergil-containers'
+[OS usage](https://vergil-project.github.io/vergil-containers/latest/operations/os-usage/)
+page lists the OS of every image and runner, and why it was chosen.
 
 ## Container build command
 

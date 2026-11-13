@@ -40,7 +40,8 @@ The App must be installed on the calling repository and on `epic-repo`, with
 
 The `epic-rollup` job runs in `ghcr.io/vergil-project/<prefix>-base:latest`:
 
-1. Mints an App token scoped to the calling repository and `epic-repo`.
+1. Mints an App token scoped to the calling repository and `epic-repo`,
+   requesting only `issues: write`.
 2. Checks out the repository and installs vergil-tooling.
 3. Runs `vrg-epic-rollup --task "<owner>/<repo>#<issue number>"` with the
    App token as `GH_TOKEN`.

@@ -79,7 +79,7 @@ permissions:
 jobs:
   fixtures:
     name: harness fixtures
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -123,7 +123,7 @@ jobs:
 
   action-e2e:
     name: action outputs (Python library fixture)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v6

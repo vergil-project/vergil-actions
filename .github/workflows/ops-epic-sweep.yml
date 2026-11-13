@@ -49,7 +49,7 @@ permissions:
 jobs:
   epic-sweep:
     name: epic-sweep
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
@@ -65,6 +65,16 @@ jobs:
           # closes, drains and attaches under epics in .github, so it needs
           # org-wide issues:write, not a two-repo scope like the per-close
           # rollup.
+          #
+          # No permission-* inputs yet: the only automation token left
+          # unscoped, on purpose. Besides Issues write, Pull requests read
+          # and Contents read, the security-records pass needs Repository
+          # security advisories write to sync advisory states in the org
+          # .github, and create-github-app-token has no input for that
+          # permission. Scoping the token would drop it and fail the pass.
+          # Tracked follow-up: vergil-project/vergil-actions#1159 scopes this
+          # token once vergil-project/vergil-tooling#4313 moves the
+          # advisory-state sync out of --close.
 
       - name: Checkout code
         uses: actions/checkout@v6
