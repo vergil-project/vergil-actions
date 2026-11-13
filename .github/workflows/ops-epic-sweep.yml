@@ -66,15 +66,15 @@ jobs:
           # org-wide issues:write, not a two-repo scope like the per-close
           # rollup.
           #
-          # No permission-* inputs yet: the only automation token left
-          # unscoped, on purpose. Besides Issues write, Pull requests read
-          # and Contents read, the security-records pass needs Repository
-          # security advisories write to sync advisory states in the org
-          # .github, and create-github-app-token has no input for that
-          # permission. Scoping the token would drop it and fail the pass.
-          # Tracked follow-up: vergil-project/vergil-actions#1159 scopes this
-          # token once vergil-project/vergil-tooling#4313 moves the
-          # advisory-state sync out of --close.
+          # Scoped to what vrg-epic-audit --close calls (vergil-tooling
+          # v2.1.307 and later, where --close makes no security-advisory
+          # call: vergil-project/vergil-tooling#4313). Issues write: close,
+          # reopen, comment on, relabel, create and link issues, and create
+          # labels. Pull requests read: the merged-PR search. Contents read:
+          # each repo's vergil.toml.
+          permission-issues: write
+          permission-pull-requests: read
+          permission-contents: read
 
       - name: Checkout code
         uses: actions/checkout@v6
