@@ -7718,17 +7718,19 @@ permissions:</p>
 <td><code>cd.yml</code> (the release tag points at the freeze-internal-refs commit, which changes workflow files: see <a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>); the automatic fleet sync, whose PRs can change files under <code>.github/workflows/</code></td>
 </tr>
 <tr>
-<td>Repository security advisories</td>
-<td>Read &amp; write</td>
-<td><code>epic-sweep</code> (the security-records pass syncs advisory states in the org's <code>.github</code>)</td>
-</tr>
-<tr>
 <td>Dependabot alerts</td>
 <td>Read-only</td>
 <td><code>dependabot-audit</code> (<code>vrg-dependabot-audit</code> lists open alerts)</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Why the App holds no Repository security advisories permission.</strong> The App
+must not hold Repository security advisories at any access level. No
+automation job uses it: the security-records pass that syncs advisory states
+in the org's <code>.github</code> runs as the human or the user agent, through
+<code>vrg-security-record sync</code>, and <code>vrg-epic-audit --close</code> in the <code>epic-sweep</code>
+job makes no security-advisory call
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/4313">vergil-project/vergil-tooling#4313</a>).</p>
 <p><strong>Why Administration and Workflows are write.</strong> The automatic fleet sync (epic
 <a href="https://github.com/vergil-project/.github/issues/1064">vergil-project/.github#1064</a>)
 has the nightly <code>github-config</code> job converge each repository itself and open
@@ -7787,9 +7789,8 @@ old key. Each org has its own App and key, so rotate per org.</p>
 <p>GitHub gives a token minted from an App <strong>every</strong> permission the App's
 installation holds, unless the token asks for less. Once the App holds
 Administration write, an unscoped token would carry it into every job.
-So every <code>actions/create-github-app-token</code> step in vergil-actions but one (the
-<code>epic-sweep</code> row below) passes explicit <code>permission-*</code> inputs, and each job
-requests only what it needs:</p>
+So every <code>actions/create-github-app-token</code> step in vergil-actions passes
+explicit <code>permission-*</code> inputs, and each job requests only what it needs:</p>
 <table>
 <thead>
 <tr>
@@ -7822,7 +7823,7 @@ requests only what it needs:</p>
 <tr>
 <td><code>ops-epic-sweep.yml</code></td>
 <td><code>epic-sweep</code></td>
-<td>Not yet scoped: it uses <code>issues: write</code>, <code>pull-requests: read</code>, <code>contents: read</code> and Repository security advisories write, and <code>actions/create-github-app-token</code> has no input for the last. It stays unscoped on purpose until the tracked follow-up vergil-project/vergil-actions#1159 scopes it, once vergil-project/vergil-tooling#4313 moves the advisory-state sync out of <code>--close</code></td>
+<td><code>issues: write</code>, <code>pull-requests: read</code>, <code>contents: read</code></td>
 </tr>
 <tr>
 <td><code>ops-upstream-refresh.yml</code></td>
