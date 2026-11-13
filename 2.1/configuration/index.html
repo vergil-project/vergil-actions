@@ -841,6 +841,8 @@
       
         
       
+        
+      
     
     
     
@@ -893,6 +895,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.69/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.69
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7650,6 +7680,10 @@ org:</p>
 <td><code>mnemosys-project</code></td>
 <td><code>mnemosys-project-automation</code></td>
 </tr>
+<tr>
+<td><code>mq-rest-admin-project</code></td>
+<td><code>mq-rest-admin-project-automation</code></td>
+</tr>
 </tbody>
 </table>
 <p>The App is an automation identity, not a per-contributor one. It is separate
@@ -7675,7 +7709,7 @@ only library repositories:</p>
 <tbody>
 <tr>
 <td><a href="../workflows/ops-github-config/"><code>ops-github-config.yml</code></a></td>
-<td><code>branch-sweep</code>, <code>github-config</code>, <code>dependabot-audit</code></td>
+<td><code>branch-sweep</code>, <code>github-config</code>, <code>dependabot-audit</code>, <code>bypass-probe</code></td>
 <td>Calling repository only</td>
 </tr>
 <tr>
@@ -7725,7 +7759,7 @@ permissions:</p>
 <tr>
 <td>Administration</td>
 <td>Read &amp; write</td>
-<td><code>github-config</code>. Today it runs the read-only <code>vrg-github-repo-config audit</code>, which reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled. The automatic fleet sync moves it to <code>vrg-github-repo-config update</code>, which converges settings and rulesets, so the App needs write</td>
+<td><code>github-config</code>. Today it runs the read-only <code>vrg-github-repo-config audit</code>, which reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled. The automatic fleet sync moves it to <code>vrg-github-repo-config update</code>, which converges settings and rulesets, so the App needs write. The temporary <code>bypass-probe</code> requests write to read a ruleset's bypass actors</td>
 </tr>
 <tr>
 <td>Contents</td>
@@ -7846,6 +7880,11 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 <td><code>vulnerability-alerts: read</code></td>
 </tr>
 <tr>
+<td><code>ops-github-config.yml</code></td>
+<td><code>bypass-probe</code> (temporary, dispatch from <code>develop</code> only)</td>
+<td><code>administration: write</code>, <code>metadata: read</code></td>
+</tr>
+<tr>
 <td><code>ops-epic-rollup.yml</code></td>
 <td><code>epic-rollup</code></td>
 <td><code>issues: write</code></td>
@@ -7872,8 +7911,9 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 </tr>
 </tbody>
 </table>
-<p>Metadata: Read is always included. Only the <code>github-config</code> job is ever to
-request Administration write, once it runs <code>update</code>. A repository-local
+<p>Metadata: Read is always included. Only two jobs ever request
+Administration write: the temporary <code>bypass-probe</code>, which runs only when
+dispatched from <code>develop</code>, and <code>github-config</code>, once it runs <code>update</code>. A repository-local
 workflow that mints an automation App token follows the same rule.</p>
 <p>A token can only narrow what the installation already holds: a step that
 requests a permission the installation lacks, or has not accepted yet, fails
