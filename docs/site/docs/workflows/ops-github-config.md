@@ -2,13 +2,16 @@
 
 Nightly per-repository ops checks. Every managed repository's `ops.yml` calls
 this workflow on a schedule, and it runs three independent jobs against the
-calling repository:
+calling repository, plus a temporary fourth on manual dispatch only:
 
 - **`branch-sweep`** deletes branches whose pull-request work is finished.
 - **`github-config`** audits the repository's GitHub configuration with
   `vrg-github-repo-config audit`.
 - **`dependabot-audit`** fails when the repository has any open Dependabot
   alert, at any severity.
+- **`bypass-probe`** (dispatch from `develop` only, temporary) prints what an
+  automation App token reads back from the repository's "Tag protection"
+  ruleset.
 
 The jobs do not depend on each other, so one failing does not stop the
 others. Each one mints its own GitHub App token from the org's automation App
@@ -35,6 +38,7 @@ scoped to the calling repository only.
 | `branch-sweep` | `<caller> / branch-sweep` | Deletes finished branches via [`ops/github-config/branch-sweep`](../actions/ops-github-config-branch-sweep.md) |
 | `github-config` | `<caller> / github-config` | Runs `vrg-github-repo-config audit --repo <calling repo>` |
 | `dependabot-audit` | `<caller> / dependabot-audit` | Runs `vrg-dependabot-audit --repo <calling repo>` |
+| `bypass-probe` | `<caller> / bypass-probe` | On `workflow_dispatch` from `develop` only: prints the "Tag protection" ruleset's bypass actors, whether `VRG_AUTOMATION_APP` is set, and the token's login |
 
 ## Behavior
 
@@ -55,6 +59,7 @@ the same pattern:
 | `branch-sweep` | `contents: write`, `pull-requests: read` | Delete a branch ref, and read pull requests to decide which branches are finished |
 | `github-config` | `administration: read`, `contents: write` | The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's `vergil.toml` (Contents). It writes no contents, but GitHub returns a repository's merge settings only to a token with Contents read and write (see [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository)). It makes no Issues call |
 | `dependabot-audit` | `vulnerability-alerts: read` only (**Dependabot alerts: Read**) | List the repository's open Dependabot alerts |
+| `bypass-probe` | `administration: write`, `metadata: read` | Read a ruleset's `bypass_actors`, which GitHub returns only to a caller that can edit the ruleset. Minted only after the job has checked it runs from `develop` |
 
 The org's automation App holds more than any one job requests, Administration
 write included (see
@@ -75,8 +80,8 @@ Each job runs in its own per-repository concurrency group,
 `vergil-project/vergil-tooling/github-config`), with
 `cancel-in-progress: false`. A new run of a job waits for a running one of
 the same job in the same repository and neither is cancelled, so a scheduled
-run and a manual dispatch never overlap. The three jobs stay independent of
-each other.
+run and a manual dispatch never overlap. The jobs stay independent of each
+other.
 
 ### Git credentials
 
@@ -102,6 +107,28 @@ configuration and exits non-zero when they differ or the configuration cannot
 be read. It never changes anything. To converge a
 repository, a human runs `vrg-github-repo-config apply` (see
 [Repository Rulesets](../ci-gates/repository-rulesets.md)).
+
+### bypass-probe
+
+A temporary probe for the automatic fleet sync (epic
+[vergil-project/.github#1064](https://github.com/vergil-project/.github/issues/1064)).
+It checks, before that epic builds on them, that an automation App token reads
+a ruleset's bypass actors and that the token's GraphQL login is the App's.
+The epic removes the job once its ops switch lands.
+
+It runs only on `workflow_dispatch`, so nightly scheduled runs skip it. Its
+first step fails unless the run's ref is `refs/heads/develop`, before any
+token is minted, and it checks out `develop`. It then prints:
+
+- `VRG_AUTOMATION_APP set: yes` or `no`, from the `VRG_AUTOMATION_APP`
+  Actions variable. The value itself is never printed;
+- `login: <login>`, the GraphQL `viewer { login }` of the App token;
+- one `<actor_type> <actor_id>` line per bypass actor of the repository's
+  "Tag protection" ruleset, then `bypass_actors entries: <n>`.
+
+It fails when the repository does not have exactly one ruleset named "Tag
+protection", or when that ruleset's response has no `bypass_actors` field. A
+missing field is never counted as an empty list.
 
 ### dependabot-audit
 

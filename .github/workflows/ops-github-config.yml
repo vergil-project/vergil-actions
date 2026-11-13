@@ -106,6 +106,89 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: vrg-github-repo-config audit --repo "${{ github.repository }}"
 
+  # Temporary probe (epic vergil-project/.github#1064, Task A1b): shows whether
+  # an automation App token reads a ruleset's bypass_actors, whether the
+  # VRG_AUTOMATION_APP org variable reaches this repository, and the token's
+  # GraphQL viewer login. A human dispatches it from develop; scheduled runs
+  # skip it. Task A2 removes it.
+  bypass-probe:
+    name: bypass-probe
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: ${{ github.repository }}/bypass-probe
+      cancel-in-progress: false
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      # Before any token is minted: this job requests Administration write,
+      # so it runs only from develop.
+      - name: Require develop
+        shell: bash
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "${REF}" != "refs/heads/develop" ]; then
+            echo "::error::bypass-probe runs only from refs/heads/develop, not ${REF}"
+            exit 1
+          fi
+
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Scoped to the calling repo only (no owner/repositories input).
+          # Administration write is the permission whose token the premise is
+          # about: GitHub returns a ruleset's bypass_actors only to a caller
+          # that can edit the ruleset. Metadata read is always included and is
+          # stated here so the token's whole permission set is explicit.
+          permission-administration: write
+          permission-metadata: read
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: develop
+
+      - name: Probe
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+        run: |
+          set -euo pipefail
+
+          # The variable's value is never printed, only whether it is set.
+          if [ -n "${AUTOMATION_APP}" ]; then
+            echo "VRG_AUTOMATION_APP set: yes"
+          else
+            echo "VRG_AUTOMATION_APP set: no"
+          fi
+
+          login="$(gh api graphql -f query='query { viewer { login } }' --jq '.data.viewer.login')"
+          echo "login: ${login}"
+
+          ids="$(gh api --paginate "repos/${REPO}/rulesets?includes_parents=false" \
+            --jq '.[] | select(.name == "Tag protection") | .id')"
+          count="$(printf '%s' "${ids}" | grep -c . || true)"
+          if [ "${count}" -ne 1 ]; then
+            echo "::error::expected exactly one ruleset named \"Tag protection\" in ${REPO}, found ${count}"
+            exit 1
+          fi
+
+          ruleset="$(gh api "repos/${REPO}/rulesets/${ids}")"
+          # A response with no bypass_actors field is reported as such, never
+          # counted as an empty list.
+          if ! printf '%s' "${ruleset}" | jq -e 'has("bypass_actors")' >/dev/null; then
+            echo "::error::the \"Tag protection\" ruleset response has no bypass_actors field"
+            exit 1
+          fi
+          printf '%s' "${ruleset}" | jq -r '.bypass_actors[] | "\(.actor_type) \(.actor_id)"'
+          echo "bypass_actors entries: $(printf '%s' "${ruleset}" | jq '.bypass_actors | length')"
+
   # Report-only Dependabot gate (epic vergil-project/.github#420): alerts are
   # on, Dependabot never opens a PR, and this job turns any open alert, at any
   # severity, into a red nightly run. vrg-dependabot-audit exits 0 (no open

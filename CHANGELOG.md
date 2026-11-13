@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.69] - 2026-11-13
+
+### CI
+
+- add the dispatch-only bypass-probe job to ops-github-config (#1174)
+
+### Documentation
+
+- list mq-rest-admin-project in the automation App table (#1175)
+
 ## [2.1.68] - 2026-11-13
 
 ### CI
