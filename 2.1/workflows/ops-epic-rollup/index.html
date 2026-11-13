@@ -835,6 +835,8 @@
       
         
       
+        
+      
     
     
     
@@ -887,6 +889,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.66/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.66
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7194,7 +7224,8 @@ close this workflow misses.</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <p>The <code>epic-rollup</code> job runs in <code>ghcr.io/vergil-project/&lt;prefix&gt;-base:latest</code>:</p>
 <ol>
-<li>Mints an App token scoped to the calling repository and <code>epic-repo</code>.</li>
+<li>Mints an App token scoped to the calling repository and <code>epic-repo</code>,
+   requesting only <code>issues: write</code>.</li>
 <li>Checks out the repository and installs vergil-tooling.</li>
 <li>Runs <code>vrg-epic-rollup --task "&lt;owner&gt;/&lt;repo&gt;#&lt;issue number&gt;"</code> with the
    App token as <code>GH_TOKEN</code>.</li>

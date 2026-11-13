@@ -835,6 +835,8 @@
       
         
       
+        
+      
     
     
     
@@ -887,6 +889,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.66/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.66
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -4811,6 +4841,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#token-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7218,6 +7259,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#token-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token scoping
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -7586,11 +7638,16 @@ only library repositories:</p>
 <td>Package-index dispatch</td>
 <td><code>&lt;org&gt;/packages</code> only</td>
 </tr>
+<tr>
+<td>vergil-actions' own <code>cd.yml</code></td>
+<td><code>release</code></td>
+<td>vergil-actions only</td>
+</tr>
 </tbody>
 </table>
-<p><strong>App permissions required.</strong> The table lists what each consumer needs, which
-is the minimum the App must hold. Read the App's actual permission set from
-its settings page before relying on it:</p>
+<p><strong>App permissions.</strong> Every org's automation App is configured identically,
+and this table is that configuration. Each org's App must hold exactly these
+permissions:</p>
 <table>
 <thead>
 <tr>
@@ -7607,23 +7664,33 @@ its settings page before relying on it:</p>
 </tr>
 <tr>
 <td>Administration</td>
-<td>Read-only</td>
-<td><code>github-config</code>: <code>vrg-github-repo-config audit</code> reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled</td>
+<td>Read &amp; write</td>
+<td><code>github-config</code>. Today it runs the read-only <code>vrg-github-repo-config audit</code>, which reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled. The automatic fleet sync moves it to <code>vrg-github-repo-config update</code>, which converges settings and rulesets, so the App needs write</td>
 </tr>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>github-config</code> reads <code>vergil.toml</code> and the CI workflow</td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> reads <code>vergil.toml</code>; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
 </tr>
 <tr>
 <td>Pull requests</td>
 <td>Read &amp; write</td>
-<td><code>upstream-refresh</code> (opens, updates, comments on and closes the refresh PR); <code>branch-sweep</code> reads them (decides which branches are finished)</td>
+<td><code>upstream-refresh</code> (opens, updates, comments on and closes the refresh PR); <code>branch-sweep</code> and <code>epic-sweep</code> read them</td>
 </tr>
 <tr>
 <td>Issues</td>
 <td>Read &amp; write</td>
-<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, relabel and link issues)</td>
+<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues)</td>
+</tr>
+<tr>
+<td>Workflows</td>
+<td>Read &amp; write</td>
+<td><code>cd.yml</code> (the release tag points at the freeze-internal-refs commit, which changes workflow files: see <a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>); the automatic fleet sync, whose PRs can change files under <code>.github/workflows/</code></td>
+</tr>
+<tr>
+<td>Repository security advisories</td>
+<td>Read &amp; write</td>
+<td><code>epic-sweep</code> (the security-records pass syncs advisory states in the org's <code>.github</code>)</td>
 </tr>
 <tr>
 <td>Dependabot alerts</td>
@@ -7632,16 +7699,15 @@ its settings page before relying on it:</p>
 </tr>
 </tbody>
 </table>
-<p><strong>Administration stays read-only.</strong> The Apps run only the read-only
-<code>vrg-github-repo-config audit</code>. <code>vrg-github-repo-config apply</code>, which changes
-settings and rulesets, is a human action that runs as the maintainer's own
-<code>gh</code> login, never as the App. Do not grant Administration: Read &amp; write.</p>
-<p>vergil-actions' own release workflow (<code>cd.yml</code>) also uses the
-<code>vergil-project-automation</code> App token for its checkout, because the
-release tag it pushes points at the freeze-internal-refs commit, which changes
-workflow files. That needs <strong>Workflows: Read &amp; write</strong> (see
-<a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>).
-That is specific to this repository; consumer workflows do not need it.</p>
+<p><strong>Why Administration and Workflows are write.</strong> The automatic fleet sync (epic
+<a href="https://github.com/vergil-project/.github/issues/1064">vergil-project/.github#1064</a>)
+has the nightly <code>github-config</code> job converge each repository itself and open
+one auto-merging pull request for any managed file that has drifted from its
+master copy. The automation identity does only this mechanized work, never
+anything an AI agent does (that epic's spec, §3). Converging settings and
+rulesets needs Administration write, and a sync PR that touches a workflow
+file needs Workflows write. These rights are safe to hold only because every
+token is scoped, as <a href="#token-scoping">Token scoping</a> describes.</p>
 <p><strong>Creation steps:</strong></p>
 <ol>
 <li>Go to the org's <strong>Settings &gt; Developer settings &gt; GitHub Apps</strong>, so the
@@ -7656,12 +7722,23 @@ That is specific to this repository; consumer workflows do not need it.</p>
    <code>.pem</code> file.</li>
 <li>Under <strong>Install App</strong>, install it on the org and choose <strong>All
    repositories</strong>.</li>
-<li>Make <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> available to every repository
-   that calls the workflows above. For example, as repository secrets:</li>
-</ol>
+<li>
+<p>Make <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> available to every repository
+   that calls the workflows above. For example, as repository secrets:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;path-to-private-key&gt;.pem<span class="k">)</span><span class="s2">"</span>
 </code></pre></div>
+</li>
+<li>
+<p>Set the org-level Actions variable <code>VRG_AUTOMATION_APP</code> to the App's
+    slug (<code>&lt;org&gt;-automation</code>), visible to all repositories. It names the
+    automation App. Once the automatic fleet sync is switched on, the
+    <code>github-config</code> job passes it to vergil-tooling, which checks that the
+    job's token was minted by that App before it does any automation work.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>VRG_AUTOMATION_APP<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;<span class="w"> </span>--visibility<span class="w"> </span>all<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;org&gt;-automation"</span>
+</code></pre></div>
+</li>
+</ol>
 <p><strong>Changing a permission later:</strong></p>
 <ol>
 <li>On the App's settings page, open <strong>Permissions &amp; events</strong>, change the
@@ -7676,6 +7753,76 @@ That is specific to this repository; consumer workflows do not need it.</p>
 <p><strong>Key rotation:</strong> Generate a new private key from the app's settings page, update
 the <code>APP_PRIVATE_KEY</code> secret wherever it is stored for that org, then revoke the
 old key. Each org has its own App and key, so rotate per org.</p>
+<h3 id="token-scoping">Token scoping<a class="headerlink" href="#token-scoping" title="Permanent link">&para;</a></h3>
+<p>GitHub gives a token minted from an App <strong>every</strong> permission the App's
+installation holds, unless the token asks for less. Once the App holds
+Administration write, an unscoped token would carry it into every job.
+So every <code>actions/create-github-app-token</code> step in vergil-actions but one (the
+<code>epic-sweep</code> row below) passes explicit <code>permission-*</code> inputs, and each job
+requests only what it needs:</p>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Job or step</th>
+<th>Requested permissions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ops-github-config.yml</code></td>
+<td><code>branch-sweep</code></td>
+<td><code>contents: write</code>, <code>pull-requests: read</code></td>
+</tr>
+<tr>
+<td><code>ops-github-config.yml</code></td>
+<td><code>github-config</code></td>
+<td><code>administration: read</code>, <code>contents: read</code> (the read-only <code>audit</code>)</td>
+</tr>
+<tr>
+<td><code>ops-github-config.yml</code></td>
+<td><code>dependabot-audit</code></td>
+<td><code>vulnerability-alerts: read</code></td>
+</tr>
+<tr>
+<td><code>ops-epic-rollup.yml</code></td>
+<td><code>epic-rollup</code></td>
+<td><code>issues: write</code></td>
+</tr>
+<tr>
+<td><code>ops-epic-sweep.yml</code></td>
+<td><code>epic-sweep</code></td>
+<td>Not yet scoped: it uses <code>issues: write</code>, <code>pull-requests: read</code>, <code>contents: read</code> and Repository security advisories write, and <code>actions/create-github-app-token</code> has no input for the last. It stays unscoped on purpose until the tracked follow-up vergil-project/vergil-actions#1159 scopes it, once vergil-project/vergil-tooling#4313 moves the advisory-state sync out of <code>--close</code></td>
+</tr>
+<tr>
+<td><code>ops-upstream-refresh.yml</code></td>
+<td><code>upstream-refresh</code></td>
+<td><code>contents: write</code>, <code>pull-requests: write</code></td>
+</tr>
+<tr>
+<td><code>cd-release.yml</code></td>
+<td>Package-index dispatch</td>
+<td><code>contents: write</code></td>
+</tr>
+<tr>
+<td><code>cd.yml</code> (vergil-actions only)</td>
+<td><code>release</code></td>
+<td><code>contents: write</code>, <code>workflows: write</code></td>
+</tr>
+</tbody>
+</table>
+<p>Metadata: Read is always included. Only the <code>github-config</code> job is ever to
+request Administration write, once it runs <code>update</code>. A repository-local
+workflow that mints an automation App token follows the same rule.</p>
+<p>A token can only narrow what the installation already holds: a step that
+requests a permission the installation lacks, or has not accepted yet, fails
+to mint and the job goes red.</p>
+<p>Each job in <code>ops-github-config.yml</code> also runs in its own per-repository
+concurrency group, <code>&lt;owner&gt;/&lt;repo&gt;/&lt;job&gt;</code>, which queues and never cancels: a
+scheduled run and a dispatch of the same job never overlap. The
+<code>github-config</code> job runs <code>gh auth setup-git</code> with the App token before the
+tool runs, so the <code>git clone</code> and <code>git push</code> the tooling makes authenticate
+as the App with that job's scoped token.</p>
 <h2 id="binary-package-environments">Binary package environments<a class="headerlink" href="#binary-package-environments" title="Permanent link">&para;</a></h2>
 <p>Repositories whose <code>vergil.toml</code> has a <code>[package]</code> section, and the
 organization's <code>&lt;org&gt;/packages</code> index repository, keep their signing key in
@@ -7721,13 +7868,17 @@ installed on <code>&lt;org&gt;/packages</code> with <strong>Contents: Read &amp;
 <code>cd-release.yml</code> can dispatch <code>package-released</code> to it after a packaged
 release.</p>
 <h2 id="container-system-packages">Container system packages<a class="headerlink" href="#container-system-packages" title="Permanent link">&para;</a></h2>
-<p>A repository can declare extra Debian packages under <code>[container].system-packages</code>
+<p>A repository can declare extra Ubuntu packages under <code>[container].system-packages</code>
 in its <code>vergil.toml</code>. On CI, the <a href="../workflows/ci-test/"><code>ci-test</code></a> workflow
 installs those packages on its <strong>test jobs</strong> (via the
 <a href="../actions/shared-setup-system-packages/"><code>shared/setup/system-packages</code></a>
 action), so tests run against the same system dependencies as the local dev
 container. The key's schema and semantics are documented on the vergil-tooling
-side: <a href="https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/"><code>container-config</code> reference</a>.</p>
+side: <a href="https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/"><code>container-config</code> reference</a>.
+Every image a test job runs in is built on Ubuntu 24.04, and the GitHub-hosted
+runners are <code>ubuntu-24.04</code>; vergil-containers'
+<a href="https://vergil-project.github.io/vergil-containers/latest/operations/os-usage/">OS usage</a>
+page lists the OS of every image and runner, and why it was chosen.</p>
 <h2 id="container-build-command">Container build command<a class="headerlink" href="#container-build-command" title="Permanent link">&para;</a></h2>
 <p>A repository can declare a build step under <code>[container].build-command</code> in its
 <code>vergil.toml</code>. On CI, the <a href="../workflows/ci-test/"><code>ci-test</code></a> workflow runs that
@@ -7745,10 +7896,10 @@ semantics are documented on the vergil-tooling side:
 <p>The <code>add-to-project</code> workflow automatically adds new issues to a GitHub Project
 when they are opened. Each repository has an <code>add-to-project.yml</code> workflow that
 references a project URL and uses the <code>PROJECT_TOKEN</code> secret.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/add-to-project@v1.0.2</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">project-url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/users/&lt;owner&gt;/projects/&lt;number&gt;</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">github-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.PROJECT_TOKEN }}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/add-to-project@v1.0.2</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">project-url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/users/&lt;owner&gt;/projects/&lt;number&gt;</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">github-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.PROJECT_TOKEN }}</span>
 </code></pre></div>
 <p>The <code>project-url</code> value varies by repository — repositories may belong to
 different projects. This is configured directly in the workflow file, not as a
@@ -7767,8 +7918,8 @@ and API commands, see <a href="../ci-gates/repository-rulesets/">Repository Rule
 is automatically created per workflow run and scoped to the repository.</p>
 <h3 id="default-github_token-permissions">Default GITHUB_TOKEN permissions<a class="headerlink" href="#default-github_token-permissions" title="Permanent link">&para;</a></h3>
 <p>Each workflow declares its minimum required permissions at the top level:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">permissions</span><span class="p">:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 </code></pre></div>
 <table>
 <thead>
@@ -7853,9 +8004,9 @@ silently leaving <code>main</code> unprotected. See
   available to the repository (every repository with an <code>ops.yml</code>, not only
   libraries)</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;key&gt;.pem<span class="k">)</span><span class="s2">"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;key&gt;.pem<span class="k">)</span><span class="s2">"</span>
 </code></pre></div>
 <h3 id="4-github-app-installation">4. GitHub App installation<a class="headerlink" href="#4-github-app-installation" title="Permanent link">&para;</a></h3>
 <ul>

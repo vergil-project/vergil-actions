@@ -835,6 +835,8 @@
       
         
       
+        
+      
     
     
     
@@ -887,6 +889,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.66/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.66
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6513,6 +6543,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#branch-sweep" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7113,6 +7165,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#concurrency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrency
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#branch-sweep" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7280,7 +7354,8 @@ the same pattern:</p>
 <ol>
 <li>Mints an App token with <code>actions/create-github-app-token</code>. None of the
    jobs passes an <code>owner</code> or <code>repositories</code> input, so each token is scoped to
-   the calling repository alone.</li>
+   the calling repository alone, and each passes explicit <code>permission-*</code>
+   inputs, so it carries only the permissions that job needs.</li>
 <li>Checks out the repository and installs vergil-tooling.</li>
 <li>Runs its command with the App token as <code>GH_TOKEN</code>.</li>
 </ol>
@@ -7301,8 +7376,8 @@ the same pattern:</p>
 </tr>
 <tr>
 <td><code>github-config</code></td>
-<td>None requested, so the token carries the installation's full permission set (still limited to the calling repository)</td>
-<td>The audit reads repository settings, branch protection, rulesets, Actions permissions, whether vulnerability alerts are enabled, and the repository's <code>vergil.toml</code> and CI workflow</td>
+<td><code>administration: read</code>, <code>contents: read</code></td>
+<td>The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's <code>vergil.toml</code> (Contents). It makes no Issues call</td>
 </tr>
 <tr>
 <td><code>dependabot-audit</code></td>
@@ -7311,14 +7386,30 @@ the same pattern:</p>
 </tr>
 </tbody>
 </table>
+<p>The org's automation App holds more than any one job requests, Administration
+write included (see
+<a href="../../configuration/#app_client_id-and-app_private_key">App permissions</a>).
+Without the <code>permission-*</code> inputs a minted token would carry all of it, so
+every job asks only for its own set (see
+<a href="../../configuration/#token-scoping">Token scoping</a>).</p>
 <p><code>GITHUB_TOKEN</code> cannot do this work. This workflow requests only
 <code>contents: read</code> for it, and a called workflow can never hold more than its
 caller's <code>ops.yml</code> grants (the standard <code>ops.yml</code> grants <code>contents: read</code> and
 <code>issues: write</code>). Neither can delete a branch or read Dependabot alerts.</p>
-<p>The audit is read-only, and the App's <strong>Administration</strong> permission is
-<strong>Read-only</strong> to match. <code>vrg-github-repo-config apply</code>, which changes settings
-and rulesets, is a human action run under the maintainer's own <code>gh</code> login,
-never by this workflow.</p>
+<h3 id="concurrency">Concurrency<a class="headerlink" href="#concurrency" title="Permanent link">&para;</a></h3>
+<p>Each job runs in its own per-repository concurrency group,
+<code>${{ github.repository }}/&lt;job&gt;</code> (for example
+<code>vergil-project/vergil-tooling/github-config</code>), with
+<code>cancel-in-progress: false</code>. A new run of a job waits for a running one of
+the same job in the same repository and neither is cancelled, so a scheduled
+run and a manual dispatch never overlap. The three jobs stay independent of
+each other.</p>
+<h3 id="git-credentials">Git credentials<a class="headerlink" href="#git-credentials" title="Permanent link">&para;</a></h3>
+<p>The <code>github-config</code> job runs <code>gh auth setup-git</code> with the App token as
+<code>GH_TOKEN</code> before the tool runs. git then gets its HTTPS credentials from
+<code>gh</code>, so any <code>git clone</code> or <code>git push</code> vergil-tooling makes authenticates as
+the App with this job's scoped token, not with the checkout's
+<code>GITHUB_TOKEN</code>.</p>
 <h3 id="branch-sweep">branch-sweep<a class="headerlink" href="#branch-sweep" title="Permanent link">&para;</a></h3>
 <p>The scheduled safety net behind the delete-on-merge repository setting and
 the delete-on-close rule. It lives in this workflow so that every repository

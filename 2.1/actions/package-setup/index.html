@@ -835,6 +835,8 @@
       
         
       
+        
+      
     
     
     
@@ -887,6 +889,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.66/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.66
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7200,8 +7230,8 @@ against fixture markers (<code>VRG_TOOLCHAIN_MARKER</code>) and stub tools, with
 and no container. The <code>Smoke - setup/vergil outputs</code> workflow runs it on
 every PR that touches this action.</p>
 <h2 id="apt-behaviour">apt behaviour<a class="headerlink" href="#apt-behaviour" title="Permanent link">&para;</a></h2>
-<p>The apt mirror list (on amd64) and the fail-fast apt config
-(<code>/etc/apt/apt.conf.d/80-vergil-fast-fail</code>, on every architecture) are part of
+<p>The apt mirror list and the fail-fast apt config
+(<code>/etc/apt/apt.conf.d/80-vergil-fast-fail</code>), on both architectures, are part of
 the <code>prod-pkg-ubuntu</code> image, so every apt call <code>vergil-tooling</code> makes during
 build and install-test inherits them. vergil-containers writes them, and
 checks them when it builds the image.</p>

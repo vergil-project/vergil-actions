@@ -835,6 +835,8 @@
       
         
       
+        
+      
     
     
     
@@ -887,6 +889,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.66/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.66
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7179,7 +7209,8 @@ on that repository.</p>
 in the concurrency group <code>upstream-refresh</code> (a new run waits for a running
 one; neither is cancelled):</p>
 <ol>
-<li>Mints an App token scoped to the calling repository.</li>
+<li>Mints an App token scoped to the calling repository, requesting only
+   <code>contents: write</code> and <code>pull-requests: write</code>.</li>
 <li>Checks out the repository with that token, so the push and the PR are
    App-authored. An App-authored PR triggers <code>pull_request</code> workflows, which
    a <code>GITHUB_TOKEN</code> push does not.</li>
