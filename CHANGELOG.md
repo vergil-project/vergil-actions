@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.66] - 2026-11-13
+
+### CI
+
+- pin GitHub-hosted runners to ubuntu-24.04 (#1149)
+- scope every automation token, add per-job concurrency, and document the App permissions (#1160)
+
+### Documentation
+
+- name Ubuntu packages, both-architecture apt mirrors, and link OS usage (#1151)
+
 ## [2.1.65] - 2026-11-11
 
 ### Bug fixes
