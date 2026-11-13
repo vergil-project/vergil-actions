@@ -37,6 +37,7 @@ not add it themselves.
 | -------- | ----- |
 | `python` | Runs `uv run --frozen python -c '...'` and compares the interpreter's `x.y` with `expected`, logging the interpreter's path. `--frozen` keeps uv from rewriting `uv.lock`. |
 | `go` | Runs `go env GOVERSION` in the module (so a `toolchain` switch in `go.mod` is what gets reported) and compares its `x.y` (`go1.26.3` is `1.26`). |
+| `rust` | Runs `rustc --version` in the repository checkout (so a rustup override would be what gets reported) and compares its `x.y` (`rustc 1.100.0` is `1.100`). |
 | Any other | No check yet; prints a `::notice::` saying so and passes. |
 
 On a mismatch the step fails with
@@ -47,7 +48,7 @@ toolchain cannot be asked for its version.
 ## Implementation
 
 The logic is in `assert.sh` next to `action.yml`, so it can be unit tested
-(`tests/assert.test.sh`, which fakes `uv` and `go`). The
+(`tests/assert.test.sh`, which fakes `uv`, `go` and `rustc`). The
 `smoke-setup-vergil` workflow runs the tests.
 
 ## Related

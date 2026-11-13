@@ -17,6 +17,8 @@
 #            uv.lock. The interpreter's path is logged alongside its version.
 #   go     — `go env GOVERSION` (go1.26.3 -> 1.26). Run in the module, so a
 #            `toolchain` switch in go.mod is what gets reported.
+#   rust   — `rustc --version` (rustc 1.100.0 (...) -> 1.100). Run in the repo
+#            checkout, so a rustup override would be what gets reported.
 #   other  — no assertion yet (each language's turn adds one); a notice says so.
 #
 # On a mismatch it prints `::error::CI resolved <expected> but the job runs
@@ -82,9 +84,27 @@ case "$language" in
       error "assert-toolchain: go env GOVERSION gave '${raw}', which has no x.y version"
     fi
     ;;
+  rust)
+    check_expected
+    err_file="$(mktemp)"
+    trap 'rm -f "$err_file"' EXIT
+    rc=0
+    # Run in the checkout, so a rustup override (rust-toolchain.toml,
+    # RUSTUP_TOOLCHAIN) is what gets reported.
+    raw="$(rustc --version 2>"$err_file")" || rc=$?
+    cat "$err_file" >&2
+    if [ "$rc" -ne 0 ]; then
+      error "assert-toolchain: cannot ask rustc for its version:" \
+        "${raw} $(tr '\n' ' ' <"$err_file")"
+    fi
+    actual="$(x_y "$raw")"
+    if [ -z "$actual" ]; then
+      error "assert-toolchain: rustc --version gave '${raw}', which has no x.y version"
+    fi
+    ;;
   *)
     echo "::notice::assert-toolchain: no toolchain assertion for language" \
-      "'${language}' yet; only python and go are checked"
+      "'${language}' yet; only python, go and rust are checked"
     exit 0
     ;;
 esac
