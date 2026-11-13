@@ -837,6 +837,8 @@
       
         
       
+        
+      
     
     
     
@@ -889,6 +891,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.67/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.67
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7670,7 +7700,7 @@ permissions:</p>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> reads <code>vergil.toml</code>; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> reads <code>vergil.toml</code>, and requests write because GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
 </tr>
 <tr>
 <td>Pull requests</td>
@@ -7777,7 +7807,7 @@ requests only what it needs:</p>
 <tr>
 <td><code>ops-github-config.yml</code></td>
 <td><code>github-config</code></td>
-<td><code>administration: read</code>, <code>contents: read</code> (the read-only <code>audit</code>)</td>
+<td><code>administration: read</code>, <code>contents: write</code> (the read-only <code>audit</code>: <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a> returns the merge settings only with Contents read and write)</td>
 </tr>
 <tr>
 <td><code>ops-github-config.yml</code></td>
