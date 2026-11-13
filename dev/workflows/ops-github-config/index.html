@@ -7376,8 +7376,8 @@ the same pattern:</p>
 </tr>
 <tr>
 <td><code>github-config</code></td>
-<td><code>administration: read</code>, <code>contents: read</code></td>
-<td>The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's <code>vergil.toml</code> (Contents). It makes no Issues call</td>
+<td><code>administration: read</code>, <code>contents: write</code></td>
+<td>The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's <code>vergil.toml</code> (Contents). It writes no contents, but GitHub returns a repository's merge settings only to a token with Contents read and write (see <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a>). It makes no Issues call</td>
 </tr>
 <tr>
 <td><code>dependabot-audit</code></td>
