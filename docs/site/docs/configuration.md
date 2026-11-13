@@ -100,8 +100,15 @@ permissions:
 | Pull requests | Read & write | `upstream-refresh` (opens, updates, comments on and closes the refresh PR); `branch-sweep` and `epic-sweep` read them |
 | Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues) |
 | Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); the automatic fleet sync, whose PRs can change files under `.github/workflows/` |
-| Repository security advisories | Read & write | `epic-sweep` (the security-records pass syncs advisory states in the org's `.github`) |
 | Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
+
+**Why the App holds no Repository security advisories permission.** The App
+must not hold Repository security advisories at any access level. No
+automation job uses it: the security-records pass that syncs advisory states
+in the org's `.github` runs as the human or the user agent, through
+`vrg-security-record sync`, and `vrg-epic-audit --close` in the `epic-sweep`
+job makes no security-advisory call
+([vergil-project/vergil-tooling#4313](https://github.com/vergil-project/vergil-tooling/issues/4313)).
 
 **Why Administration and Workflows are write.** The automatic fleet sync (epic
 [vergil-project/.github#1064](https://github.com/vergil-project/.github/issues/1064))
@@ -165,9 +172,8 @@ old key. Each org has its own App and key, so rotate per org.
 GitHub gives a token minted from an App **every** permission the App's
 installation holds, unless the token asks for less. Once the App holds
 Administration write, an unscoped token would carry it into every job.
-So every `actions/create-github-app-token` step in vergil-actions but one (the
-`epic-sweep` row below) passes explicit `permission-*` inputs, and each job
-requests only what it needs:
+So every `actions/create-github-app-token` step in vergil-actions passes
+explicit `permission-*` inputs, and each job requests only what it needs:
 
 | Workflow | Job or step | Requested permissions |
 | -------- | ----------- | --------------------- |
@@ -175,7 +181,7 @@ requests only what it needs:
 | `ops-github-config.yml` | `github-config` | `administration: read`, `contents: write` (the read-only `audit`: [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository) returns the merge settings only with Contents read and write) |
 | `ops-github-config.yml` | `dependabot-audit` | `vulnerability-alerts: read` |
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
-| `ops-epic-sweep.yml` | `epic-sweep` | Not yet scoped: it uses `issues: write`, `pull-requests: read`, `contents: read` and Repository security advisories write, and `actions/create-github-app-token` has no input for the last. It stays unscoped on purpose until the tracked follow-up vergil-project/vergil-actions#1159 scopes it, once vergil-project/vergil-tooling#4313 moves the advisory-state sync out of `--close` |
+| `ops-epic-sweep.yml` | `epic-sweep` | `issues: write`, `pull-requests: read`, `contents: read` |
 | `ops-upstream-refresh.yml` | `upstream-refresh` | `contents: write`, `pull-requests: write` |
 | `cd-release.yml` | Package-index dispatch | `contents: write` |
 | `cd.yml` (vergil-actions only) | `release` | `contents: write`, `workflows: write` |
