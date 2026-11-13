@@ -839,6 +839,8 @@
       
         
       
+        
+      
     
     
     
@@ -891,6 +893,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.68/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.68
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7259,10 +7289,12 @@ same caller's <code>workflow_dispatch</code> trigger is how the one-time migrati
 <p>The token is minted for every repository the App is installed on in the org,
 because the sweep closes, relabels, links and moves issues in the code
 repositories, and closes, drains and attaches under epics in <code>.github</code>. The
-App needs <code>issues: write</code> on all of them. It also needs <code>pull-requests: read</code>
-(the merged-PR search), <code>contents: read</code> (each repository's <code>vergil.toml</code>) and
-Repository security advisories write (the security-records pass syncs advisory
-states in <code>.github</code>).</p>
+token requests only <code>issues: write</code> (closing, reopening, commenting on,
+relabelling, creating and linking issues, and creating labels),
+<code>pull-requests: read</code> (the merged-PR search) and <code>contents: read</code> (each
+repository's <code>vergil.toml</code>).
+<code>vrg-epic-audit --close</code> makes no security-advisory call; the human or the
+user agent syncs advisory states with <code>vrg-security-record sync</code>.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -7283,7 +7315,8 @@ states in <code>.github</code>).</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <p>The <code>epic-sweep</code> job runs in <code>ghcr.io/vergil-project/&lt;prefix&gt;-base:latest</code>:</p>
 <ol>
-<li>Mints an App token for the caller's org, with no repository restriction.</li>
+<li>Mints an App token for the caller's org, with no repository restriction,
+   scoped to <code>issues: write</code>, <code>pull-requests: read</code> and <code>contents: read</code>.</li>
 <li>Checks out the repository and installs vergil-tooling.</li>
 <li>Runs <code>vrg-epic-audit --close --window-days "$WINDOW_DAYS"</code> with the App
    token as <code>GH_TOKEN</code> and <code>VRG_EPIC_SWEEP=1</code>.</li>
