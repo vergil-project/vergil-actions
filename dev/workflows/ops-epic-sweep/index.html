@@ -7199,7 +7199,10 @@ same caller's <code>workflow_dispatch</code> trigger is how the one-time migrati
 <p>The token is minted for every repository the App is installed on in the org,
 because the sweep closes, relabels, links and moves issues in the code
 repositories, and closes, drains and attaches under epics in <code>.github</code>. The
-App needs <code>issues: write</code> on all of them.</p>
+App needs <code>issues: write</code> on all of them. It also needs <code>pull-requests: read</code>
+(the merged-PR search), <code>contents: read</code> (each repository's <code>vergil.toml</code>) and
+Repository security advisories write (the security-records pass syncs advisory
+states in <code>.github</code>).</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

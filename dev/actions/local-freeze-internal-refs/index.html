@@ -7184,9 +7184,9 @@ tags <code>HEAD</code>, so the frozen refs exist only at the release tag; <code>
 <code>main</code> keep their relative refs.</p>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <p>The step itself only edits and commits locally. Because it changes files under
-<code>.github/workflows</code>, <code>cd.yml</code> checks out with a GitHub App token that has
-<code>workflows: write</code>: <code>GITHUB_TOKEN</code> cannot push a tag whose commit changes
-workflow files.</p>
+<code>.github/workflows</code>, <code>cd.yml</code> checks out with a GitHub App token that
+requests <code>contents: write</code> and <code>workflows: write</code>: <code>GITHUB_TOKEN</code> cannot push
+a tag whose commit changes workflow files.</p>
 
 
 
