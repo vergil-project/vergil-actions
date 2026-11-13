@@ -74,13 +74,18 @@ jobs:
           app-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           # Scoped to the calling repo only (no owner/repositories input),
-          # with only what the read-only audit reads: Administration read
+          # with only what the read-only audit needs: Administration read
           # (repository settings, rulesets, Actions permissions, whether
-          # vulnerability alerts are on) and Contents read (vergil.toml and
-          # the workflow files). No Issues permission: the repo-config code
-          # makes no Issues call.
+          # vulnerability alerts are on) and Contents write. The audit writes
+          # no contents, but GET /repos/{owner}/{repo} leaves out the merge
+          # settings (allow_*_merge, delete_branch_on_merge,
+          # allow_update_branch, the merge and squash commit titles and
+          # messages) unless the token holds Contents read and write, as
+          # GitHub's "Get a repository" REST docs state. Contents also covers
+          # reading vergil.toml and the workflow files. No Issues permission:
+          # the repo-config code makes no Issues call.
           permission-administration: read
-          permission-contents: read
+          permission-contents: write
 
       - name: Checkout code
         uses: actions/checkout@v6

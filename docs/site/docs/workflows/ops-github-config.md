@@ -53,7 +53,7 @@ the same pattern:
 | Job | Requested App permissions | Why |
 | --- | ------------------------- | --- |
 | `branch-sweep` | `contents: write`, `pull-requests: read` | Delete a branch ref, and read pull requests to decide which branches are finished |
-| `github-config` | `administration: read`, `contents: read` | The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's `vergil.toml` (Contents). It makes no Issues call |
+| `github-config` | `administration: read`, `contents: write` | The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's `vergil.toml` (Contents). It writes no contents, but GitHub returns a repository's merge settings only to a token with Contents read and write (see [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository)). It makes no Issues call |
 | `dependabot-audit` | `vulnerability-alerts: read` only (**Dependabot alerts: Read**) | List the repository's open Dependabot alerts |
 
 The org's automation App holds more than any one job requests, Administration
