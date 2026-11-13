@@ -66,15 +66,13 @@ jobs:
           # org-wide issues:write, not a two-repo scope like the per-close
           # rollup.
           #
-          # Permissions are scoped to what the sweep calls: Issues write
-          # (close, reopen, label, create archive epics, sub-issue links),
-          # Pull requests read (the merged-PR search), Contents read (each
-          # repo's vergil.toml), and Repository security advisories write (the
-          # security-records pass syncs advisory states in the org .github).
-          permission-issues: write
-          permission-pull-requests: read
-          permission-contents: read
-          permission-repository-advisories: write
+          # No permission-* inputs yet: the only automation token left
+          # unscoped (vergil-project/vergil-actions#1153). Besides Issues
+          # write, Pull requests read and Contents read, the security-records
+          # pass needs Repository security advisories write to sync advisory
+          # states in the org .github, and create-github-app-token has no
+          # input for that permission. Scoping the token would drop it and
+          # fail the pass, so how to scope this job awaits a ruling.
 
       - name: Checkout code
         uses: actions/checkout@v6
