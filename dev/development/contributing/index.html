@@ -7378,7 +7378,10 @@ New actions use the three-level layout.
 3. Include clear <code>name</code>, <code>description</code>, <code>inputs</code>, and <code>outputs</code> in <code>action.yml</code>.
 4. Put supporting scripts next to <code>action.yml</code> in the action directory (e.g.
    <code>actions/shared/setup/vergil/derive.sh</code>) and call them through
-   <code>${GITHUB_ACTION_PATH}</code>. Put their tests in a <code>tests/</code> subdirectory.
+   <code>${GITHUB_ACTION_PATH}</code>. Put their tests in a <code>tests/</code> subdirectory, as
+   <code>&lt;name&gt;.test.sh</code> scripts committed executable (git mode <code>100755</code>: run
+   <code>chmod +x</code> before <code>git add</code>). Validation fails on any <code>*.test.sh</code> with
+   another mode; see <a href="../validation/#custom-checks">Validation</a>.
 5. Add the action to the appropriate workflow using a local path reference
    (<code>./actions/{phase}/{domain}/{action}</code>).
 6. Add a documentation page under <code>docs/site/docs/actions/</code> and update the nav

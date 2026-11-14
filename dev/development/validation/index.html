@@ -7103,6 +7103,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tooling" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7206,6 +7217,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#custom-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tooling" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7249,6 +7271,17 @@ tool.</p>
 common checks followed by language-specific checks from the built-in command
 registry. Common checks include repo-profile validation, markdownlint,
 shellcheck, yamllint, and actionlint.</p>
+<h2 id="custom-checks">Custom checks<a class="headerlink" href="#custom-checks" title="Permanent link">&para;</a></h2>
+<p>After the common checks, <code>vrg-validate</code> runs the repository's own
+validator, <code>scripts/bin/validate-custom</code> (in CI, the <code>quality / custom</code>
+job). It checks that every <code>*.test.sh</code> tracked in git has mode <code>100755</code>
+(executable) and names each one that does not. It checks the mode git
+records, not the one on disk, so fix an offender with <code>chmod +x &lt;path&gt;</code>
+and then <code>git add &lt;path&gt;</code>. An in-place edit (<code>sed -i</code>, <code>perl -i</code>) can
+replace a file and drop its executable bit, so check the mode after one
+with <code>git ls-files -s &lt;path&gt;</code>.</p>
+<p>The check's own tests are in <code>scripts/tests/</code>, which <code>validate-custom</code>
+runs after the check.</p>
 <h2 id="tooling">Tooling<a class="headerlink" href="#tooling" title="Permanent link">&para;</a></h2>
 <p>The static validation tools are baked into the dev-base container image:</p>
 <table>
