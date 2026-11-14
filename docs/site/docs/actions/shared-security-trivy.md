@@ -79,6 +79,9 @@ than failing a second time on the missing file.
 Callers that gate on the step outcome (with `continue-on-error: true`) can read
 the `result` output to word their own failure message.
 
+`actions/shared/security/trivy/tests/scan.test.sh` tests these outcomes and the
+retry against a stub `docker`; the `smoke-setup-vergil` workflow runs it.
+
 ### Filesystem scan (`fs`)
 
 1. Runs `trivy fs` inside the Trivy Docker container against the specified

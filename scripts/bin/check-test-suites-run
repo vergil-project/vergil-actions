@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# check-test-suites-run — fail when a *.test.sh suite tracked in git is
+# run by no workflow and by no part of validation, naming each such path,
+# so a new suite cannot be left unwired (#1202).
+#
+# Usage: check-test-suites-run <repo-root>
+#
+# A suite counts as run when either:
+#   * a workflow (.github/workflows/*.yml or *.yaml, tracked in git) runs
+#     it by its repo-relative path, as `bash <path>`, `sh <path>` or
+#     `./<path>`, on a line that is not a comment. A path named only in a
+#     comment, or anywhere outside a workflow, does not count;
+#   * it sits directly in scripts/tests/ and scripts/bin/validate-custom
+#     runs that directory's suites (a line, not a comment, naming
+#     scripts/tests/*.test.sh).
+#
+# The check reads the files git tracks and the workflow text, not GitHub's
+# view of them: a step whose job never runs (an `if:` that is always
+# false, a path filter that never matches) still counts as running its
+# suite.
+set -euo pipefail
+
+if [[ "$#" -ne 1 ]]; then
+	echo "usage: check-test-suites-run <repo-root>" >&2
+	exit 2
+fi
+root="$1"
+
+if ! suites="$(git -C "$root" -c core.quotePath=false ls-files -- '*.test.sh')"; then
+	echo "ERROR: could not list the *.test.sh suites tracked in git" >&2
+	exit 1
+fi
+if [[ -z "$suites" ]]; then
+	echo "ERROR: no *.test.sh suites are tracked in git" >&2
+	exit 1
+fi
+
+if ! workflows="$(git -C "$root" -c core.quotePath=false ls-files -- \
+	'.github/workflows/*.yml' '.github/workflows/*.yaml')"; then
+	echo "ERROR: could not list the workflows tracked in git" >&2
+	exit 1
+fi
+if [[ -z "$workflows" ]]; then
+	echo "ERROR: no workflows under .github/workflows/ are tracked in git" >&2
+	exit 1
+fi
+
+# run_paths — every path a workflow runs, one per line. Drops each line's
+# comment (from a `#` at the start or after whitespace), then takes the
+# word after each `bash` or `sh` word and every word starting `./`,
+# stripping any `./` prefix and surrounding quotes.
+run_paths() {
+	local wf
+	while IFS= read -r wf; do
+		if [[ ! -f "$root/$wf" ]]; then
+			echo "ERROR: $wf: tracked workflow is missing from the working tree" >&2
+			return 1
+		fi
+		awk '
+			{
+				line = $0
+				sub(/(^|[ \t])#.*/, "", line)
+				n = split(line, w, /[ \t;&|()]+/)
+				for (i = 1; i <= n; i++) {
+					word = w[i]
+					gsub(/^["\047]|["\047]$/, "", word)
+					if ((word == "bash" || word == "sh") && i < n) {
+						next_word = w[i + 1]
+						gsub(/^["\047]|["\047]$/, "", next_word)
+						sub(/^\.\//, "", next_word)
+						print next_word
+					} else if (word ~ /^\.\//) {
+						sub(/^\.\//, "", word)
+						print word
+					}
+				}
+			}
+		' "$root/$wf"
+	done <<<"$workflows"
+}
+
+if ! ran="$(run_paths)"; then
+	exit 1
+fi
+
+# validate-custom runs every suite directly in scripts/tests/ when one of
+# its lines (not a comment) names that glob.
+validation_runs_scripts_tests=0
+validate_custom="$root/scripts/bin/validate-custom"
+if [[ -f "$validate_custom" ]] &&
+	sed -E 's/(^|[[:space:]])#.*//' "$validate_custom" |
+	grep -qF 'scripts/tests/*.test.sh'; then
+	validation_runs_scripts_tests=1
+fi
+
+rc=0
+count=0
+while IFS= read -r suite; do
+	count=$((count + 1))
+	if grep -qxF -- "$suite" <<<"$ran"; then
+		continue
+	fi
+	if [[ "$validation_runs_scripts_tests" -eq 1 &&
+		"$(dirname -- "$suite")" == "scripts/tests" ]]; then
+		continue
+	fi
+	echo "ERROR: $suite: test suite is run by no workflow and by no part of validation" >&2
+	rc=1
+done <<<"$suites"
+
+if [[ "$rc" -eq 0 ]]; then
+	echo "Test suites run: $count test suites OK"
+fi
+exit "$rc"
