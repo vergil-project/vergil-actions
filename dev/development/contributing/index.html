@@ -7381,11 +7381,15 @@ New actions use the three-level layout.
    <code>${GITHUB_ACTION_PATH}</code>. Put their tests in a <code>tests/</code> subdirectory, as
    <code>&lt;name&gt;.test.sh</code> scripts committed executable (git mode <code>100755</code>: run
    <code>chmod +x</code> before <code>git add</code>). Validation fails on any <code>*.test.sh</code> with
-   another mode; see <a href="../validation/#custom-checks">Validation</a>.
+   another mode; see <a href="../validation/#test-script-modes">Validation</a>.
 5. Add the action to the appropriate workflow using a local path reference
    (<code>./actions/{phase}/{domain}/{action}</code>).
 6. Add a documentation page under <code>docs/site/docs/actions/</code> and update the nav
-   in <code>docs/site/mkdocs.yml</code>.</p>
+   in <code>docs/site/mkdocs.yml</code>.
+7. Run each test script from a workflow, as <code>bash &lt;path&gt;</code> in a step (most
+   action harnesses run in <code>smoke-setup-vergil.yml</code>). Validation fails on
+   any <code>*.test.sh</code> that no workflow and no part of validation runs; see
+   <a href="../validation/#test-suite-wiring">Validation</a>.</p>
 </li>
 </ol>
 <h2 id="composite-action-design-rules">Composite action design rules<a class="headerlink" href="#composite-action-design-rules" title="Permanent link">&para;</a></h2>

@@ -7407,7 +7407,8 @@ a transient one, so retrying it would mask a genuine break. The step is
 <strong>fail-closed</strong>: if the command exits non-zero, the step exits non-zero and the
 test job fails. Nothing is silently skipped.</p>
 <p>The logic lives in <code>install.sh</code> (not inline YAML) so it is unit-testable; see
-<code>actions/shared/setup/build-command/tests/install.test.sh</code>.</p>
+<code>actions/shared/setup/build-command/tests/install.test.sh</code>. The
+<code>smoke-setup-vergil</code> workflow runs the tests.</p>
 <h3 id="test-runtime-scope-only">Test-runtime scope only<a class="headerlink" href="#test-runtime-scope-only" title="Permanent link">&para;</a></h3>
 <p>This action runs a <strong>test-runtime</strong> build step. It is wired only onto jobs that
 execute the repository's tests — never onto lint or typecheck jobs, which do not
