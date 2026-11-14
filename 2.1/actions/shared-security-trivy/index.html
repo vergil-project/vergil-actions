@@ -849,6 +849,8 @@
       
         
       
+        
+      
     
     
     
@@ -901,6 +903,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.73/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.73
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7722,6 +7752,8 @@ scan that errored. A scan that never wrote a report never passes, even with
 than failing a second time on the missing file.</p>
 <p>Callers that gate on the step outcome (with <code>continue-on-error: true</code>) can read
 the <code>result</code> output to word their own failure message.</p>
+<p><code>actions/shared/security/trivy/tests/scan.test.sh</code> tests these outcomes and the
+retry against a stub <code>docker</code>; the <code>smoke-setup-vergil</code> workflow runs it.</p>
 <h3 id="filesystem-scan-fs">Filesystem scan (<code>fs</code>)<a class="headerlink" href="#filesystem-scan-fs" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Runs <code>trivy fs</code> inside the Trivy Docker container against the specified
