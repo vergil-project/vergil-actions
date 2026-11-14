@@ -41,7 +41,24 @@ git configuration, version detection, and mike deploy/set-default.
    nav under the Releases section.
 5. **Deploy docs** — On `main`, runs `mike deploy --push --update-aliases
    <version> latest` followed by `mike set-default --push latest`. On other
-   branches, runs `mike deploy --push dev`.
+   branches, runs `mike deploy --push dev`, then makes `dev` the default
+   version only while the site has no release. See
+   [Default version](#default-version).
+
+### Default version
+
+The default version is the one the site root redirects to. A release makes
+`latest` the default. A develop deploy makes `dev` the default only while no
+version carries the `latest` alias, which it reads from `mike list --json`.
+Once a release exists, a develop deploy leaves the default alone.
+
+mike records the default only as the root `index.html` that `mike set-default`
+writes, not in `versions.json`, so `mike list` does not show it. An earlier
+guard looked for a `[default]` marker that `mike list` never prints, so every
+develop deploy reset a released site's default to `dev` (issue #1214). If
+`mike list` fails, the deploy fails and the default is not changed. The logic
+is in the action's `deploy.sh`, and `tests/default.test.sh` checks it with the
+real mike. The `smoke-cd-docs.yml` workflow runs that test.
 
 ## Reusable workflow
 

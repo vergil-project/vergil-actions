@@ -1,0 +1,33 @@
+name: Smoke - cd-docs
+
+# Runs the framework-free default.test.sh harness for the cd/docs/deploy
+# action (issue #1214): a develop deploy keeps a released site's default
+# version (latest), a site with no release still gets dev as its default, and
+# a failing `mike list` stops the deploy instead of resetting the default. It
+# runs the real mike and mkdocs against throwaway local gh-pages origins.
+#
+# The job runs in the prod-base image cd-docs.yml deploys from, so the harness
+# uses the same mike, mkdocs and python3.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - actions/cd/docs/deploy/**
+      - .github/workflows/cd-docs.yml
+      - .github/workflows/smoke-cd-docs.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: deploy.sh default-version fixtures
+    runs-on: ubuntu-24.04
+    container: ghcr.io/vergil-project/prod-base:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run default-version harness
+        shell: bash
+        run: bash actions/cd/docs/deploy/tests/default.test.sh

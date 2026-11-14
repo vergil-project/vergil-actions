@@ -30,6 +30,16 @@ thin: they pass only `language:` and `container-suffix:`.
 | `unit / <version>` | `<caller> / unit / <version>` | Matrix-expanded per version — informational, not a required check |
 | `evidence` | `test / evidence` | Aggregate gate — `needs` every `unit` leg, runs `if: always()`, and asserts each leg succeeded; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
 
+## Evidence reports
+
+Each `unit` leg stages the language's test reports for the
+`ci-evidence-test` artifact: `coverage.xml` and `junit.xml` for Python, and
+`coverage.xml` for Rust. The names come from
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose tests
+passed but wrote no report fails. A language with no test report contract
+yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
+release-time evidence gate decides.
+
 ## Usage
 
 ```yaml

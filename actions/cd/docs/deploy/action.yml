@@ -115,27 +115,6 @@ runs:
         MKDOCS_CONFIG: ${{ inputs.mkdocs-config }}
         DOC_VERSION: ${{ steps.version.outputs.version }}
         DOC_ALIAS: ${{ steps.version.outputs.alias }}
-      run: |
-        if [ "$SCHEME" = "none" ]; then
-          # Single-branch, un-versioned docs (versioning-scheme = none):
-          # publish one plain site to the gh-pages root — no mike version
-          # split, no versions.json, no version selector. --force replaces the
-          # branch, so any prior mike versions (dev/0.1/latest) are cleaned up
-          # on the next deploy. Issue #713.
-          $MKDOCS_CMD gh-deploy --config-file "$MKDOCS_CONFIG" --force
-        elif [ -n "$DOC_ALIAS" ]; then
-          $MIKE_CMD deploy \
-            -F "$MKDOCS_CONFIG" --push --update-aliases \
-            "$DOC_VERSION" \
-            "$DOC_ALIAS"
-          $MIKE_CMD set-default \
-            -F "$MKDOCS_CONFIG" --push latest
-        else
-          $MIKE_CMD deploy -F "$MKDOCS_CONFIG" --push "$DOC_VERSION"
-          CURRENT_DEFAULT=$($MIKE_CMD list \
-            -F "$MKDOCS_CONFIG" 2>/dev/null \
-            | grep '\[default\]' || true)
-          if [ -z "$CURRENT_DEFAULT" ]; then
-            $MIKE_CMD set-default -F "$MKDOCS_CONFIG" --push dev
-          fi
-        fi
+      # deploy.sh holds the logic, including how a develop deploy keeps a
+      # released site's default version (issue #1214).
+      run: bash "${GITHUB_ACTION_PATH}/deploy.sh"

@@ -28,6 +28,10 @@ definition and optional supporting scripts.
 - **[ci/evidence/emit](ci-evidence-emit.md)**
   — Writes a gate's `evidence.json` and uploads it with the gate's report files
   as a `ci-evidence-<gate>` artifact for the release-time evidence bundle.
+- **[ci/evidence/reports](ci-evidence-reports.md)**
+  — Holds each language's `test` and `audit` report files and stages a matrix
+  leg's reports for the evidence artifact, failing when a passing gate wrote
+  none; auto-wired into `ci-test` and `ci-audit`.
 
 ### CD
 

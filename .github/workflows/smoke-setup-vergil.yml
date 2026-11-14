@@ -42,6 +42,11 @@ name: Smoke - setup/vergil outputs
 #         evidence job's needs and its "Assert all required legs succeeded"
 #         RESULTS, so a failed or skipped stage fails quality / evidence
 #         (epic vergil-project/.github#488);
+#       - ci/evidence/reports reports.sh: each language's test and audit
+#         report files (Rust's cargo-deny.json, not Python's names), staged
+#         version-suffixed; a passing gate with a missing or empty report, or
+#         a language with no report contract, fails loudly; ci-test and
+#         ci-audit stage and take their tools through it (issue #1211);
 #       - ops/github-config automation-env.test.sh: no workflow or job env
 #         sets VRG_AUTOMATION_APP, every step that does takes it from the org
 #         variable alongside a GH_TOKEN minted by an earlier step, and
@@ -125,6 +130,9 @@ jobs:
       - name: Run ci/evidence gate harness
         shell: bash
         run: bash actions/ci/evidence/tests/gate.test.sh
+      - name: Run ci/evidence/reports reports.sh harness
+        shell: bash
+        run: bash actions/ci/evidence/reports/tests/reports.test.sh
       - name: Run ops/github-config automation-env harness
         shell: bash
         run: bash actions/ops/github-config/tests/automation-env.test.sh
