@@ -13,11 +13,12 @@
 # as the root index.html that `mike set-default` writes, never in
 # versions.json, so `mike list` cannot report it: its text output is
 # `<version> [<aliases>]` per version and its `--json` output carries only
-# version, title and aliases. An earlier guard looked for a `[default]` marker
-# in `mike list` that mike never prints, so every develop deploy reset a
-# released site's default to `dev` (issue #1214). The release is what decides
-# instead: a site that has a version aliased `latest` has a release, and a
-# develop deploy leaves its default alone.
+# version, title, aliases and, when a version has any, its properties (set
+# with `mike props`), none of which is the default. An earlier guard looked for
+# a `[default]` marker in `mike list` that mike never prints, so every develop
+# deploy reset a released site's default to `dev` (issue #1214). The release is
+# what decides instead: a site that has a version aliased `latest` has a
+# release, and a develop deploy leaves its default alone.
 #
 # The logic lives here (not inline in action.yml) so it is testable:
 # actions/cd/docs/deploy/tests/default.test.sh runs it with the real mike.
