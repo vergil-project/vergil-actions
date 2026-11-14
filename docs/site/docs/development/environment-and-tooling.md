@@ -23,14 +23,19 @@ Docker must be running for `vrg-container-run` to work.
 
 All validation tools (actionlint, shellcheck, markdownlint, yamllint) and
 documentation tools (mkdocs-material, mike) are pre-installed in the
-`ghcr.io/vergil-project/dev-base:latest` container image. vergil-tooling
-itself is not — on first use, `vrg-container-run` builds a per-branch
+`ghcr.io/vergil-project/prod-base:latest` container image, the one
+`vrg-container-run` uses for a repo with no primary language, as here.
+vergil-tooling itself is not — on first use, `vrg-container-run` builds a per-branch
 cached image with vergil-tooling installed at the version pinned in
 `vergil.toml`, and rebuilds it when `vergil.toml` or the lockfiles
 change. No manual host installs are needed.
 
 ```bash
-vrg-container-run -- vrg-validate             # Run all validation checks
-vrg-container-run -- mkdocs serve -f docs/site/mkdocs.yml   # Preview docs locally
-vrg-container-run -- mkdocs build -f docs/site/mkdocs.yml --strict  # Strict docs build
+vrg-container-run -- vrg-validate     # Run all validation checks
+vrg-container-docs serve              # Preview docs locally on port 8000
+vrg-container-docs build --strict     # Strict docs build
 ```
+
+Use `vrg-container-docs` for the docs: `vrg-container-run` publishes no
+port, so a `mkdocs serve` run through it is not reachable from a host
+browser.

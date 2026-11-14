@@ -8,11 +8,24 @@ vrg-container-run -- vrg-validate
 
 This runs all validation inside a per-branch cached container image that
 `vrg-container-run` builds on first use from
-`ghcr.io/vergil-project/dev-base:latest`: vergil-tooling is installed into
+`ghcr.io/vergil-project/prod-base:latest`: vergil-tooling is installed into
 it at the version pinned in `vergil.toml` (`[dependencies] vergil`), and
 the cache is rebuilt automatically when `vergil.toml` or the lockfiles
 change. No manual host installs are needed beyond the vergil-tooling host
 tool.
+
+## Documentation build
+
+Build and preview the docs site with `vrg-container-docs`, which runs
+mkdocs in the same prod-base image:
+
+```bash
+vrg-container-docs build --strict     # Strict docs build
+vrg-container-docs serve              # Preview docs locally on port 8000
+```
+
+`vrg-container-run` publishes no port, so a `mkdocs serve` run through it
+is not reachable from a host browser.
 
 ## Architecture
 
@@ -49,7 +62,7 @@ counts.
 
 ## Tooling
 
-The static validation tools are baked into the dev-base container image:
+The static validation tools are baked into the prod-base container image:
 
 | Tool | Purpose |
 | --- | --- |
