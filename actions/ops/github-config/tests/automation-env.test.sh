@@ -69,6 +69,7 @@ violations() {
     printf '%s: job env sets VRG_AUTOMATION_APP\n' "$job"
   done < <(yq -r '(.jobs // {}) | to_entries | .[]
     | select((.value.env // {}) | has("VRG_AUTOMATION_APP")) | .key' "$wf")
+  # shellcheck disable=SC2016 # $j in the yq query below is a yq variable
   while IFS=$'\t' read -r job idx has value token; do
     [ "$has" = "true" ] || continue
     # shellcheck disable=SC2016 # a literal GitHub Actions expression
