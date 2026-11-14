@@ -11,6 +11,9 @@
 # executable (so no real command is discovered), runs install.sh, and asserts
 # the exit code, output, and — crucially — that a failing command is run exactly
 # once (fail-closed, NO retry, unlike the system-packages sibling).
+#
+# Every case points GITHUB_ENV at a temporary file of its own, so a run inside
+# a CI job never writes to that job's real environment (issue #1202).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -66,15 +69,17 @@ EOF
 # ---------------------------------------------------------------------------
 case_declared_runs() {
   local name="declared-command-runs"
-  local dir bin marker out rc
+  local dir bin marker github_env out rc
   dir="$(mktemp -d)"
   bin="${dir}/bin"
   marker="${dir}/marker"
+  github_env="${dir}/github_env"
   mkdir -p "${bin}"
+  : >"${github_env}"
   make_stub "${bin}" "  echo \"touch '${marker}'\""
 
   set +e
-  out="$(PATH="${bin}:${PATH}" bash "${install_sh}" 2>&1)"
+  out="$(PATH="${bin}:${PATH}" GITHUB_ENV="${github_env}" bash "${install_sh}" 2>&1)"
   rc=$?
   set -e
 
@@ -99,18 +104,20 @@ case_declared_runs() {
 # ---------------------------------------------------------------------------
 case_fail_closed_no_retry() {
   local name="fail-closed-no-retry"
-  local dir bin counter out rc calls
+  local dir bin counter github_env out rc calls
   dir="$(mktemp -d)"
   bin="${dir}/bin"
   counter="${dir}/calls"
+  github_env="${dir}/github_env"
   mkdir -p "${bin}"
+  : >"${github_env}"
   printf '0' >"${counter}"
   # The emitted script records one invocation, then fails with exit 3.
   make_stub "${bin}" \
     "  echo \"n=\\\$(cat '${counter}'); printf '%s' \\\"\\\$((n + 1))\\\" >'${counter}'; exit 3\""
 
   set +e
-  out="$(PATH="${bin}:${PATH}" bash "${install_sh}" 2>&1)"
+  out="$(PATH="${bin}:${PATH}" GITHUB_ENV="${github_env}" bash "${install_sh}" 2>&1)"
   rc=$?
   set -e
 
@@ -132,15 +139,17 @@ case_fail_closed_no_retry() {
 # ---------------------------------------------------------------------------
 case_no_command_skip() {
   local name="no-command-skip"
-  local dir bin out rc
+  local dir bin github_env out rc
   dir="$(mktemp -d)"
   bin="${dir}/bin"
+  github_env="${dir}/github_env"
   mkdir -p "${bin}"
+  : >"${github_env}"
   # --script prints nothing when no build-command is declared.
   make_stub "${bin}" '  :'
 
   set +e
-  out="$(PATH="${bin}:${PATH}" bash "${install_sh}" 2>&1)"
+  out="$(PATH="${bin}:${PATH}" GITHUB_ENV="${github_env}" bash "${install_sh}" 2>&1)"
   rc=$?
   set -e
 
