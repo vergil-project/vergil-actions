@@ -34,6 +34,7 @@ suite() {
 	local rc=0
 	[[ "$3" == fail ]] && rc=1
 	mkdir -p "$(dirname "$1/$2")"
+	# shellcheck disable=SC2016 # fixture suite content; the $ is meant literally
 	printf '#!/usr/bin/env bash\necho "RAN %s IN $PWD"\nexit %d\n' "$2" "$rc" >"$1/$2"
 	git -C "$1" add -- "$2"
 }
@@ -57,6 +58,7 @@ run_case() {
 	out="$( (
 		# shellcheck source=/dev/null
 		source "$VALIDATE_CUSTOM"
+		# shellcheck disable=SC2034 # read by run_action_suites, sourced above
 		CI_ONLY_ACTION_SUITES=("${CI_ONLY[@]}")
 		run_action_suites "$repo"
 	) 2>&1)"
