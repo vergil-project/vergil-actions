@@ -81,7 +81,7 @@ report_tools() {
 
 # stage_reports <language> <gate> <version> <gate-outcome> <out-dir>
 stage_reports() {
-  local language="$1" gate="$2" version="$3" outcome="$4" out_dir="$5"
+  local language="$1" gate_name="$2" version="$3" outcome="$4" out_dir="$5"
   local names name stem ext missing=() staged=0
 
   if [ -z "$version" ]; then
@@ -94,13 +94,13 @@ stage_reports() {
       return 1
       ;;
   esac
-  if ! names="$(report_files "$language" "$gate")"; then
+  if ! names="$(report_files "$language" "$gate_name")"; then
     return 1
   fi
 
   mkdir -p "$out_dir"
   while IFS= read -r name; do
-    if [ ! -s "$name" ]; then
+    if [ ! -f "$name" ] || [ ! -s "$name" ]; then
       missing+=("$name")
       continue
     fi
@@ -116,17 +116,18 @@ stage_reports() {
   fi
   if [ "$outcome" = "success" ]; then
     for name in "${missing[@]}"; do
-      error "the ${language} ${gate} gate passed but wrote no ${name}" \
+      error "the ${language} ${gate_name} gate passed but wrote no ${name}" \
         "(missing or empty at the workspace root); the release-time evidence" \
         "gate needs every report"
     done
     return 1
   fi
   for name in "${missing[@]}"; do
-    echo "::notice::ci/evidence/reports: ${name} not staged: the ${gate} gate" \
-      "step did not succeed (outcome '${outcome}') and left it missing or empty"
+    echo "::notice::ci/evidence/reports: ${name} not staged: the ${gate_name}" \
+      "gate step did not succeed (outcome '${outcome}') and left it missing or" \
+      "empty"
   done
-  echo "staged ${staged} of $(wc -l <<<"$names") ${gate} reports"
+  echo "staged ${staged} of $(wc -l <<<"$names") ${gate_name} reports"
 }
 
 # Sourced: define the functions, run nothing.
