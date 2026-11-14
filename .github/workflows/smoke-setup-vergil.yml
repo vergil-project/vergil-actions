@@ -42,6 +42,12 @@ name: Smoke - setup/vergil outputs
 #         evidence job's needs and its "Assert all required legs succeeded"
 #         RESULTS, so a failed or skipped stage fails quality / evidence
 #         (epic vergil-project/.github#488);
+#       - ops/github-config automation-env.test.sh: no workflow or job env
+#         sets VRG_AUTOMATION_APP, every step that does takes it from the org
+#         variable alongside a GH_TOKEN minted by an earlier step, and
+#         ops-github-config's update step sets it, so a token-less step (the
+#         setup action's vrg-whoami check) never runs as the automation
+#         identity (issue #1192);
 #       - ci/toolchain/assert assert.sh: Python and Go version checks against a
 #         fake uv/go, and the notice for other languages;
 #       - ci/toolchain/pin-python pin.sh: UV_PYTHON and
@@ -108,6 +114,9 @@ jobs:
       - name: Run ci/evidence gate harness
         shell: bash
         run: bash actions/ci/evidence/tests/gate.test.sh
+      - name: Run ops/github-config automation-env harness
+        shell: bash
+        run: bash actions/ops/github-config/tests/automation-env.test.sh
       - name: Run ci/toolchain/assert assert.sh harness
         shell: bash
         run: bash actions/ci/toolchain/assert/tests/assert.test.sh
