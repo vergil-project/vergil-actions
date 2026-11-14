@@ -27,11 +27,18 @@
 3. Include clear `name`, `description`, `inputs`, and `outputs` in `action.yml`.
 4. Put supporting scripts next to `action.yml` in the action directory (e.g.
    `actions/shared/setup/vergil/derive.sh`) and call them through
-   `${GITHUB_ACTION_PATH}`. Put their tests in a `tests/` subdirectory.
+   `${GITHUB_ACTION_PATH}`. Put their tests in a `tests/` subdirectory, as
+   `<name>.test.sh` scripts committed executable (git mode `100755`: run
+   `chmod +x` before `git add`). Validation fails on any `*.test.sh` with
+   another mode; see [Validation](validation.md#test-script-modes).
 5. Add the action to the appropriate workflow using a local path reference
    (`./actions/{phase}/{domain}/{action}`).
 6. Add a documentation page under `docs/site/docs/actions/` and update the nav
    in `docs/site/mkdocs.yml`.
+7. Run each test script from a workflow, as `bash <path>` in a step (most
+   action harnesses run in `smoke-setup-vergil.yml`). Validation fails on
+   any `*.test.sh` that no workflow and no part of validation runs; see
+   [Validation](validation.md#test-suite-wiring).
 
 ## Composite action design rules
 

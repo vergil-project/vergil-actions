@@ -48,6 +48,7 @@ The action runs a single step, `install.sh`, which:
 
 The retry and fail-closed logic lives in `install.sh` (not inline YAML) so it
 is unit-testable; see `actions/shared/setup/system-packages/tests/install.test.sh`.
+The `smoke-setup-vergil` workflow runs the tests.
 
 ### Test-runtime scope only
 

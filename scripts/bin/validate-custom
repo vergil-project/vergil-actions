@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# validate-custom — repo-local validation hook discovered by
+# vrg-validate. Checks the git mode of every *.test.sh script and that
+# every *.test.sh suite is run by a workflow or by validation, then runs
+# the tests of these checks under scripts/tests/.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+status=0
+
+# Every *.test.sh tracked in git at $1 must have mode 100755, so each
+# test script can be run directly and its mode cannot drift (#1201).
+# Checks the mode git records, not the one on disk: a checkout restores
+# the recorded mode, so that is the one that ships.
+check_test_script_modes() {
+	local root="$1" listing entry meta path mode rc=0 count=0
+	# core.quotePath=false names a non-ASCII path as is; a path holding a tab,
+	# newline or quote is still quoted by git, so it stays on one line.
+	if ! listing="$(git -C "$root" -c core.quotePath=false ls-files --stage -- '*.test.sh')"; then
+		echo "ERROR: could not list the *.test.sh scripts tracked in git" >&2
+		return 1
+	fi
+	while IFS= read -r entry; do
+		[[ -n "$entry" ]] || continue
+		count=$((count + 1))
+		meta="${entry%%$'\t'*}"
+		path="${entry#*$'\t'}"
+		mode="${meta%% *}"
+		if [[ "$mode" != "100755" ]]; then
+			echo "ERROR: $path: test script has git mode $mode, must be 100755 (executable)" >&2
+			rc=1
+		fi
+	done <<<"$listing"
+	if [[ "$count" -eq 0 ]]; then
+		echo "ERROR: no *.test.sh scripts are tracked in git" >&2
+		rc=1
+	fi
+	if [[ "$rc" -eq 0 ]]; then
+		echo "Test script modes: $count test scripts OK"
+	fi
+	return "$rc"
+}
+
+# Sourced (by the test-script-modes tests): define the checks, run nothing.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+	return 0
+fi
+
+echo "Running: test script mode check"
+check_test_script_modes "$ROOT" || status=1
+
+echo "Running: test suite wiring check"
+"$ROOT/scripts/bin/check-test-suites-run" "$ROOT" || status=1
+
+for t in "$ROOT"/scripts/tests/*.test.sh; do
+	echo "Running: $t"
+	bash "$t" || status=1
+done
+exit "$status"

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.73] - 2026-11-14
+
+### Bug fixes
+
+- make every test script executable and check the mode in validation (#1204)
+- run the four unwired test suites in CI and check every suite is run (#1207)
+
+### CI
+
+- move the nightly ops cron to the 01:xx UTC hour (#1200)
+
+### Chores
+
+- set the executable bit on automation-env.test.sh (#1203)
+
 ## [2.1.72] - 2026-11-14
 
 ### Bug fixes
