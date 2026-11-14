@@ -117,6 +117,7 @@ jobs:
       # whether the current run actually uses conan. A workflow-level skip is
       # deliberately avoided: it would wrongly skip python/go audits too.
       - name: Run dependency audit
+        id: gate
         env:
           CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER: ${{ secrets.CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER }}
         run: vrg-validate --check audit
@@ -124,20 +125,20 @@ jobs:
       # Bridge this matrix leg's report files across the job boundary (#836).
       # The dependencies job and the evidence job run on separate runners with
       # separate filesystems, so the reports produced here are stranded unless
-      # uploaded. Rename to version-suffixed basenames so each version's report
-      # stays distinct after the evidence job's emit step (flattens by basename).
+      # uploaded. The language's report names come from ci/evidence/reports
+      # (pip-audit.json and licenses.json for Python, cargo-deny.json for Rust;
+      # #1211), renamed to version-suffixed basenames so each version's report
+      # stays distinct after the evidence job's emit step (flattens by
+      # basename). A passing audit that wrote no report fails this step.
       - name: Stage audit reports for evidence
         if: always()
-        shell: bash
-        env:
-          VERSION: ${{ matrix.version }}
-        run: |
-          set -euo pipefail
-          mkdir -p ci-reports
-          for f in pip-audit.json licenses.json; do
-            [ -f "$f" ] || continue
-            cp "$f" "ci-reports/${f%.json}-${VERSION}.json"
-          done
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: stage
+          language: ${{ inputs.language }}
+          gate: audit
+          version: ${{ matrix.version }}
+          gate-outcome: ${{ steps.gate.outcome }}
 
       - name: Upload audit report evidence partial
         if: always()
@@ -151,9 +152,10 @@ jobs:
     name: evidence
     # Runs only after every matrix audit job succeeds, so the artifact's
     # presence is itself proof the audit gate passed. Each dependencies leg
-    # uploads its version-suffixed pip-audit.json / licenses.json as a
-    # per-version partial; the step below pulls every leg's reports back onto
-    # one runner so the emitted bundle carries each version's reports (#836).
+    # uploads its version-suffixed audit reports (the language's names, from
+    # ci/evidence/reports) as a per-version partial; the step below pulls every
+    # leg's reports back onto one runner so the emitted bundle carries each
+    # version's reports (#836).
     needs: dependencies
     # Run even when a required leg fails or is skipped (default would skip this
     # job, leaving the gate green-by-absence). The assert step below then turns
@@ -198,11 +200,20 @@ jobs:
           path: evidence-reports
           merge-multiple: true
 
+      # Every file the legs uploaded is one of the language's declared audit
+      # reports (the stage step copies nothing else), so the bundle takes them
+      # all; the tools come from the same per-language contract.
+      - name: Resolve audit evidence tools
+        id: reports
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: tools
+          language: ${{ inputs.language }}
+          gate: audit
+
       - name: Emit ci-evidence-audit artifact
         uses: ./actions/ci/evidence/emit
         with:
           gate: audit
-          files: |
-            evidence-reports/pip-audit-*.json
-            evidence-reports/licenses-*.json
-          tools: '[{"name": "pip-audit"}, {"name": "pip-licenses"}]'
+          files: evidence-reports/*
+          tools: ${{ steps.reports.outputs.tools }}
