@@ -150,10 +150,11 @@ When adding a new CI job that should block merges:
 3. Do not add the check by hand under **Settings > Rules**.
    `vrg-github-repo-config` derives the required-check set itself (from
    `desired_ci_gates_ruleset()` in vergil-tooling and the repository's
-   `vergil.toml`), and the nightly `ops-github-config` audit reports a
-   hand-added check as drift. Add the check to that derivation in
-   vergil-tooling, and once that change is released run
-   `vrg-github-repo-config apply` to converge the ruleset.
+   `vergil.toml`), and the nightly `ops-github-config` run of
+   `vrg-github-repo-config update` converges the ruleset back to that set,
+   removing a hand-added check. Add the check to that derivation in
+   vergil-tooling; once that change is released, the next nightly run (or
+   `vrg-github-repo-config update` run by hand) converges the ruleset.
 4. Verify the check name matches exactly. For the matrixed workflows, require
    the stable `<kind> / evidence` aggregate (e.g. `test / evidence`), **not** the
    per-version legs — the legs change with the resolved version set (the
@@ -183,16 +184,20 @@ vrg-github-repo-config audit --repo vergil-project/{repo}
 # Show the same differences without failing (always exits 0)
 vrg-github-repo-config diff --repo vergil-project/{repo}
 
-# Reconcile the GitHub configuration, including the rulesets
-vrg-github-repo-config apply --repo vergil-project/{repo}
+# Reconcile the GitHub configuration, including the rulesets, and open one
+# sync PR for any drifted managed file
+vrg-github-repo-config update --repo vergil-project/{repo}
 ```
 
 `--repo` defaults to the current directory's git remote. The local file
-checks run only from inside the repository's own checkout. `vergil.toml` is
-read from the `develop` branch; `--config PATH` uses a local copy instead.
+checks run against a fresh clone of the repository's `develop`, never the
+current directory. `vergil.toml` is read from the `develop` branch;
+`--config PATH` uses a local copy instead. `apply`, which reconciles only the
+GitHub configuration, is deprecated in favour of `update`.
 
-To change a ruleset, change the `vergil.toml` that it is derived from, merge the
-change to `develop`, and run `apply`. A ruleset edited by hand is reported as
-drift by the nightly `ops-github-config` audit. See the vergil-tooling
+To change a ruleset, change the `vergil.toml` that it is derived from and
+merge the change to `develop`; the nightly `ops-github-config` run of
+`update` converges the ruleset, or run `update` by hand. A ruleset edited by
+hand is converged back by that nightly run. See the vergil-tooling
 [GitHub config audit reference](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/)
 for the full list of checks.

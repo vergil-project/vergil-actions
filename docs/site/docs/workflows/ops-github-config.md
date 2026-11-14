@@ -2,16 +2,14 @@
 
 Nightly per-repository ops checks. Every managed repository's `ops.yml` calls
 this workflow on a schedule, and it runs three independent jobs against the
-calling repository, plus a temporary fourth on manual dispatch only:
+calling repository:
 
 - **`branch-sweep`** deletes branches whose pull-request work is finished.
-- **`github-config`** audits the repository's GitHub configuration with
-  `vrg-github-repo-config audit`.
+- **`github-config`** keeps the repository in sync with its expected
+  configuration with `vrg-github-repo-config update`, as the org automation
+  App, and runs only from `develop`.
 - **`dependabot-audit`** fails when the repository has any open Dependabot
   alert, at any severity.
-- **`bypass-probe`** (dispatch from `develop` only, temporary) prints what an
-  automation App token reads back from the repository's "Tag protection"
-  ruleset.
 
 The jobs do not depend on each other, so one failing does not stop the
 others. Each one mints its own GitHub App token from the org's automation App
@@ -31,14 +29,19 @@ scoped to the calling repository only.
 | `APP_CLIENT_ID` | yes | Client ID of the org's automation GitHub App (`<org>-automation`) |
 | `APP_PRIVATE_KEY` | yes | Private key of the org's automation GitHub App |
 
+## Variables
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `VRG_AUTOMATION_APP` | yes | Org-level Actions variable holding the automation App's slug (`<org>-automation`), visible to the calling repository (see [step 10 of the App setup](../configuration.md#app_client_id-and-app_private_key)). The `github-config` job fails when it is empty |
+
 ## Jobs and check names
 
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
 | `branch-sweep` | `<caller> / branch-sweep` | Deletes finished branches via [`ops/github-config/branch-sweep`](../actions/ops-github-config-branch-sweep.md) |
-| `github-config` | `<caller> / github-config` | Runs `vrg-github-repo-config audit --repo <calling repo>` |
+| `github-config` | `<caller> / github-config` | From `develop` only: runs `vrg-github-repo-config update --repo <calling repo>` as the automation App |
 | `dependabot-audit` | `<caller> / dependabot-audit` | Runs `vrg-dependabot-audit --repo <calling repo>` |
-| `bypass-probe` | `<caller> / bypass-probe` | On `workflow_dispatch` from `develop` only: prints the "Tag protection" ruleset's bypass actors, whether `VRG_AUTOMATION_APP` is set, and the token's login |
 
 ## Behavior
 
@@ -57,9 +60,8 @@ the same pattern:
 | Job | Requested App permissions | Why |
 | --- | ------------------------- | --- |
 | `branch-sweep` | `contents: write`, `pull-requests: read` | Delete a branch ref, and read pull requests to decide which branches are finished |
-| `github-config` | `administration: read`, `contents: write` | The audit reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled (Administration), and the repository's `vergil.toml` (Contents). It writes no contents, but GitHub returns a repository's merge settings only to a token with Contents read and write (see [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository)). It makes no Issues call |
+| `github-config` | `administration: write`, `contents: write`, `pull-requests: write`, `workflows: write`, `metadata: read` | `update` reads and converges repository settings, branch protection, rulesets (GitHub returns a ruleset's `bypass_actors` only to a caller that can edit it), Actions permissions and whether vulnerability alerts are enabled (Administration). It pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write (see [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository)) (Contents). It opens the sync PR, closes an earlier one and turns on auto-merge (Pull requests), and a sync PR can change files under `.github/workflows/` (Workflows). It makes no Issues call. Minted only after the job has checked that it runs from `develop` and that `VRG_AUTOMATION_APP` is set |
 | `dependabot-audit` | `vulnerability-alerts: read` only (**Dependabot alerts: Read**) | List the repository's open Dependabot alerts |
-| `bypass-probe` | `administration: write`, `metadata: read` | Read a ruleset's `bypass_actors`, which GitHub returns only to a caller that can edit the ruleset. Minted only after the job has checked it runs from `develop` |
 
 The org's automation App holds more than any one job requests, Administration
 write included (see
@@ -91,6 +93,13 @@ The `github-config` job runs `gh auth setup-git` with the App token as
 the App with this job's scoped token, not with the checkout's
 `GITHUB_TOKEN`.
 
+It then sets git's global `user.name` to `<app-slug>[bot]`, from the token
+step's `app-slug` output, and `user.email` to
+`<id>+<app-slug>[bot]@users.noreply.github.com`, with `<id>` the bot user's
+ID from `gh api /users/<app-slug>[bot]`. This follows the pattern in
+`actions/create-github-app-token`'s README, so sync commits show as the
+automation App.
+
 ### branch-sweep
 
 The scheduled safety net behind the delete-on-merge repository setting and
@@ -101,34 +110,32 @@ for what is deleted, the job summary and the failure handling.
 
 ### github-config
 
-Runs `vrg-github-repo-config audit --repo "${{ github.repository }}"`, which
-compares the repository's live GitHub configuration with the expected
-configuration and exits non-zero when they differ or the configuration cannot
-be read. It never changes anything. To converge a
-repository, a human runs `vrg-github-repo-config apply` (see
-[Repository Rulesets](../ci-gates/repository-rulesets.md)).
-
-### bypass-probe
-
-A temporary probe for the automatic fleet sync (epic
+The automatic fleet sync (epic
 [vergil-project/.github#1064](https://github.com/vergil-project/.github/issues/1064)).
-It checks, before that epic builds on them, that an automation App token reads
-a ruleset's bypass actors and that the token's GraphQL login is the App's.
-The epic removes the job once its ops switch lands.
+The job runs `vrg-github-repo-config update --repo "${{ github.repository }}"`
+as the org automation App. It converges the repository's GitHub settings and
+rulesets, then checks the managed files committed on `develop`, in a fresh
+clone. When any has drifted from its released master copy, it opens one sync
+PR on an `automation/repo-config-sync/<run-id>` branch with auto-merge on, and
+the PR merges itself once its required checks pass. What `update` cannot fix
+is left for a human and named in the PR body and the log. For the exit codes
+and what each step does, see vergil-tooling's
+[`vrg-github-repo-config update`](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#the-update-command)
+reference.
 
-It runs only on `workflow_dispatch`, so nightly scheduled runs skip it. Its
-first step fails unless the run's ref is `refs/heads/develop`, before any
-token is minted, and it checks out `develop`. It then prints:
+**Automation identity.** The job sets `VRG_AUTOMATION_APP` from the
+org-level Actions variable of the same name. vergil-tooling then resolves the
+`automation` identity mode, and checks that `GH_TOKEN` was minted by that App
+before it does any automation work. The identity is used only for this
+mechanized work, never for anything an AI agent does.
 
-- `VRG_AUTOMATION_APP set: yes` or `no`, from the `VRG_AUTOMATION_APP`
-  Actions variable. The value itself is never printed;
-- `login: <login>`, the GraphQL `viewer { login }` of the App token;
-- one `<actor_type> <actor_id>` line per bypass actor of the repository's
-  "Tag protection" ruleset, then `bypass_actors entries: <n>`.
-
-It fails when the repository does not have exactly one ruleset named "Tag
-protection", or when that ruleset's response has no `bypass_actors` field. A
-missing field is never counted as an empty list.
+**Develop only.** This job holds the workflow's only Administration write
+token, so no other branch's code may ever run with it. Its first step,
+before any token is minted, fails the job unless the run's ref is
+`refs/heads/develop`, and it checks out `develop` explicitly. The same step
+fails the job when `VRG_AUTOMATION_APP` is empty. Every fleet repository's
+default branch is `develop`, so scheduled runs pass the check. A
+`workflow_dispatch` from any other branch fails.
 
 ### dependabot-audit
 
