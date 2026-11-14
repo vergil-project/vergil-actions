@@ -168,7 +168,7 @@ repo=$(new_repo validate-custom)
 suite "$repo" scripts/tests/x.test.sh
 suite "$repo" scripts/tests/sub/y.test.sh
 workflow "$repo" smoke.yml '      - run: echo hi'
-put "$repo" scripts/bin/validate-custom 'for t in "$ROOT"/scripts/tests/*.test.sh; do bash "$t"; done'
+put "$repo" scripts/bin/validate-custom 'for t in ./scripts/tests/*.test.sh; do bash t; done'
 run_case "validate-custom runs scripts/tests/ suites, not deeper ones" "$repo" 1 \
 	scripts/tests/sub/y.test.sh
 
@@ -181,7 +181,7 @@ run_case "a scripts/tests/ suite fails with no validate-custom" "$repo" 1 \
 repo=$(new_repo validate-custom-comment)
 suite "$repo" scripts/tests/x.test.sh
 workflow "$repo" smoke.yml '      - run: echo hi'
-put "$repo" scripts/bin/validate-custom '# for t in scripts/tests/*.test.sh; do bash "$t"; done'
+put "$repo" scripts/bin/validate-custom '# for t in ./scripts/tests/*.test.sh; do bash t; done'
 run_case "a scripts/tests/ glob only in a validate-custom comment fails" "$repo" 1 \
 	scripts/tests/x.test.sh
 
