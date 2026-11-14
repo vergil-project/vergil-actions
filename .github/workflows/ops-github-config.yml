@@ -52,10 +52,10 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.71
 
       - name: Sweep finished branches
-        uses: ./actions/ops/github-config/branch-sweep
+        uses: vergil-project/vergil-actions/actions/ops/github-config/branch-sweep@v2.1.71
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
@@ -137,7 +137,7 @@ jobs:
           ref: develop
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.71
 
       # Route git's HTTPS credentials through gh, which reads GH_TOKEN, so a
       # git clone or push the tooling runs authenticates as the App with this
@@ -196,7 +196,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.71
 
       - name: Audit open Dependabot alerts
         env:
