@@ -145,6 +145,8 @@ fi
 # A `mike list` that fails stops the deploy and leaves the default alone,
 # rather than reading as "no release" and resetting it to dev.
 failing_mike="${scratch}/failing-mike"
+# The lines are the fake mike's own source; its $1 and $@ must not expand here.
+# shellcheck disable=SC2016
 printf '%s\n' '#!/usr/bin/env bash' \
   'if [ "$1" = list ]; then echo "mike list: simulated failure" >&2; exit 1; fi' \
   'exec mike "$@"' >"$failing_mike"
