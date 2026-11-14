@@ -115,10 +115,10 @@ jobs:
       # The unit job and the evidence job run on separate runners with separate
       # filesystems, so the reports produced here are stranded unless uploaded.
       # The language's report names come from ci/evidence/reports
-      # (coverage.xml and junit.xml for Python and Rust; #1211), renamed to
-      # version-suffixed basenames so each version's report stays distinct
-      # after the evidence job's emit step, which flattens by basename. A
-      # passing test run that wrote no report fails this step.
+      # (coverage.xml and junit.xml for Python, coverage.xml for Rust; #1211),
+      # renamed to version-suffixed basenames so each version's report stays
+      # distinct after the evidence job's emit step, which flattens by
+      # basename. A passing test run that wrote no report fails this step.
       - name: Stage test reports for evidence
         if: always()
         uses: ./actions/ci/evidence/reports
