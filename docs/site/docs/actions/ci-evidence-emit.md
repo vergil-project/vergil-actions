@@ -18,7 +18,9 @@ reusable CI workflows:
 | `ci-test` | `test` |
 | `ci-package` | `package` |
 
-Consuming repositories do not add it themselves.
+Consuming repositories do not add it themselves. In `ci-test` and `ci-audit`
+the report files and tools come from each language's contract in
+[`ci/evidence/reports`](ci-evidence-reports.md).
 
 ## Usage
 
