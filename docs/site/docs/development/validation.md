@@ -25,15 +25,27 @@ shellcheck, yamllint, and actionlint.
 
 After the common checks, `vrg-validate` runs the repository's own
 validator, `scripts/bin/validate-custom` (in CI, the `quality / custom`
-job). It checks that every `*.test.sh` tracked in git has mode `100755`
-(executable) and names each one that does not. It checks the mode git
-records, not the one on disk, so fix an offender with `chmod +x <path>`
-and then `git add <path>`. An in-place edit (`sed -i`, `perl -i`) can
-replace a file and drop its executable bit, so check the mode after one
-with `git ls-files -s <path>`.
+job). It runs the two checks below, then the checks' own tests in
+`scripts/tests/`.
 
-The check's own tests are in `scripts/tests/`, which `validate-custom`
-runs after the check.
+### Test script modes
+
+The first check fails naming each `*.test.sh` tracked in git whose mode is
+not `100755` (executable). It checks the mode git records, not the one on
+disk, so fix an offender with `chmod +x <path>` and then `git add <path>`.
+An in-place edit (`sed -i`, `perl -i`) can replace a file and drop its
+executable bit, so check the mode after one with `git ls-files -s <path>`.
+
+### Test suite wiring
+
+The second check, `scripts/bin/check-test-suites-run`, fails naming each
+`*.test.sh` tracked in git that nothing runs. A suite counts as run when a
+workflow under `.github/workflows/` runs it by its repo-relative path
+(`bash <path>`, `sh <path>` or `./<path>`) on a line that is not a comment,
+or when it sits directly in `scripts/tests/`, whose suites `validate-custom`
+runs. A path named only in a comment or outside a workflow does not count.
+The check reads the workflow text, so a step whose job never runs still
+counts.
 
 ## Tooling
 

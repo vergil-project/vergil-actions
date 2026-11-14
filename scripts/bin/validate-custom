@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # validate-custom — repo-local validation hook discovered by
-# vrg-validate. Checks the git mode of every *.test.sh script, then runs
+# vrg-validate. Checks the git mode of every *.test.sh script and that
+# every *.test.sh suite is run by a workflow or by validation, then runs
 # the tests of these checks under scripts/tests/.
 set -euo pipefail
 
@@ -48,6 +49,9 @@ fi
 
 echo "Running: test script mode check"
 check_test_script_modes "$ROOT" || status=1
+
+echo "Running: test suite wiring check"
+"$ROOT/scripts/bin/check-test-suites-run" "$ROOT" || status=1
 
 for t in "$ROOT"/scripts/tests/*.test.sh; do
 	echo "Running: $t"

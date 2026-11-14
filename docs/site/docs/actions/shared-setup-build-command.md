@@ -60,7 +60,8 @@ a transient one, so retrying it would mask a genuine break. The step is
 test job fails. Nothing is silently skipped.
 
 The logic lives in `install.sh` (not inline YAML) so it is unit-testable; see
-`actions/shared/setup/build-command/tests/install.test.sh`.
+`actions/shared/setup/build-command/tests/install.test.sh`. The
+`smoke-setup-vergil` workflow runs the tests.
 
 ### Test-runtime scope only
 

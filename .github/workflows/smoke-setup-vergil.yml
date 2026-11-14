@@ -63,7 +63,18 @@ name: Smoke - setup/vergil outputs
 #         PATH, failing on a missing marker (a raw image), a required tool
 #         the marker leaves out, a missing or mismatched tool, a missing nfpm
 #         when nFPM is needed, and an empty or malformed marker (epic
-#         vergil-project/.github#607).
+#         vergil-project/.github#607);
+#       - ci/security/codeql resolve-language.sh: the primary-language to
+#         CodeQL-language mapping, failing closed on a missing language;
+#       - shared/security/trivy scan.sh: the scan's retry and its passed,
+#         findings and error outcomes against a stub docker (issue #1079);
+#       - shared/setup/build-command install.sh: the fail-closed, no-retry
+#         run of the container build command;
+#       - shared/setup/system-packages install.sh: the retried, fail-closed
+#         system package install.
+#     Validation (scripts/bin/check-test-suites-run) fails on any *.test.sh
+#     that no workflow and no part of validation runs, so a new harness must
+#     be wired here or in another workflow (issue #1202).
 #   * action-e2e — calls the setup action against a Python library fixture and
 #     a fixture window (the `version-window` input), asserts all five outputs
 #     are wired through action.yml, and feeds them to ci/matrix.
@@ -129,6 +140,18 @@ jobs:
       - name: Run package setup check-toolchain.sh harness
         shell: bash
         run: bash actions/package/setup/tests/check-toolchain.test.sh
+      - name: Run ci/security/codeql resolve-language.sh harness
+        shell: bash
+        run: bash actions/ci/security/codeql/tests/resolve-language.test.sh
+      - name: Run shared/security/trivy scan.sh harness
+        shell: bash
+        run: bash actions/shared/security/trivy/tests/scan.test.sh
+      - name: Run shared/setup/build-command install.sh harness
+        shell: bash
+        run: bash actions/shared/setup/build-command/tests/install.test.sh
+      - name: Run shared/setup/system-packages install.sh harness
+        shell: bash
+        run: bash actions/shared/setup/system-packages/tests/install.test.sh
 
   action-e2e:
     name: action outputs (Python library fixture)
