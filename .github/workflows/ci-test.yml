@@ -108,25 +108,26 @@ jobs:
           expected: ${{ matrix.version }}
 
       - name: Run unit tests
+        id: gate
         run: vrg-validate --check test
 
       # Bridge this matrix leg's report files across the job boundary (#836).
       # The unit job and the evidence job run on separate runners with separate
       # filesystems, so the reports produced here are stranded unless uploaded.
-      # Rename to version-suffixed basenames so each interpreter's report stays
-      # distinct after the evidence job's emit step, which flattens by basename.
+      # The language's report names come from ci/evidence/reports
+      # (coverage.xml and junit.xml for Python and Rust; #1211), renamed to
+      # version-suffixed basenames so each version's report stays distinct
+      # after the evidence job's emit step, which flattens by basename. A
+      # passing test run that wrote no report fails this step.
       - name: Stage test reports for evidence
         if: always()
-        shell: bash
-        env:
-          VERSION: ${{ matrix.version }}
-        run: |
-          set -euo pipefail
-          mkdir -p ci-reports
-          for f in coverage.xml junit.xml; do
-            [ -f "$f" ] || continue
-            cp "$f" "ci-reports/${f%.xml}-${VERSION}.xml"
-          done
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: stage
+          language: ${{ inputs.language }}
+          gate: test
+          version: ${{ matrix.version }}
+          gate-outcome: ${{ steps.gate.outcome }}
 
       - name: Upload test report evidence partial
         if: always()
@@ -140,7 +141,8 @@ jobs:
     name: evidence
     # Runs only after every matrix unit job succeeds, so the artifact's presence
     # is itself proof the test gate passed. Each unit leg uploads its
-    # version-suffixed coverage.xml / junit.xml as a per-version partial; the
+    # version-suffixed test reports (the language's names, from
+    # ci/evidence/reports) as a per-version partial; the
     # step below pulls every leg's reports back onto one runner so the emitted
     # bundle carries each interpreter's reports, not a single merged one (#836).
     needs: unit
@@ -187,11 +189,20 @@ jobs:
           path: evidence-reports
           merge-multiple: true
 
+      # Every file the legs uploaded is one of the language's declared test
+      # reports (the stage step copies nothing else), so the bundle takes them
+      # all; the tools come from the same per-language contract.
+      - name: Resolve test evidence tools
+        id: reports
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: tools
+          language: ${{ inputs.language }}
+          gate: test
+
       - name: Emit ci-evidence-test artifact
         uses: ./actions/ci/evidence/emit
         with:
           gate: test
-          files: |
-            evidence-reports/coverage-*.xml
-            evidence-reports/junit-*.xml
-          tools: '[{"name": "pytest"}, {"name": "coverage.py"}]'
+          files: evidence-reports/*
+          tools: ${{ steps.reports.outputs.tools }}

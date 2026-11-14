@@ -1,0 +1,61 @@
+name: CI evidence reports
+description: >-
+  The per-language report-file contract of the `test` and `audit` evidence
+  gates (issue #1211). In `stage` mode, copies one matrix leg's report files
+  (for example coverage.xml and junit.xml, or Python's pip-audit.json and
+  licenses.json, or Rust's cargo-deny.json) into a directory as
+  version-suffixed basenames, failing when the gate passed but a report the
+  language's gate writes is missing or empty. In `tools` mode, outputs the
+  gate's tools JSON for the emit action. A language or gate with no contract
+  fails loudly.
+
+inputs:
+  mode:
+    description: >-
+      `stage` (copy this leg's reports into `out-dir`) or `tools` (output the
+      gate's tools JSON array).
+    required: true
+  language:
+    description: Primary language of the calling repo (e.g. python, rust).
+    required: true
+  gate:
+    description: Evidence gate, `test` or `audit`.
+    required: true
+  version:
+    description: >-
+      Stage mode: the matrix leg's version label, appended to each staged
+      file's stem (coverage.xml -> coverage-<version>.xml).
+    required: false
+    default: ""
+  gate-outcome:
+    description: >-
+      Stage mode: the outcome of the step that ran the gate
+      (`steps.<id>.outcome`). On `success` every report must exist and be
+      non-empty; otherwise the reports that exist are staged and the missing
+      ones only noted, since the leg has already failed.
+    required: false
+    default: ""
+  out-dir:
+    description: Stage mode, the directory to stage the reports into.
+    required: false
+    default: ci-reports
+
+outputs:
+  tools:
+    description: Tools mode, the gate's tools JSON array for evidence.json.
+    value: ${{ steps.run.outputs.tools }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve evidence reports
+      id: run
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        LANGUAGE: ${{ inputs.language }}
+        GATE: ${{ inputs.gate }}
+        VERSION: ${{ inputs.version }}
+        GATE_OUTCOME: ${{ inputs.gate-outcome }}
+        OUT_DIR: ${{ inputs.out-dir }}
+      run: bash "${GITHUB_ACTION_PATH}/reports.sh"

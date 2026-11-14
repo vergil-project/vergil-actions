@@ -36,6 +36,15 @@ thin: they pass only `language:` and `container-suffix:`.
 | `dependencies / <version>` | `<caller> / dependencies / <version>` | Dependency audit (matrix-expanded — informational, not a required check) |
 | `evidence` | `audit / evidence` | Aggregate gate — `needs` every `dependencies` leg, runs `if: always()`, and asserts each leg succeeded; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
 
+## Evidence reports
+
+Each `dependencies` leg stages the language's audit reports for the
+`ci-evidence-audit` artifact: `pip-audit.json` and `licenses.json` for Python,
+`cargo-deny.json` for Rust. The names come from
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose audit
+passed but wrote no report fails, and so does a leg for a language with no
+audit report contract.
+
 ## Usage
 
 ```yaml
