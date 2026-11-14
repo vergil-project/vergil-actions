@@ -39,6 +39,13 @@ jobs:
   build-index:
     name: build-index
     runs-on: ubuntu-24.04
+    # Cap the index build rather than leave it at GitHub's 360-minute
+    # default, so the release stage waiting on it can tell slow from stuck.
+    # Runs today take 20 to 27 minutes (one took 91), and vergil-tooling's
+    # package-index wait is one hour, so 60 matches it. Lower this once
+    # epic vergil-project/.github#1003 (the retention-first index build,
+    # aiming for a build-index under 5 minutes) has shipped.
+    timeout-minutes: 60
     # develop-only: dispatch/schedule run on the default branch (spec §7.4).
     environment: index-signing
     permissions:
