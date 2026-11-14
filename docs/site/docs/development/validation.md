@@ -38,8 +38,8 @@ shellcheck, yamllint, and actionlint.
 
 After the common checks, `vrg-validate` runs the repository's own
 validator, `scripts/bin/validate-custom` (in CI, the `quality / custom`
-job). It runs the two checks below, then the checks' own tests in
-`scripts/tests/`.
+job). It runs the two checks below, then the action test suites, then the
+checks' own tests in `scripts/tests/`.
 
 ### Test script modes
 
@@ -59,6 +59,18 @@ or when it sits directly in `scripts/tests/`, whose suites `validate-custom`
 runs. A path named only in a comment or outside a workflow does not count.
 The check reads the workflow text, so a step whose job never runs still
 counts.
+
+### Action test suites
+
+`validate-custom` then runs every `*.test.sh` tracked in git directly in an
+`actions/**/tests/` directory, from the repo root as CI does, and fails
+naming each suite that fails. A suite listed in `CI_ONLY_ACTION_SUITES`, at
+the top of `scripts/bin/validate-custom`, is skipped and named with its
+reason. It stays CI-only because it reaches a live service or needs a tool
+the validation image lacks. Each entry must name a tracked suite, so a
+renamed or removed suite fails the run until its entry is updated. A new
+suite runs in validation by default. The workflow that runs it in CI is
+still needed for the wiring check above.
 
 ## Tooling
 
