@@ -123,11 +123,17 @@ and what each step does, see vergil-tooling's
 [`vrg-github-repo-config update`](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#the-update-command)
 reference.
 
-**Automation identity.** The job sets `VRG_AUTOMATION_APP` from the
-org-level Actions variable of the same name. vergil-tooling then resolves the
-`automation` identity mode, and checks that `GH_TOKEN` was minted by that App
-before it does any automation work. The identity is used only for this
-mechanized work, never for anything an AI agent does.
+**Automation identity.** The update step sets `VRG_AUTOMATION_APP` from the
+org-level Actions variable of the same name, next to the App token in
+`GH_TOKEN`. vergil-tooling then resolves the `automation` identity mode, and
+checks that `GH_TOKEN` was minted by that App before it does any automation
+work. The identity is used only for this mechanized work, never for anything
+an AI agent does. The variable says the process holds the App's token, so it
+is set only on that step, never on the job: a vergil-tooling command that sees
+it without the token, such as the setup action's `vrg-whoami` check, fails.
+The `smoke-setup-vergil` workflow runs
+`actions/ops/github-config/tests/automation-env.test.sh`, which holds every
+workflow to this.
 
 **Develop only.** This job holds the workflow's only Administration write
 token, so no other branch's code may ever run with it. Its first step,

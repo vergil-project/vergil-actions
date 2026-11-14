@@ -80,26 +80,31 @@ jobs:
       group: ${{ github.repository }}/github-config
       cancel-in-progress: false
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
-    env:
-      # The org-level Actions variable holding the automation App's slug.
-      # vergil-tooling checks that GH_TOKEN was minted by that App before it
-      # does any automation work.
-      VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+    # VRG_AUTOMATION_APP says the process holds the automation App's token,
+    # so every vrg-* command that sees it verifies GH_TOKEN against that App
+    # and fails when it cannot. It is therefore set only on the step that
+    # holds the token and does the automation work, never on the job: set
+    # job-wide it reached the setup action's `vrg-whoami --mode` check, which
+    # runs with no GH_TOKEN, and failed every run (issue #1192).
+    # actions/ops/github-config/tests/automation-env.test.sh guards this.
     steps:
       # Before any token is minted: a dispatch from another ref would run that
       # ref's code with a write token, and an empty VRG_AUTOMATION_APP leaves
-      # no automation identity to verify the token against.
+      # no automation identity to verify the token against. The step reads
+      # the variable as AUTOMATION_APP: it holds no token, so it must not
+      # carry VRG_AUTOMATION_APP itself.
       - name: Require develop and VRG_AUTOMATION_APP
         shell: bash
         env:
           REF: ${{ github.ref }}
+          AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
         run: |
           set -euo pipefail
           if [ "${REF}" != "refs/heads/develop" ]; then
             echo "::error::github-config runs only from refs/heads/develop, not ${REF}"
             exit 1
           fi
-          if [ -z "${VRG_AUTOMATION_APP}" ]; then
+          if [ -z "${AUTOMATION_APP}" ]; then
             echo "::error::the VRG_AUTOMATION_APP Actions variable is empty or not visible to this repository; set it at org level to the automation App's slug"
             exit 1
           fi
@@ -161,9 +166,13 @@ jobs:
           git config --global user.name "${APP_SLUG}[bot]"
           git config --global user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
 
+      # VRG_AUTOMATION_APP comes from the org-level Actions variable holding
+      # the automation App's slug: vergil-tooling checks that GH_TOKEN was
+      # minted by that App before it does any automation work.
       - name: Update GitHub configuration
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
         run: vrg-github-repo-config update --repo "${{ github.repository }}"
 
   # Report-only Dependabot gate (epic vergil-project/.github#420): alerts are
