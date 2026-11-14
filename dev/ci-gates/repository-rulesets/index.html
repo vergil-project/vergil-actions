@@ -7593,10 +7593,11 @@ rolling tags fall outside the <code>v*.*.*</code> pattern.</p>
 <li>Do not add the check by hand under <strong>Settings &gt; Rules</strong>.
    <code>vrg-github-repo-config</code> derives the required-check set itself (from
    <code>desired_ci_gates_ruleset()</code> in vergil-tooling and the repository's
-   <code>vergil.toml</code>), and the nightly <code>ops-github-config</code> audit reports a
-   hand-added check as drift. Add the check to that derivation in
-   vergil-tooling, and once that change is released run
-   <code>vrg-github-repo-config apply</code> to converge the ruleset.</li>
+   <code>vergil.toml</code>), and the nightly <code>ops-github-config</code> run of
+   <code>vrg-github-repo-config update</code> converges the ruleset back to that set,
+   removing a hand-added check. Add the check to that derivation in
+   vergil-tooling; once that change is released, the next nightly run (or
+   <code>vrg-github-repo-config update</code> run by hand) converges the ruleset.</li>
 <li>Verify the check name matches exactly. For the matrixed workflows, require
    the stable <code>&lt;kind&gt; / evidence</code> aggregate (e.g. <code>test / evidence</code>), <strong>not</strong> the
    per-version legs — the legs change with the resolved version set (the
@@ -7620,15 +7621,19 @@ GitHub to them through the API:</p>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Show the same differences without failing (always exits 0)</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>vrg-github-repo-config<span class="w"> </span>diff<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Reconcile the GitHub configuration, including the rulesets</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>vrg-github-repo-config<span class="w"> </span>apply<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Reconcile the GitHub configuration, including the rulesets, and open one</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># sync PR for any drifted managed file</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>vrg-github-repo-config<span class="w"> </span>update<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
 </code></pre></div>
 <p><code>--repo</code> defaults to the current directory's git remote. The local file
-checks run only from inside the repository's own checkout. <code>vergil.toml</code> is
-read from the <code>develop</code> branch; <code>--config PATH</code> uses a local copy instead.</p>
-<p>To change a ruleset, change the <code>vergil.toml</code> that it is derived from, merge the
-change to <code>develop</code>, and run <code>apply</code>. A ruleset edited by hand is reported as
-drift by the nightly <code>ops-github-config</code> audit. See the vergil-tooling
+checks run against a fresh clone of the repository's <code>develop</code>, never the
+current directory. <code>vergil.toml</code> is read from the <code>develop</code> branch;
+<code>--config PATH</code> uses a local copy instead. <code>apply</code>, which reconciles only the
+GitHub configuration, is deprecated in favour of <code>update</code>.</p>
+<p>To change a ruleset, change the <code>vergil.toml</code> that it is derived from and
+merge the change to <code>develop</code>; the nightly <code>ops-github-config</code> run of
+<code>update</code> converges the ruleset, or run <code>update</code> by hand. A ruleset edited by
+hand is converged back by that nightly run. See the vergil-tooling
 <a href="https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/">GitHub config audit reference</a>
 for the full list of checks.</p>
 

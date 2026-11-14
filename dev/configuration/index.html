@@ -7739,7 +7739,7 @@ only library repositories:</p>
 <tbody>
 <tr>
 <td><a href="../workflows/ops-github-config/"><code>ops-github-config.yml</code></a></td>
-<td><code>branch-sweep</code>, <code>github-config</code>, <code>dependabot-audit</code>, <code>bypass-probe</code></td>
+<td><code>branch-sweep</code>, <code>github-config</code>, <code>dependabot-audit</code></td>
 <td>Calling repository only</td>
 </tr>
 <tr>
@@ -7789,17 +7789,17 @@ permissions:</p>
 <tr>
 <td>Administration</td>
 <td>Read &amp; write</td>
-<td><code>github-config</code>. Today it runs the read-only <code>vrg-github-repo-config audit</code>, which reads repository settings, branch protection, rulesets, Actions permissions and whether vulnerability alerts are enabled. The automatic fleet sync moves it to <code>vrg-github-repo-config update</code>, which converges settings and rulesets, so the App needs write. The temporary <code>bypass-probe</code> requests write to read a ruleset's bypass actors</td>
+<td><code>github-config</code>, which runs <code>vrg-github-repo-config update</code>: it reads and converges repository settings, branch protection, rulesets (whose bypass actors GitHub returns only to a caller that can edit them), Actions permissions and whether vulnerability alerts are enabled</td>
 </tr>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> reads <code>vergil.toml</code>, and requests write because GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
 </tr>
 <tr>
 <td>Pull requests</td>
 <td>Read &amp; write</td>
-<td><code>upstream-refresh</code> (opens, updates, comments on and closes the refresh PR); <code>branch-sweep</code> and <code>epic-sweep</code> read them</td>
+<td><code>upstream-refresh</code> (opens, updates, comments on and closes the refresh PR); <code>github-config</code> (opens the sync PR, closes an earlier one and turns on auto-merge); <code>branch-sweep</code> and <code>epic-sweep</code> read them</td>
 </tr>
 <tr>
 <td>Issues</td>
@@ -7809,7 +7809,7 @@ permissions:</p>
 <tr>
 <td>Workflows</td>
 <td>Read &amp; write</td>
-<td><code>cd.yml</code> (the release tag points at the freeze-internal-refs commit, which changes workflow files: see <a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>); the automatic fleet sync, whose PRs can change files under <code>.github/workflows/</code></td>
+<td><code>cd.yml</code> (the release tag points at the freeze-internal-refs commit, which changes workflow files: see <a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>); <code>github-config</code>, the automatic fleet sync, whose PRs can change files under <code>.github/workflows/</code></td>
 </tr>
 <tr>
 <td>Dependabot alerts</td>
@@ -7858,9 +7858,9 @@ token is scoped, as <a href="#token-scoping">Token scoping</a> describes.</p>
 <li>
 <p>Set the org-level Actions variable <code>VRG_AUTOMATION_APP</code> to the App's
     slug (<code>&lt;org&gt;-automation</code>), visible to all repositories. It names the
-    automation App. Once the automatic fleet sync is switched on, the
-    <code>github-config</code> job passes it to vergil-tooling, which checks that the
-    job's token was minted by that App before it does any automation work.</p>
+    automation App. The <code>github-config</code> job fails when it is empty, and
+    otherwise passes it to vergil-tooling, which checks that the job's token
+    was minted by that App before it does any automation work.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>VRG_AUTOMATION_APP<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;<span class="w"> </span>--visibility<span class="w"> </span>all<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;org&gt;-automation"</span>
 </code></pre></div>
 </li>
@@ -7901,18 +7901,13 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 </tr>
 <tr>
 <td><code>ops-github-config.yml</code></td>
-<td><code>github-config</code></td>
-<td><code>administration: read</code>, <code>contents: write</code> (the read-only <code>audit</code>: <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a> returns the merge settings only with Contents read and write)</td>
+<td><code>github-config</code> (from <code>develop</code> only)</td>
+<td><code>administration: write</code>, <code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>metadata: read</code> (<code>update</code>; <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a> also returns the merge settings only with Contents read and write)</td>
 </tr>
 <tr>
 <td><code>ops-github-config.yml</code></td>
 <td><code>dependabot-audit</code></td>
 <td><code>vulnerability-alerts: read</code></td>
-</tr>
-<tr>
-<td><code>ops-github-config.yml</code></td>
-<td><code>bypass-probe</code> (temporary, dispatch from <code>develop</code> only)</td>
-<td><code>administration: write</code>, <code>metadata: read</code></td>
 </tr>
 <tr>
 <td><code>ops-epic-rollup.yml</code></td>
@@ -7941,10 +7936,12 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 </tr>
 </tbody>
 </table>
-<p>Metadata: Read is always included. Only two jobs ever request
-Administration write: the temporary <code>bypass-probe</code>, which runs only when
-dispatched from <code>develop</code>, and <code>github-config</code>, once it runs <code>update</code>. A repository-local
-workflow that mints an automation App token follows the same rule.</p>
+<p>Metadata: Read is always included. Only one job requests Administration
+write: <code>github-config</code>, which runs <code>update</code>. It fails before minting its
+token unless the run's ref is <code>refs/heads/develop</code>, and checks out
+<code>develop</code>, so no other branch's code runs with that token. A
+repository-local workflow that mints an automation App token follows the
+same rule.</p>
 <p>A token can only narrow what the installation already holds: a step that
 requests a permission the installation lacks, or has not accepted yet, fails
 to mint and the job goes red.</p>
