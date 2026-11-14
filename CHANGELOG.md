@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.71] - 2026-11-14
+
+### CI
+
+- run github-config as the automation identity with vrg-github-repo-config update (#1156) (#1186)
+- cap the github-config job at 60 minutes (#1188)
+
+### Chores
+
+- sync the managed files with the released templates (#1184)
+
 ## [2.1.70] - 2026-11-13
 
 ### Features

@@ -59,14 +59,51 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
+  # The automatic fleet sync (epic vergil-project/.github#1064): converges the
+  # repository's settings and rulesets, and opens one auto-merging PR on an
+  # automation/ branch for any managed file that has drifted from its released
+  # master copy. It runs as the org automation App, named by
+  # VRG_AUTOMATION_APP, whose identity is used only for this mechanized work,
+  # never for anything an AI agent does. It holds this workflow's only
+  # Administration write token, so it runs only from develop and checks out
+  # develop: no other branch's code ever runs with that token.
   github-config:
     name: github-config
     runs-on: ubuntu-24.04
+    # The automation App token update runs with has a fixed one-hour life,
+    # and update's wait for its sync PR to merge ends inside it. A run taking
+    # longer could not use its token, so cap the job there rather than at
+    # GitHub's 360-minute default, which would let a hung run hold the
+    # concurrency group for six hours.
+    timeout-minutes: 60
     concurrency:
       group: ${{ github.repository }}/github-config
       cancel-in-progress: false
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    env:
+      # The org-level Actions variable holding the automation App's slug.
+      # vergil-tooling checks that GH_TOKEN was minted by that App before it
+      # does any automation work.
+      VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
     steps:
+      # Before any token is minted: a dispatch from another ref would run that
+      # ref's code with a write token, and an empty VRG_AUTOMATION_APP leaves
+      # no automation identity to verify the token against.
+      - name: Require develop and VRG_AUTOMATION_APP
+        shell: bash
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "${REF}" != "refs/heads/develop" ]; then
+            echo "::error::github-config runs only from refs/heads/develop, not ${REF}"
+            exit 1
+          fi
+          if [ -z "${VRG_AUTOMATION_APP}" ]; then
+            echo "::error::the VRG_AUTOMATION_APP Actions variable is empty or not visible to this repository; set it at org level to the automation App's slug"
+            exit 1
+          fi
+
       - name: Generate app token
         id: app-token
         uses: actions/create-github-app-token@v3
@@ -74,21 +111,30 @@ jobs:
           app-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           # Scoped to the calling repo only (no owner/repositories input),
-          # with only what the read-only audit needs: Administration read
-          # (repository settings, rulesets, Actions permissions, whether
-          # vulnerability alerts are on) and Contents write. The audit writes
-          # no contents, but GET /repos/{owner}/{repo} leaves out the merge
-          # settings (allow_*_merge, delete_branch_on_merge,
-          # allow_update_branch, the merge and squash commit titles and
-          # messages) unless the token holds Contents read and write, as
-          # GitHub's "Get a repository" REST docs state. Contents also covers
-          # reading vergil.toml and the workflow files. No Issues permission:
-          # the repo-config code makes no Issues call.
-          permission-administration: read
+          # with what update needs:
+          # - Administration write: read and converge the repository settings,
+          #   rulesets (GitHub returns bypass_actors only to a caller that can
+          #   edit the ruleset), Actions permissions and vulnerability alerts.
+          # - Contents write: push the automation/ branch. GET
+          #   /repos/{owner}/{repo} also leaves out the merge settings unless
+          #   the token holds Contents read and write.
+          # - Pull requests write: open the sync PR, close an earlier one, and
+          #   turn on auto-merge.
+          # - Workflows write: a sync PR can change files under
+          #   .github/workflows/.
+          # - Metadata read: always included, stated so the token's whole
+          #   permission set is explicit.
+          # No Issues permission: the repo-config code makes no Issues call.
+          permission-administration: write
           permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+          permission-metadata: read
 
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: develop
 
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
@@ -101,93 +147,24 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: gh auth setup-git
 
-      - name: Audit GitHub configuration
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: vrg-github-repo-config audit --repo "${{ github.repository }}"
-
-  # Temporary probe (epic vergil-project/.github#1064, Task A1b): shows whether
-  # an automation App token reads a ruleset's bypass_actors, whether the
-  # VRG_AUTOMATION_APP org variable reaches this repository, and the token's
-  # GraphQL viewer login. A human dispatches it from develop; scheduled runs
-  # skip it. Task A2 removes it.
-  bypass-probe:
-    name: bypass-probe
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04
-    concurrency:
-      group: ${{ github.repository }}/bypass-probe
-      cancel-in-progress: false
-    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
-    steps:
-      # Before any token is minted: this job requests Administration write,
-      # so it runs only from develop.
-      - name: Require develop
-        shell: bash
-        env:
-          REF: ${{ github.ref }}
-        run: |
-          set -euo pipefail
-          if [ "${REF}" != "refs/heads/develop" ]; then
-            echo "::error::bypass-probe runs only from refs/heads/develop, not ${REF}"
-            exit 1
-          fi
-
-      - name: Generate app token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          # Scoped to the calling repo only (no owner/repositories input).
-          # Administration write is the permission whose token the premise is
-          # about: GitHub returns a ruleset's bypass_actors only to a caller
-          # that can edit the ruleset. Metadata read is always included and is
-          # stated here so the token's whole permission set is explicit.
-          permission-administration: write
-          permission-metadata: read
-
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          ref: develop
-
-      - name: Probe
+      # The pattern in actions/create-github-app-token's README: sync commits
+      # are authored and committed by <app-slug>[bot], with the bot user's ID
+      # in the noreply address, so they show as the automation App.
+      - name: Set the git identity to the App's bot user
         shell: bash
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          REPO: ${{ github.repository }}
-          AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
           set -euo pipefail
+          user_id="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
+          git config --global user.name "${APP_SLUG}[bot]"
+          git config --global user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
 
-          # The variable's value is never printed, only whether it is set.
-          if [ -n "${AUTOMATION_APP}" ]; then
-            echo "VRG_AUTOMATION_APP set: yes"
-          else
-            echo "VRG_AUTOMATION_APP set: no"
-          fi
-
-          login="$(gh api graphql -f query='query { viewer { login } }' --jq '.data.viewer.login')"
-          echo "login: ${login}"
-
-          ids="$(gh api --paginate "repos/${REPO}/rulesets?includes_parents=false" \
-            --jq '.[] | select(.name == "Tag protection") | .id')"
-          count="$(printf '%s' "${ids}" | grep -c . || true)"
-          if [ "${count}" -ne 1 ]; then
-            echo "::error::expected exactly one ruleset named \"Tag protection\" in ${REPO}, found ${count}"
-            exit 1
-          fi
-
-          ruleset="$(gh api "repos/${REPO}/rulesets/${ids}")"
-          # A response with no bypass_actors field is reported as such, never
-          # counted as an empty list.
-          if ! printf '%s' "${ruleset}" | jq -e 'has("bypass_actors")' >/dev/null; then
-            echo "::error::the \"Tag protection\" ruleset response has no bypass_actors field"
-            exit 1
-          fi
-          printf '%s' "${ruleset}" | jq -r '.bypass_actors[] | "\(.actor_type) \(.actor_id)"'
-          echo "bypass_actors entries: $(printf '%s' "${ruleset}" | jq '.bypass_actors | length')"
+      - name: Update GitHub configuration
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: vrg-github-repo-config update --repo "${{ github.repository }}"
 
   # Report-only Dependabot gate (epic vergil-project/.github#420): alerts are
   # on, Dependabot never opens a PR, and this job turns any open alert, at any
