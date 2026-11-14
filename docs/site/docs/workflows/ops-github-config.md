@@ -137,6 +137,14 @@ fails the job when `VRG_AUTOMATION_APP` is empty. Every fleet repository's
 default branch is `develop`, so scheduled runs pass the check. A
 `workflow_dispatch` from any other branch fails.
 
+**Time limit.** The job sets `timeout-minutes: 60`. The automation App's
+installation token has a fixed one-hour life, and `update`'s wait for its
+sync PR to merge ends within it, so a run that takes longer could not use its
+token anyway. Without the cap GitHub's default of 360 minutes would apply,
+and a run hung outside the tool's own deadline would hold the job's
+concurrency group for up to six hours. A run that comes close to the limit is
+a cue to look at the job's performance.
+
 ### dependabot-audit
 
 The fleet runs Dependabot **report-only** (epic
