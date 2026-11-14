@@ -11,7 +11,8 @@
 # Each stage case runs reports.sh in a scratch workspace holding chosen report
 # files, then asserts the exit status, the staged file names and contents, and
 # for the failure cases the `::error::` annotation naming each missing report.
-# A final case checks that ci-test.yml and ci-audit.yml stage through this
+# A fleet language with no contract (go, cpp, typescript) must warn, stage
+# nothing and list no tools, while every bad input still fails. A final case checks that ci-test.yml and ci-audit.yml stage through this
 # action, so a workflow cannot drift back to a fixed list of names.
 set -euo pipefail
 
@@ -242,21 +243,98 @@ if assert_staged "$name" ""; then
   pass_case "$name"
 fi
 
-# --- no contract, bad input ---------------------------------------------------
+# --- a fleet language with no contract warns and stages nothing ---------------
 
-for language in go cpp typescript shell ""; do
-  name="no-contract-for-language-'${language}'-fails"
-  workspace "nocontract-${language:-empty}" coverage.xml junit.xml
-  run_reports stage "$language" test 1.0 success
-  if [ -z "$language" ]; then
-    needle="LANGUAGE is empty"
-  else
-    needle="no 'test' report contract for language '${language}'"
+# assert_no_contract_warning <name> <language> <gate> — exit 0, no ::error::,
+# and a ::warning:: naming the language and gate.
+assert_no_contract_warning() {
+  local name="$1" language="$2" gate="$3" warnings
+  if [ "$rc" -ne 0 ]; then
+    fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
+    return 1
   fi
-  if assert_error "$name" "$needle"; then
-    pass_case "$name"
+  if grep -qF -- "::error::" <<<"${stdout}${stderr}"; then
+    fail_case "$name" "raised an ::error::: ${stderr}"
+    return 1
+  fi
+  warnings="$(grep -F -- "::warning::" <<<"${stdout}"$'\n'"${stderr}" || true)"
+  if ! grep -qF -- "the ${language} ${gate} gate's reports are not produced yet" \
+    <<<"$warnings"; then
+    fail_case "$name" "no ::warning:: naming ${language} ${gate}; got '${stdout}${stderr}'"
+    return 1
+  fi
+  return 0
+}
+
+for language in go cpp typescript; do
+  for gate in test audit; do
+    for outcome in success failure; do
+      name="no-contract-${language}-${gate}-${outcome}-warns-and-stages-nothing"
+      # Report-like files present: none may be staged for a language with no
+      # contract, even names another language's contract lists.
+      workspace "$name" coverage.xml junit.xml pip-audit.json cargo-deny.json
+      run_reports stage "$language" "$gate" 1.0 "$outcome"
+      if assert_no_contract_warning "$name" "$language" "$gate"; then
+        if [ -e "${ws}/ci-reports" ]; then
+          fail_case "$name" "created ci-reports holding '$(staged)'"
+        else
+          pass_case "$name"
+        fi
+      fi
+    done
+  done
+done
+
+# The warning path never hides a bad input.
+name="no-contract-language-with-empty-version-fails"
+workspace "$name"
+run_reports stage go test "" success
+if assert_error "$name" "VERSION is empty"; then
+  pass_case "$name"
+fi
+
+name="no-contract-language-with-unsafe-version-fails"
+workspace "$name"
+run_reports stage cpp audit "a/b" success
+if assert_error "$name" "not a single path component"; then
+  pass_case "$name"
+fi
+
+name="no-contract-language-with-unknown-gate-fails"
+workspace "$name"
+run_reports stage typescript quality 1.0 success
+if assert_error "$name" "unknown gate 'quality'"; then
+  pass_case "$name"
+fi
+
+# --- bad input ----------------------------------------------------------------
+
+for language in shell cobol Python; do
+  name="unknown-language-'${language}'-fails"
+  workspace "unknown-language-${language}" coverage.xml junit.xml
+  run_reports stage "$language" test 1.0 success
+  if assert_error "$name" "unknown language '${language}'"; then
+    if [ -n "$(staged)" ]; then
+      fail_case "$name" "staged '$(staged)', expected nothing"
+    else
+      pass_case "$name"
+    fi
   fi
 done
+
+name="empty-language-fails"
+workspace "$name" coverage.xml junit.xml
+run_reports stage "" test 1.0 success
+if assert_error "$name" "LANGUAGE is empty"; then
+  pass_case "$name"
+fi
+
+name="empty-gate-fails"
+workspace "$name" coverage.xml junit.xml
+run_reports stage python "" 1.0 success
+if assert_error "$name" "GATE is empty"; then
+  pass_case "$name"
+fi
 
 name="unknown-gate-fails"
 workspace "$name" coverage.xml
@@ -310,15 +388,49 @@ case_tools python audit '[{"name":"pip-audit"},{"name":"pip-licenses"}]'
 case_tools rust test '[{"name":"cargo-llvm-cov"}]'
 case_tools rust audit '[{"name":"cargo-deny"}]'
 
-name="tools-no-contract-fails"
-workspace "$name"
-run_reports tools go audit
-if assert_error "$name" "no 'audit' report contract for language 'go'"; then
-  if [ -s "$outputs" ]; then
-    fail_case "$name" "wrote an output for a language with no contract"
-  else
-    pass_case "$name"
+# A fleet language with no contract gets an empty tools list and the warning,
+# so the evidence job (the required check) stays green for it.
+for language in go cpp typescript; do
+  for gate in test audit; do
+    name="tools-no-contract-${language}-${gate}-is-empty-with-a-warning"
+    workspace "$name"
+    run_reports tools "$language" "$gate"
+    if assert_no_contract_warning "$name" "$language" "$gate"; then
+      if [ "$(cat "$outputs")" = "tools=[]" ]; then
+        pass_case "$name"
+      else
+        fail_case "$name" "expected the output 'tools=[]', got '$(cat "$outputs")'"
+      fi
+    fi
+  done
+done
+
+# case_tools_fails <name> <language> <gate> <substring> — an ::error:: and no
+# output written.
+case_tools_fails() {
+  local name="$1"
+  workspace "$name"
+  run_reports tools "$2" "$3"
+  if assert_error "$name" "$4"; then
+    if [ -s "$outputs" ]; then
+      fail_case "$name" "wrote an output: '$(cat "$outputs")'"
+    else
+      pass_case "$name"
+    fi
   fi
+}
+
+case_tools_fails tools-unknown-language-fails shell test "unknown language 'shell'"
+case_tools_fails tools-unknown-gate-fails rust quality "unknown gate 'quality'"
+case_tools_fails tools-no-contract-unknown-gate-fails go quality "unknown gate 'quality'"
+
+name="tools-without-github-output-fails"
+workspace "$name"
+rc=0
+stderr="$(cd "$ws" && env -u GITHUB_OUTPUT MODE=tools LANGUAGE=rust GATE=test \
+  bash "$reports_sh" 2>&1 >/dev/null)" || rc=$?
+if assert_error "$name" "GITHUB_OUTPUT is not set"; then
+  pass_case "$name"
 fi
 
 # --- the workflows stage through this action ---------------------------------

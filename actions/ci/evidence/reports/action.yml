@@ -6,8 +6,10 @@ description: >-
   licenses.json, or Rust's cargo-deny.json) into a directory as
   version-suffixed basenames, failing when the gate passed but a report the
   language's gate writes is missing or empty. In `tools` mode, outputs the
-  gate's tools JSON for the emit action. A language or gate with no contract
-  fails loudly.
+  gate's tools JSON for the emit action. A fleet language with no contract
+  yet (go, cpp, typescript) gets a warning, stages nothing and lists no
+  tools, leaving the decision to the release-time evidence gate; an unknown
+  language or gate fails.
 
 inputs:
   mode:

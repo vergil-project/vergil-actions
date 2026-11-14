@@ -22,10 +22,15 @@
 #
 # This table is the single place vergil-actions records the contract. The
 # producer side is vergil-tooling's lib/languages.py (PYTHON_REPORT_FILES,
-# and the Rust report names of vergil-tooling#4394); keep the two in step. A
-# language or gate with no entry here fails loudly: its gate writes no report
-# the harvester would accept, so a green leg would only defer the failure to
-# the release.
+# and the Rust report names of vergil-tooling#4394); keep the two in step.
+#
+# A fleet language with no entry here (today go, cpp and typescript) writes no
+# report the harvester accepts yet. Failing its leg would turn every PR of
+# every repo in that language red, so instead both modes emit a ::warning::
+# naming the language and gate, stage nothing and give an empty tools list;
+# the release-time evidence gate still decides, and in enforcing mode it
+# rejects the empty payload. An unknown language or gate, or any other bad
+# input, fails.
 #
 # Modes (env MODE):
 #
@@ -50,39 +55,78 @@ error() {
   echo "::error::ci/evidence/reports: $*" >&2
 }
 
-# report_files <language> <gate> — the gate's report file names, one per line.
-# Fails, with an ::error::, for a language or gate with no entry.
+# The fleet's primary languages, the ones the reusable CI workflows serve.
+# Any other language name is a bad input.
+KNOWN_LANGUAGES="python rust go cpp typescript"
+
+# check_inputs <language> <gate> — fails, with an ::error::, for an unknown
+# language or gate.
+check_inputs() {
+  case "$2" in
+    test | audit) ;;
+    *)
+      error "unknown gate '$2' (expected 'test' or 'audit')"
+      return 1
+      ;;
+  esac
+  case " ${KNOWN_LANGUAGES} " in
+    *" $1 "*) ;;
+    *)
+      error "unknown language '$1' (expected one of: ${KNOWN_LANGUAGES})"
+      return 1
+      ;;
+  esac
+}
+
+# has_contract <language> <gate> — succeeds when the table has an entry.
+has_contract() {
+  case "$1/$2" in
+    python/test | python/audit | rust/test | rust/audit) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# warn_no_contract <language> <gate> <what> — the ::warning:: for a known
+# language with no entry. On stderr, so tools mode's captured output holds
+# only the JSON.
+warn_no_contract() {
+  echo "::warning::ci/evidence/reports: the $1 $2 gate's reports are not" \
+    "produced yet (no '$2' report contract for language '$1'), so $3. The" \
+    "release-time CI evidence gate decides; in enforcing mode it rejects the" \
+    "empty payload. Add the language's report files to" \
+    "actions/ci/evidence/reports/reports.sh once its gate commands write them" >&2
+}
+
+# report_files <language> <gate> — the gate's report file names, one per line,
+# for an entry in the table. Callers check the inputs and the entry first.
 report_files() {
   case "$1/$2" in
     python/test) printf '%s\n' coverage.xml junit.xml ;;
     rust/test) printf '%s\n' coverage.xml ;;
     python/audit) printf '%s\n' pip-audit.json licenses.json ;;
     rust/audit) printf '%s\n' cargo-deny.json ;;
-    */test | */audit)
-      error "no '$2' report contract for language '$1': its gate writes no" \
-        "report file the release-time evidence gate accepts. Add the language's" \
-        "report files to actions/ci/evidence/reports/reports.sh once its gate" \
-        "commands write them"
-      return 1
-      ;;
     *)
-      error "unknown gate '$2' (expected 'test' or 'audit')"
+      error "internal: no report files for '$1/$2'"
       return 1
       ;;
   esac
 }
 
 # report_tools <language> <gate> — the gate's tools JSON array, on one line.
+# Fails for an unknown language or gate; a known language with no entry
+# warns and gives an empty array.
 report_tools() {
+  check_inputs "$1" "$2" || return 1
+  if ! has_contract "$1" "$2"; then
+    warn_no_contract "$1" "$2" "its evidence lists no tools"
+    printf '%s\n' '[]'
+    return 0
+  fi
   case "$1/$2" in
     python/test) printf '%s\n' '[{"name":"pytest"},{"name":"coverage.py"}]' ;;
     python/audit) printf '%s\n' '[{"name":"pip-audit"},{"name":"pip-licenses"}]' ;;
     rust/test) printf '%s\n' '[{"name":"cargo-llvm-cov"}]' ;;
     rust/audit) printf '%s\n' '[{"name":"cargo-deny"}]' ;;
-    *)
-      # report_files carries the one wording for an unknown language or gate.
-      report_files "$1" "$2" >/dev/null
-      ;;
   esac
 }
 
@@ -91,6 +135,7 @@ stage_reports() {
   local language="$1" gate_name="$2" version="$3" outcome="$4" out_dir="$5"
   local names name stem ext missing=() staged=0
 
+  check_inputs "$language" "$gate_name" || return 1
   if [ -z "$version" ]; then
     error "VERSION is empty; pass the matrix leg's version"
     return 1
@@ -101,6 +146,10 @@ stage_reports() {
       return 1
       ;;
   esac
+  if ! has_contract "$language" "$gate_name"; then
+    warn_no_contract "$language" "$gate_name" "none are staged"
+    return 0
+  fi
   if ! names="$(report_files "$language" "$gate_name")"; then
     return 1
   fi
@@ -159,7 +208,9 @@ case "$MODE" in
       error "GITHUB_OUTPUT is not set"
       exit 1
     fi
-    tools="$(report_tools "$LANGUAGE" "$GATE")"
+    if ! tools="$(report_tools "$LANGUAGE" "$GATE")"; then
+      exit 1
+    fi
     echo "tools=${tools}" >>"$GITHUB_OUTPUT"
     echo "tools: ${tools}"
     ;;

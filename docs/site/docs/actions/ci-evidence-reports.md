@@ -24,8 +24,16 @@ is staged as written.
 This table, in `actions/ci/evidence/reports/reports.sh`, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
 gate commands (`lib/languages.py`), so a change to a gate's report names
-changes both. Any other language, or any other gate, fails the step: its gate
-writes no report file the release-time evidence gate accepts.
+changes both.
+
+A fleet language with no entry in the table (today `go`, `cpp` and
+`typescript`) writes no report file the release-time evidence gate accepts
+yet. Its legs do not fail: the step emits a `::warning::` naming the language
+and gate and saying its reports are not produced yet, and stages nothing, and
+`mode: tools` gives an empty tools list with the same warning. The
+release-time evidence gate still decides; in enforcing mode it rejects the
+empty payload. An unknown language or gate, an empty or unsafe `version`, or
+an unknown `mode` fails the step.
 
 This action is **wired automatically** into `ci-test` and `ci-audit`.
 Consuming repositories do not add it themselves.
@@ -99,5 +107,8 @@ so the evidence job takes every file the legs uploaded.
 - When the gate step did not succeed, the leg has already failed. The reports
   that exist are staged for diagnosis and the missing ones are noted.
 - An empty or placeholder file is never staged.
+- For a language with no entry in the table, the step warns and stages
+  nothing, whatever `gate-outcome` says.
 
-**Tools.** Writes the gate's tools JSON array to the `tools` output.
+**Tools.** Writes the gate's tools JSON array to the `tools` output: `[]`,
+with a warning, for a language with no entry.

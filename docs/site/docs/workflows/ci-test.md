@@ -36,8 +36,9 @@ Each `unit` leg stages the language's test reports for the
 `ci-evidence-test` artifact: `coverage.xml` and `junit.xml` for Python, and
 `coverage.xml` for Rust. The names come from
 [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose tests
-passed but wrote no report fails, and so does a leg for a language with no
-test report contract.
+passed but wrote no report fails. A language with no test report contract
+yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
+release-time evidence gate decides.
 
 ## Usage
 

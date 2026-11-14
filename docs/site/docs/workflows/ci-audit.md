@@ -42,8 +42,9 @@ Each `dependencies` leg stages the language's audit reports for the
 `ci-evidence-audit` artifact: `pip-audit.json` and `licenses.json` for Python,
 `cargo-deny.json` for Rust. The names come from
 [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose audit
-passed but wrote no report fails, and so does a leg for a language with no
-audit report contract.
+passed but wrote no report fails. A language with no audit report contract
+yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
+release-time evidence gate decides.
 
 ## Usage
 
