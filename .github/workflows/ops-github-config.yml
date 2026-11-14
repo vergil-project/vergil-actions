@@ -70,6 +70,12 @@ jobs:
   github-config:
     name: github-config
     runs-on: ubuntu-24.04
+    # The automation App token update runs with has a fixed one-hour life,
+    # and update's wait for its sync PR to merge ends inside it. A run taking
+    # longer could not use its token, so cap the job there rather than at
+    # GitHub's 360-minute default, which would let a hung run hold the
+    # concurrency group for six hours.
+    timeout-minutes: 60
     concurrency:
       group: ${{ github.repository }}/github-config
       cancel-in-progress: false
