@@ -11,8 +11,14 @@
 #   language  gate   report files                  tools
 #   python    test   coverage.xml junit.xml        pytest, coverage.py
 #   python    audit  pip-audit.json licenses.json  pip-audit, pip-licenses
-#   rust      test   coverage.xml junit.xml        cargo-llvm-cov
+#   rust      test   coverage.xml                  cargo-llvm-cov
 #   rust      audit  cargo-deny.json               cargo-deny
+#
+# The Rust test gate writes no junit.xml yet: stable `cargo test` has no JUnit
+# output, and choosing a reporter is vergil-tooling#4394's open item N0.1.
+# Requiring it here would fail every passing Rust test leg. Add it, and its
+# tool, once the gate writes it (vergil-actions#1216). cargo-deny.json holds
+# JSON Lines (one object per line); it is staged as written, never parsed.
 #
 # This table is the single place vergil-actions records the contract. The
 # producer side is vergil-tooling's lib/languages.py (PYTHON_REPORT_FILES,
@@ -48,7 +54,8 @@ error() {
 # Fails, with an ::error::, for a language or gate with no entry.
 report_files() {
   case "$1/$2" in
-    python/test | rust/test) printf '%s\n' coverage.xml junit.xml ;;
+    python/test) printf '%s\n' coverage.xml junit.xml ;;
+    rust/test) printf '%s\n' coverage.xml ;;
     python/audit) printf '%s\n' pip-audit.json licenses.json ;;
     rust/audit) printf '%s\n' cargo-deny.json ;;
     */test | */audit)

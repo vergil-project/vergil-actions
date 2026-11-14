@@ -131,10 +131,23 @@ case_stage python-test-stages-coverage-and-junit python test \
   "coverage-1.0.xml junit-1.0.xml " coverage.xml junit.xml
 case_stage python-audit-stages-pip-audit-and-licenses python audit \
   "licenses-1.0.json pip-audit-1.0.json " pip-audit.json licenses.json
-case_stage rust-test-stages-coverage-and-junit rust test \
-  "coverage-1.0.xml junit-1.0.xml " coverage.xml junit.xml
+case_stage rust-test-stages-coverage rust test \
+  "coverage-1.0.xml " coverage.xml
 case_stage rust-audit-stages-cargo-deny rust audit \
   "cargo-deny-1.0.json " cargo-deny.json
+
+# The Rust test gate writes no junit.xml yet (vergil-tooling#4394 N0.1), so a
+# passing Rust test leg holding only coverage.xml passes and raises no error.
+name="rust-test-needs-no-junit"
+workspace "$name" coverage.xml
+run_reports stage rust test 1.85 success
+if assert_staged "$name" "coverage-1.85.xml "; then
+  if grep -qF -- "::error::" <<<"$stderr"; then
+    fail_case "$name" "raised an ::error::: ${stderr}"
+  else
+    pass_case "$name"
+  fi
+fi
 
 # Rust's audit report is cargo-deny.json, never Python's names: a workspace
 # holding only Python's audit reports fails a passing Rust audit.
@@ -154,7 +167,7 @@ fi
 name="undeclared-files-are-not-staged"
 workspace "$name" coverage.xml junit.xml quality-ruff.json cargo-deny.json
 run_reports stage rust test 1.85 success
-if assert_staged "$name" "coverage-1.85.xml junit-1.85.xml "; then
+if assert_staged "$name" "coverage-1.85.xml "; then
   pass_case "$name"
 fi
 
@@ -180,8 +193,8 @@ fi
 
 name="passing-gate-missing-one-report-fails-naming-it"
 workspace "$name" coverage.xml
-run_reports stage rust test 1.85 success
-if assert_error "$name" "rust test gate passed but wrote no junit.xml"; then
+run_reports stage python test 3.14 success
+if assert_error "$name" "python test gate passed but wrote no junit.xml"; then
   if grep -F '::error::' <<<"$stderr" | grep -F "coverage.xml" >/dev/null; then
     fail_case "$name" "named a report that exists: ${stderr}"
   else
@@ -212,8 +225,8 @@ fi
 for outcome in failure skipped cancelled; do
   name="gate-${outcome}-stages-what-exists"
   workspace "$name" coverage.xml
-  run_reports stage rust test 1.85 "$outcome"
-  if assert_staged "$name" "coverage-1.85.xml "; then
+  run_reports stage python test 3.14 "$outcome"
+  if assert_staged "$name" "coverage-3.14.xml "; then
     if grep -qF "::notice::" <<<"$stdout" && grep -qF "junit.xml" <<<"$stdout"; then
       pass_case "$name"
     else
