@@ -851,6 +851,8 @@
       
         
       
+        
+      
     
     
     
@@ -903,6 +905,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.74/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.74
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5087,6 +5117,8 @@
       
         
       
+        
+      
     
     
     
@@ -5318,6 +5350,34 @@
     
   
     ci/evidence/emit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-evidence-reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/reports
   
 
     
@@ -5657,6 +5717,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -7378,6 +7455,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -7547,8 +7641,22 @@ git configuration, version detection, and mike deploy/set-default.</p>
    nav under the Releases section.</li>
 <li><strong>Deploy docs</strong> — On <code>main</code>, runs <code>mike deploy --push --update-aliases
    &lt;version&gt; latest</code> followed by <code>mike set-default --push latest</code>. On other
-   branches, runs <code>mike deploy --push dev</code>.</li>
+   branches, runs <code>mike deploy --push dev</code>, then makes <code>dev</code> the default
+   version only while the site has no release. See
+   <a href="#default-version">Default version</a>.</li>
 </ol>
+<h3 id="default-version">Default version<a class="headerlink" href="#default-version" title="Permanent link">&para;</a></h3>
+<p>The default version is the one the site root redirects to. A release makes
+<code>latest</code> the default. A develop deploy makes <code>dev</code> the default only while no
+version carries the <code>latest</code> alias, which it reads from <code>mike list --json</code>.
+Once a release exists, a develop deploy leaves the default alone.</p>
+<p>mike records the default only as the root <code>index.html</code> that <code>mike set-default</code>
+writes, not in <code>versions.json</code>, so <code>mike list</code> does not show it. An earlier
+guard looked for a <code>[default]</code> marker that <code>mike list</code> never prints, so every
+develop deploy reset a released site's default to <code>dev</code> (issue #1214). If
+<code>mike list</code> fails, the deploy fails and the default is not changed. The logic
+is in the action's <code>deploy.sh</code>, and <code>tests/default.test.sh</code> checks it with the
+real mike. The <code>smoke-cd-docs.yml</code> workflow runs that test.</p>
 <h2 id="reusable-workflow">Reusable workflow<a class="headerlink" href="#reusable-workflow" title="Permanent link">&para;</a></h2>
 <p>Docs deployment is typically consumed via the <code>cd-docs.yml</code> reusable workflow
 rather than calling the composite action directly:</p>

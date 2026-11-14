@@ -16,7 +16,7 @@
         <link rel="prev" href="../ci-toolchain-assert/">
       
       
-        <link rel="next" href="../cd-release-tag-and-release/">
+        <link rel="next" href="../ci-evidence-reports/">
       
       
         
@@ -851,6 +851,8 @@
       
         
       
+        
+      
     
     
     
@@ -903,6 +905,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.74/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.74
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5089,6 +5119,8 @@
       
         
       
+        
+      
     
     
     
@@ -5419,6 +5451,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-evidence-reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -7347,7 +7407,9 @@ reusable CI workflows:</p>
 </tr>
 </tbody>
 </table>
-<p>Consuming repositories do not add it themselves.</p>
+<p>Consuming repositories do not add it themselves. In <code>ci-test</code> and <code>ci-audit</code>
+the report files and tools come from each language's contract in
+<a href="../ci-evidence-reports/"><code>ci/evidence/reports</code></a>.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
