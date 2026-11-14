@@ -85,7 +85,8 @@ run_action_suites() {
 		done
 		count=$((count + 1))
 		echo "Running: $path"
-		if ! (cd "$root" && bash "$path"); then
+		# </dev/null: a suite must not read the listing that feeds this loop.
+		if ! (cd "$root" && bash "$path" </dev/null); then
 			echo "ERROR: $path: test suite failed" >&2
 			rc=1
 		fi

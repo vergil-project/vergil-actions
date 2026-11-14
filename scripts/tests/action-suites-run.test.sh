@@ -138,6 +138,17 @@ CI_ONLY=()
 run_case "an untracked suite is not run" "$repo" 0 -- \
 	actions/a/tests/a.test.sh
 
+repo=$(new_repo stdin)
+mkdir -p "$repo/actions/a/tests"
+# shellcheck disable=SC2016 # fixture suite content; the $ is meant literally
+printf '#!/usr/bin/env bash\necho "RAN actions/a/tests/a.test.sh IN $PWD"\ncat >/dev/null\n' \
+	>"$repo/actions/a/tests/a.test.sh"
+git -C "$repo" add -- actions/a/tests/a.test.sh
+suite "$repo" actions/b/tests/b.test.sh pass
+CI_ONLY=()
+run_case "a suite that reads stdin does not end the run early" "$repo" 0 -- \
+	actions/a/tests/a.test.sh actions/b/tests/b.test.sh
+
 repo=$(new_repo spaced)
 suite "$repo" "actions/with space/tests/a.test.sh" fail
 CI_ONLY=()
