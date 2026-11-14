@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # validate-custom — repo-local validation hook discovered by
 # vrg-validate. Checks the git mode of every *.test.sh script and that
-# every *.test.sh suite is run by a workflow or by validation, then runs
-# the tests of these checks under scripts/tests/.
+# every *.test.sh suite is run by a workflow or by validation, runs the
+# action test suites under actions/**/tests/, then runs the tests of
+# these checks under scripts/tests/.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -42,6 +43,64 @@ check_test_script_modes() {
 	return "$rc"
 }
 
+# The action suites validation leaves to the CI workflow that runs them,
+# one "<path>|<reason>" entry each. Every other actions/**/tests/*.test.sh
+# suite runs here. An entry must name a tracked action suite: a stale one
+# fails the run rather than hide a renamed suite.
+CI_ONLY_ACTION_SUITES=(
+	"actions/publish/index/live-check/tests/live-check.test.sh|live suite, run by smoke-publish-index"
+	"actions/cd/release/tests/container-tag.test.sh|needs yq, absent from the validation image"
+	"actions/cd/release/tests/package-image-prefix.test.sh|needs yq, absent from the validation image"
+	"actions/cd/release/tests/package-runtime.test.sh|needs yq, absent from the validation image"
+	"actions/ci/evidence/tests/gate.test.sh|needs yq, absent from the validation image"
+	"actions/ops/github-config/tests/automation-env.test.sh|needs yq, absent from the validation image"
+	"actions/shared/setup/primary-suffix/tests/container-prefix.test.sh|needs yq, absent from the validation image"
+	"actions/shared/setup/primary-suffix/tests/image.test.sh|needs yq, absent from the validation image"
+	"actions/shared/setup/vergil/tests/install-tooling.test.sh|needs python3, absent from the validation image"
+)
+
+# Run every action suite tracked in git at $1 (the actions/**/tests/*.test.sh
+# scripts) from the repo root, as CI does, except those in
+# CI_ONLY_ACTION_SUITES, which are named as skipped (#1108).
+run_action_suites() {
+	local root="$1" listing path entry rc=0 count=0 skipped=0
+	if ! listing="$(git -C "$root" -c core.quotePath=false ls-files -- 'actions/*.test.sh')"; then
+		echo "ERROR: could not list the action test suites tracked in git" >&2
+		return 1
+	fi
+	for entry in "${CI_ONLY_ACTION_SUITES[@]}"; do
+		path="${entry%%|*}"
+		if ! grep -qxF -- "$path" <<<"$listing"; then
+			echo "ERROR: $path: listed as CI-only but is not a tracked action suite" >&2
+			rc=1
+		fi
+	done
+	while IFS= read -r path; do
+		[[ "$path" =~ ^actions/.+/tests/[^/]+\.test\.sh$ ]] || continue
+		for entry in "${CI_ONLY_ACTION_SUITES[@]}"; do
+			if [[ "${entry%%|*}" == "$path" ]]; then
+				echo "Skipping (CI only: ${entry#*|}): $path"
+				skipped=$((skipped + 1))
+				continue 2
+			fi
+		done
+		count=$((count + 1))
+		echo "Running: $path"
+		if ! (cd "$root" && bash "$path"); then
+			echo "ERROR: $path: test suite failed" >&2
+			rc=1
+		fi
+	done <<<"$listing"
+	if [[ "$count" -eq 0 ]]; then
+		echo "ERROR: no action test suites to run are tracked in git" >&2
+		rc=1
+	fi
+	if [[ "$rc" -eq 0 ]]; then
+		echo "Action test suites: $count run, $skipped left to CI"
+	fi
+	return "$rc"
+}
+
 # Sourced (by the test-script-modes tests): define the checks, run nothing.
 if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
 	return 0
@@ -52,6 +111,9 @@ check_test_script_modes "$ROOT" || status=1
 
 echo "Running: test suite wiring check"
 "$ROOT/scripts/bin/check-test-suites-run" "$ROOT" || status=1
+
+echo "Running: action test suites"
+run_action_suites "$ROOT" || status=1
 
 for t in "$ROOT"/scripts/tests/*.test.sh; do
 	echo "Running: $t"
