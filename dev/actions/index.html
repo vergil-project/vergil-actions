@@ -5087,6 +5087,8 @@
       
         
       
+        
+      
     
     
     
@@ -5318,6 +5320,34 @@
     
   
     ci/evidence/emit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ci-evidence-reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/reports
   
 
     
@@ -7292,6 +7322,10 @@ definition and optional supporting scripts.</p>
 <li><strong><a href="ci-evidence-emit/">ci/evidence/emit</a></strong>
   — Writes a gate's <code>evidence.json</code> and uploads it with the gate's report files
   as a <code>ci-evidence-&lt;gate&gt;</code> artifact for the release-time evidence bundle.</li>
+<li><strong><a href="ci-evidence-reports/">ci/evidence/reports</a></strong>
+  — Holds each language's <code>test</code> and <code>audit</code> report files and stages a matrix
+  leg's reports for the evidence artifact, failing when a passing gate wrote
+  none; auto-wired into <code>ci-test</code> and <code>ci-audit</code>.</li>
 </ul>
 <h3 id="cd">CD<a class="headerlink" href="#cd" title="Permanent link">&para;</a></h3>
 <ul>

@@ -5082,6 +5082,8 @@
       
         
       
+        
+      
     
     
     
@@ -5310,6 +5312,34 @@
     
   
     ci/evidence/emit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-evidence-reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/reports
   
 
     
@@ -6534,6 +6564,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#evidence-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence reports
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7291,6 +7332,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#evidence-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence reports
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7421,6 +7473,14 @@ thin: they pass only <code>language:</code> and <code>container-suffix:</code>.<
 </tr>
 </tbody>
 </table>
+<h2 id="evidence-reports">Evidence reports<a class="headerlink" href="#evidence-reports" title="Permanent link">&para;</a></h2>
+<p>Each <code>unit</code> leg stages the language's test reports for the
+<code>ci-evidence-test</code> artifact: <code>coverage.xml</code> and <code>junit.xml</code> for Python, and
+<code>coverage.xml</code> for Rust. The names come from
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose tests
+passed but wrote no report fails. A language with no test report contract
+yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
+release-time evidence gate decides.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">test</span><span class="p">:</span>
