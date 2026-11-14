@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Install the Debian packages a repo declares in [container].system-packages.
+# Install the Ubuntu packages a repo declares in [container].system-packages.
 #
 # Reads the apt install snippet from `vrg-container-system-packages
 # --install-script` — the single speller shared with the local dev-container
