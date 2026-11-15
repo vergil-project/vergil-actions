@@ -24,6 +24,8 @@ actions/                          Composite GitHub Actions
   cd/release/                     Release inputs, tagging, registry publish,
                                   CI evidence gate and attach
   ci/evidence/emit/               Per-gate CI evidence artifact
+  ci/evidence/reports/            Per-language test/audit report contract
+                                  and staging
   ci/matrix/                      Per-version job matrix from vrg-ci-resolve
   ci/security/                    CodeQL and Semgrep scanning
   ci/toolchain/                   Pin (pin-python) and assert the leg toolchain
