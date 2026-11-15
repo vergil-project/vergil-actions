@@ -42,6 +42,10 @@ name: Smoke - setup/vergil outputs
 #         evidence job's needs and its "Assert all required legs succeeded"
 #         RESULTS, so a failed or skipped stage fails quality / evidence
 #         (epic vergil-project/.github#488);
+#       - ci/evidence security-tools.test.sh: ci-security's evidence job
+#         names every scanner whose SARIF partial it bundles in the
+#         security gate's tools, codeql only when its job passed, and two
+#         broken copies of the workflow fail the check (issue #1215);
 #       - ci/evidence/reports reports.sh: each language's test and audit
 #         report files (Rust's cargo-deny.json, not Python's names), staged
 #         version-suffixed; a passing gate with a missing or empty report, or
@@ -130,6 +134,9 @@ jobs:
       - name: Run ci/evidence gate harness
         shell: bash
         run: bash actions/ci/evidence/tests/gate.test.sh
+      - name: Run ci/evidence security-tools harness
+        shell: bash
+        run: bash actions/ci/evidence/tests/security-tools.test.sh
       - name: Run ci/evidence/reports reports.sh harness
         shell: bash
         run: bash actions/ci/evidence/reports/tests/reports.test.sh

@@ -61,7 +61,9 @@ GitHub names each check `<caller job> / <job>`. With the caller job keyed
 | `evidence` | `security / evidence` | `trivy` and `semgrep` succeeded, and `codeql` succeeded or was skipped |
 
 The `evidence` job downloads each scanner's SARIF partial and emits the
-consolidated `ci-evidence-security` artifact. If any scanner fails, it does
+consolidated `ci-evidence-security` artifact. Its `evidence.json` names the
+scanners whose SARIF it holds in `tools`: `trivy` and `semgrep` always, and
+`codeql` when the `codeql` job ran and passed. If any scanner fails, it does
 not run, so no security evidence is emitted. It is not a required check; see
 [Required Checks](../ci-gates/required-checks.md) for which of these checks
 branch protection requires.
