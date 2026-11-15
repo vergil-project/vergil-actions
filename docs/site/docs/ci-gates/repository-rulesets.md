@@ -4,13 +4,16 @@
 
 All managed repositories use GitHub's **repository rulesets** (not legacy branch
 protection rules) to enforce merge requirements. Every repository has the same
-three rulesets:
+five rulesets, as vergil-tooling's desired state defines them (see its
+[config audit reference](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#github-checks-rulesets)):
 
 | Ruleset | Target | Purpose |
 | --------- | -------- | --------- |
 | Branch protection | `main`, `develop` | PR requirements, deletion and force-push prevention |
 | CI gates | `main`, `develop` | Required status checks |
-| Tag protection | `v*.*.*` tags | Protect semver release tags; allow rolling minor tags |
+| Tag protection | `v*.*.*` and `v*.*` tags | Protect release tags and rolling minor tags |
+| Rolling tag branch names | `refs/heads/v[0-9]*` | Block branches named like a rolling tag |
+| Automation branches | `refs/heads/automation/**` | Only the org automation App and the repository Admin role may create, update or force-push these branches |
 
 ## Branch protection ruleset
 
@@ -110,36 +113,76 @@ merge through `quality / evidence`, as does `quality / custom`.
 
 ## Tag protection ruleset
 
-Applies to all tags matching `v*.*.*` (full semver tags such as `v1.1.1` or
-`v2.0.0`). Prevents unauthorized modification of release tags while allowing
-the publish workflow to create and update rolling minor tags (e.g., `v1.1`).
+Applies to the full semver release tags (such as `v1.1.1` or `v2.0.0`) and to
+the rolling minor tags (such as `v1.1`) that consumers follow as their deploy
+ref. Only the repository Admin role may move or delete either.
 
 | Setting | Value |
 | --------- | ------- |
-| Pattern | `refs/tags/v*.*.*` |
+| Patterns | `refs/tags/v*.*.*`, `refs/tags/v*.*` |
 | Block deletion | Yes |
 | Block non-fast-forward | Yes |
 | Block update | Yes |
-| Bypass actors | Repository admin (`actor_id: 5`, `bypass_mode: always`) |
+| Bypass actors | Repository Admin role (`RepositoryRole`, `actor_id: 5`, `bypass_mode: always`) |
 
-### Why `v*.*.*` instead of `v*`
+### Why both `v*.*.*` and `v*.*`
 
-The publish workflow's `tag-and-release` action creates a rolling minor tag
-(e.g., `v1.1`) that always points to the latest patch release. Consumers
-reference these rolling tags to receive automatic patch updates. The broader
-`v*` pattern matches both `v1.1.1` (semver) and `v1.1` (rolling), which causes
-the rolling tag force-push to fail with a repository rule violation.
-
-The `v*.*.*` pattern requires three dot-separated components, so it protects
-immutable release tags (`v1.1.1`, `v1.1.2`) while leaving rolling tags (`v1.1`)
-unprotected for the workflow to update.
+A rolling minor tag (e.g., `v1.1`) always points to the latest patch release,
+and consumers reference it to receive patch updates automatically. A consumer
+that follows `v1.1` runs whatever the tag points to, so moving it is as
+sensitive as moving a release tag. `v*.*.*` covers the immutable release tags
+(`v1.1.1`, `v1.1.2`); `v*.*` covers the rolling tags. The publish workflow's
+`tag-and-release` action no longer moves rolling tags: `vrg-promote` moves
+them in the release orchestrator's `promote` phase (see
+[`cd/release/tag-and-release`](../actions/cd-release-tag-and-release.md)).
 
 ### Admin bypass
 
-The repository admin bypass exists as a safety valve for cleanup operations
-(e.g., removing a tag created against the wrong branch). Normal publish
-operations do not require admin bypass — the rolling tag update succeeds because
-rolling tags fall outside the `v*.*.*` pattern.
+The repository Admin role is the ruleset's only bypass actor. It is the human
+release identity, so moving a rolling tag to a new patch release and cleanup
+operations (e.g., removing a tag created against the wrong branch) both run
+under it. No other identity, the agent Apps and the automation App included,
+can move or delete a protected tag.
+
+## Rolling tag branch names ruleset
+
+Blocks any branch whose name has the shape of a rolling tag. Some consumers,
+Claude Code among them, resolve a ref such as `v2.1` as a branch before a tag
+(git's own short-name lookup prefers the tag), so for them the rolling tag's
+protection holds only while no branch of that name can exist.
+
+| Setting | Value |
+| --------- | ------- |
+| Pattern | `refs/heads/v[0-9]*` |
+| Restrict creation | Yes |
+| Restrict update | Yes |
+| Block non-fast-forward | Yes |
+| Bypass actors | None |
+
+The pattern is a `v` followed by a digit, so names such as `vm-…` stay
+available. Deletion is not restricted, so a stray branch of that shape can
+still be removed.
+
+## Automation branches ruleset
+
+Mechanized jobs, such as the nightly `github-config` job, push to
+`automation/<job>/<run-id>` branches and open a PR that merges through GitHub
+auto-merge with no human in the loop. Without this ruleset any identity with
+Contents write, every agent App included, could push to such a branch and have
+its content merged into `develop`.
+
+| Setting | Value |
+| --------- | ------- |
+| Pattern | `refs/heads/automation/**` |
+| Restrict creation | Yes |
+| Restrict update | Yes |
+| Block non-fast-forward | Yes |
+| Bypass actors | The org automation App (`Integration`, its per-org App ID, `bypass_mode: always`) and the repository Admin role (`RepositoryRole`, `actor_id: 5`, `bypass_mode: always`) |
+
+Deletion is not restricted: automation branches are temporary, removed by
+delete-on-merge and by each run of their job. The App's numeric ID differs per
+org; `vrg-github-repo-config` looks it up from the App's slug in the
+`VRG_AUTOMATION_APP` Actions variable.
 
 ## Adding a new required check
 
@@ -162,8 +205,9 @@ When adding a new CI job that should block merges:
 
 ## Branch targeting
 
-All rulesets use explicit branch references (`refs/heads/main`,
-`refs/heads/develop`). **Never use `~DEFAULT_BRANCH`** in ruleset conditions.
+The rulesets that protect `main` and `develop` use explicit branch references
+(`refs/heads/main`, `refs/heads/develop`). **Never use `~DEFAULT_BRANCH`** in
+ruleset conditions.
 
 The `~DEFAULT_BRANCH` macro resolves to the repository's configured default
 branch. In this project family, the default branch is `develop` (not `main`),
@@ -181,7 +225,8 @@ GitHub to them through the API:
 # Exit 0 = compliant, 1 = drift, 2 = the audit could not complete.
 vrg-github-repo-config audit --repo vergil-project/{repo}
 
-# Show the same differences without failing (always exits 0)
+# Report the GitHub configuration differences only. Exit 0 whether or not
+# there is drift; 2 = it could not complete or a setting is not checked.
 vrg-github-repo-config diff --repo vergil-project/{repo}
 
 # Reconcile the GitHub configuration, including the rulesets, and open one
