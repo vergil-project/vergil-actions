@@ -93,7 +93,7 @@ jobs:
 
 ## Extension points
 
-Every job runs a `vrg-validate` check: `common` runs
+Each of the four check jobs runs a `vrg-validate` check: `common` runs
 `vrg-validate --check common`, `custom` runs `vrg-validate --check custom`,
 and each `lint` and `typecheck` leg runs `vrg-validate --check lint` or
 `vrg-validate --check typecheck` for the language. The lint and typecheck
