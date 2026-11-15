@@ -7621,9 +7621,15 @@ full behavior, and the
 <a href="https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/"><code>container-config</code> reference</a>
 on the vergil-tooling side for the <code>[container].build-command</code> key itself.</p>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
-<p>The <code>unit</code> job provides a version matrix scaffold. Consuming repositories
-customize it by forking the workflow or by running language-specific test
-commands in a separate workflow.</p>
+<p>Each <code>unit</code> leg runs the language's real test suite through
+<code>vrg-validate --check test</code>. The test commands live in vergil-tooling, not in
+this workflow. The leg then stages its reports through
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a> (see
+<a href="#evidence-reports">Evidence reports</a>), whose table is the one place this
+repository records a language's test report names. Giving a language without
+a contract yet (Go, C++, TypeScript) test evidence means adding its entry to
+that table alongside the vergil-tooling gate command that writes the reports;
+the workflow itself needs no change.</p>
 
 
 

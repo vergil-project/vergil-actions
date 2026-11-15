@@ -7622,10 +7622,22 @@ partial and bundled into <code>ci-evidence-quality</code> as <code>quality-custo
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">container-suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 </code></pre></div>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
-<p>The <code>lint</code> and <code>typecheck</code> jobs provide a version matrix scaffold. Consuming
-repositories customize these jobs by forking the workflow or by running
-language-specific tooling in a separate workflow that calls these as a
-baseline.</p>
+<p>Each of the four check jobs runs a <code>vrg-validate</code> check: <code>common</code> runs
+<code>vrg-validate --check common</code>, <code>custom</code> runs <code>vrg-validate --check custom</code>,
+and each <code>lint</code> and <code>typecheck</code> leg runs <code>vrg-validate --check lint</code> or
+<code>vrg-validate --check typecheck</code> for the language. The lint and typecheck
+commands live in vergil-tooling, not in this workflow, so a language's checks
+change there.</p>
+<p>The quality gate is not part of the
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a> contract, which
+covers only <code>test</code> and <code>audit</code>. <code>quality / evidence</code> always carries the
+<code>common</code> and <code>custom</code> transcripts (<code>quality-common.log</code> and
+<code>quality-custom.log</code>), for every language. The lint and typecheck legs add a
+report only for Python, and only when vergil-tooling writes it:
+<code>quality-ruff.json</code> from ruff and <code>quality-mypy.xml</code> from mypy, staged per
+version. When the file is absent the leg uploads nothing and logs a warning,
+without failing. The legs look only for these two Python file names, so
+other languages' lint and typecheck legs stage no report.</p>
 
 
 
