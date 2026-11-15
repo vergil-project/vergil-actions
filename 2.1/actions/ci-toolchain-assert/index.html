@@ -855,6 +855,8 @@
       
         
       
+        
+      
     
     
     
@@ -907,6 +909,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.76/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.76
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7424,8 +7454,11 @@
 <p>Fails a CI leg when the interpreter or toolchain actually running it is not the
 version CI resolved for it. A repository's own files can choose the interpreter
 behind Vergil's back (for Python, <code>.python-version</code> or uv's
-<code>python-preference</code>), and a leg would then pass on a version it never ran. This
-action is the backstop for that.</p>
+<code>python-preference</code>; for Rust, a <code>rust-toolchain.toml</code> or a rustup override),
+and a leg would then pass on a version it never ran. This action is the
+backstop for that. For Rust, the image already pins rustup to its own release
+(<code>RUSTUP_TOOLCHAIN</code>, with auto-install off) and <code>vrg-validate</code> rejects a
+<code>rust-toolchain.toml</code>, so the assertion is the last check behind those.</p>
 <p>This action is <strong>wired automatically</strong> into every matrix leg of <code>ci-quality</code>,
 <code>ci-audit</code> and <code>ci-test</code>, as the <code>assert-toolchain</code> step. It runs after the
 dependency install. For Python, an earlier step in the leg
@@ -7461,7 +7494,7 @@ not add it themselves.</p>
 <td><code>expected</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>The version CI resolved for this leg, as <code>x.y</code> (e.g. <code>3.14</code>, <code>1.26</code>). Ignored for languages without an assertion.</td>
+<td>The version CI resolved for this leg, as <code>x.y</code> (e.g. <code>3.14</code>, <code>1.26</code>, <code>1.100</code>). Ignored for languages without an assertion.</td>
 </tr>
 </tbody>
 </table>
