@@ -1,11 +1,8 @@
 # Tooling Dependencies
 
-> **Note**: This document is superseded by the
-> [MkDocs documentation site](https://wphillipmoore.github.io/vergil-actions/development/environment-and-tooling/).
-> It is retained for backward compatibility.
-
-## Required tools
-
-All validation tools (actionlint, shellcheck, markdownlint, yamllint) are
-pre-installed in the `ghcr.io/vergil-project/dev-base:latest` container image
-and run via `vrg-container-run`. No manual host installs needed.
+The validation tools and the container image they run in are described on
+the
+[Environment and Tooling](https://vergil-project.github.io/vergil-actions/development/environment-and-tooling/)
+page of the documentation site
+([source](../site/docs/development/environment-and-tooling.md)). This page
+is kept as a pointer so that existing links still resolve.
