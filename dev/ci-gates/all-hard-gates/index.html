@@ -7622,10 +7622,11 @@ and bundles it into <code>ci-evidence-quality</code>. A repo with no custom vali
 still ships the file, holding the one "no custom validator" line
 (<a href="https://github.com/vergil-project/.github/issues/488">vergil-project/.github#488</a>).</p>
 <div class="admonition note">
-<p class="admonition-title">Current residuals</p>
-<p>Two known gaps remain open, tracked as limitations rather than done: the
-manifest <code>metrics</code> object is currently empty (<code>{}</code>), and the security
-<code>evidence.json</code> <code>tools</code> array is currently empty (<code>[]</code>).</p>
+<p class="admonition-title">Current residual</p>
+<p>One known gap remains open, tracked as a limitation rather than done: the
+manifest <code>metrics</code> object is currently empty (<code>{}</code>). The security
+<code>evidence.json</code> <code>tools</code> array names the scanners whose SARIF the gate
+holds (<a href="https://github.com/vergil-project/vergil-actions/issues/1215">vergil-project/vergil-actions#1215</a>).</p>
 </div>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
