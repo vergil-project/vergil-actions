@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.75] - 2026-11-15
+
+### Bug fixes
+
+- run the action test suites in vrg-validate (#1224)
+- name the security gate's scanners in its evidence tools (#1226)
+
+### CI
+
+- bound build-index with a 60-minute timeout (#1225)
+
+### Documentation
+
+- name prod-base as the validation image and use vrg-container-docs (#1104)
+- say Ubuntu, not Debian, in install.sh's header comment (#1152)
+
 ## [2.1.74] - 2026-11-14
 
 ### Bug fixes
