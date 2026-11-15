@@ -200,14 +200,16 @@ and bundles it into `ci-evidence-quality`. A repo with no custom validator
 still ships the file, holding the one "no custom validator" line
 ([vergil-project/.github#488]).
 
-!!! note "Current residuals"
-    Two known gaps remain open, tracked as limitations rather than done: the
-    manifest `metrics` object is currently empty (`{}`), and the security
-    `evidence.json` `tools` array is currently empty (`[]`).
+!!! note "Current residual"
+    One known gap remains open, tracked as a limitation rather than done: the
+    manifest `metrics` object is currently empty (`{}`). The security
+    `evidence.json` `tools` array names the scanners whose SARIF the gate
+    holds ([vergil-project/vergil-actions#1215]).
 
 [vergil-project/.github#140]: https://github.com/vergil-project/.github/issues/140
 [vergil-project/vergil-tooling#2812]: https://github.com/vergil-project/vergil-tooling/issues/2812
 [vergil-project/vergil-actions#925]: https://github.com/vergil-project/vergil-actions/issues/925
+[vergil-project/vergil-actions#1215]: https://github.com/vergil-project/vergil-actions/issues/1215
 [vergil-project/.github#488]: https://github.com/vergil-project/.github/issues/488
 
 ## See also

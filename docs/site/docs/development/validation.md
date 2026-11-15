@@ -8,11 +8,24 @@ vrg-container-run -- vrg-validate
 
 This runs all validation inside a per-branch cached container image that
 `vrg-container-run` builds on first use from
-`ghcr.io/vergil-project/dev-base:latest`: vergil-tooling is installed into
+`ghcr.io/vergil-project/prod-base:latest`: vergil-tooling is installed into
 it at the version pinned in `vergil.toml` (`[dependencies] vergil`), and
 the cache is rebuilt automatically when `vergil.toml` or the lockfiles
 change. No manual host installs are needed beyond the vergil-tooling host
 tool.
+
+## Documentation build
+
+Build and preview the docs site with `vrg-container-docs`, which runs
+mkdocs in the same prod-base image:
+
+```bash
+vrg-container-docs build --strict     # Strict docs build
+vrg-container-docs serve              # Preview docs locally on port 8000
+```
+
+`vrg-container-run` publishes no port, so a `mkdocs serve` run through it
+is not reachable from a host browser.
 
 ## Architecture
 
@@ -25,8 +38,8 @@ shellcheck, yamllint, and actionlint.
 
 After the common checks, `vrg-validate` runs the repository's own
 validator, `scripts/bin/validate-custom` (in CI, the `quality / custom`
-job). It runs the two checks below, then the checks' own tests in
-`scripts/tests/`.
+job). It runs the two checks below, then the action test suites, then the
+checks' own tests in `scripts/tests/`.
 
 ### Test script modes
 
@@ -47,9 +60,21 @@ runs. A path named only in a comment or outside a workflow does not count.
 The check reads the workflow text, so a step whose job never runs still
 counts.
 
+### Action test suites
+
+`validate-custom` then runs every `*.test.sh` tracked in git directly in an
+`actions/**/tests/` directory, from the repo root as CI does, and fails
+naming each suite that fails. A suite listed in `CI_ONLY_ACTION_SUITES`, at
+the top of `scripts/bin/validate-custom`, is skipped and named with its
+reason. It stays CI-only because it reaches a live service or needs a tool
+the validation image lacks. Each entry must name a tracked suite, so a
+renamed or removed suite fails the run until its entry is updated. A new
+suite runs in validation by default. The workflow that runs it in CI is
+still needed for the wiring check above.
+
 ## Tooling
 
-The static validation tools are baked into the dev-base container image:
+The static validation tools are baked into the prod-base container image:
 
 | Tool | Purpose |
 | --- | --- |

@@ -231,8 +231,18 @@ jobs:
           path: security-sarif
           merge-multiple: true
 
+      # The tools are the scanners whose SARIF the gate holds (issue #1215).
+      # This job runs only when trivy and semgrep passed, so both are always
+      # named; codeql is named only when its job ran and passed, never when
+      # it was skipped (no GHAS, or run-codeql false). Each scanner job that
+      # uploads a ci-evidence-security-part-<scanner> partial must appear
+      # here; actions/ci/evidence/tests/security-tools.test.sh checks it.
       - name: Emit ci-evidence-security artifact
         uses: ./actions/ci/evidence/emit
         with:
           gate: security
           files: security-sarif/*.sarif
+          tools: >-
+            ${{ needs.codeql.result == 'success' &&
+            '[{"name":"codeql"},{"name":"trivy"},{"name":"semgrep"}]' ||
+            '[{"name":"trivy"},{"name":"semgrep"}]' }}
