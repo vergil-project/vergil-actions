@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.76] - 2026-11-15
+
+### Documentation
+
+- describe the Rust assertion in the actions index and the assert page's intro (#1232)
+
+### Features
+
+- require junit.xml and list cargo-nextest for the rust test gate (#1234)
+
 ## [2.1.75] - 2026-11-15
 
 ### Bug fixes
