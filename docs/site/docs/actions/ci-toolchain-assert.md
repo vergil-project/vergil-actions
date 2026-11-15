@@ -3,8 +3,11 @@
 Fails a CI leg when the interpreter or toolchain actually running it is not the
 version CI resolved for it. A repository's own files can choose the interpreter
 behind Vergil's back (for Python, `.python-version` or uv's
-`python-preference`), and a leg would then pass on a version it never ran. This
-action is the backstop for that.
+`python-preference`; for Rust, a `rust-toolchain.toml` or a rustup override),
+and a leg would then pass on a version it never ran. This action is the
+backstop for that. For Rust, the image already pins rustup to its own release
+(`RUSTUP_TOOLCHAIN`, with auto-install off) and `vrg-validate` rejects a
+`rust-toolchain.toml`, so the assertion is the last check behind those.
 
 This action is **wired automatically** into every matrix leg of `ci-quality`,
 `ci-audit` and `ci-test`, as the `assert-toolchain` step. It runs after the
@@ -29,7 +32,7 @@ not add it themselves.
 | Input | Required | Default | Description |
 | ----- | -------- | ------- | ----------- |
 | `language` | Yes | — | Primary language of the calling repository. |
-| `expected` | Yes | — | The version CI resolved for this leg, as `x.y` (e.g. `3.14`, `1.26`). Ignored for languages without an assertion. |
+| `expected` | Yes | — | The version CI resolved for this leg, as `x.y` (e.g. `3.14`, `1.26`, `1.100`). Ignored for languages without an assertion. |
 
 ## Behavior
 
