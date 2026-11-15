@@ -93,7 +93,20 @@ jobs:
 
 ## Extension points
 
-The `lint` and `typecheck` jobs provide a version matrix scaffold. Consuming
-repositories customize these jobs by forking the workflow or by running
-language-specific tooling in a separate workflow that calls these as a
-baseline.
+Every job runs a `vrg-validate` check: `common` runs
+`vrg-validate --check common`, `custom` runs `vrg-validate --check custom`,
+and each `lint` and `typecheck` leg runs `vrg-validate --check lint` or
+`vrg-validate --check typecheck` for the language. The lint and typecheck
+commands live in vergil-tooling, not in this workflow, so a language's checks
+change there.
+
+The quality gate is not part of the
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md) contract, which
+covers only `test` and `audit`. `quality / evidence` always carries the
+`common` and `custom` transcripts (`quality-common.log` and
+`quality-custom.log`), for every language. The lint and typecheck legs add a
+report only for Python, and only when vergil-tooling writes it:
+`quality-ruff.json` from ruff and `quality-mypy.xml` from mypy, staged per
+version. When the file is absent the leg uploads nothing and logs a warning,
+without failing. The legs look only for these two Python file names, so
+other languages' lint and typecheck legs stage no report.
