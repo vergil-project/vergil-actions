@@ -853,6 +853,8 @@
       
         
       
+        
+      
     
     
     
@@ -905,6 +907,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.75/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.75
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7549,7 +7579,9 @@ the incident that motivated this note.</p>
 </tbody>
 </table>
 <p>The <code>evidence</code> job downloads each scanner's SARIF partial and emits the
-consolidated <code>ci-evidence-security</code> artifact. If any scanner fails, it does
+consolidated <code>ci-evidence-security</code> artifact. Its <code>evidence.json</code> names the
+scanners whose SARIF it holds in <code>tools</code>: <code>trivy</code> and <code>semgrep</code> always, and
+<code>codeql</code> when the <code>codeql</code> job ran and passed. If any scanner fails, it does
 not run, so no security evidence is emitted. It is not a required check; see
 <a href="../../ci-gates/required-checks/">Required Checks</a> for which of these checks
 branch protection requires.</p>

@@ -853,6 +853,8 @@
       
         
       
+        
+      
     
     
     
@@ -905,6 +907,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.75/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.75
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7182,6 +7212,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#documentation-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7220,6 +7261,17 @@
     <span class="md-ellipsis">
       
         Test suite wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-test-suites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action test suites
       
     </span>
   </a>
@@ -7324,6 +7376,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#documentation-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7362,6 +7425,17 @@
     <span class="md-ellipsis">
       
         Test suite wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-test-suites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action test suites
       
     </span>
   </a>
@@ -7407,11 +7481,19 @@
 </code></pre></div>
 <p>This runs all validation inside a per-branch cached container image that
 <code>vrg-container-run</code> builds on first use from
-<code>ghcr.io/vergil-project/dev-base:latest</code>: vergil-tooling is installed into
+<code>ghcr.io/vergil-project/prod-base:latest</code>: vergil-tooling is installed into
 it at the version pinned in <code>vergil.toml</code> (<code>[dependencies] vergil</code>), and
 the cache is rebuilt automatically when <code>vergil.toml</code> or the lockfiles
 change. No manual host installs are needed beyond the vergil-tooling host
 tool.</p>
+<h2 id="documentation-build">Documentation build<a class="headerlink" href="#documentation-build" title="Permanent link">&para;</a></h2>
+<p>Build and preview the docs site with <code>vrg-container-docs</code>, which runs
+mkdocs in the same prod-base image:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>vrg-container-docs<span class="w"> </span>build<span class="w"> </span>--strict<span class="w">     </span><span class="c1"># Strict docs build</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>vrg-container-docs<span class="w"> </span>serve<span class="w">              </span><span class="c1"># Preview docs locally on port 8000</span>
+</code></pre></div>
+<p><code>vrg-container-run</code> publishes no port, so a <code>mkdocs serve</code> run through it
+is not reachable from a host browser.</p>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <p><code>vrg-validate</code> reads <code>primary_language</code> from <code>vergil.toml</code> and runs
 common checks followed by language-specific checks from the built-in command
@@ -7420,8 +7502,8 @@ shellcheck, yamllint, and actionlint.</p>
 <h2 id="custom-checks">Custom checks<a class="headerlink" href="#custom-checks" title="Permanent link">&para;</a></h2>
 <p>After the common checks, <code>vrg-validate</code> runs the repository's own
 validator, <code>scripts/bin/validate-custom</code> (in CI, the <code>quality / custom</code>
-job). It runs the two checks below, then the checks' own tests in
-<code>scripts/tests/</code>.</p>
+job). It runs the two checks below, then the action test suites, then the
+checks' own tests in <code>scripts/tests/</code>.</p>
 <h3 id="test-script-modes">Test script modes<a class="headerlink" href="#test-script-modes" title="Permanent link">&para;</a></h3>
 <p>The first check fails naming each <code>*.test.sh</code> tracked in git whose mode is
 not <code>100755</code> (executable). It checks the mode git records, not the one on
@@ -7437,8 +7519,18 @@ or when it sits directly in <code>scripts/tests/</code>, whose suites <code>vali
 runs. A path named only in a comment or outside a workflow does not count.
 The check reads the workflow text, so a step whose job never runs still
 counts.</p>
+<h3 id="action-test-suites">Action test suites<a class="headerlink" href="#action-test-suites" title="Permanent link">&para;</a></h3>
+<p><code>validate-custom</code> then runs every <code>*.test.sh</code> tracked in git directly in an
+<code>actions/**/tests/</code> directory, from the repo root as CI does, and fails
+naming each suite that fails. A suite listed in <code>CI_ONLY_ACTION_SUITES</code>, at
+the top of <code>scripts/bin/validate-custom</code>, is skipped and named with its
+reason. It stays CI-only because it reaches a live service or needs a tool
+the validation image lacks. Each entry must name a tracked suite, so a
+renamed or removed suite fails the run until its entry is updated. A new
+suite runs in validation by default. The workflow that runs it in CI is
+still needed for the wiring check above.</p>
 <h2 id="tooling">Tooling<a class="headerlink" href="#tooling" title="Permanent link">&para;</a></h2>
-<p>The static validation tools are baked into the dev-base container image:</p>
+<p>The static validation tools are baked into the prod-base container image:</p>
 <table>
 <thead>
 <tr>
