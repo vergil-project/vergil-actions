@@ -132,21 +132,36 @@ case_stage python-test-stages-coverage-and-junit python test \
   "coverage-1.0.xml junit-1.0.xml " coverage.xml junit.xml
 case_stage python-audit-stages-pip-audit-and-licenses python audit \
   "licenses-1.0.json pip-audit-1.0.json " pip-audit.json licenses.json
-case_stage rust-test-stages-coverage rust test \
-  "coverage-1.0.xml " coverage.xml
+case_stage rust-test-stages-coverage-and-junit rust test \
+  "coverage-1.0.xml junit-1.0.xml " coverage.xml junit.xml
 case_stage rust-audit-stages-cargo-deny rust audit \
   "cargo-deny-1.0.json " cargo-deny.json
 
-# The Rust test gate writes no junit.xml yet (vergil-tooling#4394 N0.1), so a
-# passing Rust test leg holding only coverage.xml passes and raises no error.
-name="rust-test-needs-no-junit"
+# The Rust test gate writes junit.xml through cargo-nextest (vergil-tooling#4395,
+# vergil-actions#1216), so a passing Rust test leg holding only coverage.xml
+# fails naming junit.xml, and still stages the coverage.xml it has.
+name="rust-test-passing-without-junit-fails-naming-it"
 workspace "$name" coverage.xml
 run_reports stage rust test 1.85 success
-if assert_staged "$name" "coverage-1.85.xml "; then
-  if grep -qF -- "::error::" <<<"$stderr"; then
-    fail_case "$name" "raised an ::error::: ${stderr}"
+if assert_error "$name" "rust test gate passed but wrote no junit.xml"; then
+  if grep -F '::error::' <<<"$stderr" | grep -F "coverage.xml" >/dev/null; then
+    fail_case "$name" "named a report that exists: ${stderr}"
+  elif [ "$(staged)" != "coverage-1.85.xml " ]; then
+    fail_case "$name" "staged '$(staged)', expected 'coverage-1.85.xml '"
   else
     pass_case "$name"
+  fi
+fi
+
+# A failed Rust test leg that wrote no junit.xml only notes it.
+name="rust-test-failed-without-junit-notes-it"
+workspace "$name" coverage.xml
+run_reports stage rust test 1.85 failure
+if assert_staged "$name" "coverage-1.85.xml "; then
+  if grep -qF "::notice::" <<<"$stdout" && grep -qF "junit.xml" <<<"$stdout"; then
+    pass_case "$name"
+  else
+    fail_case "$name" "no ::notice:: naming junit.xml; stdout: ${stdout}"
   fi
 fi
 
@@ -168,7 +183,7 @@ fi
 name="undeclared-files-are-not-staged"
 workspace "$name" coverage.xml junit.xml quality-ruff.json cargo-deny.json
 run_reports stage rust test 1.85 success
-if assert_staged "$name" "coverage-1.85.xml "; then
+if assert_staged "$name" "coverage-1.85.xml junit-1.85.xml "; then
   pass_case "$name"
 fi
 
@@ -385,7 +400,7 @@ case_tools() {
 
 case_tools python test '[{"name":"pytest"},{"name":"coverage.py"}]'
 case_tools python audit '[{"name":"pip-audit"},{"name":"pip-licenses"}]'
-case_tools rust test '[{"name":"cargo-llvm-cov"}]'
+case_tools rust test '[{"name":"cargo-llvm-cov"},{"name":"cargo-nextest"}]'
 case_tools rust audit '[{"name":"cargo-deny"}]'
 
 # A fleet language with no contract gets an empty tools list and the warning,

@@ -13,13 +13,14 @@ must be the ones the language's gate commands write:
 | -------- | ---- | ------------ | ----- |
 | `python` | `test` | `coverage.xml`, `junit.xml` | pytest, coverage.py |
 | `python` | `audit` | `pip-audit.json`, `licenses.json` | pip-audit, pip-licenses |
-| `rust` | `test` | `coverage.xml` | cargo-llvm-cov |
+| `rust` | `test` | `coverage.xml`, `junit.xml` | cargo-llvm-cov, cargo-nextest |
 | `rust` | `audit` | `cargo-deny.json` | cargo-deny |
 
-The Rust test gate writes no `junit.xml` yet: stable `cargo test` has no JUnit
-output, and vergil-tooling has not chosen a reporter. It joins the table once
-the gate writes it. `cargo-deny.json` holds JSON Lines, one object per line; it
-is staged as written.
+The Rust test gate writes `junit.xml` through cargo-nextest. A repository
+pinned to a vergil-tooling release whose Rust test gate does not write it
+fails its passing test legs here, on the missing `junit.xml`.
+`cargo-deny.json` holds JSON Lines, one object per line; it is staged as
+written.
 
 This table, in `actions/ci/evidence/reports/reports.sh`, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's

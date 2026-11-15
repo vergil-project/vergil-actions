@@ -11,18 +11,19 @@
 #   language  gate   report files                  tools
 #   python    test   coverage.xml junit.xml        pytest, coverage.py
 #   python    audit  pip-audit.json licenses.json  pip-audit, pip-licenses
-#   rust      test   coverage.xml                  cargo-llvm-cov
+#   rust      test   coverage.xml junit.xml        cargo-llvm-cov, cargo-nextest
 #   rust      audit  cargo-deny.json               cargo-deny
 #
-# The Rust test gate writes no junit.xml yet: stable `cargo test` has no JUnit
-# output, and choosing a reporter is vergil-tooling#4394's open item N0.1.
-# Requiring it here would fail every passing Rust test leg. Add it, and its
-# tool, once the gate writes it (vergil-actions#1216). cargo-deny.json holds
-# JSON Lines (one object per line); it is staged as written, never parsed.
+# The Rust test gate writes junit.xml through cargo-nextest from
+# vergil-tooling#4395 on (vergil-actions#1216); a release of vergil-tooling
+# without it writes none, so a passing Rust test leg on such a pin fails here.
+# cargo-deny.json holds JSON Lines (one object per line); it is staged as
+# written, never parsed.
 #
 # This table is the single place vergil-actions records the contract. The
-# producer side is vergil-tooling's lib/languages.py (PYTHON_REPORT_FILES,
-# and the Rust report names of vergil-tooling#4394); keep the two in step.
+# producer side is vergil-tooling's lib/languages.py (PYTHON_REPORT_FILES and
+# RUST_REPORT_FILES); keep the two in step. Deriving this table from
+# vergil-tooling instead is vergil-tooling#4416.
 #
 # A fleet language with no entry here (today go, cpp and typescript) writes no
 # report the harvester accepts yet. Failing its leg would turn every PR of
@@ -102,7 +103,7 @@ warn_no_contract() {
 report_files() {
   case "$1/$2" in
     python/test) printf '%s\n' coverage.xml junit.xml ;;
-    rust/test) printf '%s\n' coverage.xml ;;
+    rust/test) printf '%s\n' coverage.xml junit.xml ;;
     python/audit) printf '%s\n' pip-audit.json licenses.json ;;
     rust/audit) printf '%s\n' cargo-deny.json ;;
     *)
@@ -125,7 +126,7 @@ report_tools() {
   case "$1/$2" in
     python/test) printf '%s\n' '[{"name":"pytest"},{"name":"coverage.py"}]' ;;
     python/audit) printf '%s\n' '[{"name":"pip-audit"},{"name":"pip-licenses"}]' ;;
-    rust/test) printf '%s\n' '[{"name":"cargo-llvm-cov"}]' ;;
+    rust/test) printf '%s\n' '[{"name":"cargo-llvm-cov"},{"name":"cargo-nextest"}]' ;;
     rust/audit) printf '%s\n' '[{"name":"cargo-deny"}]' ;;
   esac
 }
