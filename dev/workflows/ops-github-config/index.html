@@ -7729,6 +7729,10 @@ the same pattern:</p>
 <li>Checks out the repository and installs vergil-tooling.</li>
 <li>Runs its command with the App token as <code>GH_TOKEN</code>.</li>
 </ol>
+<p><code>github-config</code> is the exception: its first step, before any token is minted,
+fails the job unless the ref is <code>refs/heads/develop</code> and <code>VRG_AUTOMATION_APP</code>
+is set, and its checkout pins <code>ref: develop</code> (see
+<a href="#github-config">github-config</a>).</p>
 <h3 id="token-permissions-per-job">Token permissions per job<a class="headerlink" href="#token-permissions-per-job" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
