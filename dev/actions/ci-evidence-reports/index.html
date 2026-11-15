@@ -7431,8 +7431,8 @@ must be the ones the language's gate commands write:</p>
 <tr>
 <td><code>rust</code></td>
 <td><code>test</code></td>
-<td><code>coverage.xml</code></td>
-<td>cargo-llvm-cov</td>
+<td><code>coverage.xml</code>, <code>junit.xml</code></td>
+<td>cargo-llvm-cov, cargo-nextest</td>
 </tr>
 <tr>
 <td><code>rust</code></td>
@@ -7442,10 +7442,11 @@ must be the ones the language's gate commands write:</p>
 </tr>
 </tbody>
 </table>
-<p>The Rust test gate writes no <code>junit.xml</code> yet: stable <code>cargo test</code> has no JUnit
-output, and vergil-tooling has not chosen a reporter. It joins the table once
-the gate writes it. <code>cargo-deny.json</code> holds JSON Lines, one object per line; it
-is staged as written.</p>
+<p>The Rust test gate writes <code>junit.xml</code> through cargo-nextest. A repository
+pinned to a vergil-tooling release whose Rust test gate does not write it
+fails its passing test legs here, on the missing <code>junit.xml</code>.
+<code>cargo-deny.json</code> holds JSON Lines, one object per line; it is staged as
+written.</p>
 <p>This table, in <code>actions/ci/evidence/reports/reports.sh</code>, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
 gate commands (<code>lib/languages.py</code>), so a change to a gate's report names

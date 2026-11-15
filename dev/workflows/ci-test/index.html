@@ -7535,8 +7535,8 @@ thin: they pass only <code>language:</code> and <code>container-suffix:</code>.<
 </table>
 <h2 id="evidence-reports">Evidence reports<a class="headerlink" href="#evidence-reports" title="Permanent link">&para;</a></h2>
 <p>Each <code>unit</code> leg stages the language's test reports for the
-<code>ci-evidence-test</code> artifact: <code>coverage.xml</code> and <code>junit.xml</code> for Python, and
-<code>coverage.xml</code> for Rust. The names come from
+<code>ci-evidence-test</code> artifact: <code>coverage.xml</code> and <code>junit.xml</code>, for Python and
+for Rust alike. The names come from
 <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose tests
 passed but wrote no report fails. A language with no test report contract
 yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
