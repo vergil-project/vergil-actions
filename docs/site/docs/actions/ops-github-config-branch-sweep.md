@@ -10,7 +10,7 @@ This action is the **scheduled safety net** behind the delete-on-merge repo
 setting and the delete-on-close rule. It is **wired automatically** into the
 `branch-sweep` job of the `ops-github-config.yml` reusable workflow, so every
 repo whose `ops.yml` calls that workflow is swept on the same nightly schedule
-as its config audit. Consuming repositories do not add it themselves.
+as its `github-config` job (`vrg-github-repo-config update`). Consuming repositories do not add it themselves.
 
 ## Usage
 
