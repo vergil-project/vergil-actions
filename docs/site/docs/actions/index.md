@@ -23,8 +23,8 @@ definition and optional supporting scripts.
   (`UV_PYTHON`, `UV_PYTHON_PREFERENCE=only-system`); auto-wired into the
   Python matrix legs of `ci-quality`, `ci-audit` and `ci-test`.
 - **[ci/toolchain/assert](ci-toolchain-assert.md)** — Fails a CI leg whose
-  running Python or Go is not the version CI resolved for it; auto-wired into
-  the matrix legs of `ci-quality`, `ci-audit` and `ci-test`.
+  running Python, Go or Rust is not the version CI resolved for it; auto-wired
+  into the matrix legs of `ci-quality`, `ci-audit` and `ci-test`.
 - **[ci/evidence/emit](ci-evidence-emit.md)**
   — Writes a gate's `evidence.json` and uploads it with the gate's report files
   as a `ci-evidence-<gate>` artifact for the release-time evidence bundle.
