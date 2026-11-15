@@ -73,6 +73,12 @@ jobs:
 
 ## Extension points
 
-The `dependencies` job provides a version matrix scaffold for running
-language-specific dependency audit tools (e.g., `pip-audit`, `npm audit`,
-`bundler-audit`).
+The `dependencies` job runs each language's real audit through
+`vrg-validate --check audit`: pip-audit and pip-licenses for Python,
+cargo-deny for Rust. The audit commands live in vergil-tooling, not in this
+workflow. Each leg then stages its reports through
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose table is the
+one place this repository records a language's audit report names. Giving a
+language without a contract yet (Go, C++, TypeScript) audit evidence means
+adding its entry to that table alongside the vergil-tooling gate command that
+writes the reports; the workflow itself needs no change.
