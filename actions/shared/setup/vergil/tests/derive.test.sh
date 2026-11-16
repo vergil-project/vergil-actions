@@ -165,18 +165,23 @@ case_library_window() {
   pass_case "$name"
 }
 
-# The outputs match `vrg-ci-resolve --format github-output` exactly, so the
-# rendering here adds nothing of its own.
+# Every output `vrg-ci-resolve --format github-output` prints matches it
+# exactly, so the rendering here adds nothing of its own. The keys it prints
+# depend on the installed release (build-enabled from vergil-tooling#4503 on),
+# so the comparison takes this script's lines for exactly those keys, in order.
 case_matches_github_output() {
-  local name="derive-matches-github-output" dir expected
+  local name="derive-matches-github-output" dir expected keys
   dir="$(mktemp -d)"
   toml cpp library 'versions = ["gcc-14", "clang-20"]' >"${dir}/vergil.toml"
   expected="$(VRG_VERSION_WINDOW="$window" vrg-ci-resolve --format github-output \
     --repo-root "$dir" 2>/dev/null)"
   rm -rf "$dir"
+  keys="$(printf '%s\n' "$expected" | cut -d= -f1)"
   run_derive "$(toml cpp library 'versions = ["gcc-14", "clang-20"]')"
   assert_ok "$name" || return 0
-  assert_eq "$name" "$(printf '%s\n' "$output" | head -n 3)" "$expected" || return 0
+  assert_eq "$name" "$(printf '%s\n' "$output" |
+    awk -F= 'NR == FNR { want[$0] = 1; next } ($1 in want)' \
+      <(printf '%s\n' "$keys") -)" "$expected" || return 0
   pass_case "$name"
 }
 
@@ -292,6 +297,70 @@ STUB
   pass_case "$name"
 }
 
+# stub_resolver <dir> <json answer>
+# Writes a stub vrg-ci-resolve into <dir> that prints <json answer> on stdout
+# and refuses any argument list other than the one derive.sh passes.
+stub_resolver() {
+  # shellcheck disable=SC2016 # the stub's lines are literal script text
+  printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' \
+    'if [ "$#" -ne 4 ] || [ "$1" != "--format" ] || [ "$2" != "json" ] ||' \
+    '  [ "$3" != "--repo-root" ] || [ -z "$4" ]; then' \
+    '  echo "stub vrg-ci-resolve: unexpected arguments: $*" >&2' \
+    '  exit 2' \
+    'fi' \
+    "printf '%s\\n' '$2'" >"$1/vrg-ci-resolve"
+  chmod +x "$1/vrg-ci-resolve"
+}
+
+# The five keys every vrg-ci-resolve release answers with, as a JSON prefix.
+base_answer='"versions":["3.14"],"primary-version":"3.14","primary-container-tag":"3.14","container-tags":{"3.14":"3.14"},"container-suffixes":{"3.14":"python"}'
+
+# build-enabled is the resolver's answer, "true" or "false" (vergil-tooling
+# #4503), so a language whose BUILD vergil-tooling turns on runs ci-quality's
+# build job with no change here. Stubbed, since no released language has
+# BUILD on to resolve for real.
+case_build_enabled_passthrough() {
+  local name="build-enabled-from-resolver" stub value
+  for value in true false; do
+    stub="$(mktemp -d)"
+    stub_resolver "$stub" "{${base_answer},\"build-enabled\":\"${value}\"}"
+    run_derive "$(toml python library '')" PATH="${stub}:${PATH}"
+    rm -rf "$stub"
+    assert_ok "$name ($value)" || return 0
+    assert_eq "$name ($value)" "$(out build-enabled)" "$value" || return 0
+  done
+  pass_case "$name"
+}
+
+# A resolver older than the BUILD check answers without build-enabled: the
+# output is "false" (that release has no BUILD check to run), with a notice,
+# and every other output is still written.
+case_build_enabled_absent() {
+  local name="build-enabled-absent-is-false" stub
+  stub="$(mktemp -d)"
+  stub_resolver "$stub" "{${base_answer}}"
+  run_derive "$(toml python library '')" PATH="${stub}:${PATH}"
+  rm -rf "$stub"
+  assert_ok "$name" || return 0
+  assert_eq "$name" "$(out build-enabled)" "false" || return 0
+  assert_eq "$name (versions)" "$(out versions)" '["3.14"]' || return 0
+  pass_case "$name"
+}
+
+# Any other build-enabled value fails the step and writes no outputs, rather
+# than read as off.
+case_build_enabled_invalid() {
+  local name="build-enabled-invalid-fails" stub value
+  for value in '"yes"' 'true' '""' 'null'; do
+    stub="$(mktemp -d)"
+    stub_resolver "$stub" "{${base_answer},\"build-enabled\":${value}}"
+    run_derive "$(toml python library '')" PATH="${stub}:${PATH}"
+    rm -rf "$stub"
+    assert_error "$name ($value)" "build-enabled" || return 0
+  done
+  pass_case "$name"
+}
+
 # An app pinning more than one version is a resolver error (T14,
 # vergil-tooling#3372): the real resolver fails the step with its message as
 # ::error::, and no outputs are written.
@@ -349,6 +418,9 @@ case_explicit_primary
 case_no_language
 case_version_window_input
 case_warning_passthrough
+case_build_enabled_passthrough
+case_build_enabled_absent
+case_build_enabled_invalid
 case_app_multi_pin
 case_resolver_error
 case_missing_file

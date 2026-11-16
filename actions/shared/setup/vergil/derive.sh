@@ -24,11 +24,20 @@
 #   container-tags        — compact JSON object, version token -> image tag.
 #   container-suffixes    — compact JSON object, version token -> image suffix
 #                           (clang-20 -> cpp-clang, 3.14 -> python).
+#   build-enabled         — "true" when vergil-tooling turns the BUILD check on
+#                           for the repo's language, else "false". ci-quality's
+#                           `build` job runs only when it is "true" (epic
+#                           vergil-project/.github#1174). A vergil-tooling
+#                           release older than the field (before
+#                           vergil-tooling#4503) has no BUILD check at all, so
+#                           an answer without it gives "false"; a value other
+#                           than "true" or "false" is an error.
 #
-# The first three are what `vrg-ci-resolve --format github-output` prints. The
-# matrix also needs the last two, which only `--format json` carries, so this
-# script runs `--format json` once and renders all five from that single
-# answer: one window fetch, and no chance of two outputs disagreeing.
+# `vrg-ci-resolve --format github-output` prints versions, primary-version,
+# primary-container-tag and build-enabled. The matrix also needs
+# container-tags and container-suffixes, which only `--format json` carries,
+# so this script runs `--format json` once and renders all six from that
+# single answer: one window fetch, and no chance of two outputs disagreeing.
 #
 # Failure is loud and final. A resolver error (window fetch, invalid window, a
 # pin outside the window, an app that pins more than one version, a C++ or
@@ -94,21 +103,36 @@ while IFS= read -r line || [ -n "$line" ]; do
   esac
 done <"$err_file"
 
-# Render the outputs. Every key must be present with the expected type; a
-# resolver answer that lacks one is an error, never an empty output.
+# Render the outputs. Every key but build-enabled must be present with the
+# expected type; a resolver answer that lacks one is an error, never an empty
+# output. build-enabled is absent only from a resolver older than the BUILD
+# check, which turns BUILD on for no language, so absent renders "false"; when
+# present it must be the string "true" or "false".
 outputs="$(printf '%s' "$resolution" | jq -r '
   def req(k; t):
     if has(k) and (.[k] | type) == t then .[k]
     else error("vrg-ci-resolve output has no \(t) \"\(k)\"") end;
+  def build_enabled:
+    if has("build-enabled") | not then "false"
+    elif .["build-enabled"] == "true" or .["build-enabled"] == "false"
+    then .["build-enabled"]
+    else error("vrg-ci-resolve output has build-enabled \(.["build-enabled"] | tojson), expected \"true\" or \"false\"") end;
   "versions=" + (req("versions"; "array") | tojson),
   "primary-version=" + req("primary-version"; "string"),
   "primary-container-tag=" + req("primary-container-tag"; "string"),
   "container-tags=" + (req("container-tags"; "object") | tojson),
-  "container-suffixes=" + (req("container-suffixes"; "object") | tojson)
+  "container-suffixes=" + (req("container-suffixes"; "object") | tojson),
+  "build-enabled=" + build_enabled
 ' 2>&1)" || {
   echo "::error::cannot read the vrg-ci-resolve answer: ${outputs}" >&2
   exit 1
 }
+
+if ! printf '%s' "$resolution" | jq -e 'has("build-enabled")' >/dev/null; then
+  echo "::notice::vrg-ci-resolve reports no build-enabled (a vergil-tooling" \
+    "release older than the BUILD check), so build-enabled is false and the" \
+    "build job is skipped"
+fi
 
 printf '%s\n' "$outputs" >>"$GITHUB_OUTPUT"
 printf 'Resolved by vrg-ci-resolve:\n%s\n' "$outputs"

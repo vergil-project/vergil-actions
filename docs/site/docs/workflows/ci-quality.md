@@ -33,7 +33,8 @@ only `language:`, and optionally `container-suffix:` as a cross-check.
 | `custom` | `<caller> / custom` | Runs the repo's custom validator with `vrg-validate --check custom`, or logs that there is none (single-container job on the primary version — informational, gated through `quality / evidence`) |
 | `lint / <version>` | `<caller> / lint / <version>` | Language-specific linting (matrix-expanded — informational, not a required check) |
 | `typecheck / <version>` | `<caller> / typecheck / <version>` | Language-specific type checking (matrix-expanded — informational, not a required check) |
-| `evidence` | `quality / evidence` | Aggregate gate — `needs` the `common`, `custom`, `lint`, and `typecheck` jobs, runs `if: always()`, and asserts each succeeded; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
+| `build / <version>` | `<caller> / build / <version>` | The release build, `vrg-validate --check build`, once on the primary version, only for a language whose BUILD check vergil-tooling turns on (see [Release build](#release-build) — informational, gated through `quality / evidence`) |
+| `evidence` | `quality / evidence` | Aggregate gate — `needs` the `common`, `custom`, `lint`, `typecheck` and `build` jobs, runs `if: always()`, and asserts each of the first four succeeded and that `build` matches the BUILD flag; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
 
 ## Common checks
 
@@ -80,6 +81,29 @@ partial and bundled into `ci-evidence-quality` as `quality-custom.log`. The
 `quality / evidence` — there is no separate required check (epic
 [vergil-project/.github#488](https://github.com/vergil-project/.github/issues/488)).
 
+## Release build
+
+The `build` job runs `vrg-validate --check build`, the language's build
+command, the same one the release job runs, so a build that would fail at
+release fails on the PR instead (epic
+[vergil-project/.github#1174](https://github.com/vergil-project/.github/issues/1174)).
+It runs once, on the primary version's image, with the same checkout, setup,
+Python pin and `assert-toolchain` steps as a `typecheck` leg.
+
+The job runs only when the `matrix` job's `build-enabled` output is `true`.
+That output is `vrg-ci-resolve`'s `build-enabled`, passed on by the
+[setup action](../actions/shared-setup-vergil.md): vergil-tooling decides
+which languages have a BUILD check, and no language list lives in this
+workflow, so turning BUILD on for a language needs no change here. A
+vergil-tooling release older than the flag gives `false`.
+
+A skipped `build` job is a valid result, so the `evidence` job does not
+require it to succeed. It checks the result against the flag with
+[`ci/evidence/assert`](../actions/ci-evidence-assert.md): skipped with
+BUILD off and successful with BUILD on pass, and anything else, a skipped
+build with BUILD on included, fails `quality / evidence`. The job uploads no
+report. There is no separate required check and no ruleset change.
+
 ## Usage
 
 ```yaml
@@ -93,12 +117,12 @@ jobs:
 
 ## Extension points
 
-Each of the four check jobs runs a `vrg-validate` check: `common` runs
+Each of the five check jobs runs a `vrg-validate` check: `common` runs
 `vrg-validate --check common`, `custom` runs `vrg-validate --check custom`,
-and each `lint` and `typecheck` leg runs `vrg-validate --check lint` or
-`vrg-validate --check typecheck` for the language. The lint and typecheck
-commands live in vergil-tooling, not in this workflow, so a language's checks
-change there.
+each `lint` and `typecheck` leg runs `vrg-validate --check lint` or
+`vrg-validate --check typecheck` for the language, and `build` runs
+`vrg-validate --check build`. The lint, typecheck and build commands live in
+vergil-tooling, not in this workflow, so a language's checks change there.
 
 ## Evidence
 
