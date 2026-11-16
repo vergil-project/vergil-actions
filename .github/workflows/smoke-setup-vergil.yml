@@ -46,11 +46,13 @@ name: Smoke - setup/vergil outputs
 #         names every scanner whose SARIF partial it bundles in the
 #         security gate's tools, codeql only when its job passed, and two
 #         broken copies of the workflow fail the check (issue #1215);
-#       - ci/evidence/reports reports.sh: each language's test and audit
-#         report files (Rust's cargo-deny.json, not Python's names), staged
-#         version-suffixed; a passing gate with a missing or empty report, or
-#         a language with no report contract, fails loudly; ci-test and
-#         ci-audit stage and take their tools through it (issue #1211);
+#       - ci/evidence/reports reports.sh: each language's test, audit, lint
+#         and typecheck report files (Rust's cargo-deny.json, not Python's
+#         names), staged version-suffixed; a passing gate with a missing or
+#         empty report fails loudly, and a language with no report contract
+#         warns; expect mode requires every lint and typecheck report in the
+#         quality evidence job; ci-test, ci-audit and ci-quality stage and
+#         take their tools through it (issues #1211, #1249);
 #       - ops/github-config automation-env.test.sh: no workflow or job env
 #         sets VRG_AUTOMATION_APP, every step that does takes it from the org
 #         variable alongside a GH_TOKEN minted by an earlier step, and

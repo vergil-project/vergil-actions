@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
 # Behavioural test for reports.sh — the per-language report-file contract of
-# the test and audit evidence gates and the staging of one leg's reports
-# (issue #1211).
+# the test and audit evidence gates and of the quality gate's lint and
+# typecheck legs, the staging of one leg's reports, and expect mode's check of
+# the quality evidence job's reports (issues #1211, #1249).
 #
 # Framework-free and developer-runnable: `bash reports.test.sh`. CI runs it
 # from .github/workflows/smoke-setup-vergil.yml. It needs only bash and
@@ -12,8 +13,11 @@
 # files, then asserts the exit status, the staged file names and contents, and
 # for the failure cases the `::error::` annotation naming each missing report.
 # A fleet language with no contract (go, cpp, typescript) must warn, stage
-# nothing and list no tools, while every bad input still fails. A final case checks that ci-test.yml and ci-audit.yml stage through this
-# action, so a workflow cannot drift back to a fixed list of names.
+# nothing and list no tools, while every bad input still fails. A repository
+# with no fleet primary language (shell, a Claude plugin, none) gets a notice
+# on its lint and typecheck legs instead. The final cases check that
+# ci-test.yml, ci-audit.yml and ci-quality.yml stage through this action, so a
+# workflow cannot drift back to a fixed list of names.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -448,6 +452,346 @@ if assert_error "$name" "GITHUB_OUTPUT is not set"; then
   pass_case "$name"
 fi
 
+# --- the quality gate's lint and typecheck legs (#1249) ----------------------
+
+# lint and typecheck are gates of the table, staged like test and audit.
+name="lint-and-typecheck-are-gates"
+ok=1
+for gate in lint typecheck; do
+  workspace "${name}-${gate}" quality-ruff.json quality-mypy.xml
+  run_reports stage python "$gate" 3.14 success
+  if [ "$rc" -ne 0 ] || grep -qF "unknown gate" <<<"$stderr"; then
+    fail_case "$name" "${gate} is not a gate: rc ${rc}, stderr ${stderr}"
+    ok=0
+  fi
+done
+if [ "$ok" -eq 1 ]; then
+  pass_case "$name"
+fi
+
+case_stage python-lint-stages-ruff python lint \
+  "quality-ruff-1.0.json " quality-ruff.json quality-mypy.xml
+case_stage python-typecheck-stages-mypy python typecheck \
+  "quality-mypy-1.0.xml " quality-ruff.json quality-mypy.xml
+case_stage rust-lint-stages-clippy rust lint \
+  "quality-clippy-1.0.json " quality-clippy.json quality-cargo-check.json
+case_stage rust-typecheck-stages-cargo-check rust typecheck \
+  "quality-cargo-check-1.0.json " quality-clippy.json quality-cargo-check.json
+
+# case_tools_named <name> <language> <gate> <expected JSON>
+case_tools_named() {
+  local name="$1" actual
+  workspace "$name"
+  run_reports tools "$2" "$3"
+  if [ "$rc" -ne 0 ]; then
+    fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
+    return 0
+  fi
+  actual="$(sed -n 's/^tools=//p' "$outputs")"
+  if jq -e --argjson a "$actual" --argjson e "$4" -n '$a == $e' >/dev/null; then
+    pass_case "$name"
+  else
+    fail_case "$name" "expected $4, got '${actual}'"
+  fi
+}
+
+# rust_lint_files_and_tools / rust_typecheck_files_and_tools: the file names
+# are vergil-tooling's CLIPPY_REPORT and CARGO_CHECK_REPORT (#4473).
+name="rust-lint-files-and-tools"
+workspace "$name" quality-clippy.json
+run_reports stage rust lint 1.99 success
+if assert_staged "$name" "quality-clippy-1.99.json "; then
+  case_tools_named "$name" rust lint '[{"name":"rustfmt"},{"name":"clippy"}]'
+fi
+name="rust-typecheck-files-and-tools"
+workspace "$name" quality-cargo-check.json
+run_reports stage rust typecheck 1.99 success
+if assert_staged "$name" "quality-cargo-check-1.99.json "; then
+  case_tools_named "$name" rust typecheck '[{"name":"cargo"}]'
+fi
+
+# Python's lint and typecheck evidence is what ci-quality.yml hardcoded before
+# #1249: the files quality-ruff-<version>.json and quality-mypy-<version>.xml,
+# and the tools vrg-validate-common, vrg-validate-custom, ruff, mypy.
+name="python-lint-matches-today"
+workspace "$name" quality-ruff.json quality-mypy.xml
+run_reports stage python lint 3.13 success
+lint_staged="$(staged)"
+run_reports stage python typecheck 3.13 success
+both_staged="$(staged)"
+lint_tools="$(
+  run_reports tools python lint
+  sed -n 's/^tools=//p' "$outputs"
+)"
+typecheck_tools="$(
+  run_reports tools python typecheck
+  sed -n 's/^tools=//p' "$outputs"
+)"
+today='[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}, {"name": "ruff"}, {"name": "mypy"}]'
+if [ "$lint_staged" != "quality-ruff-3.13.json " ] ||
+  [ "$both_staged" != "quality-mypy-3.13.xml quality-ruff-3.13.json " ]; then
+  fail_case "$name" "staged '${lint_staged}' then '${both_staged}'"
+elif ! jq -e -n --argjson l "$lint_tools" --argjson t "$typecheck_tools" \
+  --argjson e "$today" \
+  '([{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}] + $l + $t) == $e' \
+  >/dev/null; then
+  fail_case "$name" "tools ${lint_tools} + ${typecheck_tools} differ from today's ${today}"
+else
+  pass_case "$name"
+fi
+
+# A passing leg with no report fails, for each of the four entries.
+for entry in python/lint:quality-ruff.json python/typecheck:quality-mypy.xml \
+  rust/lint:quality-clippy.json rust/typecheck:quality-cargo-check.json; do
+  pair="${entry%%:*}"
+  file="${entry#*:}"
+  language="${pair%%/*}"
+  gate="${pair#*/}"
+  name="passing-${language}-${gate}-leg-missing-report-fails"
+  workspace "$name"
+  run_reports stage "$language" "$gate" 1.0 success
+  if assert_error "$name" "${language} ${gate} gate passed but wrote no ${file}"; then
+    pass_case "$name"
+  fi
+  name="passing-${language}-${gate}-leg-empty-report-fails"
+  workspace "$name"
+  : >"${ws}/${file}"
+  run_reports stage "$language" "$gate" 1.0 success
+  if assert_error "$name" "wrote no ${file}"; then
+    if [ -n "$(staged)" ]; then
+      fail_case "$name" "staged '$(staged)'"
+    else
+      pass_case "$name"
+    fi
+  fi
+done
+
+# A failing leg's missing report is not an extra failure: the step passes,
+# and the leg's own failure stands.
+for pair in python/lint rust/lint python/typecheck rust/typecheck; do
+  language="${pair%%/*}"
+  gate="${pair#*/}"
+  name="failing-${language}-${gate}-leg-missing-report-not-extra-error"
+  workspace "$name"
+  run_reports stage "$language" "$gate" 1.0 failure
+  if assert_staged "$name" ""; then
+    if grep -qF "::error::" <<<"$stderr"; then
+      fail_case "$name" "raised an ::error::: ${stderr}"
+    elif ! grep -qF "::notice::" <<<"$stdout"; then
+      fail_case "$name" "no ::notice:: for the missing report; stdout: ${stdout}"
+    else
+      pass_case "$name"
+    fi
+  fi
+done
+
+# A primary language with no quality contract warns, as for test and audit.
+for language in go cpp typescript; do
+  for gate in lint typecheck; do
+    name="no-contract-${language}-${gate}-warns-and-stages-nothing"
+    workspace "$name" quality-ruff.json quality-mypy.xml quality-clippy.json
+    run_reports stage "$language" "$gate" 1.0 success
+    if assert_no_contract_warning "$name" "$language" "$gate"; then
+      if [ -e "${ws}/ci-reports" ]; then
+        fail_case "$name" "created ci-reports holding '$(staged)'"
+      else
+        pass_case "$name"
+      fi
+    fi
+    name="tools-no-contract-${language}-${gate}-is-empty-with-a-warning"
+    workspace "$name"
+    run_reports tools "$language" "$gate"
+    if assert_no_contract_warning "$name" "$language" "$gate"; then
+      if [ "$(cat "$outputs")" = "tools=[]" ]; then
+        pass_case "$name"
+      else
+        fail_case "$name" "expected the output 'tools=[]', got '$(cat "$outputs")'"
+      fi
+    fi
+  done
+done
+
+# assert_no_language_notice <name> <gate> — exit 0, no ::error:: or
+# ::warning::, and the ::notice:: for a non-primary language's quality leg.
+assert_no_language_notice() {
+  local name="$1" gate="$2"
+  if [ "$rc" -ne 0 ]; then
+    fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
+    return 1
+  fi
+  if grep -qE -- "::(error|warning)::" <<<"${stdout}${stderr}"; then
+    fail_case "$name" "raised an error or warning: ${stderr}"
+    return 1
+  fi
+  if ! grep -F -- "::notice::" <<<"$stderr" |
+    grep -qF -- "is not a fleet primary language" ||
+    ! grep -qF -- "its ${gate} leg has no report contract" <<<"$stderr"; then
+    fail_case "$name" "no ::notice:: for the ${gate} leg; got '${stderr}'"
+    return 1
+  fi
+  return 0
+}
+
+# ci-quality serves repositories with no fleet primary language (shell, a
+# Claude plugin, none): their quality legs note it and stage nothing.
+for language in shell claude-plugin ""; do
+  for gate in lint typecheck; do
+    name="no-language-'${language}'-${gate}-notes-and-stages-nothing"
+    workspace "no-language-${language:-none}-${gate}" quality-ruff.json
+    run_reports stage "$language" "$gate" latest success
+    if assert_no_language_notice "$name" "$gate"; then
+      if [ -e "${ws}/ci-reports" ]; then
+        fail_case "$name" "created ci-reports holding '$(staged)'"
+      else
+        pass_case "$name"
+      fi
+    fi
+    name="tools-no-language-'${language}'-${gate}-is-empty"
+    workspace "tools-no-language-${language:-none}-${gate}"
+    run_reports tools "$language" "$gate"
+    if assert_no_language_notice "$name" "$gate"; then
+      if [ "$(cat "$outputs")" = "tools=[]" ]; then
+        pass_case "$name"
+      else
+        fail_case "$name" "expected the output 'tools=[]', got '$(cat "$outputs")'"
+      fi
+    fi
+  done
+done
+
+# The test and audit gates still refuse such a language.
+name="shell-test-gate-still-fails"
+workspace "$name"
+run_reports stage shell test 1.0 success
+if assert_error "$name" "unknown language 'shell'"; then
+  pass_case "$name"
+fi
+
+# --- expect mode --------------------------------------------------------------
+
+# run_expect <language> <dir> — run reports.sh in expect mode in $ws, with no
+# GATE.
+run_expect() {
+  local err out
+  err="$(mktemp)"
+  out="$(mktemp)"
+  rc=0
+  (
+    cd "$ws"
+    env -u GATE MODE=expect LANGUAGE="$1" REPORTS_DIR="$2" bash "$reports_sh"
+  ) >"$out" 2>"$err" || rc=$?
+  stderr="$(cat "$err")"
+  stdout="$(cat "$out")"
+  rm -f "$err" "$out"
+}
+
+# reports_dir <file>... — $ws/evidence-reports holding each named file.
+reports_dir() {
+  local f
+  mkdir -p "${ws}/evidence-reports"
+  for f in "$@"; do
+    printf '%s\n' "$f" >"${ws}/evidence-reports/${f}"
+  done
+}
+
+name="expect-rust-finds-both-reports"
+workspace "$name"
+reports_dir quality-common.log quality-custom.log quality-clippy-1.99.json \
+  quality-cargo-check-1.99.json
+run_expect rust evidence-reports
+if [ "$rc" -ne 0 ]; then
+  fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
+else
+  rm "${ws}/evidence-reports/quality-clippy-1.99.json"
+  run_expect rust evidence-reports
+  if assert_error "$name" "no rust lint leg staged its quality-clippy.json"; then
+    if grep -F '::error::' <<<"$stderr" | grep -qF "quality-cargo-check.json"; then
+      fail_case "$name" "named a report that exists: ${stderr}"
+    else
+      pass_case "$name"
+    fi
+  fi
+fi
+
+name="expect-rust-missing-both-names-each"
+workspace "$name"
+reports_dir quality-common.log
+run_expect rust evidence-reports
+if assert_error "$name" "its quality-clippy.json" "its quality-cargo-check.json"; then
+  pass_case "$name"
+fi
+
+# A report must be version-suffixed and non-empty to count.
+name="expect-unsuffixed-or-empty-report-is-missing"
+workspace "$name"
+reports_dir quality-clippy.json
+: >"${ws}/evidence-reports/quality-cargo-check-1.99.json"
+run_expect rust evidence-reports
+if assert_error "$name" "its quality-clippy.json" "its quality-cargo-check.json"; then
+  pass_case "$name"
+fi
+
+name="expect-python-matches-today"
+workspace "$name"
+reports_dir quality-common.log quality-custom.log quality-ruff-3.13.json \
+  quality-ruff-3.14.json quality-mypy-3.13.xml quality-mypy-3.14.xml
+run_expect python evidence-reports
+if [ "$rc" -ne 0 ]; then
+  fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
+else
+  rm "${ws}/evidence-reports/quality-mypy-3.13.xml" \
+    "${ws}/evidence-reports/quality-mypy-3.14.xml"
+  run_expect python evidence-reports
+  if assert_error "$name" "no python typecheck leg staged its quality-mypy.xml"; then
+    pass_case "$name"
+  fi
+fi
+
+# Rust's reports are never satisfied by Python's names.
+name="expect-rust-ignores-python-names"
+workspace "$name"
+reports_dir quality-ruff-1.99.json quality-mypy-1.99.xml
+run_expect rust evidence-reports
+if assert_error "$name" "its quality-clippy.json" "its quality-cargo-check.json"; then
+  pass_case "$name"
+fi
+
+for language in go cpp typescript; do
+  name="expect-no-contract-${language}-warns"
+  workspace "$name"
+  reports_dir quality-common.log
+  run_expect "$language" evidence-reports
+  if assert_no_contract_warning "$name" "$language" lint &&
+    assert_no_contract_warning "$name" "$language" typecheck; then
+    pass_case "$name"
+  fi
+done
+
+for language in shell claude-plugin ""; do
+  name="expect-no-language-'${language}'-notes"
+  workspace "expect-no-language-${language:-none}"
+  reports_dir quality-common.log
+  run_expect "$language" evidence-reports
+  if assert_no_language_notice "$name" lint &&
+    assert_no_language_notice "$name" typecheck; then
+    pass_case "$name"
+  fi
+done
+
+name="expect-empty-reports-dir-fails"
+workspace "$name"
+run_expect rust ""
+if assert_error "$name" "REPORTS_DIR is empty"; then
+  pass_case "$name"
+fi
+
+name="expect-missing-reports-dir-fails"
+workspace "$name"
+run_expect python evidence-reports
+if assert_error "$name" "REPORTS_DIR 'evidence-reports' is not a directory"; then
+  pass_case "$name"
+fi
+
 # --- the workflows stage through this action ---------------------------------
 
 # case_workflow <workflow> <gate> — the gate's leg stages through the action in
@@ -487,6 +831,34 @@ case_workflow() {
 
 case_workflow ci-test.yml test
 case_workflow ci-audit.yml audit
+
+# ci-quality.yml: the lint and typecheck legs stage through the action with
+# their gate step's outcome, the evidence job requires the reports (expect
+# mode) and takes its tools from the action, the emit step takes every
+# staged quality-* file, and no step names a lint or typecheck report or tool.
+name="ci-quality.yml-stages-through-ci-evidence-reports"
+wf="${repo_root}/.github/workflows/ci-quality.yml"
+code="$(sed -E 's/(^|[[:space:]])#.*//' "$wf")"
+if [ "$(grep -cE '^ +uses: \./actions/ci/evidence/reports$' <<<"$code")" -lt 5 ]; then
+  fail_case "$name" "the stage, expect and tools steps do not all use the action"
+elif [ "$(grep -cE '^ +gate-outcome: \$\{\{ steps\.gate\.outcome \}\}$' <<<"$code")" -ne 2 ] ||
+  [ "$(grep -cE '^ +id: gate$' <<<"$code")" -ne 2 ]; then
+  fail_case "$name" "the lint and typecheck stage steps do not take their gate step's outcome"
+elif [ "$(grep -cE '^ +gate: lint$' <<<"$code")" -ne 2 ] ||
+  [ "$(grep -cE '^ +gate: typecheck$' <<<"$code")" -ne 2 ]; then
+  fail_case "$name" "lint and typecheck are not each named in a stage and a tools step"
+elif ! grep -qE '^ +mode: expect$' <<<"$code" ||
+  ! grep -qE '^ +reports-dir: evidence-reports$' <<<"$code"; then
+  fail_case "$name" "the evidence job does not require the reports"
+elif ! grep -qE '^ +files: evidence-reports/quality-\*$' <<<"$code"; then
+  fail_case "$name" "the emit step does not take evidence-reports/quality-*"
+elif ! grep -qE '^ +tools: \$\{\{ steps\.tools\.outputs\.tools \}\}$' <<<"$code"; then
+  fail_case "$name" "the emit step does not take the combined tools"
+elif grep -qE '(ruff|mypy|clippy|cargo-check|rustfmt)' <<<"$code"; then
+  fail_case "$name" "names a lint or typecheck report or tool outside the action"
+else
+  pass_case "$name"
+fi
 
 printf '\nreports.test.sh: %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
