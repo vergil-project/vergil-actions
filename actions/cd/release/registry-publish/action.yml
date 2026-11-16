@@ -6,7 +6,7 @@ description: >-
 
 inputs:
   language:
-    description: Primary language (python, rust, go).
+    description: Primary language (python, rust, go, typescript).
     required: true
   version:
     description: Semver version string (e.g. 1.2.3).
