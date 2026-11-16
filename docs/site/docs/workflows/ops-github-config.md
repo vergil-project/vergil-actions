@@ -138,7 +138,19 @@ is set only on that step, never on the job: a vergil-tooling command that sees
 it without the token, such as the setup action's `vrg-whoami` check, fails.
 The `smoke-setup-vergil` workflow runs
 `actions/ops/github-config/tests/automation-env.test.sh`, which holds every
-workflow to this.
+workflow to this. A step that sets `VRG_AUTOMATION_APP` must carry the App's
+identity in exactly one of two forms:
+
+- **The token form:** `GH_TOKEN` from an earlier token step of its job
+  (`${{ steps.<id>.outputs.token }}`), as this job's update step does.
+- **The credential form:** no `GH_TOKEN`, and `VRG_AUTOMATION_CLIENT_ID`
+  and `VRG_AUTOMATION_PRIVATE_KEY` both from `${{ secrets.<name> }}`. This
+  is for a tool that mints its own repo-scoped token, as
+  `vrg-upstream-refresh publish` does in
+  [ops-upstream-refresh](ops-upstream-refresh.md).
+
+Any other shape fails the check, and so does a step that has both forms at
+once.
 
 **Develop only.** This job holds the workflow's only Administration write
 token, so no other branch's code may ever run with it. Its first step,
