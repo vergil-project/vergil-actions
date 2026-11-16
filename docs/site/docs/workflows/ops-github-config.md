@@ -55,6 +55,11 @@ the same pattern:
 2. Checks out the repository and installs vergil-tooling.
 3. Runs its command with the App token as `GH_TOKEN`.
 
+`github-config` is the exception: its first step, before any token is minted,
+fails the job unless the ref is `refs/heads/develop` and `VRG_AUTOMATION_APP`
+is set, and its checkout pins `ref: develop` (see
+[github-config](#github-config)).
+
 ### Token permissions per job
 
 | Job | Requested App permissions | Why |

@@ -101,6 +101,12 @@ on the vergil-tooling side for the `[container].build-command` key itself.
 
 ## Extension points
 
-The `unit` job provides a version matrix scaffold. Consuming repositories
-customize it by forking the workflow or by running language-specific test
-commands in a separate workflow.
+Each `unit` leg runs the language's real test suite through
+`vrg-validate --check test`. The test commands live in vergil-tooling, not in
+this workflow. The leg then stages its reports through
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md) (see
+[Evidence reports](#evidence-reports)), whose table is the one place this
+repository records a language's test report names. Giving a language without
+a contract yet (Go, C++, TypeScript) test evidence means adding its entry to
+that table alongside the vergil-tooling gate command that writes the reports;
+the workflow itself needs no change.

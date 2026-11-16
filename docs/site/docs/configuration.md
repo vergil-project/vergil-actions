@@ -280,11 +280,14 @@ secret.
 
 ## Repository rulesets
 
-Every managed repository uses three rulesets to enforce merge requirements:
+Every managed repository uses five rulesets to enforce merge requirements:
 
 - **Branch protection** — PR requirements for `main` and `develop`
 - **CI gates** — Required status checks for `main` and `develop`
-- **Tag protection** — Protect semver release tags (`v*.*.*`); allow rolling minor tags
+- **Tag protection** — Protect release tags (`v*.*.*`) and rolling minor tags (`v*.*`)
+- **Rolling tag branch names** — Block branches named like a rolling tag (`v[0-9]*`)
+- **Automation branches** — Only the org automation App and the repository
+  Admin role may write `automation/**` branches
 
 For detailed configuration including settings, check names per repository type,
 and API commands, see [Repository Rulesets](ci-gates/repository-rulesets.md).
@@ -322,7 +325,8 @@ The `GITHUB_TOKEN` is insufficient in two cases:
    workflow's `GITHUB_TOKEN` carries only what the caller grants and reaches
    only its own repository. The org's automation App token
    (`APP_CLIENT_ID` + `APP_PRIVATE_KEY`) is required for the nightly ops jobs
-   (config audit, branch sweep, Dependabot alert audit), the epic roll-up and
+   (config update (`vrg-github-repo-config update`), branch sweep, Dependabot
+   alert audit), the epic roll-up and
    sweep, and the package-index dispatch. See
    [APP_CLIENT_ID and APP_PRIVATE_KEY](#app_client_id-and-app_private_key).
 
@@ -345,20 +349,13 @@ Use this checklist when adding a new repository to the managed environment.
 
 ### 2. Rulesets
 
-Create three rulesets per the standard configuration:
+Do not create the rulesets by hand. `vrg-github-repo-config update` creates
+every ruleset of the [standard configuration](ci-gates/repository-rulesets.md):
+Branch protection, CI gates, Tag protection, Rolling tag branch names and
+Automation branches. The nightly `github-config` job runs the same command and
+keeps them converged from then on.
 
-- [ ] **Branch protection** — targeting `main` and `develop`
-  ([details](ci-gates/repository-rulesets.md#branch-protection-ruleset))
-- [ ] **CI gates** — targeting `main` and `develop` with required checks
-  ([details](ci-gates/repository-rulesets.md#ci-gates-ruleset))
-- [ ] **Tag protection** — targeting `v*.*.*` with admin bypass
-  ([details](ci-gates/repository-rulesets.md#tag-protection-ruleset))
-
-!!! warning "Use explicit branch references"
-    Always use `refs/heads/main` and `refs/heads/develop` in ruleset conditions.
-    Never use `~DEFAULT_BRANCH` — it resolves to `develop` (the default branch),
-    silently leaving `main` unprotected. See
-    [Branch targeting](ci-gates/repository-rulesets.md#branch-targeting).
+- [ ] Run `vrg-github-repo-config update --repo <org>/<repo>`
 
 ### 3. Secrets
 
@@ -392,8 +389,10 @@ See [Binary package environments](#binary-package-environments).
 - [ ] Add `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE` to it
 - [ ] Call `cd-release.yml` with
   `secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit`
-- [ ] Call `ci-package.yml` under a job keyed `package` and add
-  `package / evidence` to the **CI gates** ruleset
+- [ ] Call `ci-package.yml` under a job keyed `package`. Do not add
+  `package / evidence` to the **CI gates** ruleset by hand:
+  `vrg-github-repo-config` requires it for a repository with a `[package]`
+  section
 
 For the `<org>/packages` index repository itself:
 
@@ -412,7 +411,9 @@ For the `<org>/packages` index repository itself:
 ### 6. CI gates activation
 
 - [ ] Push the CI workflow and verify all checks run
-- [ ] Add each check name to the **CI gates** ruleset
+- [ ] Confirm the **CI gates** ruleset requires them. Do not add a check by
+  hand: `vrg-github-repo-config` derives the required-check set and the
+  nightly `update` converges the ruleset
   ([procedure](ci-gates/repository-rulesets.md#adding-a-new-required-check))
 
 ### 7. Verification
