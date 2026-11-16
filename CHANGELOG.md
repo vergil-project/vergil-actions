@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.77] - 2026-11-16
+
+### CI
+
+- run the eight yq-dependent action suites in local validation (#1245)
+
+### Chores
+
+- sync the managed files with the released templates (#1244)
+
+### Documentation
+
+- reduce the superseded development pages to pointers at the docs site (#1238)
+- document the five rulesets, diff exit codes and the nightly update (#1239)
+- list ci/evidence/reports in the indexes and correct the stale extension points (#1242)
+
 ## [2.1.76] - 2026-11-15
 
 ### Documentation
