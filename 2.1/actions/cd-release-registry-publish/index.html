@@ -859,6 +859,8 @@
       
         
       
+        
+      
     
     
     
@@ -911,6 +913,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.78/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.78
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5209,6 +5239,8 @@
       
         
       
+        
+      
     
     
     
@@ -5468,6 +5500,34 @@
     
   
     ci/evidence/reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-evidence-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/assert
   
 
     
@@ -7508,8 +7568,8 @@ the build and generates an SBOM, and, when enabled, publishes to the package
 registry. Build and publish commands come from vergil-tooling's ecosystem
 metadata (<code>vrg-ecosystem-resolve</code>) unless the caller overrides them.</p>
 <p>This action is <strong>wired automatically</strong> into the <code>cd-release</code> release job, where
-its <strong>Build and publish</strong> step runs for <code>python</code>, <code>rust</code> and <code>go</code>
-repositories. Consuming repositories set its behavior through the
+its <strong>Build and publish</strong> step runs for <code>python</code>, <code>rust</code>, <code>go</code> and
+<code>typescript</code> repositories. Consuming repositories set its behavior through the
 <code>cd-release</code> inputs and secrets, not by calling it directly.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Build and publish</span>
@@ -7626,8 +7686,8 @@ repositories. Consuming repositories set its behavior through the
 </tr>
 <tr>
 <td><code>rust</code></td>
-<td><code>cargo build --release</code></td>
-<td><code>cargo publish</code></td>
+<td><code>cargo build --release --locked --workspace</code></td>
+<td><code>cargo publish --locked</code></td>
 <td><code>CARGO_REGISTRY_TOKEN</code></td>
 </tr>
 <tr>
@@ -7636,8 +7696,31 @@ repositories. Consuming repositories set its behavior through the
 <td>none</td>
 <td>none</td>
 </tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>npm ci --ignore-scripts &amp;&amp; npm run build</code></td>
+<td>none</td>
+<td>none</td>
+</tr>
 </tbody>
 </table>
+<p>Rust's commands carry <code>--locked</code>, so a release builds and publishes exactly
+what <code>Cargo.lock</code> records and a stale lockfile fails the step, and the build
+takes <code>--workspace</code>, so it builds every member of a workspace. It is the same
+command <code>vrg-validate</code> builds before release, so validation and release build
+the same thing. Both flags come from vergil-tooling
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/4470">vergil-tooling#4470</a>
+and <a href="https://github.com/vergil-project/vergil-tooling/issues/4476">#4476</a>);
+a vergil-tooling release without them derives <code>cargo build --release</code> and
+<code>cargo publish</code>.</p>
+<p>TypeScript has no publish command, so a TypeScript release builds and is never
+published to npm. Its build installs from the lockfile first, with
+<code>--ignore-scripts</code> so no dependency's install script runs, because the release
+job builds on a fresh checkout with no <code>node_modules</code>. The command comes from
+vergil-tooling
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/4509">vergil-tooling#4509</a>);
+a vergil-tooling release without it derives no TypeScript build command, so
+the build step is skipped.</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>Derive commands.</strong> Runs <code>vrg-ecosystem-resolve &lt;language&gt;</code>, which sets

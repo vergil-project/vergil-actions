@@ -859,6 +859,8 @@
       
         
       
+        
+      
     
     
     
@@ -911,6 +913,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.78/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.78
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5204,6 +5234,8 @@
       
         
       
+        
+      
     
     
     
@@ -5460,6 +5492,34 @@
     
   
     ci/evidence/reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-evidence-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/assert
   
 
     
@@ -6650,6 +6710,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#release-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6665,6 +6736,17 @@
     <span class="md-ellipsis">
       
         Extension points
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence
       
     </span>
   </a>
@@ -7463,6 +7545,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#release-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7478,6 +7571,17 @@
     <span class="md-ellipsis">
       
         Extension points
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence
       
     </span>
   </a>
@@ -7576,9 +7680,14 @@ only <code>language:</code>, and optionally <code>container-suffix:</code> as a 
 <td>Language-specific type checking (matrix-expanded — informational, not a required check)</td>
 </tr>
 <tr>
+<td><code>build / &lt;version&gt;</code></td>
+<td><code>&lt;caller&gt; / build / &lt;version&gt;</code></td>
+<td>The release build, <code>vrg-validate --check build</code>, once on the primary version, only for a language whose BUILD check vergil-tooling turns on (see <a href="#release-build">Release build</a> — informational, gated through <code>quality / evidence</code>)</td>
+</tr>
+<tr>
 <td><code>evidence</code></td>
 <td><code>quality / evidence</code></td>
-<td>Aggregate gate — <code>needs</code> the <code>common</code>, <code>custom</code>, <code>lint</code>, and <code>typecheck</code> jobs, runs <code>if: always()</code>, and asserts each succeeded; a failed/skipped leg makes it <strong>fail red</strong> rather than skip. <strong>This stable, version-agnostic gate is the required check</strong> (see <a href="../../ci-gates/required-checks/">Required Checks</a>)</td>
+<td>Aggregate gate — <code>needs</code> the <code>common</code>, <code>custom</code>, <code>lint</code>, <code>typecheck</code> and <code>build</code> jobs, runs <code>if: always()</code>, and asserts each of the first four succeeded and that <code>build</code> matches the BUILD flag; a failed/skipped leg makes it <strong>fail red</strong> rather than skip. <strong>This stable, version-agnostic gate is the required check</strong> (see <a href="../../ci-gates/required-checks/">Required Checks</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -7643,6 +7752,25 @@ partial and bundled into <code>ci-evidence-quality</code> as <code>quality-custo
 <code>evidence</code> job needs <code>custom</code>, so a failed or skipped custom stage fails
 <code>quality / evidence</code> — there is no separate required check (epic
 <a href="https://github.com/vergil-project/.github/issues/488">vergil-project/.github#488</a>).</p>
+<h2 id="release-build">Release build<a class="headerlink" href="#release-build" title="Permanent link">&para;</a></h2>
+<p>The <code>build</code> job runs <code>vrg-validate --check build</code>, the language's build
+command, the same one the release job runs, so a build that would fail at
+release fails on the PR instead (epic
+<a href="https://github.com/vergil-project/.github/issues/1174">vergil-project/.github#1174</a>).
+It runs once, on the primary version's image, with the same checkout, setup,
+Python pin and <code>assert-toolchain</code> steps as a <code>typecheck</code> leg.</p>
+<p>The job runs only when the <code>matrix</code> job's <code>build-enabled</code> output is <code>true</code>.
+That output is <code>vrg-ci-resolve</code>'s <code>build-enabled</code>, passed on by the
+<a href="../../actions/shared-setup-vergil/">setup action</a>: vergil-tooling decides
+which languages have a BUILD check, and no language list lives in this
+workflow, so turning BUILD on for a language needs no change here. A
+vergil-tooling release older than the flag gives <code>false</code>.</p>
+<p>A skipped <code>build</code> job is a valid result, so the <code>evidence</code> job does not
+require it to succeed. It checks the result against the flag with
+<a href="../../actions/ci-evidence-assert/"><code>ci/evidence/assert</code></a>: skipped with
+BUILD off and successful with BUILD on pass, and anything else, a skipped
+build with BUILD on included, fails <code>quality / evidence</code>. The job uploads no
+report. There is no separate required check and no ruleset change.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">quality</span><span class="p">:</span>
@@ -7652,22 +7780,79 @@ partial and bundled into <code>ci-evidence-quality</code> as <code>quality-custo
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">container-suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 </code></pre></div>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
-<p>Each of the four check jobs runs a <code>vrg-validate</code> check: <code>common</code> runs
+<p>Each of the five check jobs runs a <code>vrg-validate</code> check: <code>common</code> runs
 <code>vrg-validate --check common</code>, <code>custom</code> runs <code>vrg-validate --check custom</code>,
-and each <code>lint</code> and <code>typecheck</code> leg runs <code>vrg-validate --check lint</code> or
-<code>vrg-validate --check typecheck</code> for the language. The lint and typecheck
-commands live in vergil-tooling, not in this workflow, so a language's checks
-change there.</p>
-<p>The quality gate is not part of the
-<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a> contract, which
-covers only <code>test</code> and <code>audit</code>. <code>quality / evidence</code> always carries the
-<code>common</code> and <code>custom</code> transcripts (<code>quality-common.log</code> and
-<code>quality-custom.log</code>), for every language. The lint and typecheck legs add a
-report only for Python, and only when vergil-tooling writes it:
-<code>quality-ruff.json</code> from ruff and <code>quality-mypy.xml</code> from mypy, staged per
-version. When the file is absent the leg uploads nothing and logs a warning,
-without failing. The legs look only for these two Python file names, so
-other languages' lint and typecheck legs stage no report.</p>
+each <code>lint</code> and <code>typecheck</code> leg runs <code>vrg-validate --check lint</code> or
+<code>vrg-validate --check typecheck</code> for the language, and <code>build</code> runs
+<code>vrg-validate --check build</code>. The lint, typecheck and build commands live in
+vergil-tooling, not in this workflow, so a language's checks change there.</p>
+<h2 id="evidence">Evidence<a class="headerlink" href="#evidence" title="Permanent link">&para;</a></h2>
+<p><code>quality / evidence</code> always carries the <code>common</code> and <code>custom</code> transcripts
+(<code>quality-common.log</code> and <code>quality-custom.log</code>), for every language. Each
+<code>lint</code> and <code>typecheck</code> leg stages its language's reports through
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose <code>lint</code> and
+<code>typecheck</code> contracts name them, with the leg's version suffix:</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Leg</th>
+<th>Report</th>
+<th>Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>python</code></td>
+<td><code>lint</code></td>
+<td><code>quality-ruff.json</code></td>
+<td>ruff</td>
+</tr>
+<tr>
+<td><code>python</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-mypy.xml</code></td>
+<td>mypy</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>lint</code></td>
+<td><code>quality-clippy.json</code></td>
+<td>rustfmt, clippy</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-cargo-check.json</code></td>
+<td>cargo</td>
+</tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>lint</code></td>
+<td><code>quality-eslint.json</code></td>
+<td>prettier, eslint</td>
+</tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-tsc.txt</code></td>
+<td>tsc</td>
+</tr>
+</tbody>
+</table>
+<p>The reports are required. A leg that passes but leaves its report missing
+or empty fails its staging step. A leg that fails is not failed again for a
+missing report. Before it emits, the <code>evidence</code> job checks that every report
+of the language is there from at least one leg, and fails naming any that is
+not. The emitted artifact takes every <code>quality-*</code> file the jobs uploaded,
+and its tools are <code>vrg-validate-common</code>, <code>vrg-validate-custom</code>, then the
+language's lint and typecheck tools.</p>
+<p>A fleet language with no lint or typecheck contract yet (<code>go</code>, <code>cpp</code>) gets
+a warning on its legs and in the <code>evidence</code> job, stages no report and lists
+no lint or typecheck tools. A repository with no fleet
+primary language (a shell or Claude plugin repository, or one that passes no
+<code>language</code>) gets a notice instead. Either way the evidence carries the
+<code>common</code> and <code>custom</code> transcripts and their tools only.</p>
 
 
 

@@ -859,6 +859,8 @@
       
         
       
+        
+      
     
     
     
@@ -911,6 +913,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.78/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.78
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5211,6 +5241,8 @@
       
         
       
+        
+      
     
     
     
@@ -5561,6 +5593,34 @@
     
   
     ci/evidence/reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-evidence-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/assert
   
 
     
@@ -7499,7 +7559,13 @@ reusable CI workflows:</p>
 </table>
 <p>Consuming repositories do not add it themselves. In <code>ci-test</code> and <code>ci-audit</code>
 the report files and tools come from each language's contract in
-<a href="../ci-evidence-reports/"><code>ci/evidence/reports</code></a>.</p>
+<a href="../ci-evidence-reports/"><code>ci/evidence/reports</code></a>. In <code>ci-quality</code> the files are
+<code>evidence-reports/quality-*</code>: the <code>common</code> and <code>custom</code> transcripts and every
+lint and typecheck leg's reports. The tools are <code>vrg-validate-common</code> and
+<code>vrg-validate-custom</code>, then the language's lint and typecheck tools from the
+same contract. Because an entry that matches no file is skipped, <code>ci-quality</code>
+first checks, with that action's <code>expect</code> mode, that every lint and
+typecheck report of the language is there.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
