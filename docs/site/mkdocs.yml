@@ -75,6 +75,7 @@ nav:
           - ci/toolchain/assert: actions/ci-toolchain-assert.md
           - ci/evidence/emit: actions/ci-evidence-emit.md
           - ci/evidence/reports: actions/ci-evidence-reports.md
+          - ci/evidence/assert: actions/ci-evidence-assert.md
       - CD:
           - cd/release/tag-and-release: actions/cd-release-tag-and-release.md
           - cd/release/validate-inputs: actions/cd-release-validate-inputs.md

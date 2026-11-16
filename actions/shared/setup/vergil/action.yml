@@ -16,7 +16,8 @@ description: >-
   Then resolves the CI version set by calling the single resolver,
   `vrg-ci-resolve`, against the published language version window, and
   exposes its answer as the `versions` (JSON array), `primary-version`,
-  `primary-container-tag`, `container-tags` and `container-suffixes` outputs,
+  `primary-container-tag`, `container-tags`, `container-suffixes` and
+  `build-enabled` outputs,
   so reusable workflows read their matrix from the resolver rather than from
   hardcoded inputs (epics vergil-project/.github#338 and #407).
 
@@ -73,6 +74,14 @@ outputs:
       (e.g. '{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}'). Consumed by
       actions/ci/matrix.
     value: ${{ steps.derive.outputs.container-suffixes }}
+  build-enabled:
+    description: >-
+      "true" when vergil-tooling turns the BUILD check on for the repo's
+      language (`vrg-ci-resolve`'s `build-enabled`), else "false". A
+      vergil-tooling release older than the field gives "false". ci-quality's
+      `matrix` job passes it on, and its `build` job runs only when it is
+      "true" (epic vergil-project/.github#1174).
+    value: ${{ steps.derive.outputs.build-enabled }}
 
 runs:
   using: composite

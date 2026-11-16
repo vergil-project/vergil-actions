@@ -23,6 +23,7 @@ actions/                          Composite GitHub Actions
   cd/docs/deploy/                 MkDocs + mike versioned deployment
   cd/release/                     Release inputs, tagging, registry publish,
                                   CI evidence gate and attach
+  ci/evidence/assert/             Build job check against the BUILD flag
   ci/evidence/emit/               Per-gate CI evidence artifact
   ci/evidence/reports/            Per-language test/audit report contract
                                   and staging

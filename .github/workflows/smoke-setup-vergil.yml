@@ -2,8 +2,8 @@ name: Smoke - setup/vergil outputs
 
 # Smoke test for the shared setup/vergil action's resolver outputs
 # (`versions`, `primary-version`, `primary-container-tag`, `container-tags`,
-# `container-suffixes`), the ci/matrix action built from them, and the
-# ci/toolchain/assert and ci/toolchain/pin-python actions (epics
+# `container-suffixes`, `build-enabled`), the ci/matrix action built from
+# them, and the ci/toolchain/assert and ci/toolchain/pin-python actions (epics
 # vergil-project/.github#338 and #407).
 #
 #   * fixtures — installs vergil-tooling with the setup action itself (for the
@@ -42,6 +42,10 @@ name: Smoke - setup/vergil outputs
 #         evidence job's needs and its "Assert all required legs succeeded"
 #         RESULTS, so a failed or skipped stage fails quality / evidence
 #         (epic vergil-project/.github#488);
+#       - ci/evidence/assert build-gate.test.sh: the quality evidence gate's
+#         check of the build job, passing only for BUILD off and the job
+#         skipped or BUILD on and the job succeeded (epic
+#         vergil-project/.github#1174);
 #       - ci/evidence security-tools.test.sh: ci-security's evidence job
 #         names every scanner whose SARIF partial it bundles in the
 #         security gate's tools, codeql only when its job passed, and two
@@ -87,7 +91,7 @@ name: Smoke - setup/vergil outputs
 #     that no workflow and no part of validation runs, so a new harness must
 #     be wired here or in another workflow (issue #1202).
 #   * action-e2e — calls the setup action against a Python library fixture and
-#     a fixture window (the `version-window` input), asserts all five outputs
+#     a fixture window (the `version-window` input), asserts all six outputs
 #     are wired through action.yml, and feeds them to ci/matrix.
 
 on:
@@ -136,6 +140,9 @@ jobs:
       - name: Run ci/evidence gate harness
         shell: bash
         run: bash actions/ci/evidence/tests/gate.test.sh
+      - name: Run ci/evidence/assert build-gate.sh harness
+        shell: bash
+        run: bash actions/ci/evidence/assert/tests/build-gate.test.sh
       - name: Run ci/evidence security-tools harness
         shell: bash
         run: bash actions/ci/evidence/tests/security-tools.test.sh
@@ -201,7 +208,7 @@ jobs:
         with:
           version-window: actions/shared/setup/vergil/tests/fixtures/window.json
 
-      - name: Assert the five resolver outputs
+      - name: Assert the six resolver outputs
         shell: bash
         env:
           VERSIONS: ${{ steps.setup.outputs.versions }}
@@ -209,6 +216,7 @@ jobs:
           PRIMARY_TAG: ${{ steps.setup.outputs.primary-container-tag }}
           TAGS: ${{ steps.setup.outputs.container-tags }}
           SUFFIXES: ${{ steps.setup.outputs.container-suffixes }}
+          BUILD_ENABLED: ${{ steps.setup.outputs.build-enabled }}
         run: |
           set -euo pipefail
           failed=0
@@ -225,8 +233,18 @@ jobs:
           check primary-container-tag "$PRIMARY_TAG" "3.15"
           check container-tags "$TAGS" '{"3.15":"3.15","3.14":"3.14","3.13":"3.13"}'
           check container-suffixes "$SUFFIXES" '{"3.15":"python","3.14":"python","3.13":"python"}'
+          # build-enabled is vergil-tooling's to decide per language, so only
+          # its wiring is checked here: "true" or "false", never empty.
+          echo "build-enabled=$BUILD_ENABLED"
+          case "$BUILD_ENABLED" in
+            true | false) ;;
+            *)
+              echo "::error::build-enabled is '$BUILD_ENABLED', expected true or false"
+              failed=1
+              ;;
+          esac
           [ "$failed" -eq 0 ]
-          echo "All five outputs correct."
+          echo "All six outputs correct."
 
       - name: Build the matrix from the outputs
         id: matrix
