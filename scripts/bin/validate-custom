@@ -48,7 +48,6 @@ check_test_script_modes() {
 # suite runs here. An entry must name a tracked action suite: a stale one
 # fails the run rather than hide a renamed suite.
 CI_ONLY_ACTION_SUITES=(
-	"actions/ci/evidence/tests/security-tools.test.sh|needs yq, absent from the validation image"
 	"actions/shared/setup/vergil/tests/install-tooling.test.sh|needs python3, absent from the validation image"
 )
 
