@@ -15,7 +15,10 @@
 #   * have a line `<job>=${{ needs.<job>.result }}` in the RESULTS env of the
 #     evidence step named "Assert all required legs succeeded".
 # It also checks the evidence job runs `if: always()` and that the assert step
-# exists, so the gate fails red rather than being skipped.
+# exists, so the gate fails red rather than being skipped. The `build` job is
+# the one exception: it is skipped by design when BUILD is off, so instead of
+# a RESULTS line it is checked against its flag by ci/evidence/assert (see
+# case_build below; epic vergil-project/.github#1174).
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -87,11 +90,62 @@ case_stage() {
   pass_case "$name"
 }
 
+# The `build` job runs only when vergil-tooling turns BUILD on for the
+# language (epic vergil-project/.github#1174), so a skipped build is a valid
+# result and it is not gated through RESULTS. Instead it must:
+#   * run only on `needs.matrix.outputs.build-enabled == 'true'`;
+#   * be in jobs.evidence.needs, with `matrix` (for the flag);
+#   * have no RESULTS line, which would fail every repo with BUILD off;
+#   * be checked by a ci/evidence/assert step given the flag and its result,
+#     placed before the emit step.
+case_build() {
+  local name="build-gates-quality-evidence" enabled result idx emit_idx
+  if [ "$(q '.jobs.build.if')" != "needs.matrix.outputs.build-enabled == 'true'" ]; then
+    fail_case "$name" "build job's if is not needs.matrix.outputs.build-enabled == 'true'"
+    return 0
+  fi
+  if ! printf '%s\n' "$needs" | grep -qxF build ||
+    ! printf '%s\n' "$needs" | grep -qxF matrix; then
+    fail_case "$name" "build and matrix are not both in jobs.evidence.needs"
+    return 0
+  fi
+  if printf '%s\n' "$results" | grep -q '^[[:space:]]*build='; then
+    fail_case "$name" "build has a RESULTS line in '${assert_step}'; a skipped build must not fail it"
+    return 0
+  fi
+  idx="$(q '.jobs.evidence.steps | to_entries | .[] | select(.value.uses == "./actions/ci/evidence/assert") | .key')"
+  emit_idx="$(q '.jobs.evidence.steps | to_entries | .[] | select(.value.uses == "./actions/ci/evidence/emit") | .key')"
+  if [ -z "$idx" ] || [ "$(printf '%s\n' "$idx" | wc -l)" -ne 1 ]; then
+    fail_case "$name" "the evidence job has not exactly one ci/evidence/assert step"
+    return 0
+  fi
+  if [ -z "$emit_idx" ] || [ "$idx" -ge "$emit_idx" ]; then
+    fail_case "$name" "the ci/evidence/assert step does not come before the emit step"
+    return 0
+  fi
+  enabled="$(q ".jobs.evidence.steps[${idx}].with.build-enabled")"
+  result="$(q ".jobs.evidence.steps[${idx}].with.build-result")"
+  # shellcheck disable=SC2016 # the expressions are literal workflow text
+  if [ "$enabled" != '${{ needs.matrix.outputs.build-enabled }}' ] ||
+    [ "$result" != '${{ needs.build.result }}' ]; then
+    fail_case "$name" "the ci/evidence/assert step is not given the matrix flag and needs.build.result"
+    return 0
+  fi
+  pass_case "$name"
+}
+
 case_evidence_structure
 while IFS= read -r job; do
   [ -n "$job" ] || continue
+  if [ "$job" = build ]; then
+    case_build
+    continue
+  fi
   case_stage "$job"
 done <<<"$stage_jobs"
+if ! printf '%s\n' "$stage_jobs" | grep -qxF build; then
+  fail_case "build-gates-quality-evidence" "ci-quality.yml has no build job"
+fi
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

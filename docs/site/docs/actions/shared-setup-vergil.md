@@ -41,6 +41,7 @@ to detect vergil-tooling itself, `pyproject.toml`) from the working directory.
 | `primary-container-tag` | The resolver's image tag for the primary version (`clang-20` has tag `20`, `node-24` has `24`, `3.14` has `3.14`). Used by the single-container `common` and `custom` jobs in `ci-quality`, the `version-bump` job in `ci-version-bump` and the `release` job in `cd-release`. |
 | `container-tags` | Compact JSON object mapping each resolved version to its image tag, e.g. `{"clang-20":"20","gcc-14":"14"}`. Passed to [`ci/matrix`](ci-matrix.md). |
 | `container-suffixes` | Compact JSON object mapping each resolved version to its image suffix, e.g. `{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}`. Passed to [`ci/matrix`](ci-matrix.md), and to [`shared/setup/primary-suffix`](shared-setup-primary-suffix.md) for the single-container jobs' image suffix. |
+| `build-enabled` | `true` when vergil-tooling turns the BUILD check on for the repository's language (`vrg-ci-resolve`'s `build-enabled`), else `false`. A vergil-tooling release older than the field gives `false`, with a notice; any value other than `true` or `false` fails the step. `ci-quality`'s `matrix` job passes it on, and its `build` job runs only when it is `true`. |
 
 ## Behavior
 

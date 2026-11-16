@@ -6,8 +6,8 @@ registry. Build and publish commands come from vergil-tooling's ecosystem
 metadata (`vrg-ecosystem-resolve`) unless the caller overrides them.
 
 This action is **wired automatically** into the `cd-release` release job, where
-its **Build and publish** step runs for `python`, `rust` and `go`
-repositories. Consuming repositories set its behavior through the
+its **Build and publish** step runs for `python`, `rust`, `go` and
+`typescript` repositories. Consuming repositories set its behavior through the
 `cd-release` inputs and secrets, not by calling it directly.
 
 ## Usage
@@ -53,8 +53,28 @@ The derived commands come from vergil-tooling's language registry:
 | Language | Build | Publish | Credential variable |
 | -------- | ----- | ------- | ------------------- |
 | `python` | `uv build` | `uv publish` | none (PyPI trusted publishing) |
-| `rust` | `cargo build --release` | `cargo publish` | `CARGO_REGISTRY_TOKEN` |
+| `rust` | `cargo build --release --locked --workspace` | `cargo publish --locked` | `CARGO_REGISTRY_TOKEN` |
 | `go` | `go build ./...` | none | none |
+| `typescript` | `npm ci --ignore-scripts && npm run build` | none | none |
+
+Rust's commands carry `--locked`, so a release builds and publishes exactly
+what `Cargo.lock` records and a stale lockfile fails the step, and the build
+takes `--workspace`, so it builds every member of a workspace. It is the same
+command `vrg-validate` builds before release, so validation and release build
+the same thing. Both flags come from vergil-tooling
+([vergil-tooling#4470](https://github.com/vergil-project/vergil-tooling/issues/4470)
+and [#4476](https://github.com/vergil-project/vergil-tooling/issues/4476));
+a vergil-tooling release without them derives `cargo build --release` and
+`cargo publish`.
+
+TypeScript has no publish command, so a TypeScript release builds and is never
+published to npm. Its build installs from the lockfile first, with
+`--ignore-scripts` so no dependency's install script runs, because the release
+job builds on a fresh checkout with no `node_modules`. The command comes from
+vergil-tooling
+([vergil-tooling#4509](https://github.com/vergil-project/vergil-tooling/issues/4509));
+a vergil-tooling release without it derives no TypeScript build command, so
+the build step is skipped.
 
 ## Behavior
 

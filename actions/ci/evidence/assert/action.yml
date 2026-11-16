@@ -1,0 +1,30 @@
+name: CI evidence build gate
+description: >-
+  The quality evidence gate's check of ci-quality's `build` job (epic
+  vergil-project/.github#1174). The job runs only when vergil-tooling turns
+  the BUILD check on for the repo's language, which `vrg-ci-resolve` reports
+  as `build-enabled`. Passes when BUILD is off and the job was skipped, or
+  BUILD is on and the job succeeded; fails with an error naming what is wrong
+  for every other pair, a skipped job with BUILD on included, so a build that
+  should have run never leaves quality / evidence green by absence.
+
+inputs:
+  build-enabled:
+    description: >-
+      The `matrix` job's `build-enabled` output, "true" or "false". Any other
+      value fails.
+    required: true
+  build-result:
+    description: >-
+      `needs.build.result`: success, failure, cancelled or skipped.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check the build job against the BUILD flag
+      shell: bash
+      env:
+        BUILD_ENABLED: ${{ inputs.build-enabled }}
+        BUILD_RESULT: ${{ inputs.build-result }}
+      run: bash "${GITHUB_ACTION_PATH}/build-gate.sh" "$BUILD_ENABLED" "$BUILD_RESULT"

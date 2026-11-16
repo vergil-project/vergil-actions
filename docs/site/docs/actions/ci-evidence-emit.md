@@ -20,7 +20,13 @@ reusable CI workflows:
 
 Consuming repositories do not add it themselves. In `ci-test` and `ci-audit`
 the report files and tools come from each language's contract in
-[`ci/evidence/reports`](ci-evidence-reports.md).
+[`ci/evidence/reports`](ci-evidence-reports.md). In `ci-quality` the files are
+`evidence-reports/quality-*`: the `common` and `custom` transcripts and every
+lint and typecheck leg's reports. The tools are `vrg-validate-common` and
+`vrg-validate-custom`, then the language's lint and typecheck tools from the
+same contract. Because an entry that matches no file is skipped, `ci-quality`
+first checks, with that action's `expect` mode, that every lint and
+typecheck report of the language is there.
 
 ## Usage
 

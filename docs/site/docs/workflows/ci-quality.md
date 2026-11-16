@@ -33,7 +33,8 @@ only `language:`, and optionally `container-suffix:` as a cross-check.
 | `custom` | `<caller> / custom` | Runs the repo's custom validator with `vrg-validate --check custom`, or logs that there is none (single-container job on the primary version — informational, gated through `quality / evidence`) |
 | `lint / <version>` | `<caller> / lint / <version>` | Language-specific linting (matrix-expanded — informational, not a required check) |
 | `typecheck / <version>` | `<caller> / typecheck / <version>` | Language-specific type checking (matrix-expanded — informational, not a required check) |
-| `evidence` | `quality / evidence` | Aggregate gate — `needs` the `common`, `custom`, `lint`, and `typecheck` jobs, runs `if: always()`, and asserts each succeeded; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
+| `build / <version>` | `<caller> / build / <version>` | The release build, `vrg-validate --check build`, once on the primary version, only for a language whose BUILD check vergil-tooling turns on (see [Release build](#release-build) — informational, gated through `quality / evidence`) |
+| `evidence` | `quality / evidence` | Aggregate gate — `needs` the `common`, `custom`, `lint`, `typecheck` and `build` jobs, runs `if: always()`, and asserts each of the first four succeeded and that `build` matches the BUILD flag; a failed/skipped leg makes it **fail red** rather than skip. **This stable, version-agnostic gate is the required check** (see [Required Checks](../ci-gates/required-checks.md)) |
 
 ## Common checks
 
@@ -80,6 +81,29 @@ partial and bundled into `ci-evidence-quality` as `quality-custom.log`. The
 `quality / evidence` — there is no separate required check (epic
 [vergil-project/.github#488](https://github.com/vergil-project/.github/issues/488)).
 
+## Release build
+
+The `build` job runs `vrg-validate --check build`, the language's build
+command, the same one the release job runs, so a build that would fail at
+release fails on the PR instead (epic
+[vergil-project/.github#1174](https://github.com/vergil-project/.github/issues/1174)).
+It runs once, on the primary version's image, with the same checkout, setup,
+Python pin and `assert-toolchain` steps as a `typecheck` leg.
+
+The job runs only when the `matrix` job's `build-enabled` output is `true`.
+That output is `vrg-ci-resolve`'s `build-enabled`, passed on by the
+[setup action](../actions/shared-setup-vergil.md): vergil-tooling decides
+which languages have a BUILD check, and no language list lives in this
+workflow, so turning BUILD on for a language needs no change here. A
+vergil-tooling release older than the flag gives `false`.
+
+A skipped `build` job is a valid result, so the `evidence` job does not
+require it to succeed. It checks the result against the flag with
+[`ci/evidence/assert`](../actions/ci-evidence-assert.md): skipped with
+BUILD off and successful with BUILD on pass, and anything else, a skipped
+build with BUILD on included, fails `quality / evidence`. The job uploads no
+report. There is no separate required check and no ruleset change.
+
 ## Usage
 
 ```yaml
@@ -93,20 +117,41 @@ jobs:
 
 ## Extension points
 
-Each of the four check jobs runs a `vrg-validate` check: `common` runs
+Each of the five check jobs runs a `vrg-validate` check: `common` runs
 `vrg-validate --check common`, `custom` runs `vrg-validate --check custom`,
-and each `lint` and `typecheck` leg runs `vrg-validate --check lint` or
-`vrg-validate --check typecheck` for the language. The lint and typecheck
-commands live in vergil-tooling, not in this workflow, so a language's checks
-change there.
+each `lint` and `typecheck` leg runs `vrg-validate --check lint` or
+`vrg-validate --check typecheck` for the language, and `build` runs
+`vrg-validate --check build`. The lint, typecheck and build commands live in
+vergil-tooling, not in this workflow, so a language's checks change there.
 
-The quality gate is not part of the
-[`ci/evidence/reports`](../actions/ci-evidence-reports.md) contract, which
-covers only `test` and `audit`. `quality / evidence` always carries the
-`common` and `custom` transcripts (`quality-common.log` and
-`quality-custom.log`), for every language. The lint and typecheck legs add a
-report only for Python, and only when vergil-tooling writes it:
-`quality-ruff.json` from ruff and `quality-mypy.xml` from mypy, staged per
-version. When the file is absent the leg uploads nothing and logs a warning,
-without failing. The legs look only for these two Python file names, so
-other languages' lint and typecheck legs stage no report.
+## Evidence
+
+`quality / evidence` always carries the `common` and `custom` transcripts
+(`quality-common.log` and `quality-custom.log`), for every language. Each
+`lint` and `typecheck` leg stages its language's reports through
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose `lint` and
+`typecheck` contracts name them, with the leg's version suffix:
+
+| Language | Leg | Report | Tools |
+| -------- | --- | ------ | ----- |
+| `python` | `lint` | `quality-ruff.json` | ruff |
+| `python` | `typecheck` | `quality-mypy.xml` | mypy |
+| `rust` | `lint` | `quality-clippy.json` | rustfmt, clippy |
+| `rust` | `typecheck` | `quality-cargo-check.json` | cargo |
+| `typescript` | `lint` | `quality-eslint.json` | prettier, eslint |
+| `typescript` | `typecheck` | `quality-tsc.txt` | tsc |
+
+The reports are required. A leg that passes but leaves its report missing
+or empty fails its staging step. A leg that fails is not failed again for a
+missing report. Before it emits, the `evidence` job checks that every report
+of the language is there from at least one leg, and fails naming any that is
+not. The emitted artifact takes every `quality-*` file the jobs uploaded,
+and its tools are `vrg-validate-common`, `vrg-validate-custom`, then the
+language's lint and typecheck tools.
+
+A fleet language with no lint or typecheck contract yet (`go`, `cpp`) gets
+a warning on its legs and in the `evidence` job, stages no report and lists
+no lint or typecheck tools. A repository with no fleet
+primary language (a shell or Claude plugin repository, or one that passes no
+`language`) gets a notice instead. Either way the evidence carries the
+`common` and `custom` transcripts and their tools only.

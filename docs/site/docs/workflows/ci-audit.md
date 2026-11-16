@@ -40,10 +40,10 @@ thin: they pass only `language:` and `container-suffix:`.
 
 Each `dependencies` leg stages the language's audit reports for the
 `ci-evidence-audit` artifact: `pip-audit.json` and `licenses.json` for Python,
-`cargo-deny.json` for Rust. The names come from
-[`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose audit
-passed but wrote no report fails. A language with no audit report contract
-yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
+`cargo-deny.json` for Rust, `npm-audit.json` for TypeScript. The names come
+from [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose
+audit passed but wrote no report fails. A language with no audit report
+contract yet (Go, C++) gets a warning and stages nothing, and the
 release-time evidence gate decides.
 
 ## Usage
@@ -75,10 +75,10 @@ jobs:
 
 The `dependencies` job runs each language's real audit through
 `vrg-validate --check audit`: pip-audit and pip-licenses for Python,
-cargo-deny for Rust. The audit commands live in vergil-tooling, not in this
-workflow. Each leg then stages its reports through
-[`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose table is the
-one place this repository records a language's audit report names. Giving a
-language without a contract yet (Go, C++, TypeScript) audit evidence means
-adding its entry to that table alongside the vergil-tooling gate command that
-writes the reports; the workflow itself needs no change.
+cargo-deny for Rust, `npm audit` for TypeScript. The audit commands live in
+vergil-tooling, not in this workflow. Each leg then stages its reports
+through [`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose
+table is the one place this repository records a language's audit report
+names. Giving a language without a contract yet (Go, C++) audit evidence
+means adding its entry to that table alongside the vergil-tooling gate
+command that writes the reports; the workflow itself needs no change.

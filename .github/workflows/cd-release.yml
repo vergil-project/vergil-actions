@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       language:
-        description: Programming language ecosystem (go, python, rust). Omit for non-language projects.
+        description: Programming language ecosystem (go, python, rust, typescript). Omit for non-language projects.
         type: string
         default: ""
       container-suffix:
@@ -612,7 +612,7 @@ jobs:
 
       - name: Build and publish
         if: >-
-          contains(fromJSON('["python","rust","go"]'), inputs.language) &&
+          contains(fromJSON('["python","rust","go","typescript"]'), inputs.language) &&
           steps.tag_check.outputs.exists == 'false'
         uses: ./actions/cd/release/registry-publish
         with:

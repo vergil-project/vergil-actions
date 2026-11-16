@@ -32,6 +32,10 @@ definition and optional supporting scripts.
   — Holds each language's `test` and `audit` report files and stages a matrix
   leg's reports for the evidence artifact, failing when a passing gate wrote
   none; auto-wired into `ci-test` and `ci-audit`.
+- **[ci/evidence/assert](ci-evidence-assert.md)**
+  — Checks `ci-quality`'s `build` job against vergil-tooling's BUILD flag:
+  skipped with BUILD off, successful with BUILD on; auto-wired into the
+  `ci-quality` evidence job.
 
 ### CD
 
