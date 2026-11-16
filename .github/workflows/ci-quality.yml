@@ -238,26 +238,25 @@ jobs:
           expected: ${{ matrix.version }}
 
       - name: Run lint
+        id: gate
         run: vrg-validate --check lint
 
       # Bridge this leg's lint report across the job boundary (#836). The lint
       # job and the evidence job run on separate runners with separate
       # filesystems, so the report produced here is stranded unless uploaded.
-      # quality-ruff.json is a locked filename contract with vergil-tooling#2811
-      # (which adds its emission); until #2811 releases the file is absent and
-      # if-no-files-found: warn keeps this non-fatal. Version-suffix the basename
-      # so each leg stays distinct after the evidence emit step.
+      # The language's report names come from ci/evidence/reports (#1249),
+      # renamed to version-suffixed basenames so each leg stays distinct after
+      # the evidence emit step. A passing lint run that wrote no report fails
+      # this step.
       - name: Stage lint report for evidence
         if: always()
-        shell: bash
-        env:
-          VERSION: ${{ matrix.version }}
-        run: |
-          set -euo pipefail
-          mkdir -p ci-reports
-          if [ -f quality-ruff.json ]; then
-            cp quality-ruff.json "ci-reports/quality-ruff-${VERSION}.json"
-          fi
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: stage
+          language: ${{ inputs.language }}
+          gate: lint
+          version: ${{ matrix.version }}
+          gate-outcome: ${{ steps.gate.outcome }}
 
       - name: Upload lint report evidence partial
         if: always()
@@ -312,26 +311,25 @@ jobs:
           expected: ${{ matrix.version }}
 
       - name: Run typecheck
+        id: gate
         run: vrg-validate --check typecheck
 
       # Bridge this leg's typecheck report across the job boundary (#836). The
       # typecheck job and the evidence job run on separate runners with separate
       # filesystems, so the report produced here is stranded unless uploaded.
-      # quality-mypy.xml is a locked filename contract with vergil-tooling#2811
-      # (which adds its emission); until #2811 releases the file is absent and
-      # if-no-files-found: warn keeps this non-fatal. Version-suffix the basename
-      # so each leg stays distinct after the evidence emit step.
+      # The language's report names come from ci/evidence/reports (#1249),
+      # renamed to version-suffixed basenames so each leg stays distinct after
+      # the evidence emit step. A passing typecheck run that wrote no report
+      # fails this step.
       - name: Stage typecheck report for evidence
         if: always()
-        shell: bash
-        env:
-          VERSION: ${{ matrix.version }}
-        run: |
-          set -euo pipefail
-          mkdir -p ci-reports
-          if [ -f quality-mypy.xml ]; then
-            cp quality-mypy.xml "ci-reports/quality-mypy-${VERSION}.xml"
-          fi
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: stage
+          language: ${{ inputs.language }}
+          gate: typecheck
+          version: ${{ matrix.version }}
+          gate-outcome: ${{ steps.gate.outcome }}
 
       - name: Upload typecheck report evidence partial
         if: always()
@@ -352,12 +350,12 @@ jobs:
     # (quality-custom.log) the same way, so the custom validator's run — or
     # its "no custom validator" line — is part of the evidence (epic
     # vergil-project/.github#488). Each lint /
-    # typecheck leg uploads its version-suffixed quality-ruff.json /
-    # quality-mypy.xml as a per-version partial; the step below pulls every
-    # leg's reports back onto one runner so the emitted bundle carries each
-    # version's reports. Those filenames are a locked contract with
-    # vergil-tooling#2811 — until it releases the globs match nothing and emit
-    # skips them, so the artifact carries evidence.json alone (#836).
+    # typecheck leg uploads its version-suffixed reports (the language's
+    # names, from ci/evidence/reports) as a per-version partial; the step
+    # below pulls every leg's reports back onto one runner so the emitted
+    # bundle carries each version's reports (#836), and the expect step fails
+    # the job when any report the language's contract names is missing
+    # (#1249).
     needs: [common, custom, lint, typecheck]
     # Run even when a required leg fails or is skipped (default would skip this
     # job, leaving the gate green-by-absence). The assert step below then turns
@@ -405,13 +403,55 @@ jobs:
           path: evidence-reports
           merge-multiple: true
 
+      # The emit action skips a file pattern that matches nothing, so check
+      # first that the legs staged every lint and typecheck report the
+      # language's contract names (#1249). A language with no contract warns,
+      # or for a repository with no fleet primary language notes, and passes.
+      - name: Require the lint and typecheck reports
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: expect
+          language: ${{ inputs.language }}
+          reports-dir: evidence-reports
+
+      # The tools are the common and custom checks', then the lint and
+      # typecheck legs' tools from the same per-language contract.
+      - name: Resolve lint evidence tools
+        id: lint-tools
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: tools
+          language: ${{ inputs.language }}
+          gate: lint
+
+      - name: Resolve typecheck evidence tools
+        id: typecheck-tools
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: tools
+          language: ${{ inputs.language }}
+          gate: typecheck
+
+      - name: Combine quality evidence tools
+        id: tools
+        shell: bash
+        env:
+          LINT_TOOLS: ${{ steps.lint-tools.outputs.tools }}
+          TYPECHECK_TOOLS: ${{ steps.typecheck-tools.outputs.tools }}
+        run: |
+          set -euo pipefail
+          tools="$(jq -cn --argjson lint "$LINT_TOOLS" \
+            --argjson typecheck "$TYPECHECK_TOOLS" \
+            '[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}] + $lint + $typecheck')"
+          echo "tools=${tools}" >>"$GITHUB_OUTPUT"
+          echo "tools: ${tools}"
+
+      # Every file the legs uploaded is the common or custom transcript or one
+      # of the language's declared lint and typecheck reports (the stage step
+      # copies nothing else), all named quality-*.
       - name: Emit ci-evidence-quality artifact
         uses: ./actions/ci/evidence/emit
         with:
           gate: quality
-          files: |
-            evidence-reports/quality-common.log
-            evidence-reports/quality-custom.log
-            evidence-reports/quality-ruff-*.json
-            evidence-reports/quality-mypy-*.xml
-          tools: '[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}, {"name": "ruff"}, {"name": "mypy"}]'
+          files: evidence-reports/quality-*
+          tools: ${{ steps.tools.outputs.tools }}

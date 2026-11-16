@@ -53,8 +53,18 @@ The derived commands come from vergil-tooling's language registry:
 | Language | Build | Publish | Credential variable |
 | -------- | ----- | ------- | ------------------- |
 | `python` | `uv build` | `uv publish` | none (PyPI trusted publishing) |
-| `rust` | `cargo build --release` | `cargo publish` | `CARGO_REGISTRY_TOKEN` |
+| `rust` | `cargo build --release --locked --workspace` | `cargo publish --locked` | `CARGO_REGISTRY_TOKEN` |
 | `go` | `go build ./...` | none | none |
+
+Rust's commands carry `--locked`, so a release builds and publishes exactly
+what `Cargo.lock` records and a stale lockfile fails the step, and the build
+takes `--workspace`, so it builds every member of a workspace. It is the same
+command `vrg-validate` builds before release, so validation and release build
+the same thing. Both flags come from vergil-tooling
+([vergil-tooling#4470](https://github.com/vergil-project/vergil-tooling/issues/4470)
+and [#4476](https://github.com/vergil-project/vergil-tooling/issues/4476));
+a vergil-tooling release without them derives `cargo build --release` and
+`cargo publish`.
 
 ## Behavior
 

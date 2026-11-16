@@ -1,28 +1,39 @@
 name: CI evidence reports
 description: >-
   The per-language report-file contract of the `test` and `audit` evidence
-  gates (issue #1211). In `stage` mode, copies one matrix leg's report files
-  (for example coverage.xml and junit.xml, or Python's pip-audit.json and
-  licenses.json, or Rust's cargo-deny.json) into a directory as
+  gates and of the `quality` gate's `lint` and `typecheck` legs (issues #1211,
+  #1249). In `stage` mode, copies one matrix leg's report files (for example
+  coverage.xml and junit.xml, Rust's cargo-deny.json, or a lint leg's
+  quality-ruff.json or quality-clippy.json) into a directory as
   version-suffixed basenames, failing when the gate passed but a report the
   language's gate writes is missing or empty. In `tools` mode, outputs the
-  gate's tools JSON for the emit action. A fleet language with no contract
-  yet (go, cpp, typescript) gets a warning, stages nothing and lists no
-  tools, leaving the decision to the release-time evidence gate; an unknown
-  language or gate fails.
+  gate's tools JSON for the emit action. In `expect` mode, fails unless a
+  directory of downloaded legs holds every lint and typecheck report of the
+  language. A fleet language with no contract yet (go, cpp, typescript) gets
+  a warning, stages nothing and lists no tools, leaving the decision to the
+  release-time evidence gate; a lint or typecheck leg of a repository with no
+  fleet primary language (shell, a Claude plugin, none) gets a notice and
+  the same empty result; an unknown language for the test or audit gate, or
+  an unknown gate, fails.
 
 inputs:
   mode:
     description: >-
-      `stage` (copy this leg's reports into `out-dir`) or `tools` (output the
-      gate's tools JSON array).
+      `stage` (copy this leg's reports into `out-dir`), `tools` (output the
+      gate's tools JSON array) or `expect` (check `reports-dir` holds every
+      lint and typecheck report of the language).
     required: true
   language:
-    description: Primary language of the calling repo (e.g. python, rust).
+    description: >-
+      Primary language of the calling repo (e.g. python, rust). May be empty
+      only for the `lint` and `typecheck` gates and in `expect` mode.
     required: true
   gate:
-    description: Evidence gate, `test` or `audit`.
-    required: true
+    description: >-
+      Stage and tools modes: the evidence gate, `test`, `audit`, `lint` or
+      `typecheck`. Not used in `expect` mode.
+    required: false
+    default: ""
   version:
     description: >-
       Stage mode: the matrix leg's version label, appended to each staged
@@ -41,6 +52,12 @@ inputs:
     description: Stage mode, the directory to stage the reports into.
     required: false
     default: ci-reports
+  reports-dir:
+    description: >-
+      Expect mode, the directory holding every leg's staged reports (the
+      evidence job's download directory).
+    required: false
+    default: ""
 
 outputs:
   tools:
@@ -60,4 +77,5 @@ runs:
         VERSION: ${{ inputs.version }}
         GATE_OUTCOME: ${{ inputs.gate-outcome }}
         OUT_DIR: ${{ inputs.out-dir }}
+        REPORTS_DIR: ${{ inputs.reports-dir }}
       run: bash "${GITHUB_ACTION_PATH}/reports.sh"

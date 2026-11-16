@@ -100,13 +100,32 @@ and each `lint` and `typecheck` leg runs `vrg-validate --check lint` or
 commands live in vergil-tooling, not in this workflow, so a language's checks
 change there.
 
-The quality gate is not part of the
-[`ci/evidence/reports`](../actions/ci-evidence-reports.md) contract, which
-covers only `test` and `audit`. `quality / evidence` always carries the
-`common` and `custom` transcripts (`quality-common.log` and
-`quality-custom.log`), for every language. The lint and typecheck legs add a
-report only for Python, and only when vergil-tooling writes it:
-`quality-ruff.json` from ruff and `quality-mypy.xml` from mypy, staged per
-version. When the file is absent the leg uploads nothing and logs a warning,
-without failing. The legs look only for these two Python file names, so
-other languages' lint and typecheck legs stage no report.
+## Evidence
+
+`quality / evidence` always carries the `common` and `custom` transcripts
+(`quality-common.log` and `quality-custom.log`), for every language. Each
+`lint` and `typecheck` leg stages its language's reports through
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose `lint` and
+`typecheck` contracts name them, with the leg's version suffix:
+
+| Language | Leg | Report | Tools |
+| -------- | --- | ------ | ----- |
+| `python` | `lint` | `quality-ruff.json` | ruff |
+| `python` | `typecheck` | `quality-mypy.xml` | mypy |
+| `rust` | `lint` | `quality-clippy.json` | rustfmt, clippy |
+| `rust` | `typecheck` | `quality-cargo-check.json` | cargo |
+
+The reports are required. A leg that passes but leaves its report missing
+or empty fails its staging step. A leg that fails is not failed again for a
+missing report. Before it emits, the `evidence` job checks that every report
+of the language is there from at least one leg, and fails naming any that is
+not. The emitted artifact takes every `quality-*` file the jobs uploaded,
+and its tools are `vrg-validate-common`, `vrg-validate-custom`, then the
+language's lint and typecheck tools.
+
+A fleet language with no lint or typecheck contract yet (`go`, `cpp`,
+`typescript`) gets a warning on its legs and in the `evidence` job, stages
+no report and lists no lint or typecheck tools. A repository with no fleet
+primary language (a shell or Claude plugin repository, or one that passes no
+`language`) gets a notice instead. Either way the evidence carries the
+`common` and `custom` transcripts and their tools only.
