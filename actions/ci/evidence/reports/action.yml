@@ -2,19 +2,19 @@ name: CI evidence reports
 description: >-
   The per-language report-file contract of the `test` and `audit` evidence
   gates and of the `quality` gate's `lint` and `typecheck` legs (issues #1211,
-  #1249). In `stage` mode, copies one matrix leg's report files (for example
-  coverage.xml and junit.xml, Rust's cargo-deny.json, or a lint leg's
-  quality-ruff.json or quality-clippy.json) into a directory as
-  version-suffixed basenames, failing when the gate passed but a report the
-  language's gate writes is missing or empty. In `tools` mode, outputs the
-  gate's tools JSON for the emit action. In `expect` mode, fails unless a
-  directory of downloaded legs holds every lint and typecheck report of the
-  language. A fleet language with no contract yet (go, cpp, typescript) gets
-  a warning, stages nothing and lists no tools, leaving the decision to the
-  release-time evidence gate; a lint or typecheck leg of a repository with no
-  fleet primary language (shell, a Claude plugin, none) gets a notice and
-  the same empty result; an unknown language for the test or audit gate, or
-  an unknown gate, fails.
+  #1249, #1260). In `stage` mode, copies one matrix leg's report files (for
+  example coverage.xml and junit.xml, Rust's cargo-deny.json, TypeScript's
+  npm-audit.json, or a lint leg's quality-ruff.json, quality-clippy.json or
+  quality-eslint.json) into a directory as version-suffixed basenames,
+  failing when the gate passed but a report the language's gate writes is
+  missing or empty. In `tools` mode, outputs the gate's tools JSON for the
+  emit action. In `expect` mode, fails unless a directory of downloaded legs
+  holds every lint and typecheck report of the language. A fleet language
+  with no contract yet (go, cpp) gets a warning, stages nothing and lists no
+  tools, leaving the decision to the release-time evidence gate; a lint or
+  typecheck leg of a repository with no fleet primary language (shell, a
+  Claude plugin, none) gets a notice and the same empty result; an unknown
+  language for the test or audit gate, or an unknown gate, fails.
 
 inputs:
   mode:
@@ -25,8 +25,8 @@ inputs:
     required: true
   language:
     description: >-
-      Primary language of the calling repo (e.g. python, rust). May be empty
-      only for the `lint` and `typecheck` gates and in `expect` mode.
+      Primary language of the calling repo (e.g. python, rust, typescript).
+      May be empty only for the `lint` and `typecheck` gates and in `expect` mode.
     required: true
   gate:
     description: >-

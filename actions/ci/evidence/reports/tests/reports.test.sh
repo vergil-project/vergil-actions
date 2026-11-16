@@ -3,7 +3,7 @@
 # Behavioural test for reports.sh — the per-language report-file contract of
 # the test and audit evidence gates and of the quality gate's lint and
 # typecheck legs, the staging of one leg's reports, and expect mode's check of
-# the quality evidence job's reports (issues #1211, #1249).
+# the quality evidence job's reports (issues #1211, #1249, #1260).
 #
 # Framework-free and developer-runnable: `bash reports.test.sh`. CI runs it
 # from .github/workflows/smoke-setup-vergil.yml. It needs only bash and
@@ -12,8 +12,9 @@
 # Each stage case runs reports.sh in a scratch workspace holding chosen report
 # files, then asserts the exit status, the staged file names and contents, and
 # for the failure cases the `::error::` annotation naming each missing report.
-# A fleet language with no contract (go, cpp, typescript) must warn, stage
-# nothing and list no tools, while every bad input still fails. A repository
+# A fleet language with no contract (go, cpp) must warn, stage nothing and
+# list no tools, while every bad input still fails. TypeScript has a contract
+# for every gate (epic vergil-project/.github#1174) and warns on none. A repository
 # with no fleet primary language (shell, a Claude plugin, none) gets a notice
 # on its lint and typecheck legs instead. The final cases check that
 # ci-test.yml, ci-audit.yml and ci-quality.yml stage through this action, so a
@@ -140,6 +141,37 @@ case_stage rust-test-stages-coverage-and-junit rust test \
   "coverage-1.0.xml junit-1.0.xml " coverage.xml junit.xml
 case_stage rust-audit-stages-cargo-deny rust audit \
   "cargo-deny-1.0.json " cargo-deny.json
+case_stage typescript-test-stages-coverage-and-junit typescript test \
+  "coverage-1.0.xml junit-1.0.xml " coverage.xml junit.xml npm-audit.json
+case_stage typescript-audit-stages-npm-audit typescript audit \
+  "npm-audit-1.0.json " npm-audit.json coverage.xml junit.xml
+
+# TypeScript's audit report is npm-audit.json, never another language's
+# names: a workspace holding only Python's and Rust's audit reports fails a
+# passing TypeScript audit.
+name="typescript-audit-ignores-other-names"
+workspace "$name" pip-audit.json licenses.json cargo-deny.json
+run_reports stage typescript audit node-24 success
+if assert_error "$name" "typescript audit gate passed but wrote no npm-audit.json"; then
+  if [ -n "$(staged)" ]; then
+    fail_case "$name" "staged '$(staged)', expected nothing"
+  else
+    pass_case "$name"
+  fi
+fi
+
+# A passing TypeScript test leg that wrote no junit.xml fails naming it, and
+# still stages the coverage.xml it has.
+name="typescript-test-passing-without-junit-fails-naming-it"
+workspace "$name" coverage.xml
+run_reports stage typescript test node-24 success
+if assert_error "$name" "typescript test gate passed but wrote no junit.xml"; then
+  if [ "$(staged)" != "coverage-node-24.xml " ]; then
+    fail_case "$name" "staged '$(staged)', expected 'coverage-node-24.xml '"
+  else
+    pass_case "$name"
+  fi
+fi
 
 # The Rust test gate writes junit.xml through cargo-nextest (vergil-tooling#4395,
 # vergil-actions#1216), so a passing Rust test leg holding only coverage.xml
@@ -285,7 +317,7 @@ assert_no_contract_warning() {
   return 0
 }
 
-for language in go cpp typescript; do
+for language in go cpp; do
   for gate in test audit; do
     for outcome in success failure; do
       name="no-contract-${language}-${gate}-${outcome}-warns-and-stages-nothing"
@@ -321,7 +353,7 @@ fi
 
 name="no-contract-language-with-unknown-gate-fails"
 workspace "$name"
-run_reports stage typescript quality 1.0 success
+run_reports stage go quality 1.0 success
 if assert_error "$name" "unknown gate 'quality'"; then
   pass_case "$name"
 fi
@@ -406,10 +438,51 @@ case_tools python test '[{"name":"pytest"},{"name":"coverage.py"}]'
 case_tools python audit '[{"name":"pip-audit"},{"name":"pip-licenses"}]'
 case_tools rust test '[{"name":"cargo-llvm-cov"},{"name":"cargo-nextest"}]'
 case_tools rust audit '[{"name":"cargo-deny"}]'
+case_tools typescript test '[{"name":"vitest"},{"name":"@vitest/coverage-v8"}]'
+case_tools typescript audit '[{"name":"npm audit"}]'
+case_tools typescript lint '[{"name":"prettier"},{"name":"eslint"}]'
+case_tools typescript typecheck '[{"name":"tsc"}]'
+
+# TypeScript has a contract for every gate, so no mode warns for it.
+name="typescript-warns-on-no-gate"
+ok=1
+for gate in test audit lint typecheck; do
+  workspace "${name}-${gate}"
+  run_reports tools typescript "$gate"
+  if [ "$rc" -ne 0 ] || grep -qF -- "::warning::" <<<"${stdout}${stderr}"; then
+    fail_case "$name" "tools ${gate}: rc ${rc}, output '${stdout}${stderr}'"
+    ok=0
+  fi
+  workspace "${name}-stage-${gate}" coverage.xml junit.xml npm-audit.json \
+    quality-eslint.json quality-tsc.txt
+  run_reports stage typescript "$gate" node-24 success
+  if [ "$rc" -ne 0 ] || grep -qF -- "::warning::" <<<"${stdout}${stderr}"; then
+    fail_case "$name" "stage ${gate}: rc ${rc}, output '${stdout}${stderr}'"
+    ok=0
+  fi
+done
+if [ "$ok" -eq 1 ]; then
+  pass_case "$name"
+fi
+
+# A language with a contract but no report_tools branch is an internal error,
+# never a silent empty tools list. Sourced, with has_contract widened to claim
+# a contract for go/test, which report_tools has no branch for.
+name="tools-contract-without-tools-branch-fails"
+rc=0
+stderr="$(
+  # shellcheck source=../reports.sh
+  source "$reports_sh"
+  has_contract() { [ "$1/$2" = go/test ]; }
+  report_tools go test 2>&1 >/dev/null
+)" || rc=$?
+if assert_error "$name" "internal: no tools for 'go/test'"; then
+  pass_case "$name"
+fi
 
 # A fleet language with no contract gets an empty tools list and the warning,
 # so the evidence job (the required check) stays green for it.
-for language in go cpp typescript; do
+for language in go cpp; do
   for gate in test audit; do
     name="tools-no-contract-${language}-${gate}-is-empty-with-a-warning"
     workspace "$name"
@@ -477,6 +550,10 @@ case_stage rust-lint-stages-clippy rust lint \
   "quality-clippy-1.0.json " quality-clippy.json quality-cargo-check.json
 case_stage rust-typecheck-stages-cargo-check rust typecheck \
   "quality-cargo-check-1.0.json " quality-clippy.json quality-cargo-check.json
+case_stage typescript-lint-stages-eslint typescript lint \
+  "quality-eslint-1.0.json " quality-eslint.json quality-tsc.txt
+case_stage typescript-typecheck-stages-tsc typescript typecheck \
+  "quality-tsc-1.0.txt " quality-eslint.json quality-tsc.txt
 
 # case_tools_named <name> <language> <gate> <expected JSON>
 case_tools_named() {
@@ -540,9 +617,10 @@ else
   pass_case "$name"
 fi
 
-# A passing leg with no report fails, for each of the four entries.
+# A passing leg with no report fails, for each of the six entries.
 for entry in python/lint:quality-ruff.json python/typecheck:quality-mypy.xml \
-  rust/lint:quality-clippy.json rust/typecheck:quality-cargo-check.json; do
+  rust/lint:quality-clippy.json rust/typecheck:quality-cargo-check.json \
+  typescript/lint:quality-eslint.json typescript/typecheck:quality-tsc.txt; do
   pair="${entry%%:*}"
   file="${entry#*:}"
   language="${pair%%/*}"
@@ -568,7 +646,8 @@ done
 
 # A failing leg's missing report is not an extra failure: the step passes,
 # and the leg's own failure stands.
-for pair in python/lint rust/lint python/typecheck rust/typecheck; do
+for pair in python/lint rust/lint typescript/lint python/typecheck \
+  rust/typecheck typescript/typecheck; do
   language="${pair%%/*}"
   gate="${pair#*/}"
   name="failing-${language}-${gate}-leg-missing-report-not-extra-error"
@@ -586,7 +665,7 @@ for pair in python/lint rust/lint python/typecheck rust/typecheck; do
 done
 
 # A primary language with no quality contract warns, as for test and audit.
-for language in go cpp typescript; do
+for language in go cpp; do
   for gate in lint typecheck; do
     name="no-contract-${language}-${gate}-warns-and-stages-nothing"
     workspace "$name" quality-ruff.json quality-mypy.xml quality-clippy.json
@@ -748,6 +827,36 @@ else
 fi
 
 # Rust's reports are never satisfied by Python's names.
+# TypeScript's lint leg runs once and its typecheck leg once (one version
+# label each); expect mode requires both reports and warns for neither.
+name="expect-typescript-finds-both-reports"
+workspace "$name"
+reports_dir quality-common.log quality-custom.log quality-eslint-node-24.json \
+  quality-tsc-node-24.txt
+run_expect typescript evidence-reports
+if [ "$rc" -ne 0 ] || grep -qF -- "::warning::" <<<"${stdout}${stderr}"; then
+  fail_case "$name" "expected exit 0 and no warning, got ${rc}; stderr: ${stderr}"
+else
+  rm "${ws}/evidence-reports/quality-tsc-node-24.txt"
+  run_expect typescript evidence-reports
+  if assert_error "$name" "no typescript typecheck leg staged its quality-tsc.txt"; then
+    if grep -F '::error::' <<<"$stderr" | grep -qF "quality-eslint.json"; then
+      fail_case "$name" "named a report that exists: ${stderr}"
+    else
+      pass_case "$name"
+    fi
+  fi
+fi
+
+name="expect-typescript-ignores-other-names"
+workspace "$name"
+reports_dir quality-ruff-1.0.json quality-mypy-1.0.xml quality-clippy-1.0.json \
+  quality-cargo-check-1.0.json
+run_expect typescript evidence-reports
+if assert_error "$name" "its quality-eslint.json" "its quality-tsc.txt"; then
+  pass_case "$name"
+fi
+
 name="expect-rust-ignores-python-names"
 workspace "$name"
 reports_dir quality-ruff-1.99.json quality-mypy-1.99.xml
@@ -756,7 +865,7 @@ if assert_error "$name" "its quality-clippy.json" "its quality-cargo-check.json"
   pass_case "$name"
 fi
 
-for language in go cpp typescript; do
+for language in go cpp; do
   name="expect-no-contract-${language}-warns"
   workspace "$name"
   reports_dir quality-common.log
@@ -822,7 +931,7 @@ case_workflow() {
     return 0
   fi
   if sed -E 's/(^|[[:space:]])#.*//' "$wf" |
-    grep -qE '(pip-audit|licenses|cargo-deny|coverage|junit)[-.*]'; then
+    grep -qE '(pip-audit|licenses|cargo-deny|npm-audit|coverage|junit)[-.*]'; then
     fail_case "$name" "names a report file outside the action"
     return 0
   fi
@@ -854,7 +963,7 @@ elif ! grep -qE '^ +files: evidence-reports/quality-\*$' <<<"$code"; then
   fail_case "$name" "the emit step does not take evidence-reports/quality-*"
 elif ! grep -qE '^ +tools: \$\{\{ steps\.tools\.outputs\.tools \}\}$' <<<"$code"; then
   fail_case "$name" "the emit step does not take the combined tools"
-elif grep -qE '(ruff|mypy|clippy|cargo-check|rustfmt)' <<<"$code"; then
+elif grep -qE '(ruff|mypy|clippy|cargo-check|rustfmt|eslint|prettier|tsc)' <<<"$code"; then
   fail_case "$name" "names a lint or typecheck report or tool outside the action"
 else
   pass_case "$name"

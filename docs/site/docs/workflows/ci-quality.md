@@ -138,6 +138,8 @@ vergil-tooling, not in this workflow, so a language's checks change there.
 | `python` | `typecheck` | `quality-mypy.xml` | mypy |
 | `rust` | `lint` | `quality-clippy.json` | rustfmt, clippy |
 | `rust` | `typecheck` | `quality-cargo-check.json` | cargo |
+| `typescript` | `lint` | `quality-eslint.json` | prettier, eslint |
+| `typescript` | `typecheck` | `quality-tsc.txt` | tsc |
 
 The reports are required. A leg that passes but leaves its report missing
 or empty fails its staging step. A leg that fails is not failed again for a
@@ -147,9 +149,9 @@ not. The emitted artifact takes every `quality-*` file the jobs uploaded,
 and its tools are `vrg-validate-common`, `vrg-validate-custom`, then the
 language's lint and typecheck tools.
 
-A fleet language with no lint or typecheck contract yet (`go`, `cpp`,
-`typescript`) gets a warning on its legs and in the `evidence` job, stages
-no report and lists no lint or typecheck tools. A repository with no fleet
+A fleet language with no lint or typecheck contract yet (`go`, `cpp`) gets
+a warning on its legs and in the `evidence` job, stages no report and lists
+no lint or typecheck tools. A repository with no fleet
 primary language (a shell or Claude plugin repository, or one that passes no
 `language`) gets a notice instead. Either way the evidence carries the
 `common` and `custom` transcripts and their tools only.
