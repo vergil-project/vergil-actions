@@ -7594,7 +7594,7 @@ rulesets.</p>
 <tr>
 <td><a href="ops-upstream-refresh/">Ops Upstream Refresh</a></td>
 <td><code>ops-upstream-refresh.yml</code></td>
-<td>Scheduled <code>vrg-upstream-refresh</code>: run the repository's <code>[upstream-refresh].hook</code>, then open or refresh one human-merged PR, or close a stale one when nothing changed</td>
+<td>Scheduled <code>vrg-upstream-refresh</code>: run the repository's <code>[upstream-refresh].hook</code> with no secrets, then open one PR that merges itself as the automation App once CI passes, or close an earlier one when nothing changed</td>
 </tr>
 </tbody>
 </table>
