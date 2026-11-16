@@ -466,16 +466,16 @@ if [ "$ok" -eq 1 ]; then
 fi
 
 # A language with a contract but no report_tools branch is an internal error,
-# never a silent empty tools list. Sourced, with has_contract widened to claim
-# a contract for go/test, which report_tools has no branch for.
+# never a silent empty tools list. Sourced in a child bash, with has_contract
+# widened to claim a contract for go/test, which report_tools has no branch
+# for.
 name="tools-contract-without-tools-branch-fails"
 rc=0
-stderr="$(
-  # shellcheck source=../reports.sh
-  source "$reports_sh"
+stderr="$(bash -c '
+  source "$1"
   has_contract() { [ "$1/$2" = go/test ]; }
-  report_tools go test 2>&1 >/dev/null
-)" || rc=$?
+  report_tools go test
+' _ "$reports_sh" 2>&1 >/dev/null)" || rc=$?
 if assert_error "$name" "internal: no tools for 'go/test'"; then
   pass_case "$name"
 fi
