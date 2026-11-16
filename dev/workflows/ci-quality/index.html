@@ -7796,6 +7796,18 @@ vergil-tooling, not in this workflow, so a language's checks change there.</p>
 <td><code>quality-cargo-check.json</code></td>
 <td>cargo</td>
 </tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>lint</code></td>
+<td><code>quality-eslint.json</code></td>
+<td>prettier, eslint</td>
+</tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-tsc.txt</code></td>
+<td>tsc</td>
+</tr>
 </tbody>
 </table>
 <p>The reports are required. A leg that passes but leaves its report missing
@@ -7805,9 +7817,9 @@ of the language is there from at least one leg, and fails naming any that is
 not. The emitted artifact takes every <code>quality-*</code> file the jobs uploaded,
 and its tools are <code>vrg-validate-common</code>, <code>vrg-validate-custom</code>, then the
 language's lint and typecheck tools.</p>
-<p>A fleet language with no lint or typecheck contract yet (<code>go</code>, <code>cpp</code>,
-<code>typescript</code>) gets a warning on its legs and in the <code>evidence</code> job, stages
-no report and lists no lint or typecheck tools. A repository with no fleet
+<p>A fleet language with no lint or typecheck contract yet (<code>go</code>, <code>cpp</code>) gets
+a warning on its legs and in the <code>evidence</code> job, stages no report and lists
+no lint or typecheck tools. A repository with no fleet
 primary language (a shell or Claude plugin repository, or one that passes no
 <code>language</code>) gets a notice instead. Either way the evidence carries the
 <code>common</code> and <code>custom</code> transcripts and their tools only.</p>

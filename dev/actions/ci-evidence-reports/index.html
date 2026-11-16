@@ -7556,6 +7556,30 @@ must be the ones the language's gate commands write:</p>
 <td><code>quality-cargo-check.json</code></td>
 <td>cargo</td>
 </tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>test</code></td>
+<td><code>coverage.xml</code>, <code>junit.xml</code></td>
+<td>vitest, @vitest/coverage-v8</td>
+</tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>audit</code></td>
+<td><code>npm-audit.json</code></td>
+<td>npm audit</td>
+</tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>lint</code></td>
+<td><code>quality-eslint.json</code></td>
+<td>prettier, eslint</td>
+</tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-tsc.txt</code></td>
+<td>tsc</td>
+</tr>
 </tbody>
 </table>
 <p><code>lint</code> and <code>typecheck</code> are the legs of the <code>quality</code> gate in
@@ -7572,13 +7596,20 @@ on. A repository pinned to a vergil-tooling release whose Rust gate does not
 write its report fails its passing legs here, on the missing file.
 <code>cargo-deny.json</code>, <code>quality-clippy.json</code> and <code>quality-cargo-check.json</code> hold
 JSON Lines, one object per line; they are staged as written.</p>
+<p>The TypeScript gates write their reports from
+<a href="https://github.com/vergil-project/vergil-tooling/issues/4508">vergil-tooling#4508</a>
+on: Vitest's JUnit report and its Cobertura coverage (copied to
+<code>coverage.xml</code>), <code>npm audit --json</code> as <code>npm-audit.json</code>, ESLint's JSON
+formatter output as <code>quality-eslint.json</code>, and the <code>tsc --diagnostics</code>
+output as <code>quality-tsc.txt</code>. Prettier runs first in the <code>lint</code> gate and
+writes no report. As for Rust, a repository pinned to a vergil-tooling
+release without them fails its passing legs here.</p>
 <p>This table, in <code>actions/ci/evidence/reports/reports.sh</code>, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
 gate commands (<code>lib/languages.py</code>), so a change to a gate's report names
 changes both.</p>
-<p>A fleet language with no entry in the table (today <code>go</code>, <code>cpp</code> and
-<code>typescript</code>) writes no report file the release-time evidence gate accepts
-yet. Its legs do not fail: the step emits a <code>::warning::</code> naming the language
+<p>A fleet language with no entry in the table (today <code>go</code> and <code>cpp</code>) writes
+no report file the release-time evidence gate accepts yet. Its legs do not fail: the step emits a <code>::warning::</code> naming the language
 and gate and saying its reports are not produced yet, and stages nothing, and
 <code>mode: tools</code> gives an empty tools list with the same warning. The
 release-time evidence gate still decides; in enforcing mode it rejects an

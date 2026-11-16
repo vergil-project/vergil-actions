@@ -7625,11 +7625,11 @@ thin: they pass only <code>language:</code> and <code>container-suffix:</code>.<
 </table>
 <h2 id="evidence-reports">Evidence reports<a class="headerlink" href="#evidence-reports" title="Permanent link">&para;</a></h2>
 <p>Each <code>unit</code> leg stages the language's test reports for the
-<code>ci-evidence-test</code> artifact: <code>coverage.xml</code> and <code>junit.xml</code>, for Python and
-for Rust alike. The names come from
+<code>ci-evidence-test</code> artifact: <code>coverage.xml</code> and <code>junit.xml</code>, for Python, Rust
+and TypeScript alike. The names come from
 <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose tests
 passed but wrote no report fails. A language with no test report contract
-yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
+yet (Go, C++) gets a warning and stages nothing, and the
 release-time evidence gate decides.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
@@ -7687,7 +7687,7 @@ this workflow. The leg then stages its reports through
 <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a> (see
 <a href="#evidence-reports">Evidence reports</a>), whose table is the one place this
 repository records a language's test report names. Giving a language without
-a contract yet (Go, C++, TypeScript) test evidence means adding its entry to
+a contract yet (Go, C++) test evidence means adding its entry to
 that table alongside the vergil-tooling gate command that writes the reports;
 the workflow itself needs no change.</p>
 

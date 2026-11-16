@@ -7621,10 +7621,10 @@ thin: they pass only <code>language:</code> and <code>container-suffix:</code>.<
 <h2 id="evidence-reports">Evidence reports<a class="headerlink" href="#evidence-reports" title="Permanent link">&para;</a></h2>
 <p>Each <code>dependencies</code> leg stages the language's audit reports for the
 <code>ci-evidence-audit</code> artifact: <code>pip-audit.json</code> and <code>licenses.json</code> for Python,
-<code>cargo-deny.json</code> for Rust. The names come from
-<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose audit
-passed but wrote no report fails. A language with no audit report contract
-yet (Go, C++, TypeScript) gets a warning and stages nothing, and the
+<code>cargo-deny.json</code> for Rust, <code>npm-audit.json</code> for TypeScript. The names come
+from <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose
+audit passed but wrote no report fails. A language with no audit report
+contract yet (Go, C++) gets a warning and stages nothing, and the
 release-time evidence gate decides.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
@@ -7648,13 +7648,13 @@ chain so <code>conan audit</code> can authenticate:</p>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
 <p>The <code>dependencies</code> job runs each language's real audit through
 <code>vrg-validate --check audit</code>: pip-audit and pip-licenses for Python,
-cargo-deny for Rust. The audit commands live in vergil-tooling, not in this
-workflow. Each leg then stages its reports through
-<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose table is the
-one place this repository records a language's audit report names. Giving a
-language without a contract yet (Go, C++, TypeScript) audit evidence means
-adding its entry to that table alongside the vergil-tooling gate command that
-writes the reports; the workflow itself needs no change.</p>
+cargo-deny for Rust, <code>npm audit</code> for TypeScript. The audit commands live in
+vergil-tooling, not in this workflow. Each leg then stages its reports
+through <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose
+table is the one place this repository records a language's audit report
+names. Giving a language without a contract yet (Go, C++) audit evidence
+means adding its entry to that table alongside the vergil-tooling gate
+command that writes the reports; the workflow itself needs no change.</p>
 
 
 
