@@ -149,5 +149,6 @@ input degrades the destination, not the scanning.
 - The Semgrep action auto-detects repository content and enables additional
   rulesets: `p/dockerfile` when Dockerfiles are present, `p/github-actions`
   when workflow files exist under `.github/workflows/`. No configuration is
-  needed from consuming repos. For `cpp` the workflow adds `p/c` (which covers
-  `.c` files only), and for `typescript` it adds `p/typescript`.
+  needed from consuming repos. `vrg-semgrep-scan` resolves the language
+  ruleset from the `language` input, `p/c` for `cpp` (which covers `.c` files
+  only) and `p/typescript` for `typescript`.
