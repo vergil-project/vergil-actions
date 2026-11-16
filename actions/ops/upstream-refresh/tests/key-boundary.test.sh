@@ -187,6 +187,7 @@ violations() {
     printf 'prepare has no single tool step with GH_TOKEN from ${{ github.token }}\n'
   fi
 
+  # shellcheck disable=SC2016 # $j in the yq query below is a yq variable
   while IFS= read -r path; do
     [ -n "$path" ] || continue
     printf '%s has an if:\n' "$path"
