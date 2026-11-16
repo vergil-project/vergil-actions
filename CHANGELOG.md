@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.78] - 2026-11-16
+
+### CI
+
+- drop the semgrep extra-config copy of the cpp and typescript rulesets (#1253)
+
+### Documentation
+
+- use the versioned /latest/ path in links to the docs site (#1254)
+
+### Features
+
+- derive lint and typecheck evidence per language and require the reports (#1251)
+- release TypeScript repos (#1261)
+- run the BUILD check in the quality workflow (#1262)
+- stage TypeScript test, audit, lint and typecheck reports (#1263)
+
 ## [2.1.77] - 2026-11-16
 
 ### CI
