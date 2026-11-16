@@ -2,22 +2,26 @@
 #
 # The per-language report-file contract of the CI `test` and `audit` evidence
 # gates and of the `quality` gate's `lint` and `typecheck` legs, and the
-# staging of one matrix leg's reports (issues #1211, #1249).
+# staging of one matrix leg's reports (issues #1211, #1249, #1260).
 #
 # vrg-validate writes each gate's machine-readable reports at the workspace
 # root under fixed names. The release-time harvester (vrg-ci-evidence) refuses
 # a required gate whose artifact carries no report file, so the names staged
 # here must be the names the gate commands write, language by language:
 #
-#   language  gate       report files                  tools
-#   python    test       coverage.xml junit.xml        pytest, coverage.py
-#   python    audit      pip-audit.json licenses.json  pip-audit, pip-licenses
-#   python    lint       quality-ruff.json             ruff
-#   python    typecheck  quality-mypy.xml              mypy
-#   rust      test       coverage.xml junit.xml        cargo-llvm-cov, cargo-nextest
-#   rust      audit      cargo-deny.json               cargo-deny
-#   rust      lint       quality-clippy.json           rustfmt, clippy
-#   rust      typecheck  quality-cargo-check.json      cargo
+#   language    gate       report files                  tools
+#   python      test       coverage.xml junit.xml        pytest, coverage.py
+#   python      audit      pip-audit.json licenses.json  pip-audit, pip-licenses
+#   python      lint       quality-ruff.json             ruff
+#   python      typecheck  quality-mypy.xml              mypy
+#   rust        test       coverage.xml junit.xml        cargo-llvm-cov, cargo-nextest
+#   rust        audit      cargo-deny.json               cargo-deny
+#   rust        lint       quality-clippy.json           rustfmt, clippy
+#   rust        typecheck  quality-cargo-check.json      cargo
+#   typescript  test       coverage.xml junit.xml        vitest, @vitest/coverage-v8
+#   typescript  audit      npm-audit.json                npm audit
+#   typescript  lint       quality-eslint.json           prettier, eslint
+#   typescript  typecheck  quality-tsc.txt               tsc
 #
 # The Rust test gate writes junit.xml through cargo-nextest from
 # vergil-tooling#4395 on (vergil-actions#1216); a release of vergil-tooling
@@ -27,19 +31,26 @@
 # them. cargo-deny.json, quality-clippy.json and quality-cargo-check.json hold
 # JSON Lines (one object per line); they are staged as written, never parsed.
 #
+# The TypeScript gates write their reports from vergil-tooling#4508 on (epic
+# vergil-project/.github#1174): Vitest's JUnit report and its Cobertura
+# coverage (copied to coverage.xml), `npm audit --json`, ESLint's JSON
+# formatter output and `tsc --diagnostics` output. Prettier runs first in the
+# lint gate and writes no report. As for Rust, a passing TypeScript leg on a
+# vergil-tooling release without them fails here.
+#
 # `lint` and `typecheck` are the quality gate's per-language legs. The quality
 # gate's common and custom transcripts (quality-common.log and
 # quality-custom.log) belong to no leg's contract: ci-quality.yml stages them
 # itself.
 #
 # This table is the single place vergil-actions records the contract. The
-# producer side is vergil-tooling's lib/languages.py (PYTHON_REPORT_FILES and
-# RUST_REPORT_FILES); keep the two in step. Deriving this table from
-# vergil-tooling instead is vergil-tooling#4416.
+# producer side is vergil-tooling's lib/languages.py (PYTHON_REPORT_FILES,
+# RUST_REPORT_FILES and TYPESCRIPT_REPORT_FILES); keep the two in step.
+# Deriving this table from vergil-tooling instead is vergil-tooling#4416.
 #
-# A fleet language with no entry here (today go, cpp and typescript) writes no
-# report the harvester accepts yet. Failing its leg would turn every PR of
-# every repo in that language red, so instead every mode emits a ::warning::
+# A fleet language with no entry here (today go and cpp) writes no report the
+# harvester accepts yet. Failing its leg would turn every PR of every repo in
+# that language red, so instead every mode emits a ::warning::
 # naming the language and gate, stages nothing and gives an empty tools list;
 # the release-time evidence gate still decides, and in enforcing mode it
 # rejects an empty payload. An unknown language or gate, or any other bad
@@ -131,6 +142,9 @@ has_contract() {
   case "$1/$2" in
     python/test | python/audit | python/lint | python/typecheck) return 0 ;;
     rust/test | rust/audit | rust/lint | rust/typecheck) return 0 ;;
+    typescript/test | typescript/audit | typescript/lint | typescript/typecheck)
+      return 0
+      ;;
     *) return 1 ;;
   esac
 }
@@ -171,12 +185,16 @@ report_files() {
   case "$1/$2" in
     python/test) printf '%s\n' coverage.xml junit.xml ;;
     rust/test) printf '%s\n' coverage.xml junit.xml ;;
+    typescript/test) printf '%s\n' coverage.xml junit.xml ;;
     python/audit) printf '%s\n' pip-audit.json licenses.json ;;
     rust/audit) printf '%s\n' cargo-deny.json ;;
+    typescript/audit) printf '%s\n' npm-audit.json ;;
     python/lint) printf '%s\n' quality-ruff.json ;;
     rust/lint) printf '%s\n' quality-clippy.json ;;
+    typescript/lint) printf '%s\n' quality-eslint.json ;;
     python/typecheck) printf '%s\n' quality-mypy.xml ;;
     rust/typecheck) printf '%s\n' quality-cargo-check.json ;;
+    typescript/typecheck) printf '%s\n' quality-tsc.txt ;;
     *)
       error "internal: no report files for '$1/$2'"
       return 1
@@ -204,6 +222,16 @@ report_tools() {
     rust/audit) printf '%s\n' '[{"name":"cargo-deny"}]' ;;
     rust/lint) printf '%s\n' '[{"name":"rustfmt"},{"name":"clippy"}]' ;;
     rust/typecheck) printf '%s\n' '[{"name":"cargo"}]' ;;
+    typescript/test) printf '%s\n' '[{"name":"vitest"},{"name":"@vitest/coverage-v8"}]' ;;
+    typescript/audit) printf '%s\n' '[{"name":"npm audit"}]' ;;
+    typescript/lint) printf '%s\n' '[{"name":"prettier"},{"name":"eslint"}]' ;;
+    typescript/typecheck) printf '%s\n' '[{"name":"tsc"}]' ;;
+    *)
+      # A contract with no tools entry would ship an empty tools list
+      # silently; has_contract and this table must change together.
+      error "internal: no tools for '$1/$2'"
+      return 1
+      ;;
   esac
 }
 

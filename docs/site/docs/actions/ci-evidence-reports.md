@@ -21,6 +21,10 @@ must be the ones the language's gate commands write:
 | `python` | `typecheck` | `quality-mypy.xml` | mypy |
 | `rust` | `lint` | `quality-clippy.json` | rustfmt, clippy |
 | `rust` | `typecheck` | `quality-cargo-check.json` | cargo |
+| `typescript` | `test` | `coverage.xml`, `junit.xml` | vitest, @vitest/coverage-v8 |
+| `typescript` | `audit` | `npm-audit.json` | npm audit |
+| `typescript` | `lint` | `quality-eslint.json` | prettier, eslint |
+| `typescript` | `typecheck` | `quality-tsc.txt` | tsc |
 
 `lint` and `typecheck` are the legs of the `quality` gate in
 [`ci-quality`](../workflows/ci-quality.md). Each leg is its own job and
@@ -38,14 +42,22 @@ write its report fails its passing legs here, on the missing file.
 `cargo-deny.json`, `quality-clippy.json` and `quality-cargo-check.json` hold
 JSON Lines, one object per line; they are staged as written.
 
+The TypeScript gates write their reports from
+[vergil-tooling#4508](https://github.com/vergil-project/vergil-tooling/issues/4508)
+on: Vitest's JUnit report and its Cobertura coverage (copied to
+`coverage.xml`), `npm audit --json` as `npm-audit.json`, ESLint's JSON
+formatter output as `quality-eslint.json`, and the `tsc --diagnostics`
+output as `quality-tsc.txt`. Prettier runs first in the `lint` gate and
+writes no report. As for Rust, a repository pinned to a vergil-tooling
+release without them fails its passing legs here.
+
 This table, in `actions/ci/evidence/reports/reports.sh`, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
 gate commands (`lib/languages.py`), so a change to a gate's report names
 changes both.
 
-A fleet language with no entry in the table (today `go`, `cpp` and
-`typescript`) writes no report file the release-time evidence gate accepts
-yet. Its legs do not fail: the step emits a `::warning::` naming the language
+A fleet language with no entry in the table (today `go` and `cpp`) writes
+no report file the release-time evidence gate accepts yet. Its legs do not fail: the step emits a `::warning::` naming the language
 and gate and saying its reports are not produced yet, and stages nothing, and
 `mode: tools` gives an empty tools list with the same warning. The
 release-time evidence gate still decides; in enforcing mode it rejects an
