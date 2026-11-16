@@ -17,9 +17,15 @@
 #
 # The rules, checked on every workflow in .github/workflows:
 #   * no workflow-level or job-level `env` sets VRG_AUTOMATION_APP;
-#   * a step that sets it takes it from `${{ vars.VRG_AUTOMATION_APP }}` and
-#     sets GH_TOKEN, in the same `env`, from `${{ steps.<id>.outputs.token }}`
-#     of an earlier step of its job.
+#   * a step that sets it takes it from `${{ vars.VRG_AUTOMATION_APP }}`, and
+#     in the same `env` holds the App's identity in exactly one of two forms:
+#     - the token form: GH_TOKEN from `${{ steps.<id>.outputs.token }}` of an
+#       earlier step of its job;
+#     - the credential form (epic vergil-project/.github#1168): no GH_TOKEN,
+#       and VRG_AUTOMATION_CLIENT_ID and VRG_AUTOMATION_PRIVATE_KEY both from
+#       `${{ secrets.<name> }}`, for a tool that mints its own token, such as
+#       `vrg-upstream-refresh publish` in ops-upstream-refresh.yml.
+#     Anything else, both forms at once included, is a violation.
 # For ops-github-config.yml's github-config job:
 #   * the step that runs `vrg-github-repo-config update` sets it;
 #   * the first step, before the app-token step, reads the variable as
@@ -60,7 +66,8 @@ pass_case() {
 # violations <workflow file> — print one line per rule the workflow breaks,
 # nothing when it keeps them all.
 violations() {
-  local wf="$1" job idx has value token ref ref_idx
+  local wf="$1" job idx has value token client key ref ref_idx
+  local secret_ref='^\$\{\{ secrets\.[A-Za-z0-9_]+ \}\}$'
   if [ "$(yq -r '(.env // {}) | has("VRG_AUTOMATION_APP")' "$wf")" = "true" ]; then
     printf 'workflow env sets VRG_AUTOMATION_APP\n'
   fi
@@ -69,17 +76,34 @@ violations() {
     printf '%s: job env sets VRG_AUTOMATION_APP\n' "$job"
   done < <(yq -r '(.jobs // {}) | to_entries | .[]
     | select((.value.env // {}) | has("VRG_AUTOMATION_APP")) | .key' "$wf")
+  # Each field defaults to <unset>, never empty: `read` with a tab IFS
+  # collapses empty fields, which would shift the later ones.
   # shellcheck disable=SC2016 # $j in the yq query below is a yq variable
-  while IFS=$'\t' read -r job idx has value token; do
+  while IFS=$'\t' read -r job idx has value token client key; do
     [ "$has" = "true" ] || continue
     # shellcheck disable=SC2016 # a literal GitHub Actions expression
     if [ "$value" != '${{ vars.VRG_AUTOMATION_APP }}' ]; then
       printf '%s step %s: VRG_AUTOMATION_APP is not ${{ vars.VRG_AUTOMATION_APP }}: %s\n' \
         "$job" "$idx" "$value"
     fi
+    if [ "$client" != "<unset>" ] || [ "$key" != "<unset>" ]; then
+      # The credential form: the step's tool mints its own token.
+      if [ "$token" != "<unset>" ]; then
+        printf '%s step %s: sets GH_TOKEN and the App credentials together\n' "$job" "$idx"
+      fi
+      if ! [[ "$client" =~ $secret_ref ]]; then
+        printf '%s step %s: VRG_AUTOMATION_CLIENT_ID is not from a secret: %s\n' \
+          "$job" "$idx" "$client"
+      fi
+      if ! [[ "$key" =~ $secret_ref ]]; then
+        printf '%s step %s: VRG_AUTOMATION_PRIVATE_KEY is not from a secret: %s\n' \
+          "$job" "$idx" "$key"
+      fi
+      continue
+    fi
     if ! [[ "$token" =~ ^\$\{\{\ steps\.([A-Za-z0-9_-]+)\.outputs\.token\ \}\}$ ]]; then
       printf '%s step %s: sets VRG_AUTOMATION_APP without GH_TOKEN from a token step: %s\n' \
-        "$job" "$idx" "${token:-<unset>}"
+        "$job" "$idx" "$token"
       continue
     fi
     ref="${BASH_REMATCH[1]}"
@@ -92,8 +116,10 @@ violations() {
     | (.value.steps // []) | to_entries | .[]
     | [$j, .key,
        ((.value.env // {}) | has("VRG_AUTOMATION_APP")),
-       ((.value.env // {}).VRG_AUTOMATION_APP // ""),
-       ((.value.env // {}).GH_TOKEN // "")] | @tsv' "$wf")
+       ((.value.env // {}).VRG_AUTOMATION_APP // "<unset>"),
+       ((.value.env // {}).GH_TOKEN // "<unset>"),
+       ((.value.env // {}).VRG_AUTOMATION_CLIENT_ID // "<unset>"),
+       ((.value.env // {}).VRG_AUTOMATION_PRIVATE_KEY // "<unset>")] | @tsv' "$wf")
 }
 
 # expect_clean <case> <workflow file>
@@ -261,6 +287,62 @@ jobs:
 YAML
   expect_caught "fixture-literal-slug-caught" "${tmp}/literal-slug.yml" \
     "is not \${{ vars.VRG_AUTOMATION_APP }}: some-org-automation"
+
+  # The credential form: a tool that mints its own App token gets the App's
+  # client ID and key from secrets, on its one step, and no GH_TOKEN.
+  cat >"${tmp}/credential-form.yml" <<'YAML'
+jobs:
+  publish:
+    steps:
+      - uses: ./actions/shared/setup/vergil
+      - env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_AUTOMATION_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+          VRG_AUTOMATION_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: vrg-upstream-refresh publish --from out
+YAML
+  expect_clean "credential_form_accepted" "${tmp}/credential-form.yml"
+
+  cat >"${tmp}/credential-form-no-key.yml" <<'YAML'
+jobs:
+  publish:
+    steps:
+      - env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_AUTOMATION_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+        run: vrg-upstream-refresh publish --from out
+YAML
+  expect_caught "credential_form_missing_key_rejected" "${tmp}/credential-form-no-key.yml" \
+    "publish step 0: VRG_AUTOMATION_PRIVATE_KEY is not from a secret: <unset>"
+
+  cat >"${tmp}/credential-form-gh-token.yml" <<'YAML'
+jobs:
+  publish:
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@v3
+      - env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_AUTOMATION_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+          VRG_AUTOMATION_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: vrg-upstream-refresh publish --from out
+YAML
+  expect_caught "credential_form_with_gh_token_rejected" "${tmp}/credential-form-gh-token.yml" \
+    "publish step 1: sets GH_TOKEN and the App credentials together"
+
+  cat >"${tmp}/credential-form-literal.yml" <<'YAML'
+jobs:
+  publish:
+    steps:
+      - env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_AUTOMATION_CLIENT_ID: Iv1.0123456789abcdef
+          VRG_AUTOMATION_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: vrg-upstream-refresh publish --from out
+YAML
+  expect_caught "credential_form_literal_client_id_rejected" "${tmp}/credential-form-literal.yml" \
+    "publish step 0: VRG_AUTOMATION_CLIENT_ID is not from a secret: Iv1.0123456789abcdef"
 }
 
 case_real_workflows
