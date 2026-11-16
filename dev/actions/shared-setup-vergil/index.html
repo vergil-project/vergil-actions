@@ -5209,6 +5209,8 @@
       
         
       
+        
+      
     
     
     
@@ -5468,6 +5470,34 @@
     
   
     ci/evidence/reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-evidence-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/assert
   
 
     
@@ -7575,6 +7605,10 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <tr>
 <td><code>container-suffixes</code></td>
 <td>Compact JSON object mapping each resolved version to its image suffix, e.g. <code>{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}</code>. Passed to <a href="../ci-matrix/"><code>ci/matrix</code></a>, and to <a href="../shared-setup-primary-suffix/"><code>shared/setup/primary-suffix</code></a> for the single-container jobs' image suffix.</td>
+</tr>
+<tr>
+<td><code>build-enabled</code></td>
+<td><code>true</code> when vergil-tooling turns the BUILD check on for the repository's language (<code>vrg-ci-resolve</code>'s <code>build-enabled</code>), else <code>false</code>. A vergil-tooling release older than the field gives <code>false</code>, with a notice; any value other than <code>true</code> or <code>false</code> fails the step. <code>ci-quality</code>'s <code>matrix</code> job passes it on, and its <code>build</code> job runs only when it is <code>true</code>.</td>
 </tr>
 </tbody>
 </table>

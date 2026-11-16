@@ -5209,6 +5209,8 @@
       
         
       
+        
+      
     
     
     
@@ -5468,6 +5470,34 @@
     
   
     ci/evidence/reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ci-evidence-assert/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/evidence/assert
   
 
     
@@ -7446,6 +7476,10 @@ definition and optional supporting scripts.</p>
   — Holds each language's <code>test</code> and <code>audit</code> report files and stages a matrix
   leg's reports for the evidence artifact, failing when a passing gate wrote
   none; auto-wired into <code>ci-test</code> and <code>ci-audit</code>.</li>
+<li><strong><a href="ci-evidence-assert/">ci/evidence/assert</a></strong>
+  — Checks <code>ci-quality</code>'s <code>build</code> job against vergil-tooling's BUILD flag:
+  skipped with BUILD off, successful with BUILD on; auto-wired into the
+  <code>ci-quality</code> evidence job.</li>
 </ul>
 <h3 id="cd">CD<a class="headerlink" href="#cd" title="Permanent link">&para;</a></h3>
 <ul>
