@@ -857,6 +857,8 @@
       
         
       
+        
+      
     
     
     
@@ -909,6 +911,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.77/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.77
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8243,11 +8273,14 @@ references a project URL and uses the <code>PROJECT_TOKEN</code> secret.</p>
 different projects. This is configured directly in the workflow file, not as a
 secret.</p>
 <h2 id="repository-rulesets">Repository rulesets<a class="headerlink" href="#repository-rulesets" title="Permanent link">&para;</a></h2>
-<p>Every managed repository uses three rulesets to enforce merge requirements:</p>
+<p>Every managed repository uses five rulesets to enforce merge requirements:</p>
 <ul>
 <li><strong>Branch protection</strong> — PR requirements for <code>main</code> and <code>develop</code></li>
 <li><strong>CI gates</strong> — Required status checks for <code>main</code> and <code>develop</code></li>
-<li><strong>Tag protection</strong> — Protect semver release tags (<code>v*.*.*</code>); allow rolling minor tags</li>
+<li><strong>Tag protection</strong> — Protect release tags (<code>v*.*.*</code>) and rolling minor tags (<code>v*.*</code>)</li>
+<li><strong>Rolling tag branch names</strong> — Block branches named like a rolling tag (<code>v[0-9]*</code>)</li>
+<li><strong>Automation branches</strong> — Only the org automation App and the repository
+  Admin role may write <code>automation/**</code> branches</li>
 </ul>
 <p>For detailed configuration including settings, check names per repository type,
 and API commands, see <a href="../ci-gates/repository-rulesets/">Repository Rulesets</a>.</p>
@@ -8302,7 +8335,8 @@ is automatically created per workflow run and scoped to the repository.</p>
    workflow's <code>GITHUB_TOKEN</code> carries only what the caller grants and reaches
    only its own repository. The org's automation App token
    (<code>APP_CLIENT_ID</code> + <code>APP_PRIVATE_KEY</code>) is required for the nightly ops jobs
-   (config audit, branch sweep, Dependabot alert audit), the epic roll-up and
+   (config update (<code>vrg-github-repo-config update</code>), branch sweep, Dependabot
+   alert audit), the epic roll-up and
    sweep, and the package-index dispatch. See
    <a href="#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>.</li>
 </ol>
@@ -8319,22 +8353,14 @@ This allows PRs to merge automatically once all required status checks pass.</p>
 <li>[ ] Enable <strong>Automatically delete head branches</strong></li>
 </ul>
 <h3 id="2-rulesets">2. Rulesets<a class="headerlink" href="#2-rulesets" title="Permanent link">&para;</a></h3>
-<p>Create three rulesets per the standard configuration:</p>
+<p>Do not create the rulesets by hand. <code>vrg-github-repo-config update</code> creates
+every ruleset of the <a href="../ci-gates/repository-rulesets/">standard configuration</a>:
+Branch protection, CI gates, Tag protection, Rolling tag branch names and
+Automation branches. The nightly <code>github-config</code> job runs the same command and
+keeps them converged from then on.</p>
 <ul>
-<li>[ ] <strong>Branch protection</strong> — targeting <code>main</code> and <code>develop</code>
-  (<a href="../ci-gates/repository-rulesets/#branch-protection-ruleset">details</a>)</li>
-<li>[ ] <strong>CI gates</strong> — targeting <code>main</code> and <code>develop</code> with required checks
-  (<a href="../ci-gates/repository-rulesets/#ci-gates-ruleset">details</a>)</li>
-<li>[ ] <strong>Tag protection</strong> — targeting <code>v*.*.*</code> with admin bypass
-  (<a href="../ci-gates/repository-rulesets/#tag-protection-ruleset">details</a>)</li>
+<li>[ ] Run <code>vrg-github-repo-config update --repo &lt;org&gt;/&lt;repo&gt;</code></li>
 </ul>
-<div class="admonition warning">
-<p class="admonition-title">Use explicit branch references</p>
-<p>Always use <code>refs/heads/main</code> and <code>refs/heads/develop</code> in ruleset conditions.
-Never use <code>~DEFAULT_BRANCH</code> — it resolves to <code>develop</code> (the default branch),
-silently leaving <code>main</code> unprotected. See
-<a href="../ci-gates/repository-rulesets/#branch-targeting">Branch targeting</a>.</p>
-</div>
 <h3 id="3-secrets">3. Secrets<a class="headerlink" href="#3-secrets" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Set <code>PROJECT_TOKEN</code> (all repositories)</li>
@@ -8364,8 +8390,10 @@ silently leaving <code>main</code> unprotected. See
 <li>[ ] Add <code>PACKAGE_SIGNING_KEY</code> and <code>PACKAGE_SIGNING_PASSPHRASE</code> to it</li>
 <li>[ ] Call <code>cd-release.yml</code> with
   <code>secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</code></li>
-<li>[ ] Call <code>ci-package.yml</code> under a job keyed <code>package</code> and add
-  <code>package / evidence</code> to the <strong>CI gates</strong> ruleset</li>
+<li>[ ] Call <code>ci-package.yml</code> under a job keyed <code>package</code>. Do not add
+  <code>package / evidence</code> to the <strong>CI gates</strong> ruleset by hand:
+  <code>vrg-github-repo-config</code> requires it for a repository with a <code>[package]</code>
+  section</li>
 </ul>
 <p>For the <code>&lt;org&gt;/packages</code> index repository itself:</p>
 <ul>
@@ -8384,7 +8412,9 @@ silently leaving <code>main</code> unprotected. See
 <h3 id="6-ci-gates-activation">6. CI gates activation<a class="headerlink" href="#6-ci-gates-activation" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Push the CI workflow and verify all checks run</li>
-<li>[ ] Add each check name to the <strong>CI gates</strong> ruleset
+<li>[ ] Confirm the <strong>CI gates</strong> ruleset requires them. Do not add a check by
+  hand: <code>vrg-github-repo-config</code> derives the required-check set and the
+  nightly <code>update</code> converges the ruleset
   (<a href="../ci-gates/repository-rulesets/#adding-a-new-required-check">procedure</a>)</li>
 </ul>
 <h3 id="7-verification">7. Verification<a class="headerlink" href="#7-verification" title="Permanent link">&para;</a></h3>

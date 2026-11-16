@@ -857,6 +857,8 @@
       
         
       
+        
+      
     
     
     
@@ -909,6 +911,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.77/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.77
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7586,9 +7616,15 @@ chain so <code>conan audit</code> can authenticate:</p>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER }}</span>
 </code></pre></div>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
-<p>The <code>dependencies</code> job provides a version matrix scaffold for running
-language-specific dependency audit tools (e.g., <code>pip-audit</code>, <code>npm audit</code>,
-<code>bundler-audit</code>).</p>
+<p>The <code>dependencies</code> job runs each language's real audit through
+<code>vrg-validate --check audit</code>: pip-audit and pip-licenses for Python,
+cargo-deny for Rust. The audit commands live in vergil-tooling, not in this
+workflow. Each leg then stages its reports through
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose table is the
+one place this repository records a language's audit report names. Giving a
+language without a contract yet (Go, C++, TypeScript) audit evidence means
+adding its entry to that table alongside the vergil-tooling gate command that
+writes the reports; the workflow itself needs no change.</p>
 
 
 

@@ -857,6 +857,8 @@
       
         
       
+        
+      
     
     
     
@@ -909,6 +911,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.77/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.77
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7140,10 +7170,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-v-instead-of-v" class="md-nav__link">
+  <a href="#why-both-v-and-v" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why v*.*.* instead of v*
+        Why both v*.*.* and v*.*
       
     </span>
   </a>
@@ -7163,6 +7193,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rolling-tag-branch-names-ruleset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rolling tag branch names ruleset
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automation-branches-ruleset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automation branches ruleset
+      
+    </span>
+  </a>
   
 </li>
       
@@ -7507,10 +7559,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-v-instead-of-v" class="md-nav__link">
+  <a href="#why-both-v-and-v" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why v*.*.* instead of v*
+        Why both v*.*.* and v*.*
       
     </span>
   </a>
@@ -7530,6 +7582,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rolling-tag-branch-names-ruleset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rolling tag branch names ruleset
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#automation-branches-ruleset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automation branches ruleset
+      
+    </span>
+  </a>
   
 </li>
       
@@ -7587,7 +7661,8 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>All managed repositories use GitHub's <strong>repository rulesets</strong> (not legacy branch
 protection rules) to enforce merge requirements. Every repository has the same
-three rulesets:</p>
+five rulesets, as vergil-tooling's desired state defines them (see its
+<a href="https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#github-checks-rulesets">config audit reference</a>):</p>
 <table>
 <thead>
 <tr>
@@ -7609,8 +7684,18 @@ three rulesets:</p>
 </tr>
 <tr>
 <td>Tag protection</td>
-<td><code>v*.*.*</code> tags</td>
-<td>Protect semver release tags; allow rolling minor tags</td>
+<td><code>v*.*.*</code> and <code>v*.*</code> tags</td>
+<td>Protect release tags and rolling minor tags</td>
+</tr>
+<tr>
+<td>Rolling tag branch names</td>
+<td><code>refs/heads/v[0-9]*</code></td>
+<td>Block branches named like a rolling tag</td>
+</tr>
+<tr>
+<td>Automation branches</td>
+<td><code>refs/heads/automation/**</code></td>
+<td>Only the org automation App and the repository Admin role may create, update or force-push these branches</td>
 </tr>
 </tbody>
 </table>
@@ -7748,9 +7833,9 @@ scanning checks, and the version gate:</p>
 inside <code>quality / common</code>, which is not required on its own: it gates the
 merge through <code>quality / evidence</code>, as does <code>quality / custom</code>.</p>
 <h2 id="tag-protection-ruleset">Tag protection ruleset<a class="headerlink" href="#tag-protection-ruleset" title="Permanent link">&para;</a></h2>
-<p>Applies to all tags matching <code>v*.*.*</code> (full semver tags such as <code>v1.1.1</code> or
-<code>v2.0.0</code>). Prevents unauthorized modification of release tags while allowing
-the publish workflow to create and update rolling minor tags (e.g., <code>v1.1</code>).</p>
+<p>Applies to the full semver release tags (such as <code>v1.1.1</code> or <code>v2.0.0</code>) and to
+the rolling minor tags (such as <code>v1.1</code>) that consumers follow as their deploy
+ref. Only the repository Admin role may move or delete either.</p>
 <table>
 <thead>
 <tr>
@@ -7760,8 +7845,8 @@ the publish workflow to create and update rolling minor tags (e.g., <code>v1.1</
 </thead>
 <tbody>
 <tr>
-<td>Pattern</td>
-<td><code>refs/tags/v*.*.*</code></td>
+<td>Patterns</td>
+<td><code>refs/tags/v*.*.*</code>, <code>refs/tags/v*.*</code></td>
 </tr>
 <tr>
 <td>Block deletion</td>
@@ -7777,24 +7862,103 @@ the publish workflow to create and update rolling minor tags (e.g., <code>v1.1</
 </tr>
 <tr>
 <td>Bypass actors</td>
-<td>Repository admin (<code>actor_id: 5</code>, <code>bypass_mode: always</code>)</td>
+<td>Repository Admin role (<code>RepositoryRole</code>, <code>actor_id: 5</code>, <code>bypass_mode: always</code>)</td>
 </tr>
 </tbody>
 </table>
-<h3 id="why-v-instead-of-v">Why <code>v*.*.*</code> instead of <code>v*</code><a class="headerlink" href="#why-v-instead-of-v" title="Permanent link">&para;</a></h3>
-<p>The publish workflow's <code>tag-and-release</code> action creates a rolling minor tag
-(e.g., <code>v1.1</code>) that always points to the latest patch release. Consumers
-reference these rolling tags to receive automatic patch updates. The broader
-<code>v*</code> pattern matches both <code>v1.1.1</code> (semver) and <code>v1.1</code> (rolling), which causes
-the rolling tag force-push to fail with a repository rule violation.</p>
-<p>The <code>v*.*.*</code> pattern requires three dot-separated components, so it protects
-immutable release tags (<code>v1.1.1</code>, <code>v1.1.2</code>) while leaving rolling tags (<code>v1.1</code>)
-unprotected for the workflow to update.</p>
+<h3 id="why-both-v-and-v">Why both <code>v*.*.*</code> and <code>v*.*</code><a class="headerlink" href="#why-both-v-and-v" title="Permanent link">&para;</a></h3>
+<p>A rolling minor tag (e.g., <code>v1.1</code>) always points to the latest patch release,
+and consumers reference it to receive patch updates automatically. A consumer
+that follows <code>v1.1</code> runs whatever the tag points to, so moving it is as
+sensitive as moving a release tag. <code>v*.*.*</code> covers the immutable release tags
+(<code>v1.1.1</code>, <code>v1.1.2</code>); <code>v*.*</code> covers the rolling tags. The publish workflow's
+<code>tag-and-release</code> action no longer moves rolling tags: <code>vrg-promote</code> moves
+them in the release orchestrator's <code>promote</code> phase (see
+<a href="../../actions/cd-release-tag-and-release/"><code>cd/release/tag-and-release</code></a>).</p>
 <h3 id="admin-bypass">Admin bypass<a class="headerlink" href="#admin-bypass" title="Permanent link">&para;</a></h3>
-<p>The repository admin bypass exists as a safety valve for cleanup operations
-(e.g., removing a tag created against the wrong branch). Normal publish
-operations do not require admin bypass — the rolling tag update succeeds because
-rolling tags fall outside the <code>v*.*.*</code> pattern.</p>
+<p>The repository Admin role is the ruleset's only bypass actor. It is the human
+release identity, so moving a rolling tag to a new patch release and cleanup
+operations (e.g., removing a tag created against the wrong branch) both run
+under it. No other identity, the agent Apps and the automation App included,
+can move or delete a protected tag.</p>
+<h2 id="rolling-tag-branch-names-ruleset">Rolling tag branch names ruleset<a class="headerlink" href="#rolling-tag-branch-names-ruleset" title="Permanent link">&para;</a></h2>
+<p>Blocks any branch whose name has the shape of a rolling tag. Some consumers,
+Claude Code among them, resolve a ref such as <code>v2.1</code> as a branch before a tag
+(git's own short-name lookup prefers the tag), so for them the rolling tag's
+protection holds only while no branch of that name can exist.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pattern</td>
+<td><code>refs/heads/v[0-9]*</code></td>
+</tr>
+<tr>
+<td>Restrict creation</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Restrict update</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Block non-fast-forward</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Bypass actors</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<p>The pattern is a <code>v</code> followed by a digit, so names such as <code>vm-…</code> stay
+available. Deletion is not restricted, so a stray branch of that shape can
+still be removed.</p>
+<h2 id="automation-branches-ruleset">Automation branches ruleset<a class="headerlink" href="#automation-branches-ruleset" title="Permanent link">&para;</a></h2>
+<p>Mechanized jobs, such as the nightly <code>github-config</code> job, push to
+<code>automation/&lt;job&gt;/&lt;run-id&gt;</code> branches and open a PR that merges through GitHub
+auto-merge with no human in the loop. Without this ruleset any identity with
+Contents write, every agent App included, could push to such a branch and have
+its content merged into <code>develop</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pattern</td>
+<td><code>refs/heads/automation/**</code></td>
+</tr>
+<tr>
+<td>Restrict creation</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Restrict update</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Block non-fast-forward</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Bypass actors</td>
+<td>The org automation App (<code>Integration</code>, its per-org App ID, <code>bypass_mode: always</code>) and the repository Admin role (<code>RepositoryRole</code>, <code>actor_id: 5</code>, <code>bypass_mode: always</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Deletion is not restricted: automation branches are temporary, removed by
+delete-on-merge and by each run of their job. The App's numeric ID differs per
+org; <code>vrg-github-repo-config</code> looks it up from the App's slug in the
+<code>VRG_AUTOMATION_APP</code> Actions variable.</p>
 <h2 id="adding-a-new-required-check">Adding a new required check<a class="headerlink" href="#adding-a-new-required-check" title="Permanent link">&para;</a></h2>
 <p>When adding a new CI job that should block merges:</p>
 <ol>
@@ -7814,8 +7978,9 @@ rolling tags fall outside the <code>v*.*.*</code> pattern.</p>
    window or the <code>[ci].versions</code> pin), the aggregate does not.</li>
 </ol>
 <h2 id="branch-targeting">Branch targeting<a class="headerlink" href="#branch-targeting" title="Permanent link">&para;</a></h2>
-<p>All rulesets use explicit branch references (<code>refs/heads/main</code>,
-<code>refs/heads/develop</code>). <strong>Never use <code>~DEFAULT_BRANCH</code></strong> in ruleset conditions.</p>
+<p>The rulesets that protect <code>main</code> and <code>develop</code> use explicit branch references
+(<code>refs/heads/main</code>, <code>refs/heads/develop</code>). <strong>Never use <code>~DEFAULT_BRANCH</code></strong> in
+ruleset conditions.</p>
 <p>The <code>~DEFAULT_BRANCH</code> macro resolves to the repository's configured default
 branch. In this project family, the default branch is <code>develop</code> (not <code>main</code>),
 so <code>~DEFAULT_BRANCH</code> resolves to <code>develop</code> — silently leaving <code>main</code>
@@ -7828,12 +7993,13 @@ GitHub to them through the API:</p>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Exit 0 = compliant, 1 = drift, 2 = the audit could not complete.</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>vrg-github-repo-config<span class="w"> </span>audit<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Show the same differences without failing (always exits 0)</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>vrg-github-repo-config<span class="w"> </span>diff<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Reconcile the GitHub configuration, including the rulesets, and open one</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># sync PR for any drifted managed file</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>vrg-github-repo-config<span class="w"> </span>update<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Report the GitHub configuration differences only. Exit 0 whether or not</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># there is drift; 2 = it could not complete or a setting is not checked.</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>vrg-github-repo-config<span class="w"> </span>diff<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Reconcile the GitHub configuration, including the rulesets, and open one</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># sync PR for any drifted managed file</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>vrg-github-repo-config<span class="w"> </span>update<span class="w"> </span>--repo<span class="w"> </span>vergil-project/<span class="o">{</span>repo<span class="o">}</span>
 </code></pre></div>
 <p><code>--repo</code> defaults to the current directory's git remote. The local file
 checks run against a fresh clone of the repository's <code>develop</code>, never the

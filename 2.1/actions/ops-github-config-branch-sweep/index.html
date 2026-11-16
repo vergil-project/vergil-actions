@@ -857,6 +857,8 @@
       
         
       
+        
+      
     
     
     
@@ -909,6 +911,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.77/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.77
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7460,7 +7490,7 @@ deleted.</p>
 setting and the delete-on-close rule. It is <strong>wired automatically</strong> into the
 <code>branch-sweep</code> job of the <code>ops-github-config.yml</code> reusable workflow, so every
 repo whose <code>ops.yml</code> calls that workflow is swept on the same nightly schedule
-as its config audit. Consuming repositories do not add it themselves.</p>
+as its <code>github-config</code> job (<code>vrg-github-repo-config update</code>). Consuming repositories do not add it themselves.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ops/github-config/branch-sweep@v2.1</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">env</span><span class="p">:</span>
