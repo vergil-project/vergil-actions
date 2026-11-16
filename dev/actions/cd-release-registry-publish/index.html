@@ -7626,8 +7626,8 @@ repositories. Consuming repositories set its behavior through the
 </tr>
 <tr>
 <td><code>rust</code></td>
-<td><code>cargo build --release</code></td>
-<td><code>cargo publish</code></td>
+<td><code>cargo build --release --locked --workspace</code></td>
+<td><code>cargo publish --locked</code></td>
 <td><code>CARGO_REGISTRY_TOKEN</code></td>
 </tr>
 <tr>
@@ -7638,6 +7638,15 @@ repositories. Consuming repositories set its behavior through the
 </tr>
 </tbody>
 </table>
+<p>Rust's commands carry <code>--locked</code>, so a release builds and publishes exactly
+what <code>Cargo.lock</code> records and a stale lockfile fails the step, and the build
+takes <code>--workspace</code>, so it builds every member of a workspace. It is the same
+command <code>vrg-validate</code> builds before release, so validation and release build
+the same thing. Both flags come from vergil-tooling
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/4470">vergil-tooling#4470</a>
+and <a href="https://github.com/vergil-project/vergil-tooling/issues/4476">#4476</a>);
+a vergil-tooling release without them derives <code>cargo build --release</code> and
+<code>cargo publish</code>.</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong>Derive commands.</strong> Runs <code>vrg-ecosystem-resolve &lt;language&gt;</code>, which sets

@@ -6671,6 +6671,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7484,6 +7495,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7658,16 +7680,61 @@ and each <code>lint</code> and <code>typecheck</code> leg runs <code>vrg-validat
 <code>vrg-validate --check typecheck</code> for the language. The lint and typecheck
 commands live in vergil-tooling, not in this workflow, so a language's checks
 change there.</p>
-<p>The quality gate is not part of the
-<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a> contract, which
-covers only <code>test</code> and <code>audit</code>. <code>quality / evidence</code> always carries the
-<code>common</code> and <code>custom</code> transcripts (<code>quality-common.log</code> and
-<code>quality-custom.log</code>), for every language. The lint and typecheck legs add a
-report only for Python, and only when vergil-tooling writes it:
-<code>quality-ruff.json</code> from ruff and <code>quality-mypy.xml</code> from mypy, staged per
-version. When the file is absent the leg uploads nothing and logs a warning,
-without failing. The legs look only for these two Python file names, so
-other languages' lint and typecheck legs stage no report.</p>
+<h2 id="evidence">Evidence<a class="headerlink" href="#evidence" title="Permanent link">&para;</a></h2>
+<p><code>quality / evidence</code> always carries the <code>common</code> and <code>custom</code> transcripts
+(<code>quality-common.log</code> and <code>quality-custom.log</code>), for every language. Each
+<code>lint</code> and <code>typecheck</code> leg stages its language's reports through
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose <code>lint</code> and
+<code>typecheck</code> contracts name them, with the leg's version suffix:</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Leg</th>
+<th>Report</th>
+<th>Tools</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>python</code></td>
+<td><code>lint</code></td>
+<td><code>quality-ruff.json</code></td>
+<td>ruff</td>
+</tr>
+<tr>
+<td><code>python</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-mypy.xml</code></td>
+<td>mypy</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>lint</code></td>
+<td><code>quality-clippy.json</code></td>
+<td>rustfmt, clippy</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-cargo-check.json</code></td>
+<td>cargo</td>
+</tr>
+</tbody>
+</table>
+<p>The reports are required. A leg that passes but leaves its report missing
+or empty fails its staging step. A leg that fails is not failed again for a
+missing report. Before it emits, the <code>evidence</code> job checks that every report
+of the language is there from at least one leg, and fails naming any that is
+not. The emitted artifact takes every <code>quality-*</code> file the jobs uploaded,
+and its tools are <code>vrg-validate-common</code>, <code>vrg-validate-custom</code>, then the
+language's lint and typecheck tools.</p>
+<p>A fleet language with no lint or typecheck contract yet (<code>go</code>, <code>cpp</code>,
+<code>typescript</code>) gets a warning on its legs and in the <code>evidence</code> job, stages
+no report and lists no lint or typecheck tools. A repository with no fleet
+primary language (a shell or Claude plugin repository, or one that passes no
+<code>language</code>) gets a notice instead. Either way the evidence carries the
+<code>common</code> and <code>custom</code> transcripts and their tools only.</p>
 
 
 

@@ -7460,7 +7460,9 @@
 
 <h1 id="cievidencereports">ci/evidence/reports<a class="headerlink" href="#cievidencereports" title="Permanent link">&para;</a></h1>
 <p>Holds the per-language report-file contract of the <code>test</code> and <code>audit</code> evidence
-gates, and stages one matrix leg's reports for the gate's evidence artifact.</p>
+gates and of the <code>quality</code> gate's <code>lint</code> and <code>typecheck</code> legs, stages one
+matrix leg's reports for the gate's evidence artifact, and checks that the
+quality evidence job received every lint and typecheck report.</p>
 <p><code>vrg-validate</code> writes each gate's machine-readable reports at the workspace
 root. At release time the evidence gate
 (<a href="../cd-release-ci-evidence-gate/"><code>cd/release/ci-evidence-gate</code></a>) refuses a
@@ -7500,13 +7502,46 @@ must be the ones the language's gate commands write:</p>
 <td><code>cargo-deny.json</code></td>
 <td>cargo-deny</td>
 </tr>
+<tr>
+<td><code>python</code></td>
+<td><code>lint</code></td>
+<td><code>quality-ruff.json</code></td>
+<td>ruff</td>
+</tr>
+<tr>
+<td><code>python</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-mypy.xml</code></td>
+<td>mypy</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>lint</code></td>
+<td><code>quality-clippy.json</code></td>
+<td>rustfmt, clippy</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>typecheck</code></td>
+<td><code>quality-cargo-check.json</code></td>
+<td>cargo</td>
+</tr>
 </tbody>
 </table>
-<p>The Rust test gate writes <code>junit.xml</code> through cargo-nextest. A repository
-pinned to a vergil-tooling release whose Rust test gate does not write it
-fails its passing test legs here, on the missing <code>junit.xml</code>.
-<code>cargo-deny.json</code> holds JSON Lines, one object per line; it is staged as
-written.</p>
+<p><code>lint</code> and <code>typecheck</code> are the legs of the <code>quality</code> gate in
+<a href="../../workflows/ci-quality/"><code>ci-quality</code></a>. Each leg is its own job and
+writes only its own report, so the contract is per leg. The gate's <code>common</code>
+and <code>custom</code> transcripts (<code>quality-common.log</code> and <code>quality-custom.log</code>)
+belong to no leg's contract; <code>ci-quality</code> stages them itself.</p>
+<p>The Rust test gate writes <code>junit.xml</code> through cargo-nextest, and the Rust
+lint and typecheck gates write <code>quality-clippy.json</code> and
+<code>quality-cargo-check.json</code> (clippy's and <code>cargo check</code>'s
+<code>--message-format=json</code> output) from
+<a href="https://github.com/vergil-project/vergil-tooling/issues/4473">vergil-tooling#4473</a>
+on. A repository pinned to a vergil-tooling release whose Rust gate does not
+write its report fails its passing legs here, on the missing file.
+<code>cargo-deny.json</code>, <code>quality-clippy.json</code> and <code>quality-cargo-check.json</code> hold
+JSON Lines, one object per line; they are staged as written.</p>
 <p>This table, in <code>actions/ci/evidence/reports/reports.sh</code>, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
 gate commands (<code>lib/languages.py</code>), so a change to a gate's report names
@@ -7516,11 +7551,19 @@ changes both.</p>
 yet. Its legs do not fail: the step emits a <code>::warning::</code> naming the language
 and gate and saying its reports are not produced yet, and stages nothing, and
 <code>mode: tools</code> gives an empty tools list with the same warning. The
-release-time evidence gate still decides; in enforcing mode it rejects the
-empty payload. An unknown language or gate, an empty or unsafe <code>version</code>, or
-an unknown <code>mode</code> fails the step.</p>
-<p>This action is <strong>wired automatically</strong> into <code>ci-test</code> and <code>ci-audit</code>.
-Consuming repositories do not add it themselves.</p>
+release-time evidence gate still decides; in enforcing mode it rejects an
+empty payload.</p>
+<p>The <code>quality</code> gate also serves repositories with no fleet primary language:
+a shell or Claude plugin repository, or one that passes no <code>language</code>. Their
+<code>lint</code> and <code>typecheck</code> legs write no report, so for those two gates such a
+language, or an empty one, is not an error: the step emits a <code>::notice::</code>
+saying it has no report contract, stages nothing and lists no tools, and the
+quality evidence carries the <code>common</code> and <code>custom</code> transcripts alone. The
+<code>test</code> and <code>audit</code> gates still refuse it.</p>
+<p>Any other unknown language, an unknown gate, an empty or unsafe <code>version</code>,
+or an unknown <code>mode</code> fails the step.</p>
+<p>This action is <strong>wired automatically</strong> into <code>ci-test</code>, <code>ci-audit</code> and
+<code>ci-quality</code>. Consuming repositories do not add it themselves.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run unit tests</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gate</span>
@@ -7552,6 +7595,15 @@ Consuming repositories do not add it themselves.</p>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">files</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">evidence-reports/*</span>
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">tools</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.reports.outputs.tools }}</span>
 </code></pre></div>
+<p>The <code>quality</code> evidence job checks the downloaded legs with <code>mode: expect</code>
+before it emits, since the emit action skips a pattern that matches nothing:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Require the lint and typecheck reports</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">expect</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rust</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">reports-dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">evidence-reports</span>
+</code></pre></div>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -7567,19 +7619,19 @@ Consuming repositories do not add it themselves.</p>
 <td><code>mode</code></td>
 <td>Yes</td>
 <td>—</td>
-<td><code>stage</code> copies this leg's reports into <code>out-dir</code>; <code>tools</code> outputs the gate's tools JSON.</td>
+<td><code>stage</code> copies this leg's reports into <code>out-dir</code>; <code>tools</code> outputs the gate's tools JSON; <code>expect</code> checks <code>reports-dir</code> holds every lint and typecheck report of the language.</td>
 </tr>
 <tr>
 <td><code>language</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Primary language of the calling repository, e.g. <code>python</code> or <code>rust</code>.</td>
+<td>Primary language of the calling repository, e.g. <code>python</code> or <code>rust</code>. May be empty only for the <code>lint</code> and <code>typecheck</code> gates and in <code>expect</code> mode.</td>
 </tr>
 <tr>
 <td><code>gate</code></td>
-<td>Yes</td>
-<td>—</td>
-<td><code>test</code> or <code>audit</code>.</td>
+<td>Stage and tools modes</td>
+<td><code>""</code></td>
+<td><code>test</code>, <code>audit</code>, <code>lint</code> or <code>typecheck</code>. Not used in <code>expect</code> mode.</td>
 </tr>
 <tr>
 <td><code>version</code></td>
@@ -7598,6 +7650,12 @@ Consuming repositories do not add it themselves.</p>
 <td>No</td>
 <td><code>ci-reports</code></td>
 <td>Stage mode, the directory to stage the reports into.</td>
+</tr>
+<tr>
+<td><code>reports-dir</code></td>
+<td>Expect mode</td>
+<td><code>""</code></td>
+<td>The directory holding every leg's staged reports, the evidence job's download directory.</td>
 </tr>
 </tbody>
 </table>
@@ -7630,11 +7688,18 @@ so the evidence job takes every file the legs uploaded.</p>
 <li>When the gate step did not succeed, the leg has already failed. The reports
   that exist are staged for diagnosis and the missing ones are noted.</li>
 <li>An empty or placeholder file is never staged.</li>
-<li>For a language with no entry in the table, the step warns and stages
-  nothing, whatever <code>gate-outcome</code> says.</li>
+<li>For a language with no entry in the table, the step warns (or, for a
+  <code>lint</code> or <code>typecheck</code> leg of a repository with no fleet primary language,
+  notes) and stages nothing, whatever <code>gate-outcome</code> says.</li>
 </ul>
 <p><strong>Tools.</strong> Writes the gate's tools JSON array to the <code>tools</code> output: <code>[]</code>,
-with a warning, for a language with no entry.</p>
+with a warning or notice, for a language with no entry.</p>
+<p><strong>Expect.</strong> For each of the language's <code>lint</code> and <code>typecheck</code> reports,
+<code>reports-dir</code> must hold at least one non-empty, version-suffixed copy
+(<code>&lt;stem&gt;-&lt;version&gt;.&lt;ext&gt;</code>, for example <code>quality-clippy-1.95.json</code>). A missing
+one fails the step with an <code>::error::</code> naming it. For a language with no
+lint or typecheck entry, the step warns or notes as above and passes. An
+empty <code>reports-dir</code>, or one that is not a directory, fails.</p>
 
 
 
