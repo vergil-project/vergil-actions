@@ -48,14 +48,7 @@ check_test_script_modes() {
 # suite runs here. An entry must name a tracked action suite: a stale one
 # fails the run rather than hide a renamed suite.
 CI_ONLY_ACTION_SUITES=(
-	"actions/cd/release/tests/container-tag.test.sh|needs yq, absent from the validation image"
-	"actions/cd/release/tests/package-image-prefix.test.sh|needs yq, absent from the validation image"
-	"actions/cd/release/tests/package-runtime.test.sh|needs yq, absent from the validation image"
-	"actions/ci/evidence/tests/gate.test.sh|needs yq, absent from the validation image"
 	"actions/ci/evidence/tests/security-tools.test.sh|needs yq, absent from the validation image"
-	"actions/ops/github-config/tests/automation-env.test.sh|needs yq, absent from the validation image"
-	"actions/shared/setup/primary-suffix/tests/container-prefix.test.sh|needs yq, absent from the validation image"
-	"actions/shared/setup/primary-suffix/tests/image.test.sh|needs yq, absent from the validation image"
 	"actions/shared/setup/vergil/tests/install-tooling.test.sh|needs python3, absent from the validation image"
 )
 
