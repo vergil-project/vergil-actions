@@ -6,10 +6,13 @@ description: >-
   repository (on a host runner, after setting up that repository with its key
   checked against the pinned fingerprint; in a container job, when the image
   has both the vergil apt source and a core Python), `uv tool install` from
-  git (a dev tag, an image with neither, or `install-source: git`), or, when
-  the consumer repo is vergil-tooling itself, `uv sync` (pinned to the image's
-  interpreter with UV_PYTHON_PREFERENCE=only-system) so CI validates the PR's
-  code instead of the released version. A path that needs uv and finds none
+  git with `--python 3.15` (a dev tag, an image with neither, or
+  `install-source: git`; a dev tag where the job has both runs on the core
+  Python instead), or, when the consumer repo is vergil-tooling itself,
+  `uv sync` so CI validates the PR's code instead of the released version (on a
+  host runner with `--python 3.15`, uv providing that interpreter; in a
+  container pinned to the image's interpreter with
+  UV_PYTHON_PREFERENCE=only-system). A path that needs uv and finds none
   installs a pinned, hash-checked uv release; uv is never installed with pip
   (epic vergil-project/.github#649).
 

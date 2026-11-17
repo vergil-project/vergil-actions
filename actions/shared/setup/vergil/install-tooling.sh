@@ -6,7 +6,10 @@
 # after a failure.
 #
 #   * Self repo (vergil-tooling's own CI): the checkout is the project under
-#     test, so `uv sync` installs it from source, as before.
+#     test, so `uv sync` installs it from source. On a host runner it syncs
+#     with `--python 3.15` and lets uv provide that interpreter; in a
+#     container it keeps UV_PYTHON_PREFERENCE=only-system, so it runs on the
+#     image's interpreter (issue #1002).
 #   * install-source: git (publish-index's build-index, which rebuilds the
 #     vergil apt index and so never installs from it): `uv tool install` from
 #     git. A line pin (vX.Y) installs the newest vX.Y.Z tag in that line, found
@@ -17,11 +20,11 @@
 #     installs at that tag.
 #   * A dev tag (anything but vX.Y or vX.Y.Z): `uv tool install` from git. Where
 #     both the vergil apt source and a core Python (/opt/vergil/python/*) are
-#     present, it runs on the core Python (`--python`); where neither is,
-#     today's command; where only one is, it refuses.
+#     present, it runs on the core Python (`--python <core>`); where neither
+#     is, on Python 3.15 (`--python 3.15`); where only one is, it refuses.
 #   * A line (vX.Y) or exact (vX.Y.Z) tag in a container job: the packaged
 #     install when the image has both the vergil apt source and a core Python,
-#     today's `uv tool install` from git when it has neither, and a refusal when
+#     `uv tool install` from git when it has neither, and a refusal when
 #     it has only one (the same three-way check as vergil-tooling's cache
 #     build).
 #   * A line or exact tag in a host job (no /.dockerenv): the vergil apt
@@ -29,6 +32,11 @@
 #     `lib/package/repo_setup.bootstrap` does (key checked against the pinned
 #     primary fingerprint before any source is written), then the packaged
 #     install.
+#
+# Every `uv tool install` from git that does not run on a core Python, and the
+# self-repo sync on a host runner, names `--python 3.15`: vergil-tooling
+# supports the newest Python series alone (epic vergil-project/.github#1256).
+# The packaged installs already run on vergil-python 3.15.
 #
 # A packaged install pins vergil-tooling to the tag in
 # /etc/apt/preferences.d/vergil-tooling, checks apt's candidate against the tag
@@ -216,7 +224,7 @@ environment_state() {
 }
 
 uv_git_install() {
-  uv tool install "${PACKAGE} @ git+${GIT_URL}@$1"
+  uv tool install --python 3.15 "${PACKAGE} @ git+${GIT_URL}@$1"
 }
 
 # ---------------------------------------------------------------------------
@@ -415,9 +423,16 @@ self_repo_install() {
   log "the consumer repo is vergil-tooling itself; installing from source (uv sync)"
   ensure_uv
   : "${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is not set}"
-  # A project command, so it honours the repo's uv settings: pin the interpreter
-  # source to the image's Python, never a download (issue #1002).
-  UV_PYTHON_PREFERENCE=only-system uv sync --frozen --group dev
+  if is_host; then
+    # The runner's own Python is not a series vergil-tooling supports: name
+    # 3.15 and let uv provide it.
+    log "host runner: syncing on Python 3.15, provided by uv"
+    uv sync --frozen --group dev --python 3.15
+  else
+    # A project command, so it honours the repo's uv settings: pin the
+    # interpreter source to the image's Python, never a download (issue #1002).
+    UV_PYTHON_PREFERENCE=only-system uv sync --frozen --group dev
+  fi
   echo "${GITHUB_WORKSPACE}/.venv/bin" >>"$GITHUB_PATH"
 }
 
