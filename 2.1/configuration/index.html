@@ -863,6 +863,8 @@
       
         
       
+        
+      
     
     
     
@@ -915,6 +917,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.80
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7958,8 +7988,12 @@ repository needs before CI workflows, automation, and project integration work
 correctly. For action-specific configuration (inputs, outputs, behavior), see the
 <a href="../actions/">Action Reference</a>.</p>
 <h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
-<p>Each repository requires specific secrets depending on its workflow set. Secrets
-are configured in <strong>Settings &gt; Secrets and variables &gt; Actions</strong>.</p>
+<p>Each repository requires specific secrets depending on its workflow set.
+<code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> are <strong>org-level</strong> Actions secrets, visible
+to all repositories, so a new repository needs no secret step for them. They
+are configured in the org's <strong>Settings &gt; Secrets and variables &gt; Actions</strong>.
+<code>PROJECT_TOKEN</code> is a repository secret, configured in each repository's
+<strong>Settings &gt; Secrets and variables &gt; Actions</strong>.</p>
 <table>
 <thead>
 <tr>
@@ -8179,11 +8213,14 @@ token is scoped, as <a href="#token-scoping">Token scoping</a> describes.</p>
 <li>Under <strong>Install App</strong>, install it on the org and choose <strong>All
    repositories</strong>.</li>
 <li>
-<p>Make <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> available to every repository
-   that calls the workflows above. For example, as repository secrets:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;path-to-private-key&gt;.pem<span class="k">)</span><span class="s2">"</span>
+<p>Set <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> once, as org-level Actions
+   secrets visible to all repositories, so every repository that calls the
+   workflows above can read them:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;<span class="w"> </span>--visibility<span class="w"> </span>all<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;<span class="w"> </span>--visibility<span class="w"> </span>all<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;path-to-private-key&gt;.pem<span class="k">)</span><span class="s2">"</span>
 </code></pre></div>
+<p>Only an org without these org secrets sets them per repository instead,
+with <code>--repo &lt;org&gt;/&lt;repo&gt;</code> in place of <code>--org &lt;org&gt; --visibility all</code>.</p>
 </li>
 <li>
 <p>Set the org-level Actions variable <code>VRG_AUTOMATION_APP</code> to the App's
@@ -8471,14 +8508,15 @@ keeps them converged from then on.</p>
 <h3 id="3-secrets">3. Secrets<a class="headerlink" href="#3-secrets" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Set <code>PROJECT_TOKEN</code> (all repositories)</li>
-<li>[ ] Make <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> for the org's automation App
-  available to the repository (every repository with an <code>ops.yml</code>, not only
-  libraries)</li>
+<li>[ ] Confirm the org secrets <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> for the
+  org's automation App exist and are visible to all repositories. There is no
+  per-repository step for them.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;key&gt;.pem<span class="k">)</span><span class="s2">"</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>gh<span class="w"> </span>secret<span class="w"> </span>list<span class="w"> </span>--org<span class="w"> </span>vergil-project
 </code></pre></div>
+<p><code>gh secret list --org</code> must list both <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> as
+<code>Visible to all repositories</code>.</p>
 <h3 id="4-github-app-installation">4. GitHub App installation<a class="headerlink" href="#4-github-app-installation" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Confirm the org's <code>&lt;org&gt;-automation</code> App installation has <strong>All
