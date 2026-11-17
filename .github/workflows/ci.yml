@@ -20,7 +20,6 @@ jobs:
     uses: ./.github/workflows/ci-quality.yml
     with:
       language: shell
-      container-prefix: dev
       container-suffix: base
 
   security:
@@ -32,12 +31,10 @@ jobs:
     with:
       language: shell
       run-codeql: false
-      container-prefix: dev
       container-suffix: base
 
   version:
     uses: ./.github/workflows/ci-version-bump.yml
     with:
       language: shell
-      container-prefix: dev
       container-suffix: base
