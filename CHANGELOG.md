@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.79] - 2026-11-17
+
+### Features
+
+- run ops-upstream-refresh as prepare and publish jobs across the key boundary (#1267)
+
 ## [2.1.78] - 2026-11-16
 
 ### CI
