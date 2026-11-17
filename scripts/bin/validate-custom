@@ -48,7 +48,7 @@ check_test_script_modes() {
 # suite runs here. An entry must name a tracked action suite: a stale one
 # fails the run rather than hide a renamed suite.
 CI_ONLY_ACTION_SUITES=(
-	"actions/shared/setup/vergil/tests/install-tooling.test.sh|needs python3, absent from the validation image"
+	"actions/shared/setup/vergil/tests/install-tooling.test.sh|its missing_pin_fails case runs read-pin.sh on PATH /usr/bin:/bin, which holds python3 on the runner but not in the validation image (only /usr/local/bin does)"
 )
 
 # Run every action suite tracked in git at $1 (the actions/**/tests/*.test.sh
