@@ -40,10 +40,10 @@
 # single answer: one window fetch, and no chance of two outputs disagreeing.
 #
 # Failure is loud and final. A resolver error (window fetch, invalid window, a
-# pin outside the window, an app that pins more than one version, a C++ or
-# TypeScript repo with no pin, an invalid primary-version, a missing or invalid
-# vergil.toml) fails the step with the resolver's message as `::error::`
-# annotations and writes no outputs. There is no fallback derivation.
+# pin outside the window, an app that pins more than one version, a C++ repo
+# with no pin, an invalid primary-version, a missing or invalid vergil.toml)
+# fails the step with the resolver's message as `::error::` annotations and
+# writes no outputs. There is no fallback derivation.
 #
 # Inputs (env):
 #   VERGIL_CONFIG_DIR — directory holding vergil.toml (default: the current

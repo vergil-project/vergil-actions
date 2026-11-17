@@ -826,7 +826,6 @@ else
   fi
 fi
 
-# Rust's reports are never satisfied by Python's names.
 # TypeScript's lint leg runs once and its typecheck leg once (one version
 # label each); expect mode requires both reports and warns for neither.
 name="expect-typescript-finds-both-reports"
@@ -857,6 +856,7 @@ if assert_error "$name" "its quality-eslint.json" "its quality-tsc.txt"; then
   pass_case "$name"
 fi
 
+# Rust's reports are never satisfied by Python's names.
 name="expect-rust-ignores-python-names"
 workspace "$name"
 reports_dir quality-ruff-1.99.json quality-mypy-1.99.xml

@@ -112,8 +112,9 @@ their matrix from `vrg-ci-resolve` at run time. The shared setup action runs
 the resolver, which reads the consumer's `vergil.toml` and the language
 version window that vergil-containers publishes, and applies every rule: a
 `library` builds the whole window, any other repository type is an app that
-builds one version (an app pin of more than one version is an error), C++ and
-TypeScript must pin `[ci].versions`, and a pin must lie inside the window.
+builds one version (an app pin of more than one version is an error), a
+language whose window has more than one family (today only C++) must pin
+`[ci].versions`, and a pin must lie inside the window.
 Its versions, image tags and image suffixes feed `actions/ci/matrix`. Each
 leg then pins its toolchain (Python legs with `actions/ci/toolchain/pin-python`)
 and asserts it with `actions/ci/toolchain/assert`. A consumer's `ci.yml` is
@@ -275,9 +276,10 @@ jobs:
 ### ci.yml — C++ (compiler-family matrix)
 
 C++ carries its compiler family × version axis as `clang-`/`gcc-` prefixed
-tokens, so it must pin `[ci].versions` in `vergil.toml` until its lifecycle
-turn. `vrg-ci-resolve` checks the pin against the window and gives each token
-its image suffix and tag. `actions/ci/matrix` only joins them into an image —
+tokens, and its window has more than one family, so there is no single
+default: it must pin `[ci].versions` in `vergil.toml`. `vrg-ci-resolve`
+checks the pin against the window and gives each token its image suffix and
+tag. `actions/ci/matrix` only joins them into an image —
 `clang-20` → `prod-cpp-clang:20`, `gcc-14` → `prod-cpp-gcc:14` — with no
 routing of its own. The caller still passes `container-suffix:` (`cpp-clang`), but
 only as a cross-check: the `common` job requires it to equal the primary
