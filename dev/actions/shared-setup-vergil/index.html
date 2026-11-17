@@ -7766,18 +7766,12 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
   it never falls back to <code>vX.Y</code>. An exact or dev pin installs at that
   tag.</li>
 <li><strong>A dev tag</strong> (anything but <code>vX.Y</code> or <code>vX.Y.Z</code>, such as <code>develop</code>):
-  <code>uv tool install</code> from git. Where the job has both the vergil apt
-  source (<code>/etc/apt/sources.list.d/vergil.sources</code>) and a core Python
-  (<code>/opt/vergil/python/&lt;series&gt;/bin/python3</code>), it runs on the core
-  Python (<code>--python &lt;core&gt;</code>); where it has neither, on Python 3.15
-  (<code>--python 3.15</code>); where it has only one, or more than one core
-  Python, the job fails.</li>
-<li><strong>A release line or exact release in a container job:</strong> where the
-  image has both the vergil apt source and a core Python, the
-  packaged install from the vergil apt repository; where it has
-  neither, <code>uv tool install --python 3.15</code> from git; where it has
-  only one, the job
-  fails rather than guess.</li>
+  <code>uv tool install</code> from git. In a container job it runs on the
+  image's core Python (<code>--python
+  /opt/vergil/python/&lt;series&gt;/bin/python3</code>); on a host runner, on
+  Python 3.15 (<code>--python 3.15</code>).</li>
+<li><strong>A release line or exact release in a container job:</strong> the
+  packaged install from the vergil apt repository.</li>
 <li><strong>A release line or exact release in a host job</strong> (no
   <code>/.dockerenv</code>): the vergil apt repository is set up on the runner
   the way vergil-tooling's <code>repo_setup.bootstrap</code> does it. The runner's
