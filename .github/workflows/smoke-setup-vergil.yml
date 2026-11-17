@@ -76,8 +76,10 @@ name: Smoke - setup/vergil outputs
 #         UV_PYTHON_PREFERENCE=only-system written to GITHUB_ENV, loud failure
 #         on a bad version, every Python leg of ci-quality, ci-audit and
 #         ci-test pinning through it, and every uv command in any workflow
-#         job or composite action pinning the interpreter source with
-#         UV_PYTHON_PREFERENCE=only-system (issue #1002);
+#         job or composite action, bar the listed exemptions, pinning the
+#         interpreter source with UV_PYTHON_PREFERENCE=only-system (issue
+#         #1002; the exemptions are documented in
+#         docs/site/docs/actions/ci-toolchain-pin-python.md);
 #       - the package setup action's detect.sh (self-repo vs.
 #         [dependencies].vergil install spec; epic vergil-project/.github#356);
 #       - the package setup action's check-toolchain.sh: a package toolchain
