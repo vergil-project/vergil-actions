@@ -7687,13 +7687,17 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <li>If <code>pyproject.toml</code> declares <code>name = "vergil-tooling"</code>, the repository is
   vergil-tooling itself. The step runs <code>uv sync --frozen --group dev</code> and
   adds <code>.venv/bin</code> to <code>PATH</code>, so CI tests the PR's own code rather than a
-  released version. The sync runs with <code>UV_PYTHON_PREFERENCE=only-system</code>,
-  so it uses the system (image or runner) interpreter and never downloads a managed one
-  (issue #1002). <code>uv tool install</code> needs no such pin, because uv tool
-  commands ignore a project's uv settings.</li>
+  released version. On a host runner the sync names <code>--python 3.15</code>, the
+  one Python series vergil-tooling supports, and uv provides that
+  interpreter. In a container job it runs with
+  <code>UV_PYTHON_PREFERENCE=only-system</code>, so it uses the image's interpreter
+  and never downloads a managed one (issue #1002). <code>uv tool install</code>
+  needs no such pin, because uv tool commands ignore a project's uv
+  settings.</li>
 <li>Otherwise it reads <code>[dependencies].vergil</code> from <code>vergil.toml</code> (e.g.
   <code>v2.1</code>) and installs vergil-tooling at that tag:<ul>
-<li><strong><code>install-source: git</code>:</strong> <code>uv tool install</code> from git. A release
+<li><strong><code>install-source: git</code>:</strong> <code>uv tool install --python 3.15</code> from
+  git. A release
   line pin (<code>vX.Y</code>) installs the newest <code>vX.Y.Z</code> tag in that line,
   listed with <code>git ls-remote</code>, not the floating <code>vX.Y</code> tag: a release
   dispatches the package-index rebuild before it moves <code>vX.Y</code>, and
@@ -7705,13 +7709,14 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
   <code>uv tool install</code> from git. Where the job has both the vergil apt
   source (<code>/etc/apt/sources.list.d/vergil.sources</code>) and a core Python
   (<code>/opt/vergil/python/&lt;series&gt;/bin/python3</code>), it runs on the core
-  Python (<code>--python</code>); where it has neither, uv chooses the
-  interpreter, as before; where it has only one, or more than one core
+  Python (<code>--python &lt;core&gt;</code>); where it has neither, on Python 3.15
+  (<code>--python 3.15</code>); where it has only one, or more than one core
   Python, the job fails.</li>
 <li><strong>A release line or exact release in a container job:</strong> where the
   image has both the vergil apt source and a core Python, the
   packaged install from the vergil apt repository; where it has
-  neither, <code>uv tool install</code> from git; where it has only one, the job
+  neither, <code>uv tool install --python 3.15</code> from git; where it has
+  only one, the job
   fails rather than guess.</li>
 <li><strong>A release line or exact release in a host job</strong> (no
   <code>/.dockerenv</code>): the vergil apt repository is set up on the runner
