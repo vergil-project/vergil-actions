@@ -17,11 +17,11 @@ name: Smoke - setup/vergil outputs
 #         ::error:: for a missing file, missing key, or empty/invalid value
 #         (issue #977);
 #       - install-tooling.sh: the install path chosen from the tag and the
-#         environment (packaged in a container with the vergil apt source and
-#         a core Python, uv from git with neither, a refusal with one; on a
-#         host runner the vergil apt repository bootstrapped with the pinned
-#         key fingerprint and the bootstrap source removed; the dev-tag,
-#         self-repo and install-source: git paths), the apt candidate check,
+#         environment (packaged in a container for a released tag, uv from
+#         git on the core Python for a dev tag; on a host runner the vergil
+#         apt repository bootstrapped with the pinned key fingerprint and the
+#         bootstrap source removed; the dev-tag, self-repo and
+#         install-source: git paths), the apt candidate check,
 #         and the pinned, hash-checked uv (epic vergil-project/.github#649);
 #       - ci/matrix resolve.sh: images from the resolver's tags and suffixes,
 #         the run-once collapse to the primary, and loud failure on a missing

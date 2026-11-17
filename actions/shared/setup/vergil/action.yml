@@ -4,11 +4,10 @@ description: >-
   through install-tooling.sh, which chooses the install path by explicit
   checks and logs the one it took: the packaged install from the vergil apt
   repository (on a host runner, after setting up that repository with its key
-  checked against the pinned fingerprint; in a container job, when the image
-  has both the vergil apt source and a core Python), `uv tool install` from
-  git with `--python 3.15` (a dev tag, an image with neither, or
-  `install-source: git`; a dev tag where the job has both runs on the core
-  Python instead), or, when the consumer repo is vergil-tooling itself,
+  checked against the pinned fingerprint; in a container job, for a released
+  tag), `uv tool install` from git (a dev tag in a container job, on the
+  image's core Python; a dev tag on a host runner, or `install-source: git`,
+  with `--python 3.15`), or, when the consumer repo is vergil-tooling itself,
   `uv sync` so CI validates the PR's code instead of the released version (on a
   host runner with `--python 3.15`, uv providing that interpreter; in a
   container pinned to the image's interpreter with

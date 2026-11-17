@@ -18,15 +18,12 @@
 #     that triggered it (issue #1144). A failed lookup, or a line with no
 #     release, fails the job; it never falls back to vX.Y. An exact or dev pin
 #     installs at that tag.
-#   * A dev tag (anything but vX.Y or vX.Y.Z): `uv tool install` from git. Where
-#     both the vergil apt source and a core Python (/opt/vergil/python/*) are
-#     present, it runs on the core Python (`--python <core>`); where neither
-#     is, on Python 3.15 (`--python 3.15`); where only one is, it refuses.
+#   * A dev tag (anything but vX.Y or vX.Y.Z): `uv tool install` from git. In a
+#     container job it runs on the image's core Python
+#     (`--python /opt/vergil/python/<series>/bin/python3`); on a host runner,
+#     on Python 3.15 (`--python 3.15`).
 #   * A line (vX.Y) or exact (vX.Y.Z) tag in a container job: the packaged
-#     install when the image has both the vergil apt source and a core Python,
-#     `uv tool install` from git when it has neither, and a refusal when
-#     it has only one (the same three-way check as vergil-tooling's cache
-#     build).
+#     install.
 #   * A line or exact tag in a host job (no /.dockerenv): the vergil apt
 #     repository is set up on the runner as vergil-tooling's
 #     `lib/package/repo_setup.bootstrap` does (key checked against the pinned
@@ -194,33 +191,20 @@ ensure_uv() {
 }
 
 # ---------------------------------------------------------------------------
-# The environment check
+# Installs from git
 # ---------------------------------------------------------------------------
 
-# Sets core_pythons to every core Python present (zero or more).
+# Sets core_pythons to every core Python present (zero or more). It always
+# returns 0, so that with none present the caller fails loudly at
+# "${core_pythons[0]}" under `set -u` rather than `set -e` exiting with no
+# message.
 find_core_pythons() {
   core_pythons=()
   local p
   for p in ${root}${CORE_PYTHON_GLOB}; do
     [ -e "$p" ] && core_pythons+=("$p")
   done
-}
-
-# Prints both, neither, or the refusal message for a half environment.
-environment_state() {
-  local source=0 runtime=0
-  [ -f "$PERMANENT_SOURCE" ] && source=1
-  find_core_pythons
-  [ "${#core_pythons[@]}" -gt 0 ] && runtime=1
-  if [ "$source" -eq 1 ] && [ "$runtime" -eq 1 ]; then
-    echo both
-  elif [ "$source" -eq 0 ] && [ "$runtime" -eq 0 ]; then
-    echo neither
-  elif [ "$source" -eq 1 ]; then
-    echo "the image has the vergil apt source (/etc/apt/sources.list.d/vergil.sources) but not a core Python (${CORE_PYTHON_GLOB}); refusing to guess"
-  else
-    echo "the image has a core Python (${CORE_PYTHON_GLOB}) but not the vergil apt source (/etc/apt/sources.list.d/vergil.sources); refusing to guess"
-  fi
+  return 0
 }
 
 uv_git_install() {
@@ -461,47 +445,28 @@ git_source_install() {
 }
 
 dev_install() {
-  local tag="$1" state
-  state="$(environment_state)"
-  case "$state" in
-    both)
-      find_core_pythons
-      if [ "${#core_pythons[@]}" -ne 1 ]; then
-        die "found ${#core_pythons[@]} core Pythons (${core_pythons[*]}); cannot tell which is core"
-      fi
-      log "uv tool install from git on the core Python (${tag})"
-      ensure_uv
-      # --python overrides any UV_PYTHON the job exports for its family.
-      uv tool install --python "${core_pythons[0]}" "${PACKAGE} @ git+${GIT_URL}@${tag}"
-      ;;
-    neither)
-      log "uv tool install from git (dev ref ${tag}; no vergil apt repository or core Python)"
-      ensure_uv
-      uv_git_install "$tag"
-      ;;
-    *) die "$state" ;;
-  esac
+  local tag="$1"
+  if is_host; then
+    log "uv tool install from git (dev ref ${tag}; host runner)"
+    ensure_uv
+    uv_git_install "$tag"
+  else
+    log "uv tool install from git on the core Python (${tag})"
+    find_core_pythons
+    ensure_uv
+    # --python overrides any UV_PYTHON the job exports for its family.
+    uv tool install --python "${core_pythons[0]}" "${PACKAGE} @ git+${GIT_URL}@${tag}"
+  fi
 }
 
 container_install() {
-  local tag="$1" kind="$2" state
-  state="$(environment_state)"
-  case "$state" in
-    both)
-      log "packaged install (${tag})"
-      write_pin "$tag" "$kind"
-      apt_get update
-      check_candidate "$tag" "$kind"
-      packaged_install "$tag" "$kind"
-      ensure_uv
-      ;;
-    neither)
-      log "uv tool install from git (image without the vergil apt repository)"
-      ensure_uv
-      uv_git_install "$tag"
-      ;;
-    *) die "$state" ;;
-  esac
+  local tag="$1" kind="$2"
+  log "packaged install (${tag})"
+  write_pin "$tag" "$kind"
+  apt_get update
+  check_candidate "$tag" "$kind"
+  packaged_install "$tag" "$kind"
+  ensure_uv
 }
 
 host_install() {
