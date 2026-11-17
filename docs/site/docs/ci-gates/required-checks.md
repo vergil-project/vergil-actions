@@ -2,8 +2,11 @@
 
 ## Required check set
 
-The required status checks live in the
-[CI gates ruleset](repository-rulesets.md#ci-gates-ruleset). `vrg-github-repo-config`
+The required status checks live in the two
+[CI gates rulesets](repository-rulesets.md#ci-gates-rulesets),
+[`CI gates (develop)`](repository-rulesets.md#ci-gates-develop) and
+[`CI gates (main)`](repository-rulesets.md#ci-gates-main), which require the
+same set. `vrg-github-repo-config`
 in vergil-tooling derives them from each repository's `vergil.toml`, so the set
 depends on the repository's configuration rather than a fixed category. Check
 names assume the standard caller job keys (`quality`, `security`, `docs`,
@@ -122,7 +125,10 @@ security:
 ## Ruleset configuration
 
 All required status checks are enforced via GitHub repository rulesets, not
-legacy branch protection rules. Both `main` and `develop` are covered by the
-same CI gates ruleset. See [Repository Rulesets](repository-rulesets.md) for
+legacy branch protection rules. Each branch has its own CI gates ruleset with
+the same required checks: `CI gates (develop)` does not require a PR's branch
+to be up to date, and `CI gates (main)` does
+([why](repository-rulesets.md#why-develop-does-not-require-up-to-date-branches)).
+See [Repository Rulesets](repository-rulesets.md) for
 full configuration details including branch protection, CI gates, and tag
 protection.

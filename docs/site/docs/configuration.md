@@ -306,10 +306,14 @@ secret.
 
 ## Repository rulesets
 
-Every managed repository uses five rulesets to enforce merge requirements:
+Every managed repository uses six rulesets to enforce merge requirements (a
+`docs-single-branch` repository, which has no `main`, has no `CI gates (main)`):
 
 - **Branch protection** — PR requirements for `main` and `develop`
-- **CI gates** — Required status checks for `main` and `develop`
+- **CI gates (develop)** — Required status checks for `develop`; the branch
+  need not be up to date
+- **CI gates (main)** — The same required status checks for `main`; the
+  branch must be up to date
 - **Tag protection** — Protect release tags (`v*.*.*`) and rolling minor tags (`v*.*`)
 - **Rolling tag branch names** — Block branches named like a rolling tag (`v[0-9]*`)
 - **Automation branches** — Only the org automation App and the repository
@@ -377,8 +381,8 @@ Use this checklist when adding a new repository to the managed environment.
 
 Do not create the rulesets by hand. `vrg-github-repo-config update` creates
 every ruleset of the [standard configuration](ci-gates/repository-rulesets.md):
-Branch protection, CI gates, Tag protection, Rolling tag branch names and
-Automation branches. The nightly `github-config` job runs the same command and
+Branch protection, CI gates (develop), CI gates (main), Tag protection, Rolling
+tag branch names and Automation branches. The nightly `github-config` job runs the same command and
 keeps them converged from then on.
 
 - [ ] Run `vrg-github-repo-config update --repo <org>/<repo>`
@@ -418,7 +422,7 @@ See [Binary package environments](#binary-package-environments).
 - [ ] Call `cd-release.yml` with
   `secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit`
 - [ ] Call `ci-package.yml` under a job keyed `package`. Do not add
-  `package / evidence` to the **CI gates** ruleset by hand:
+  `package / evidence` to the **CI gates** rulesets by hand:
   `vrg-github-repo-config` requires it for a repository with a `[package]`
   section
 
@@ -439,9 +443,9 @@ For the `<org>/packages` index repository itself:
 ### 6. CI gates activation
 
 - [ ] Push the CI workflow and verify all checks run
-- [ ] Confirm the **CI gates** ruleset requires them. Do not add a check by
-  hand: `vrg-github-repo-config` derives the required-check set and the
-  nightly `update` converges the ruleset
+- [ ] Confirm the **CI gates (develop)** and **CI gates (main)** rulesets
+  require them. Do not add a check by hand: `vrg-github-repo-config` derives
+  the required-check set and the nightly `update` converges the rulesets
   ([procedure](ci-gates/repository-rulesets.md#adding-a-new-required-check))
 
 ### 7. Verification

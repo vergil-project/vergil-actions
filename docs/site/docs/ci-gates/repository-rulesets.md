@@ -4,13 +4,16 @@
 
 All managed repositories use GitHub's **repository rulesets** (not legacy branch
 protection rules) to enforce merge requirements. Every repository has the same
-five rulesets, as vergil-tooling's desired state defines them (see its
-[config audit reference](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#github-checks-rulesets)):
+six rulesets, as vergil-tooling's desired state defines them (see its
+[config audit reference](https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#github-checks-rulesets)).
+A `docs-single-branch` repository has no `main` branch, so it has five: it has
+no `CI gates (main)` ruleset.
 
 | Ruleset | Target | Purpose |
 | --------- | -------- | --------- |
 | Branch protection | `main`, `develop` | PR requirements, deletion and force-push prevention |
-| CI gates | `main`, `develop` | Required status checks |
+| CI gates (develop) | `develop` | Required status checks; the branch need not be up to date |
+| CI gates (main) | `main` | Required status checks; the branch must be up to date |
 | Tag protection | `v*.*.*` and `v*.*` tags | Protect release tags and rolling minor tags |
 | Rolling tag branch names | `refs/heads/v[0-9]*` | Block branches named like a rolling tag |
 | Automation branches | `refs/heads/automation/**` | Only the org automation App and the repository Admin role may create, update or force-push these branches |
@@ -37,22 +40,64 @@ Applies to both `main` and `develop` branches across all repositories.
     request (direct pushes are blocked), but self-approval is permitted. This is
     appropriate for single-maintainer repositories.
 
-## CI gates ruleset
+## CI gates rulesets
 
-Applies to both `main` and `develop` branches. Contains the required status
-checks that must pass before a PR can merge.
+Two rulesets hold the required status checks that must pass before a PR can
+merge, one per branch. Both require the same checks. They differ only in
+whether a PR's branch must be up to date with its base before it merges.
+
+### CI gates (develop)
+
+Applies to `develop` (`refs/heads/develop`) in every repository,
+`docs-single-branch` repositories included.
+
+| Setting | Value |
+| --------- | ------- |
+| Strict required status checks | No |
+| Do not enforce on create | No |
+
+### CI gates (main)
+
+Applies to `main` (`refs/heads/main`). A `docs-single-branch` repository has
+no `main` branch and no such ruleset.
 
 | Setting | Value |
 | --------- | ------- |
 | Strict required status checks | Yes (branch must be up to date) |
 | Do not enforce on create | No |
 
+### Why `develop` does not require up-to-date branches
+
+Requiring a PR's branch to be up to date serializes merging: each merge into
+`develop` leaves every other open PR `BEHIND`, and each must update and run CI
+again. GitHub auto-merge never updates a `BEHIND` branch, so a batch of
+auto-merged PRs would wait forever. The check that the combined change works
+moves later; it does not disappear. A textual conflict surfaces at merge time.
+A semantic break between two individually green PRs is caught by the local
+`vrg-validate` that `vrg-finalize-pr` runs on the synced `develop` after the
+batch merges. And the `develop` → `main` release PR runs full CI against
+`main`, which keeps the up-to-date rule. A `docs-single-branch` repository has
+no release path, so for it the post-merge validate is the combined-change
+check. See
+[epic 1218's spec, §2](https://github.com/vergil-project/.github/blob/develop/epics/1218-parallel-pr-merging/spec.md#2-why)
+for the full reasoning.
+
+!!! note "OpenSSF Scorecard"
+    The Scorecard's Branch-Protection check lists "'up-to-date branches' is
+    required to merge on branch 'develop'" among its items. With `develop`'s
+    ruleset no longer strict, later snapshots drop that item. This is
+    accepted: it is a deliberate trade, for the reason above, not a hardening
+    regression to fix.
+
+### The required checks
+
 `vrg-github-repo-config` derives the required checks from each repository's
-`vergil.toml`, so the set depends on the repository's configuration. See the
+`vergil.toml`, so the set depends on the repository's configuration. Both CI
+gates rulesets carry the same set. See the
 [required check set](required-checks.md#required-check-set) for the full list
 and the condition under which each check is required.
 
-### Example: a public Python library
+#### Example: a public Python library
 
 A public Python library that publishes docs and has a release model gets:
 
@@ -89,7 +134,7 @@ because GHAS is available on a public repository. A repository with a
     required-check set. See
     [Evidence gates are the required checks](required-checks.md#evidence-gates-are-the-required-checks).
 
-### Example: vergil-actions
+#### Example: vergil-actions
 
 This repository declares no primary language in `vergil.toml` (its `ci.yml`
 passes `language: shell` to the workflows), so it gets no CodeQL checks and no
@@ -192,12 +237,12 @@ When adding a new CI job that should block merges:
 2. Open a PR and verify the check runs and passes.
 3. Do not add the check by hand under **Settings > Rules**.
    `vrg-github-repo-config` derives the required-check set itself (from
-   `desired_ci_gates_ruleset()` in vergil-tooling and the repository's
+   `desired_ci_gates_rulesets()` in vergil-tooling and the repository's
    `vergil.toml`), and the nightly `ops-github-config` run of
-   `vrg-github-repo-config update` converges the ruleset back to that set,
-   removing a hand-added check. Add the check to that derivation in
+   `vrg-github-repo-config update` converges both CI gates rulesets back to
+   that set, removing a hand-added check. Add the check to that derivation in
    vergil-tooling; once that change is released, the next nightly run (or
-   `vrg-github-repo-config update` run by hand) converges the ruleset.
+   `vrg-github-repo-config update` run by hand) converges the rulesets.
 4. Verify the check name matches exactly. For the matrixed workflows, require
    the stable `<kind> / evidence` aggregate (e.g. `test / evidence`), **not** the
    per-version legs — the legs change with the resolved version set (the

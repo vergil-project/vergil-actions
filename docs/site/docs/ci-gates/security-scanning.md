@@ -59,8 +59,9 @@ named `<caller job> / <job>` with the standard `security` caller job key. The
 second column shows the checks GitHub code scanning creates when the SARIF
 results are uploaded (this needs the `security-events: write` permission).
 
-Both columns are gated in the
-[CI gates ruleset](repository-rulesets.md#ci-gates-ruleset):
+Both columns are gated in both
+[CI gates rulesets](repository-rulesets.md#ci-gates-rulesets),
+`CI gates (develop)` and `CI gates (main)`:
 
 - `security / trivy` and `security / semgrep` are always required.
 - `Trivy` and `Semgrep OSS` are required when GHAS is available. Without GHAS
