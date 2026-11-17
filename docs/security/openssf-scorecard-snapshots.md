@@ -11,6 +11,14 @@ work. The actual OpenSSF hardening work lives in epic
 tracking issue
 [vergil-project/vergil-tooling#828](https://github.com/vergil-project/vergil-tooling/issues/828).
 
+**The `develop` up-to-date item is gone, by design.** The snapshots below list
+"'up-to-date branches' is required to merge on branch 'develop'" under the
+Branch-Protection check. `develop`'s required checks now live in the
+`CI gates (develop)` ruleset, which does not require up-to-date branches, so
+later snapshots drop that item; `main`'s `CI gates (main)` ruleset still
+requires them. This is accepted, not a regression to remediate: see
+[why `develop` does not require up-to-date branches](../site/docs/ci-gates/repository-rulesets.md#why-develop-does-not-require-up-to-date-branches).
+
 ## How to add a snapshot
 
 Re-run the Scorecard from a checkout of this repo and append a new dated section
