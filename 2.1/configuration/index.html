@@ -861,6 +861,8 @@
       
         
       
+        
+      
     
     
     
@@ -913,6 +915,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.79/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.79
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8054,7 +8084,7 @@ only library repositories:</p>
 </tr>
 <tr>
 <td><a href="../workflows/ops-upstream-refresh/"><code>ops-upstream-refresh.yml</code></a></td>
-<td><code>upstream-refresh</code></td>
+<td><code>publish</code> (<code>vrg-upstream-refresh publish</code> mints the token itself)</td>
 <td>Calling repository only</td>
 </tr>
 <tr>
@@ -8094,12 +8124,12 @@ permissions:</p>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>upstream-refresh</code> branch, and deletes it when it closes a stale refresh PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>automation/upstream-refresh/&lt;run-id&gt;</code> branch, and deletes an earlier run's branch when it closes that run's PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
 </tr>
 <tr>
 <td>Pull requests</td>
 <td>Read &amp; write</td>
-<td><code>upstream-refresh</code> (opens, updates, comments on and closes the refresh PR); <code>github-config</code> (opens the sync PR, closes an earlier one and turns on auto-merge); <code>branch-sweep</code> and <code>epic-sweep</code> read them</td>
+<td><code>upstream-refresh</code> (opens the refresh PR with auto-merge, updates its branch from <code>develop</code>, merges it, and closes an earlier run's open one); <code>github-config</code> (opens the sync PR, closes an earlier one and turns on auto-merge); <code>branch-sweep</code> and <code>epic-sweep</code> read them</td>
 </tr>
 <tr>
 <td>Issues</td>
@@ -8109,7 +8139,7 @@ permissions:</p>
 <tr>
 <td>Workflows</td>
 <td>Read &amp; write</td>
-<td><code>cd.yml</code> (the release tag points at the freeze-internal-refs commit, which changes workflow files: see <a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>); <code>github-config</code>, the automatic fleet sync, whose PRs can change files under <code>.github/workflows/</code></td>
+<td><code>cd.yml</code> (the release tag points at the freeze-internal-refs commit, which changes workflow files: see <a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>); <code>github-config</code>, the automatic fleet sync, whose PRs can change files under <code>.github/workflows/</code>; <code>upstream-refresh</code>, only for the wait's branch update, which merges <code>develop</code> into the PR branch and is refused without it whenever <code>develop</code> has changed a workflow file (the path fence keeps every refresh patch out of <code>.github/**</code>)</td>
 </tr>
 <tr>
 <td>Dependabot alerts</td>
@@ -8221,8 +8251,8 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 </tr>
 <tr>
 <td><code>ops-upstream-refresh.yml</code></td>
-<td><code>upstream-refresh</code></td>
-<td><code>contents: write</code>, <code>pull-requests: write</code></td>
+<td><code>publish</code> (minted in-process by <code>vrg-upstream-refresh</code>, from <code>develop</code> only)</td>
+<td><code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>metadata: read</code></td>
 </tr>
 <tr>
 <td><code>cd-release.yml</code></td>
@@ -8242,6 +8272,23 @@ token unless the run's ref is <code>refs/heads/develop</code>, and checks out
 <code>develop</code>, so no other branch's code runs with that token. A
 repository-local workflow that mints an automation App token follows the
 same rule.</p>
+<p><strong>Upstream refresh mints its own token.</strong> <code>ops-upstream-refresh.yml</code> has no
+<code>create-github-app-token</code> step. Its <code>publish</code> job passes the App's client
+ID and private key to <code>vrg-upstream-refresh publish</code> on that one step, and
+the tool mints installation tokens itself, limited to the calling
+repository and the four permissions above. It renews the token every 30
+minutes, revokes each token it replaces, and revokes the last one when it
+exits, on success, on failure, and on the SIGINT or SIGTERM that a cancel
+sends. The key is held only in <code>publish</code>, never in <code>prepare</code>, which runs the
+repository's hook with a read-only <code>GITHUB_TOKEN</code> on a runner of its own
+(the key boundary: see
+<a href="../workflows/ops-upstream-refresh/#the-key-boundary">ops-upstream-refresh</a>).
+Like <code>github-config</code>, both jobs fail unless the run's ref is
+<code>refs/heads/develop</code>. Only a hard kill skips the last revocation: the
+runner lost, the kill at the end of the cancel grace period, or a cancel
+signal that does not reach the publish step inside its container. The token
+is then left to expire within its hour, in the memory of a runner that
+never ran the hook.</p>
 <p>A token can only narrow what the installation already holds: a step that
 requests a permission the installation lacks, or has not accepted yet, fails
 to mint and the job goes red.</p>

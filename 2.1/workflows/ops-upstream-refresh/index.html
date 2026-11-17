@@ -861,6 +861,8 @@
       
         
       
+        
+      
     
     
     
@@ -913,6 +915,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.79/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.79
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7002,10 +7032,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#secrets" class="md-nav__link">
+  <a href="#secrets-and-variables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Secrets
+        Secrets and variables
       
     </span>
   </a>
@@ -7017,6 +7047,17 @@
     <span class="md-ellipsis">
       
         Jobs and check names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-key-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The key boundary
       
     </span>
   </a>
@@ -7468,10 +7509,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#secrets" class="md-nav__link">
+  <a href="#secrets-and-variables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Secrets
+        Secrets and variables
       
     </span>
   </a>
@@ -7483,6 +7524,17 @@
     <span class="md-ellipsis">
       
         Jobs and check names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-key-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The key boundary
       
     </span>
   </a>
@@ -7541,23 +7593,33 @@
 
 <h1 id="ops-upstream-refresh">ops-upstream-refresh<a class="headerlink" href="#ops-upstream-refresh" title="Permanent link">&para;</a></h1>
 <p>Scheduled upstream refresh. It runs <code>vrg-upstream-refresh</code>, which runs the
-calling repository's <code>[upstream-refresh].hook</code> from <code>vergil.toml</code> and turns
-the result into at most one pull request:</p>
+calling repository's <code>[upstream-refresh].hook</code> from <code>vergil.toml</code> on a fresh
+clone of <code>develop</code>, and turns the result into at most one pull request that
+merges itself:</p>
 <ul>
-<li><strong>No change.</strong> The run exits quietly. If a refresh PR is still open, it is
-  closed with a comment and its branch is deleted, because the base branch
-  already has the change or it no longer applies.</li>
-<li><strong>A change.</strong> The change is committed to the fixed <code>upstream-refresh</code>
-  branch, which is force-pushed only when its content differs, and one PR is
-  opened or refreshed with the hook's notes in its body. Superseded refresh
-  PRs are closed.</li>
+<li><strong>No change.</strong> The run reports "in sync" and exits 0. If an earlier run's
+  refresh PR is still open, it is closed and its branch deleted.</li>
+<li><strong>A change.</strong> The change is checked against the repository's path fence,
+  committed as the automation App's bot user, and pushed to a new branch,
+  <code>automation/upstream-refresh/&lt;run-id&gt;</code>. The PR, titled
+  <code>chore(upstream): refresh upstream inputs</code>, lists the changed files and
+  the hook's notes, and has auto-merge on. The run waits until the PR has
+  merged, then exits 0. An earlier run's open refresh PR is closed first.</li>
 </ul>
-<p>The workflow never merges. The PR's own CI checks it, and a human reviews and
-merges it. An upstream refresh is separate from a dependency update:
+<p>No human merges a refresh PR: the job merges it, as the org automation App,
+once the PR's CI passes. A run is green only when the PR merged or there was
+nothing to change. This carries out the policy decided in
+<a href="https://github.com/vergil-project/.github/issues/470">vergil-project/.github#470</a>
+(epic
+<a href="https://github.com/vergil-project/.github/issues/1168">vergil-project/.github#1168</a>).</p>
+<p>An upstream refresh is separate from a dependency update:
 <code>vrg-upstream-refresh</code> never runs the <code>[dependency-update]</code> hook, and
-<code>vrg-update-deps</code> never runs the <code>[upstream-refresh]</code> hook. See the
-vergil-tooling <code>upstream-refresh</code> configuration reference for the hook
-contract.</p>
+<code>vrg-update-deps</code> never runs the <code>[upstream-refresh]</code> hook. For the hook
+contract, the path fence and the <code>[upstream-refresh].paths</code> allowlist, see
+vergil-tooling's
+<a href="https://vergil-project.github.io/vergil-tooling/latest/reference/upstream-refresh-config/">upstream-refresh reference</a>.
+A repository with no <code>paths</code> refuses every patch, so every run with a change
+fails until it declares them.</p>
 <p>Each consumer calls it from its own <code>ops.yml</code> on its own schedule.</p>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
@@ -7580,11 +7642,12 @@ contract.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
+<h2 id="secrets-and-variables">Secrets and variables<a class="headerlink" href="#secrets-and-variables" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Secret</th>
+<th>Name</th>
+<th>Kind</th>
 <th>Required</th>
 <th>Description</th>
 </tr>
@@ -7592,20 +7655,30 @@ contract.</p>
 <tbody>
 <tr>
 <td><code>APP_CLIENT_ID</code></td>
+<td>secret</td>
 <td>yes</td>
-<td>Client ID of the org's GitHub App</td>
+<td>Client ID of the org's automation App</td>
 </tr>
 <tr>
 <td><code>APP_PRIVATE_KEY</code></td>
+<td>secret</td>
 <td>yes</td>
-<td>Private key of the org's GitHub App</td>
+<td>Private key of the org's automation App</td>
+</tr>
+<tr>
+<td><code>VRG_AUTOMATION_APP</code></td>
+<td>Actions variable</td>
+<td>yes</td>
+<td>Org-level variable holding the automation App's slug (<code>&lt;org&gt;-automation</code>), visible to the calling repository (see <a href="../../configuration/#app_client_id-and-app_private_key">step 10 of the App setup</a>). Both jobs fail when it is empty</td>
 </tr>
 </tbody>
 </table>
-<p>The token is scoped to the calling repository only. The App needs
-<code>contents: write</code> (to push and delete the <code>upstream-refresh</code> branch) and
-<code>pull-requests: write</code> (to open, update, comment on and close the refresh PR)
-on that repository.</p>
+<p>The secrets reach only the <code>publish</code> job's last step. <code>vrg-upstream-refresh
+publish</code> mints its own installation tokens from them, limited to the calling
+repository with <code>contents: write</code> (push the PR branch, delete an earlier
+run's), <code>pull-requests: write</code> (open, merge and close refresh PRs),
+<code>workflows: write</code> (the wait's branch update, below) and <code>metadata: read</code>.
+See <a href="../../configuration/#token-scoping">Token scoping</a>.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -7617,39 +7690,132 @@ on that repository.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>upstream-refresh</code></td>
-<td><code>&lt;caller&gt; / upstream-refresh</code></td>
-<td>Runs <code>vrg-upstream-refresh</code> against the branch the run is on</td>
+<td><code>prepare</code></td>
+<td><code>&lt;caller&gt; / prepare</code></td>
+<td>Runs the hook through <code>vrg-upstream-refresh prepare</code>, with no secrets, and uploads the patch</td>
+</tr>
+<tr>
+<td><code>publish</code></td>
+<td><code>&lt;caller&gt; / publish</code></td>
+<td>Runs <code>vrg-upstream-refresh publish</code> on that patch: fence, PR, and the wait until it merges</td>
 </tr>
 </tbody>
 </table>
+<h2 id="the-key-boundary">The key boundary<a class="headerlink" href="#the-key-boundary" title="Permanent link">&para;</a></h2>
+<p>The App's private key never shares a runner with the work: the hook and
+anything it installs or loads. Steps in one job share a runner's
+filesystem, so code in an earlier step could rewrite the tool, its packages,
+or a git hook or config that a later step holding the key then runs. So the
+workflow runs as two jobs, each on a fresh runner:</p>
+<ul>
+<li><strong><code>prepare</code></strong> runs the hook with no secrets and a read-only
+  <code>GITHUB_TOKEN</code>, and hands on data only: a patch and its notes, as an
+  artifact. <code>vrg-upstream-refresh prepare</code> refuses to run if the App's
+  credentials are in its environment.</li>
+<li><strong><code>publish</code></strong> runs only the trusted platform: the runner, the released
+  container image and released vergil-tooling. It treats the artifact as
+  data: it never runs it, never runs the hook, and never runs git in a tree
+  <code>prepare</code> touched. It applies the patch in its own fresh clone of
+  <code>develop</code>, on the exact commit <code>prepare</code> ran against, and reads the path
+  fence's rules from that clone's <code>develop</code> tip, never from the artifact.</li>
+</ul>
+<p><code>actions/ops/upstream-refresh/tests/key-boundary.test.sh</code>, run by the
+<code>smoke-setup-vergil</code> workflow, holds the workflow to this layout: the
+secrets only on <code>publish</code>'s last step, no secret and a read-only token on
+<code>prepare</code>, the guard first in each job, no <code>if:</code>, and both time limits.</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
-<p>The <code>upstream-refresh</code> job runs in
-<code>ghcr.io/vergil-project/&lt;container-prefix&gt;-base:latest</code> (<code>prod-base</code> by default),
-in the concurrency group <code>upstream-refresh</code> (a new run waits for a running
-one; neither is cancelled):</p>
+<p>Both jobs run in
+<code>ghcr.io/vergil-project/&lt;container-prefix&gt;-base:latest</code> (<code>prod-base</code> by
+default). The workflow is in the concurrency group
+<code>&lt;owner&gt;/&lt;repo&gt;/upstream-refresh</code>: a new run waits for a running one,
+neither is cancelled, and one run's <code>prepare</code> and <code>publish</code> never interleave
+with another run's.</p>
+<p><strong><code>prepare</code></strong> (<code>permissions: contents: read</code>, <code>timeout-minutes: 30</code>):</p>
 <ol>
-<li>Mints an App token scoped to the calling repository, requesting only
-   <code>contents: write</code> and <code>pull-requests: write</code>.</li>
-<li>Checks out the repository with that token, so the push and the PR are
-   App-authored. An App-authored PR triggers <code>pull_request</code> workflows, which
-   a <code>GITHUB_TOKEN</code> push does not.</li>
-<li>Marks the workspace safe for git and sets the git identity to
-   <code>github-actions[bot]</code>.</li>
+<li><strong>Guard.</strong> Fails the job unless the run's ref is <code>refs/heads/develop</code>
+   and <code>VRG_AUTOMATION_APP</code> is set. It is a failing step, not a job-level
+   <code>if:</code>, so a run from another ref shows up red instead of being skipped.</li>
+<li>Checks out <code>develop</code>, with <code>persist-credentials: false</code>, only to install
+   the tooling.</li>
 <li>Installs vergil-tooling at the caller's <code>[dependencies].vergil</code> ref.</li>
-<li>Runs <code>vrg-upstream-refresh --base "$BASE"</code> with the App token as
-   <code>GH_TOKEN</code>. <code>BASE</code> is the branch the run is on (<code>github.ref_name</code>), passed
-   through the environment.</li>
+<li>Runs <code>vrg-upstream-refresh prepare</code>, with the read-only <code>GITHUB_TOKEN</code>
+   as <code>GH_TOKEN</code>. It clones <code>develop</code>, runs the hook there, and writes the
+   hook's tracked changes as a binary patch, the <code>develop</code> commit it ran
+   on, the changed paths and the hook's notes.</li>
+<li>Uploads that output as the <code>upstream-refresh-prepare</code> artifact.</li>
 </ol>
-<p>A failed run (a hook that exits non-zero, or leaves untracked files behind)
-shows as a red scheduled run.</p>
-<p><code>vrg-upstream-refresh</code> refuses the agent identity modes (<code>user</code> and <code>audit</code>),
-because it opens PRs. This workflow sets no agent identity; its GitHub writes
-are made with the App token.</p>
+<p><strong><code>publish</code></strong> (<code>needs: prepare</code>, <code>permissions: contents: read</code>,
+<code>timeout-minutes: 140</code>):</p>
+<ol>
+<li><strong>Guard</strong>, the same as <code>prepare</code>'s, in depth: no App token is minted
+   from any other ref.</li>
+<li>Checks out <code>develop</code> and installs vergil-tooling, as in <code>prepare</code>, on
+   this job's own runner.</li>
+<li>Downloads the <code>upstream-refresh-prepare</code> artifact.</li>
+<li>Runs <code>vrg-upstream-refresh publish</code> on it, with <code>VRG_AUTOMATION_APP</code>,
+   <code>VRG_AUTOMATION_CLIENT_ID</code> and <code>VRG_AUTOMATION_PRIVATE_KEY</code> set on this
+   step only. The tool removes the credentials from its environment at
+   startup, so no <code>git</code> or <code>gh</code> it starts sees them. It checks every minted
+   token against <code>VRG_AUTOMATION_APP</code>, applies and fences the patch, and
+   opens the PR and waits until it merges.</li>
+</ol>
+<p>When <code>prepare</code> finds nothing to change, <code>publish</code> still runs: it closes an
+earlier run's open refresh PR and reports "in sync".</p>
+<p><strong>The token and the wait.</strong> The tool renews its token once it is older than
+30 minutes, revokes each token it replaces, and revokes the last one when it
+exits, on SIGINT and SIGTERM included. Every <code>git</code> and <code>gh</code> call takes the
+current token, so a wait longer than one token's hour keeps working: a
+vergil-containers refresh, whose CI takes 32 to 40 minutes, renews at least
+once. If <code>develop</code> has moved since <code>prepare</code>, the wait updates the PR's
+branch from <code>develop</code> and CI decides; that merge needs Workflows write
+whenever <code>develop</code> has changed a workflow file. The path fence refuses any
+patch that touches <code>.github/**</code>, so no patch can use it. The wait's
+deadline is 120 minutes from the tool's own start. <code>publish</code>'s
+<code>timeout-minutes: 140</code> is that deadline, plus 15 minutes for the steps
+before the tool, plus a 5-minute margin, so the tool always ends, revokes
+its token and logs how the wait ended before GitHub kills the job. Only a
+hard kill skips the last revocation (see
+<a href="../../configuration/#token-scoping">Token scoping</a>).</p>
+<p><strong>Exit codes</strong> of <code>vrg-upstream-refresh publish</code>, which decide the job's
+result:</p>
+<table>
+<thead>
+<tr>
+<th>Exit</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Merged, or nothing to change</td>
+</tr>
+<tr>
+<td>2</td>
+<td>The PR was opened but did not merge: the log names the PR and the reason (a failed check, a conflict, a closed PR, the branch-update cap or the deadline)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Any other failure, with the reason: the hook, a clone, the path fence, the base check, a refused identity, a failed mint or revocation</td>
+</tr>
+<tr>
+<td>130 or 143</td>
+<td>Interrupted by SIGINT or SIGTERM, such as a cancel, after revoking its token</td>
+</tr>
+</tbody>
+</table>
+<p>A run with a non-zero exit shows as a red scheduled run, and the publish
+log alone says what happened: the PR it closed, the PR it opened or "in
+sync", each token renewal and revocation, and how the wait ended.</p>
+<p><code>vrg-upstream-refresh</code> refuses the agent identity modes (<code>user</code> and
+<code>audit</code>), because it opens and merges PRs. Under GitHub Actions, publish
+refuses to run unless it was given the App's credentials and resolves to
+the <code>automation</code> identity.</p>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
+<th>Job</th>
 <th>Scope</th>
 <th>Level</th>
 <th>Reason</th>
@@ -7657,12 +7823,22 @@ are made with the App token.</p>
 </thead>
 <tbody>
 <tr>
+<td><code>prepare</code></td>
 <td><code>contents</code></td>
 <td><code>read</code></td>
-<td>A called workflow cannot exceed its caller's grant. The push and PR writes use the App token, not <code>GITHUB_TOKEN</code></td>
+<td>The checkout, and the clone of <code>develop</code> the hook runs in. Prepare writes nothing to GitHub</td>
+</tr>
+<tr>
+<td><code>publish</code></td>
+<td><code>contents</code></td>
+<td><code>read</code></td>
+<td>The checkout. Every write uses the token the tool mints, not <code>GITHUB_TOKEN</code></td>
 </tr>
 </tbody>
 </table>
+<p>A called workflow cannot exceed its caller's grant. The caller's
+<code>contents: read</code> covers both jobs. The artifact passes between them within
+the run, which needs no <code>GITHUB_TOKEN</code> permission.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ops</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -7683,7 +7859,8 @@ are made with the App token.</p>
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
 </code></pre></div>
-<p>Schedule it on the default branch, so <code>BASE</code> is that branch.</p>
+<p>Schedule it on the default branch, <code>develop</code>: both jobs fail from any other
+ref.</p>
 
 
 
