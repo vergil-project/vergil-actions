@@ -59,10 +59,17 @@ name: Smoke - setup/vergil outputs
 #         take their tools through it (issues #1211, #1249);
 #       - ops/github-config automation-env.test.sh: no workflow or job env
 #         sets VRG_AUTOMATION_APP, every step that does takes it from the org
-#         variable alongside a GH_TOKEN minted by an earlier step, and
-#         ops-github-config's update step sets it, so a token-less step (the
-#         setup action's vrg-whoami check) never runs as the automation
-#         identity (issue #1192);
+#         variable alongside either a GH_TOKEN minted by an earlier step or,
+#         with no GH_TOKEN, the App's client ID and key from secrets as
+#         VRG_AUTOMATION_CLIENT_ID and VRG_AUTOMATION_PRIVATE_KEY (epic
+#         vergil-project/.github#1168), and ops-github-config's update step
+#         sets it, so a token-less step (the setup action's vrg-whoami check)
+#         never runs as the automation identity (issue #1192);
+#       - ops/upstream-refresh key-boundary.test.sh: ops-upstream-refresh's
+#         key boundary, the App's credentials only on publish's tool step,
+#         none on prepare, which has a read-only token, the develop guard
+#         first in each job, no if:, both timeouts and the per-repo
+#         concurrency group (epic vergil-project/.github#1168);
 #       - ci/toolchain/assert assert.sh: Python and Go version checks against a
 #         fake uv/go, and the notice for other languages;
 #       - ci/toolchain/pin-python pin.sh: UV_PYTHON and
@@ -152,6 +159,9 @@ jobs:
       - name: Run ops/github-config automation-env harness
         shell: bash
         run: bash actions/ops/github-config/tests/automation-env.test.sh
+      - name: Run ops/upstream-refresh key-boundary harness
+        shell: bash
+        run: bash actions/ops/upstream-refresh/tests/key-boundary.test.sh
       - name: Run ci/toolchain/assert assert.sh harness
         shell: bash
         run: bash actions/ci/toolchain/assert/tests/assert.test.sh

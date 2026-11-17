@@ -1,16 +1,36 @@
 name: Ops — Upstream Refresh
 
-# Scheduled upstream refresh (epic vergil-project/.github#472, spec §5.6).
-# Reusable workflow: a caller triggers it from its own ops.yml on its own
-# schedule (or by workflow_dispatch). It runs `vrg-upstream-refresh`, which
-# runs the caller's `[upstream-refresh].hook` on a clean checkout of the
-# branch the run is on and then opens or refreshes ONE PR from the fixed
-# `upstream-refresh` branch, or closes a stale one when nothing changed. It
-# never merges; the PR's own CI checks it and a human merges it.
+# Scheduled upstream refresh (epic vergil-project/.github#472, spec §5.6;
+# rebuilt by epic vergil-project/.github#1168, spec §6). Reusable workflow: a
+# caller triggers it from its own ops.yml on its own schedule (or by
+# workflow_dispatch). It runs the caller's `[upstream-refresh].hook` on a
+# fresh clone of develop, and turns the change into one PR on
+# `automation/upstream-refresh/<run-id>` that merges itself, as the org
+# automation App, once the PR's CI passes. No human merges it. A run is green
+# only when the PR merged or there was nothing to change; when nothing
+# changed, an earlier run's open refresh PR is closed.
 #
-# The checkout uses the App token so the push and PR are App-authored. An
-# App-authored PR fires `pull_request` workflows, which the default
-# GITHUB_TOKEN cannot (GitHub recursion-suppresses its events).
+# The key boundary: the App's private key never shares a runner with the
+# work, that is, the hook and anything it installs or loads. Steps in one job
+# share a runner's filesystem, so the work could rewrite the tool, its
+# packages or a git hook that a later step holding the key runs. So there are
+# two jobs, each on a fresh runner:
+#   * prepare runs the hook through `vrg-upstream-refresh prepare`, with no
+#     secrets and only the read-only GITHUB_TOKEN, and uploads the patch and
+#     its notes as an artifact: data only;
+#   * publish runs only released vergil-tooling. `vrg-upstream-refresh
+#     publish` reads the artifact as data, applies the patch in its own clone
+#     of develop, checks it against the repo's path fence, opens the PR and
+#     waits until it merges. It never runs the hook. The App's client ID and
+#     key are set on that one step only.
+#
+# The tool mints its own repo-scoped App token in-process, renews it every 30
+# minutes so a wait longer than one token's hour keeps working, revokes each
+# token it replaces, and revokes the last one when it exits, SIGINT and
+# SIGTERM included. Every git and gh call it makes takes the current token,
+# so there is no create-github-app-token step, no `gh auth setup-git` and no
+# git identity step. actions/ops/upstream-refresh/tests/key-boundary.test.sh
+# guards this layout.
 
 on:
   workflow_call:
@@ -30,54 +50,128 @@ on:
 permissions:
   contents: read
 
+# One run per repository at a time, queued, never cancelled, so one run's
+# prepare and publish never interleave with another run's.
+concurrency:
+  group: ${{ github.repository }}/upstream-refresh
+  cancel-in-progress: false
+
 jobs:
-  upstream-refresh:
-    name: upstream-refresh
+  prepare:
+    name: prepare
     runs-on: ubuntu-24.04
-    # A called workflow cannot exceed its caller's grant. The push and PR
-    # writes go through the App token, not GITHUB_TOKEN.
+    # A hung hook cannot hold the concurrency group for GitHub's six-hour
+    # default.
+    timeout-minutes: 30
+    # GITHUB_TOKEN stays read-only: prepare writes nothing to GitHub.
     permissions:
       contents: read
-    concurrency:
-      group: upstream-refresh
-      cancel-in-progress: false
     container:
       image: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
-      - name: Generate app token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.APP_CLIENT_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          # No 'owner' input: the token is scoped to the calling repository
-          # only. The refresh writes contents and pull requests on its own
-          # repository and nowhere else: Contents write (push and delete the
-          # upstream-refresh branch) and Pull requests write (open, update,
-          # comment on and close the refresh PR).
-          permission-contents: write
-          permission-pull-requests: write
+      # A failing step, never a job-level if:, so a run from another ref
+      # shows up red instead of being skipped. Publish needs this job, so it
+      # never starts after a failed guard.
+      - name: Require develop and VRG_AUTOMATION_APP
+        shell: bash
+        env:
+          REF: ${{ github.ref }}
+          AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+        run: |
+          set -euo pipefail
+          if [ "${REF}" != "refs/heads/develop" ]; then
+            echo "::error::upstream-refresh runs only from refs/heads/develop, not ${REF}"
+            exit 1
+          fi
+          if [ -z "${AUTOMATION_APP}" ]; then
+            echo "::error::the VRG_AUTOMATION_APP Actions variable is empty or not visible to this repository; set it at org level to the automation App's slug"
+            exit 1
+          fi
 
+      # Only to install the tooling at develop's pin: the tool takes its own
+      # clone of develop and never touches this checkout.
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Mark workspace safe for git
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      - name: Set git identity
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ref: develop
+          persist-credentials: false
 
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
-      - name: Run the upstream refresh
+      # The output directory is workspace-relative: in a container job the
+      # runner.temp expression names the host path, which upload-artifact,
+      # running inside the container, cannot see.
+      - name: Prepare the refresh
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          # Pass the ref through env, not inline ${{ }} in run: — that trips
-          # the semgrep run-shell-injection rule. Reference it double-quoted.
-          BASE: ${{ github.ref_name }}
-        run: vrg-upstream-refresh --base "$BASE"
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: vrg-upstream-refresh prepare --out upstream-refresh-out --repo "$REPO"
+
+      - name: Upload the prepared refresh
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-refresh-prepare
+          path: upstream-refresh-out/
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: prepare
+    runs-on: ubuntu-24.04
+    # The tool's own deadline is 120 minutes from its start, so it always
+    # ends, revokes its token and logs how the wait ended before GitHub kills
+    # the job: 120 minutes, plus 15 for the steps before it, plus a 5-minute
+    # margin.
+    timeout-minutes: 140
+    # GITHUB_TOKEN stays read-only: every write uses the token the tool mints.
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      # The same guard as prepare's, in depth: no App token is minted from
+      # any other ref.
+      - name: Require develop and VRG_AUTOMATION_APP
+        shell: bash
+        env:
+          REF: ${{ github.ref }}
+          AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+        run: |
+          set -euo pipefail
+          if [ "${REF}" != "refs/heads/develop" ]; then
+            echo "::error::upstream-refresh runs only from refs/heads/develop, not ${REF}"
+            exit 1
+          fi
+          if [ -z "${AUTOMATION_APP}" ]; then
+            echo "::error::the VRG_AUTOMATION_APP Actions variable is empty or not visible to this repository; set it at org level to the automation App's slug"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: develop
+          persist-credentials: false
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Download the prepared refresh
+        uses: actions/download-artifact@v7
+        with:
+          name: upstream-refresh-prepare
+          path: upstream-refresh-out
+
+      # The App's credentials are set on this step only, and the tool removes
+      # them from its environment at startup, so no git or gh it starts sees
+      # them. VRG_AUTOMATION_APP names the App every minted token is checked
+      # against. actions/ops/github-config/tests/automation-env.test.sh
+      # accepts this credential form only with no GH_TOKEN.
+      - name: Publish the refresh
+        env:
+          REPO: ${{ github.repository }}
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_AUTOMATION_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+          VRG_AUTOMATION_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: vrg-upstream-refresh publish --from upstream-refresh-out --repo "$REPO"

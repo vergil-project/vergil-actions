@@ -85,7 +85,7 @@ only library repositories:
 | [`ops-github-config.yml`](workflows/ops-github-config.md) | `branch-sweep`, `github-config`, `dependabot-audit` | Calling repository only |
 | [`ops-epic-rollup.yml`](workflows/ops-epic-rollup.md) | `epic-rollup` (from the caller's `epic-rollup.yml`) | Calling repository and the epic repository |
 | [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
-| [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `upstream-refresh` | Calling repository only |
+| [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `publish` (`vrg-upstream-refresh publish` mints the token itself) | Calling repository only |
 | [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
 | vergil-actions' own `cd.yml` | `release` | vergil-actions only |
 
@@ -97,10 +97,10 @@ permissions:
 | ---------- | ------ | --------- |
 | Metadata | Read-only | Required by GitHub (always enabled) |
 | Administration | Read & write | `github-config`, which runs `vrg-github-repo-config update`: it reads and converges repository settings, branch protection, rulesets (whose bypass actors GitHub returns only to a caller that can edit them), Actions permissions and whether vulnerability alerts are enabled |
-| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `upstream-refresh` branch, and deletes it when it closes a stale refresh PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; `epic-sweep` reads each repository's `vergil.toml` |
-| Pull requests | Read & write | `upstream-refresh` (opens, updates, comments on and closes the refresh PR); `github-config` (opens the sync PR, closes an earlier one and turns on auto-merge); `branch-sweep` and `epic-sweep` read them |
+| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `automation/upstream-refresh/<run-id>` branch, and deletes an earlier run's branch when it closes that run's PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; `epic-sweep` reads each repository's `vergil.toml` |
+| Pull requests | Read & write | `upstream-refresh` (opens the refresh PR with auto-merge, updates its branch from `develop`, merges it, and closes an earlier run's open one); `github-config` (opens the sync PR, closes an earlier one and turns on auto-merge); `branch-sweep` and `epic-sweep` read them |
 | Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues) |
-| Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); `github-config`, the automatic fleet sync, whose PRs can change files under `.github/workflows/` |
+| Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); `github-config`, the automatic fleet sync, whose PRs can change files under `.github/workflows/`; `upstream-refresh`, only for the wait's branch update, which merges `develop` into the PR branch and is refused without it whenever `develop` has changed a workflow file (the path fence keeps every refresh patch out of `.github/**`) |
 | Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
 
 **Why the App holds no Repository security advisories permission.** The App
@@ -183,7 +183,7 @@ explicit `permission-*` inputs, and each job requests only what it needs:
 | `ops-github-config.yml` | `dependabot-audit` | `vulnerability-alerts: read` |
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
 | `ops-epic-sweep.yml` | `epic-sweep` | `issues: write`, `pull-requests: read`, `contents: read` |
-| `ops-upstream-refresh.yml` | `upstream-refresh` | `contents: write`, `pull-requests: write` |
+| `ops-upstream-refresh.yml` | `publish` (minted in-process by `vrg-upstream-refresh`, from `develop` only) | `contents: write`, `pull-requests: write`, `workflows: write`, `metadata: read` |
 | `cd-release.yml` | Package-index dispatch | `contents: write` |
 | `cd.yml` (vergil-actions only) | `release` | `contents: write`, `workflows: write` |
 
@@ -193,6 +193,24 @@ token unless the run's ref is `refs/heads/develop`, and checks out
 `develop`, so no other branch's code runs with that token. A
 repository-local workflow that mints an automation App token follows the
 same rule.
+
+**Upstream refresh mints its own token.** `ops-upstream-refresh.yml` has no
+`create-github-app-token` step. Its `publish` job passes the App's client
+ID and private key to `vrg-upstream-refresh publish` on that one step, and
+the tool mints installation tokens itself, limited to the calling
+repository and the four permissions above. It renews the token every 30
+minutes, revokes each token it replaces, and revokes the last one when it
+exits, on success, on failure, and on the SIGINT or SIGTERM that a cancel
+sends. The key is held only in `publish`, never in `prepare`, which runs the
+repository's hook with a read-only `GITHUB_TOKEN` on a runner of its own
+(the key boundary: see
+[ops-upstream-refresh](workflows/ops-upstream-refresh.md#the-key-boundary)).
+Like `github-config`, both jobs fail unless the run's ref is
+`refs/heads/develop`. Only a hard kill skips the last revocation: the
+runner lost, the kill at the end of the cancel grace period, or a cancel
+signal that does not reach the publish step inside its container. The token
+is then left to expire within its hour, in the memory of a runner that
+never ran the hook.
 
 A token can only narrow what the installation already holds: a step that
 requests a permission the installation lacks, or has not accepted yet, fails
