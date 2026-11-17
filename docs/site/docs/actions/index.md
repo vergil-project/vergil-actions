@@ -22,6 +22,11 @@ definition and optional supporting scripts.
   Python leg's resolved version and to the image's interpreter
   (`UV_PYTHON`, `UV_PYTHON_PREFERENCE=only-system`); auto-wired into the
   Python matrix legs of `ci-quality`, `ci-audit` and `ci-test`.
+- **[ci/toolchain/install-python](ci-toolchain-install-python.md)** — Installs
+  a Python leg's dev dependencies (`uv sync --group dev --frozen`), or skips
+  the install with a notice on a repository with neither `pyproject.toml` nor
+  `uv.lock`; auto-wired into the Python legs of `ci-quality`, `ci-audit` and
+  `ci-test`.
 - **[ci/toolchain/assert](ci-toolchain-assert.md)** — Fails a CI leg whose
   running Python, Go, Rust or Node (TypeScript) is not the version CI resolved
   for it; auto-wired into the matrix legs of `ci-quality`, `ci-audit` and

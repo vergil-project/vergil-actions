@@ -154,7 +154,10 @@ jobs:
   # failed or skipped custom stage fails quality / evidence — no new required
   # check and no ruleset change. For Python, uv is pinned to the primary
   # version's image interpreter and the dev group is installed, so the
-  # validator sees the repo's dev dependencies.
+  # validator sees the repo's dev dependencies. As on every Python leg, the
+  # install (ci/toolchain/install-python) is skipped with a notice on a repo
+  # with neither pyproject.toml nor uv.lock, so vrg-validate gives its own
+  # loud skip (issue #1206).
   custom:
     name: custom
     needs: setup
@@ -175,7 +178,7 @@ jobs:
 
       - name: Install dependencies
         if: inputs.language == 'python'
-        run: uv sync --group dev --frozen
+        uses: ./actions/ci/toolchain/install-python
 
       # Backstop for the pin above, as on the lint and typecheck legs: fail
       # the job if the interpreter or toolchain it actually runs is not the
@@ -229,7 +232,7 @@ jobs:
 
       - name: Install dependencies
         if: inputs.language == 'python'
-        run: uv sync --group dev --frozen
+        uses: ./actions/ci/toolchain/install-python
 
       # Backstop for the pin above: fail the leg if the interpreter or
       # toolchain it actually runs is not the version CI resolved for it.
@@ -302,7 +305,7 @@ jobs:
 
       - name: Install dependencies
         if: inputs.language == 'python'
-        run: uv sync --group dev --frozen
+        uses: ./actions/ci/toolchain/install-python
 
       # Backstop for the pin above: fail the leg if the interpreter or
       # toolchain it actually runs is not the version CI resolved for it.
@@ -377,7 +380,7 @@ jobs:
 
       - name: Install dependencies
         if: inputs.language == 'python'
-        run: uv sync --group dev --frozen
+        uses: ./actions/ci/toolchain/install-python
 
       # Backstop for the pin above: fail the leg if the interpreter or
       # toolchain it actually runs is not the version CI resolved for it.

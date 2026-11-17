@@ -16,7 +16,7 @@ releases.
 | CI / Security | [codeql](actions/ci-security-codeql.md), [semgrep](actions/ci-security-semgrep.md) | SAST scanning |
 | CI / Version Bump | [version-divergence](actions/ci-version-bump-version-divergence.md) | Pre-merge version validation |
 | CI / Matrix | [matrix](actions/ci-matrix.md) | Per-version job matrix and container images |
-| CI / Toolchain | [pin-python](actions/ci-toolchain-pin-python.md), [assert](actions/ci-toolchain-assert.md) | Pin uv to a leg's Python interpreter; fail a leg whose running toolchain is not the resolved version |
+| CI / Toolchain | [pin-python](actions/ci-toolchain-pin-python.md), [install-python](actions/ci-toolchain-install-python.md), [assert](actions/ci-toolchain-assert.md) | Pin uv to a leg's Python interpreter; install a Python leg's dev dependencies, skipped on a repo not bootstrapped yet; fail a leg whose running toolchain is not the resolved version |
 | CI / Evidence | [emit](actions/ci-evidence-emit.md), [reports](actions/ci-evidence-reports.md) | Per-gate CI evidence artifact; per-language test and audit report contract, and staging of each leg's reports |
 | CD / Release | [tag-and-release](actions/cd-release-tag-and-release.md) | Release tagging and GitHub Releases |
 | CD / Release | [validate-inputs](actions/cd-release-validate-inputs.md), [ci-evidence-gate](actions/cd-release-ci-evidence-gate.md), [registry-publish](actions/cd-release-registry-publish.md), [ci-evidence-attach](actions/cd-release-ci-evidence-attach.md) | `cd-release` input checks, pre-publish evidence gate, build and registry publish, post-publish evidence attach |

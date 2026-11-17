@@ -29,7 +29,8 @@ actions/                          Composite GitHub Actions
                                   and staging
   ci/matrix/                      Per-version job matrix from vrg-ci-resolve
   ci/security/                    CodeQL and Semgrep scanning
-  ci/toolchain/                   Pin (pin-python) and assert the leg toolchain
+  ci/toolchain/                   Pin (pin-python), install (install-python)
+                                  and assert the leg toolchain
   ci/version-bump/                Pre-merge version divergence gate
   local/freeze-internal-refs/     Freeze relative action refs at release
   ops/github-config/              Branch sweep for ops-github-config
