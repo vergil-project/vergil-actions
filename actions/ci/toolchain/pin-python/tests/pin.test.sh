@@ -4,7 +4,8 @@
 # interpreter — plus structural checks that every Python matrix leg in the
 # CI workflows pins through it, and that every uv command a workflow job or
 # composite action runs for a Python repo pins the interpreter source with
-# UV_PYTHON_PREFERENCE=only-system (issue #1002). Fixture workflows and actions
+# UV_PYTHON_PREFERENCE=only-system (issue #1002), bar the few listed exemptions
+# (config_free_files, unpinned_commands). Fixture workflows and actions
 # test that source guard both ways.
 #
 # Framework-free and developer-runnable: `bash pin.test.sh`. Each pin.sh case
@@ -174,6 +175,19 @@ caller_pinned_actions='ci/toolchain/assert/'
 #     --no-config a repo's python-downloads = "manual" breaks it.
 config_free_files='package/setup/detect.sh'
 
+# Single uv commands that run without the pin by design, each with its reason.
+# An entry is <file>|<command>: the command must be the whole of its line, as
+# written here, so no other uv command in the file, and no change to this one,
+# escapes the pin.
+#   shared/setup/vergil/install-tooling.sh — the self-repo sync on a host
+#     runner (vergil-tooling's own CI). The runner's Python is not a series
+#     vergil-tooling supports, so the sync names 3.15 and uv provides it (epic
+#     vergil-project/.github#1256). The repo is always vergil-tooling, whose uv
+#     settings set no interpreter preference; the container sync keeps the pin.
+unpinned_commands=(
+  'shared/setup/vergil/install-tooling.sh|uv sync --frozen --group dev --python 3.15'
+)
+
 # The config-ignoring form: --no-config among uv's options, so it is uv's flag
 # and never an argument of the command uv runs. Either among the global options
 # before the subcommand (`uv --no-config run ...`, `uv -q --directory d
@@ -238,9 +252,10 @@ check_workflow_uv_pins() {
 # (UV_PYTHON_PREFERENCE=only-system on the same line), by a step env
 # (`UV_PYTHON_PREFERENCE: only-system` in the same action.yml) or by the caller
 # (caller_pinned_actions). In a config-free file (config_free_files) the pin
-# does not count: every uv command must pass --no-config instead.
+# does not count: every uv command must pass --no-config instead. A line that
+# is exactly one of the file's unpinned_commands is not reported.
 check_action_uv_pins() {
-  local root="$1" f rel prefix skip config_free
+  local root="$1" f rel prefix skip config_free allowed entry
   while IFS= read -r f; do
     rel="${f#"$root"/}"
     skip=0
@@ -268,12 +283,19 @@ check_action_uv_pins() {
     if grep -Eq '^[[:space:]]*UV_PYTHON_PREFERENCE:[[:space:]]*only-system[[:space:]]*$' "$f"; then
       continue
     fi
-    awk -v re="$uv_cmd_re" -v file="$rel" '
+    allowed=""
+    for entry in "${unpinned_commands[@]}"; do
+      [ "${entry%%|*}" != "$rel" ] || allowed+="${entry#*|}"$'\034'
+    done
+    awk -v re="$uv_cmd_re" -v file="$rel" -v allowed="$allowed" '
+      BEGIN { n = split(allowed, list, "\034"); for (i = 1; i <= n; i++) if (list[i] != "") ok[list[i]] = 1 }
       {
         stripped = $0
         sub(/^[[:space:]]+/, "", stripped)
+        sub(/[[:space:]]+$/, "", stripped)
       }
       stripped ~ /^#/ { next }
+      stripped in ok { next }
       $0 ~ re && $0 !~ /UV_PYTHON_PREFERENCE=only-system/ {
         printf "%s:%d: uv runs without UV_PYTHON_PREFERENCE=only-system: %s\n", file, NR, stripped
       }
@@ -450,6 +472,18 @@ jobs:
   # The no-config form does not exempt any other file from the source pin.
   expect_guard "guard-fails-no-config-outside-config-free-files" fail "$wf_ok" \
     "x/run/go.sh" "$(printf '#!/usr/bin/env bash\nuv run --no-config --no-project python -c pass')"
+
+  # An unpinned command (epic vergil-project/.github#1256) is exempt only as
+  # its whole line, only in its own file.
+  local setup='shared/setup/vergil/install-tooling.sh'
+  expect_guard "guard-passes-unpinned-command" pass "$wf_ok" \
+    "$setup" "$(printf '#!/usr/bin/env bash\nif x; then\n    uv sync --frozen --group dev --python 3.15\nelse\n    UV_PYTHON_PREFERENCE=only-system uv sync --frozen --group dev\nfi')"
+  expect_guard "guard-fails-other-uv-in-unpinned-command-file" fail "$wf_ok" \
+    "$setup" "$(printf '#!/usr/bin/env bash\nuv sync --frozen --group dev --python 3.15\nuv sync --frozen --group dev')"
+  expect_guard "guard-fails-changed-unpinned-command" fail "$wf_ok" \
+    "$setup" "$(printf '#!/usr/bin/env bash\nuv sync --frozen --group dev --python 3.15 && uv run x')"
+  expect_guard "guard-fails-unpinned-command-in-other-file" fail "$wf_ok" \
+    "x/run/go.sh" "$(printf '#!/usr/bin/env bash\nuv sync --frozen --group dev --python 3.15')"
 
   # Global options before the subcommand (issue #1009) do not hide a uv command.
   local wf_head='name: F\non: push\njobs:\n  docs:\n    runs-on: ubuntu-latest\n'

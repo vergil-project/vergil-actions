@@ -56,7 +56,7 @@ build_uv_tarball() {
   for t in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
     mkdir -p "${d}/uv-${t}"
     write_stub "${d}/uv-${t}/uv" <<'STUB'
-echo "uv $*" >>"$CALLS"
+echo "uv $*${UV_PYTHON_PREFERENCE:+ [UV_PYTHON_PREFERENCE=${UV_PYTHON_PREFERENCE}]}" >>"$CALLS"
 [ "${1:-}" = --version ] && echo "uv 0.0.0-fake"
 exit 0
 STUB
@@ -163,11 +163,12 @@ echo "git $*" >>"$CALLS"
 cat "$FAKE_GIT_REFS"
 STUB
 
-# uv on PATH (only when a case asks for it).
+# uv on PATH (only when a case asks for it). Both uv stubs log
+# UV_PYTHON_PREFERENCE after the arguments when it is set.
 uvstubs="${work}/uvstubs"
 mkdir -p "$uvstubs"
 write_stub "${uvstubs}/uv" <<'STUB'
-echo "uv $*" >>"$CALLS"
+echo "uv $*${UV_PYTHON_PREFERENCE:+ [UV_PYTHON_PREFERENCE=${UV_PYTHON_PREFERENCE}]}" >>"$CALLS"
 exit 0
 STUB
 
@@ -339,7 +340,7 @@ case_container_uv() {
   run_script --with-uv -- v2.1
   expect_status "$name" 0 || return
   expect_stderr "$name" "vergil-tooling: uv tool install from git (image without the vergil apt repository)" || return
-  expect_calls "$name" "uv tool install vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1" || return
+  expect_calls "$name" "uv tool install --python 3.15 vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1" || return
   expect_no_calls "$name" "apt-get" || return
   pass_case "$name"
 }
@@ -649,10 +650,38 @@ case_self_repo_host_installs_pinned_uv() {
   run_script --
   expect_status "$name" 0 || return
   expect_calls "$name" "curl https://github.com/astral-sh/uv/releases/download/" || return
-  expect_calls "$name" "uv sync --frozen --group dev" || return
+  # On a host runner the sync names 3.15 and lets uv provide it: no
+  # UV_PYTHON_PREFERENCE=only-system, which would bind it to the runner's Python.
+  expect_stderr "$name" "host runner: syncing on Python 3.15, provided by uv" || return
+  if ! calls | grep -qx -- "uv sync --frozen --group dev --python 3.15"; then
+    fail_case "$name" "no exact host uv sync call (calls: $(calls | tr '\n' '|'))"
+    return
+  fi
+  expect_no_calls "$name" "UV_PYTHON_PREFERENCE" || return
   if ! grep -qx "${case_dir}/runner-temp/uv/bin" "${case_dir}/github-path" ||
     ! grep -qx "${case_dir}/ws/.venv/bin" "${case_dir}/github-path"; then
     fail_case "$name" "GITHUB_PATH lacks the uv or .venv bin dir: $(tr '\n' '|' <"${case_dir}/github-path")"
+    return
+  fi
+  expect_no_calls "$name" "apt-get" || return
+  pass_case "$name"
+}
+
+# In a container the sync stays on the image's interpreter (issue #1002): it
+# pins UV_PYTHON_PREFERENCE=only-system and names no --python.
+case_self_repo_container_pins_image_python() {
+  local name="self_repo_container_pins_image_python"
+  new_case; as_container
+  printf '[project]\nname = "vergil-tooling"\n' >"${case_dir}/ws/pyproject.toml"
+  run_script --with-uv --
+  expect_status "$name" 0 || return
+  if ! calls | grep -qx -- "uv sync --frozen --group dev \[UV_PYTHON_PREFERENCE=only-system\]"; then
+    fail_case "$name" "no exact container uv sync call (calls: $(calls | tr '\n' '|'))"
+    return
+  fi
+  expect_no_calls "$name" "--python" || return
+  if ! grep -qx "${case_dir}/ws/.venv/bin" "${case_dir}/github-path"; then
+    fail_case "$name" "GITHUB_PATH lacks the .venv bin dir: $(tr '\n' '|' <"${case_dir}/github-path")"
     return
   fi
   expect_no_calls "$name" "apt-get" || return
@@ -679,7 +708,7 @@ case_install_source_git_line_tag() {
   expect_stderr "$name" "install-source: git" || return
   expect_stderr "$name" "the newest v2.1 release is v2.1.299" || return
   expect_calls "$name" "git ls-remote --tags --refs https://github.com/vergil-project/vergil-tooling refs/tags/v2.1.*" || return
-  expect_calls "$name" "uv tool install vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1.299" || return
+  expect_calls "$name" "uv tool install --python 3.15 vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1.299" || return
   expect_no_calls "$name" "apt-get" || return
   expect_no_calls "$name" "vergil.asc" || return
   pass_case "$name"
@@ -711,7 +740,7 @@ case_install_source_git_exact_tag() {
   new_case
   run_script --env INSTALL_SOURCE=git -- v2.1.7
   expect_status "$name" 0 || return
-  expect_calls "$name" "uv tool install vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1.7" || return
+  expect_calls "$name" "uv tool install --python 3.15 vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1.7" || return
   expect_no_calls "$name" "git ls-remote" || return
   pass_case "$name"
 }
@@ -732,7 +761,7 @@ case_dev_tag_installs_pinned_uv() {
   expect_status "$name" 0 || return
   expect_stderr "$name" "dev ref develop" || return
   expect_calls "$name" "curl https://github.com/astral-sh/uv/releases/download/0." || return
-  expect_calls "$name" "uv tool install vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@develop" || return
+  expect_calls "$name" "uv tool install --python 3.15 vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@develop" || return
   if [ ! -x "${case_dir}/runner-temp/uv/bin/uv" ]; then
     fail_case "$name" "uv not installed into RUNNER_TEMP/uv/bin"
     return
@@ -821,6 +850,7 @@ case_host_installed_key_mismatch || true
 case_host_keyring_without_source_reinstalls || true
 case_host_unregistered_codename || true
 case_self_repo_host_installs_pinned_uv || true
+case_self_repo_container_pins_image_python || true
 case_install_source_git_line_tag || true
 case_install_source_git_lookup_failure || true
 case_install_source_git_no_release || true

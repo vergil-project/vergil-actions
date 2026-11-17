@@ -60,7 +60,7 @@ project command (`uv run`, `uv sync`, `uv lock` and so on) or uses
 point: through this action, or with a job-level `env`. Jobs that resolve no
 version, such as the `ci-docs` and `cd-docs` docs jobs, use the job `env`. Every
 composite action or script that runs one must pin it on the step's `env` or
-inline on the command line. There are two exceptions:
+inline on the command line. There are three exceptions:
 
 - `ci/toolchain/assert` is pinned by its caller.
 - `package/setup/detect.sh` reads `vergil.toml` in package toolchain images
@@ -68,6 +68,12 @@ inline on the command line. There are two exceptions:
   pin, every uv command in it must pass `--no-config`, so the repository's uv
   settings cannot reach it at all (issue #1003). Without it, a repository that
   sets `python-downloads = "manual"` stops uv downloading that interpreter.
+- `shared/setup/vergil/install-tooling.sh`'s self-repo sync on a host runner,
+  `uv sync --frozen --group dev --python 3.15`, is exempt as that exact line.
+  It runs only in vergil-tooling's own CI, whose runner Python is not a series
+  vergil-tooling supports, so it names 3.15 and uv provides it (epic
+  vergil-project/.github#1256). Any other uv command in the file must still
+  pin the source; its container sync does.
 
 `uv tool` commands are not checked, because uv ignores a project's uv
 settings for them. Fixture workflows and actions test the guard both ways.
