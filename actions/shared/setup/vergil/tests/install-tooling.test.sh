@@ -5,10 +5,12 @@
 #
 # Framework-free and developer-runnable, like read-pin.test.sh: run it directly
 # with `bash install-tooling.test.sh`. It needs bash, coreutils, tar, gzip, awk
-# and sed; every command the script would run against the system (apt-get,
-# apt-cache, dpkg-query, gpg, curl, sudo, uv) is a stub first on PATH that logs
-# its arguments, and every path the script probes or writes sits under a
-# temporary root (the VRG_ROOT seam).
+# and sed, plus python3 in /usr/bin or /bin for the missing_pin_fails case, which
+# runs the real read-pin.sh: each case runs with only the stubs, the temporary
+# root's usr/bin, /usr/bin and /bin on PATH. Every command the script would run
+# against the system (apt-get, apt-cache, dpkg-query, gpg, curl, sudo, uv) is a
+# stub first on PATH that logs its arguments, and every path the script probes
+# or writes sits under a temporary root (the VRG_ROOT seam).
 #
 # The script under test is a copy whose pinned uv SHA-256 lines are rewritten to
 # the hash of a fake uv tarball the stub curl serves (or to a wrong hash, for
