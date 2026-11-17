@@ -7799,9 +7799,10 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <li><code>repository-type = "library"</code> builds the whole window; every other type
   resolves as an app, which builds exactly one version: the newest, or
   its single <code>[ci].versions</code> pin;</li>
-<li>C++ and TypeScript must pin <code>[ci].versions</code> until their lifecycle turn:
-  their versions carry a family (<code>clang-</code>/<code>gcc-</code>, <code>node-</code>), so there is no
-  single default;</li>
+<li>a language whose window has more than one family must pin
+  <code>[ci].versions</code>, since there is no single default: today only C++
+  (<code>clang-</code>/<code>gcc-</code>). A family prefix alone (TypeScript's <code>node-24</code>) needs
+  no pin;</li>
 <li>a packaged Python app (<code>[package].builder = "python"</code>) builds the newest
   version that has a published <code>vergil-python</code> runtime; a packaged
   library keeps the whole window (only its deployed runtime needs a
@@ -7818,9 +7819,9 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <p>Any resolver failure fails the job, and every line of the resolver's
    message becomes an <code>::error::</code> annotation. That includes a window that
    cannot be fetched or is invalid, a pin outside the window, an app that
-   pins more than one version, a C++ or TypeScript repository with no pin, a
-   packaged Python repository with no published runtime among its versions,
-   an invalid <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It
+   pins more than one version, a C++ repository with no pin, a packaged
+   Python repository with no published runtime among its versions, an
+   invalid <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It
    also fails when <code>vrg-ci-resolve</code> is not on <code>PATH</code> (a <code>[dependencies].vergil</code>
    pin older than vergil-tooling 2.1.253). There is no fallback. A resolver
    stderr line starting <code>warning:</code> becomes a <code>::warning::</code> annotation and does
