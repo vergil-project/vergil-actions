@@ -865,6 +865,8 @@
       
         
       
+        
+      
     
     
     
@@ -917,6 +919,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.81/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.81
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7828,8 +7858,9 @@ check runs on a pull request:</p>
 named <code>&lt;caller job&gt; / &lt;job&gt;</code> with the standard <code>security</code> caller job key. The
 second column shows the checks GitHub code scanning creates when the SARIF
 results are uploaded (this needs the <code>security-events: write</code> permission).</p>
-<p>Both columns are gated in the
-<a href="../repository-rulesets/#ci-gates-ruleset">CI gates ruleset</a>:</p>
+<p>Both columns are gated in both
+<a href="../repository-rulesets/#ci-gates-rulesets">CI gates rulesets</a>,
+<code>CI gates (develop)</code> and <code>CI gates (main)</code>:</p>
 <ul>
 <li><code>security / trivy</code> and <code>security / semgrep</code> are always required.</li>
 <li><code>Trivy</code> and <code>Semgrep OSS</code> are required when GHAS is available. Without GHAS

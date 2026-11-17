@@ -865,6 +865,8 @@
       
         
       
+        
+      
     
     
     
@@ -917,6 +919,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.81/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.81
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7591,8 +7621,11 @@
 
 <h1 id="required-checks">Required Checks<a class="headerlink" href="#required-checks" title="Permanent link">&para;</a></h1>
 <h2 id="required-check-set">Required check set<a class="headerlink" href="#required-check-set" title="Permanent link">&para;</a></h2>
-<p>The required status checks live in the
-<a href="../repository-rulesets/#ci-gates-ruleset">CI gates ruleset</a>. <code>vrg-github-repo-config</code>
+<p>The required status checks live in the two
+<a href="../repository-rulesets/#ci-gates-rulesets">CI gates rulesets</a>,
+<a href="../repository-rulesets/#ci-gates-develop"><code>CI gates (develop)</code></a> and
+<a href="../repository-rulesets/#ci-gates-main"><code>CI gates (main)</code></a>, which require the
+same set. <code>vrg-github-repo-config</code>
 in vergil-tooling derives them from each repository's <code>vergil.toml</code>, so the set
 depends on the repository's configuration rather than a fixed category. Check
 names assume the standard caller job keys (<code>quality</code>, <code>security</code>, <code>docs</code>,
@@ -7818,8 +7851,11 @@ input):</p>
 </code></pre></div>
 <h2 id="ruleset-configuration">Ruleset configuration<a class="headerlink" href="#ruleset-configuration" title="Permanent link">&para;</a></h2>
 <p>All required status checks are enforced via GitHub repository rulesets, not
-legacy branch protection rules. Both <code>main</code> and <code>develop</code> are covered by the
-same CI gates ruleset. See <a href="../repository-rulesets/">Repository Rulesets</a> for
+legacy branch protection rules. Each branch has its own CI gates ruleset with
+the same required checks: <code>CI gates (develop)</code> does not require a PR's branch
+to be up to date, and <code>CI gates (main)</code> does
+(<a href="../repository-rulesets/#why-develop-does-not-require-up-to-date-branches">why</a>).
+See <a href="../repository-rulesets/">Repository Rulesets</a> for
 full configuration details including branch protection, CI gates, and tag
 protection.</p>
 

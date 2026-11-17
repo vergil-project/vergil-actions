@@ -865,6 +865,8 @@
       
         
       
+        
+      
     
     
     
@@ -917,6 +919,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.81/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.81
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7239,15 +7269,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ci-gates-ruleset" class="md-nav__link">
+  <a href="#ci-gates-rulesets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CI gates ruleset
+        CI gates rulesets
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="CI gates ruleset">
+    <nav class="md-nav" aria-label="CI gates rulesets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ci-gates-develop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI gates (develop)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-gates-main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI gates (main)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-develop-does-not-require-up-to-date-branches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why develop does not require up-to-date branches
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-required-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The required checks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The required checks">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -7269,6 +7344,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -7628,15 +7708,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ci-gates-ruleset" class="md-nav__link">
+  <a href="#ci-gates-rulesets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CI gates ruleset
+        CI gates rulesets
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="CI gates ruleset">
+    <nav class="md-nav" aria-label="CI gates rulesets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ci-gates-develop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI gates (develop)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-gates-main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI gates (main)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-develop-does-not-require-up-to-date-branches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why develop does not require up-to-date branches
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-required-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The required checks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The required checks">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -7658,6 +7783,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -7781,8 +7911,10 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>All managed repositories use GitHub's <strong>repository rulesets</strong> (not legacy branch
 protection rules) to enforce merge requirements. Every repository has the same
-five rulesets, as vergil-tooling's desired state defines them (see its
-<a href="https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#github-checks-rulesets">config audit reference</a>):</p>
+six rulesets, as vergil-tooling's desired state defines them (see its
+<a href="https://vergil-project.github.io/vergil-tooling/latest/reference/config-audit/#github-checks-rulesets">config audit reference</a>).
+A <code>docs-single-branch</code> repository has no <code>main</code> branch, so it has five: it has
+no <code>CI gates (main)</code> ruleset.</p>
 <table>
 <thead>
 <tr>
@@ -7798,9 +7930,14 @@ five rulesets, as vergil-tooling's desired state defines them (see its
 <td>PR requirements, deletion and force-push prevention</td>
 </tr>
 <tr>
-<td>CI gates</td>
-<td><code>main</code>, <code>develop</code></td>
-<td>Required status checks</td>
+<td>CI gates (develop)</td>
+<td><code>develop</code></td>
+<td>Required status checks; the branch need not be up to date</td>
+</tr>
+<tr>
+<td>CI gates (main)</td>
+<td><code>main</code></td>
+<td>Required status checks; the branch must be up to date</td>
 </tr>
 <tr>
 <td>Tag protection</td>
@@ -7877,9 +8014,34 @@ five rulesets, as vergil-tooling's desired state defines them (see its
 request (direct pushes are blocked), but self-approval is permitted. This is
 appropriate for single-maintainer repositories.</p>
 </div>
-<h2 id="ci-gates-ruleset">CI gates ruleset<a class="headerlink" href="#ci-gates-ruleset" title="Permanent link">&para;</a></h2>
-<p>Applies to both <code>main</code> and <code>develop</code> branches. Contains the required status
-checks that must pass before a PR can merge.</p>
+<h2 id="ci-gates-rulesets">CI gates rulesets<a class="headerlink" href="#ci-gates-rulesets" title="Permanent link">&para;</a></h2>
+<p>Two rulesets hold the required status checks that must pass before a PR can
+merge, one per branch. Both require the same checks. They differ only in
+whether a PR's branch must be up to date with its base before it merges.</p>
+<h3 id="ci-gates-develop">CI gates (develop)<a class="headerlink" href="#ci-gates-develop" title="Permanent link">&para;</a></h3>
+<p>Applies to <code>develop</code> (<code>refs/heads/develop</code>) in every repository,
+<code>docs-single-branch</code> repositories included.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strict required status checks</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Do not enforce on create</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ci-gates-main">CI gates (main)<a class="headerlink" href="#ci-gates-main" title="Permanent link">&para;</a></h3>
+<p>Applies to <code>main</code> (<code>refs/heads/main</code>). A <code>docs-single-branch</code> repository has
+no <code>main</code> branch and no such ruleset.</p>
 <table>
 <thead>
 <tr>
@@ -7898,11 +8060,35 @@ checks that must pass before a PR can merge.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="why-develop-does-not-require-up-to-date-branches">Why <code>develop</code> does not require up-to-date branches<a class="headerlink" href="#why-develop-does-not-require-up-to-date-branches" title="Permanent link">&para;</a></h3>
+<p>Requiring a PR's branch to be up to date serializes merging: each merge into
+<code>develop</code> leaves every other open PR <code>BEHIND</code>, and each must update and run CI
+again. GitHub auto-merge never updates a <code>BEHIND</code> branch, so a batch of
+auto-merged PRs would wait forever. The check that the combined change works
+moves later; it does not disappear. A textual conflict surfaces at merge time.
+A semantic break between two individually green PRs is caught by the local
+<code>vrg-validate</code> that <code>vrg-finalize-pr</code> runs on the synced <code>develop</code> after the
+batch merges. And the <code>develop</code> → <code>main</code> release PR runs full CI against
+<code>main</code>, which keeps the up-to-date rule. A <code>docs-single-branch</code> repository has
+no release path, so for it the post-merge validate is the combined-change
+check. See
+<a href="https://github.com/vergil-project/.github/blob/develop/epics/1218-parallel-pr-merging/spec.md#2-why">epic 1218's spec, §2</a>
+for the full reasoning.</p>
+<div class="admonition note">
+<p class="admonition-title">OpenSSF Scorecard</p>
+<p>The Scorecard's Branch-Protection check lists "'up-to-date branches' is
+required to merge on branch 'develop'" among its items. With <code>develop</code>'s
+ruleset no longer strict, later snapshots drop that item. This is
+accepted: it is a deliberate trade, for the reason above, not a hardening
+regression to fix.</p>
+</div>
+<h3 id="the-required-checks">The required checks<a class="headerlink" href="#the-required-checks" title="Permanent link">&para;</a></h3>
 <p><code>vrg-github-repo-config</code> derives the required checks from each repository's
-<code>vergil.toml</code>, so the set depends on the repository's configuration. See the
+<code>vergil.toml</code>, so the set depends on the repository's configuration. Both CI
+gates rulesets carry the same set. See the
 <a href="../required-checks/#required-check-set">required check set</a> for the full list
 and the condition under which each check is required.</p>
-<h3 id="example-a-public-python-library">Example: a public Python library<a class="headerlink" href="#example-a-public-python-library" title="Permanent link">&para;</a></h3>
+<h4 id="example-a-public-python-library">Example: a public Python library<a class="headerlink" href="#example-a-public-python-library" title="Permanent link">&para;</a></h4>
 <p>A public Python library that publishes docs and has a release model gets:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>quality / evidence
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>security / trivy
@@ -7935,7 +8121,7 @@ red. A change to the resolved set changes the legs but not the
 required-check set. See
 <a href="../required-checks/#evidence-gates-are-the-required-checks">Evidence gates are the required checks</a>.</p>
 </div>
-<h3 id="example-vergil-actions">Example: vergil-actions<a class="headerlink" href="#example-vergil-actions" title="Permanent link">&para;</a></h3>
+<h4 id="example-vergil-actions">Example: vergil-actions<a class="headerlink" href="#example-vergil-actions" title="Permanent link">&para;</a></h4>
 <p>This repository declares no primary language in <code>vergil.toml</code> (its <code>ci.yml</code>
 passes <code>language: shell</code> to the workflows), so it gets no CodeQL checks and no
 audit or test evidence gates. It requires only the always-required checks
@@ -8086,12 +8272,12 @@ org; <code>vrg-github-repo-config</code> looks it up from the App's slug in the
 <li>Open a PR and verify the check runs and passes.</li>
 <li>Do not add the check by hand under <strong>Settings &gt; Rules</strong>.
    <code>vrg-github-repo-config</code> derives the required-check set itself (from
-   <code>desired_ci_gates_ruleset()</code> in vergil-tooling and the repository's
+   <code>desired_ci_gates_rulesets()</code> in vergil-tooling and the repository's
    <code>vergil.toml</code>), and the nightly <code>ops-github-config</code> run of
-   <code>vrg-github-repo-config update</code> converges the ruleset back to that set,
-   removing a hand-added check. Add the check to that derivation in
+   <code>vrg-github-repo-config update</code> converges both CI gates rulesets back to
+   that set, removing a hand-added check. Add the check to that derivation in
    vergil-tooling; once that change is released, the next nightly run (or
-   <code>vrg-github-repo-config update</code> run by hand) converges the ruleset.</li>
+   <code>vrg-github-repo-config update</code> run by hand) converges the rulesets.</li>
 <li>Verify the check name matches exactly. For the matrixed workflows, require
    the stable <code>&lt;kind&gt; / evidence</code> aggregate (e.g. <code>test / evidence</code>), <strong>not</strong> the
    per-version legs — the legs change with the resolved version set (the
