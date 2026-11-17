@@ -7,8 +7,12 @@ correctly. For action-specific configuration (inputs, outputs, behavior), see th
 
 ## Secrets
 
-Each repository requires specific secrets depending on its workflow set. Secrets
-are configured in **Settings > Secrets and variables > Actions**.
+Each repository requires specific secrets depending on its workflow set.
+`APP_CLIENT_ID` and `APP_PRIVATE_KEY` are **org-level** Actions secrets, visible
+to all repositories, so a new repository needs no secret step for them. They
+are configured in the org's **Settings > Secrets and variables > Actions**.
+`PROJECT_TOKEN` is a repository secret, configured in each repository's
+**Settings > Secrets and variables > Actions**.
 
 | Secret | Required by | Purpose |
 | ------ | ----------- | ------- |
@@ -135,13 +139,17 @@ token is scoped, as [Token scoping](#token-scoping) describes.
    `.pem` file.
 8. Under **Install App**, install it on the org and choose **All
    repositories**.
-9. Make `APP_CLIENT_ID` and `APP_PRIVATE_KEY` available to every repository
-   that calls the workflows above. For example, as repository secrets:
+9. Set `APP_CLIENT_ID` and `APP_PRIVATE_KEY` once, as org-level Actions
+   secrets visible to all repositories, so every repository that calls the
+   workflows above can read them:
 
     ```bash
-    gh secret set APP_CLIENT_ID --repo <org>/<repo> --body "<client-id>"
-    gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --body "$(cat <path-to-private-key>.pem)"
+    gh secret set APP_CLIENT_ID --org <org> --visibility all --body "<client-id>"
+    gh secret set APP_PRIVATE_KEY --org <org> --visibility all --body "$(cat <path-to-private-key>.pem)"
     ```
+
+    Only an org without these org secrets sets them per repository instead,
+    with `--repo <org>/<repo>` in place of `--org <org> --visibility all`.
 
 10. Set the org-level Actions variable `VRG_AUTOMATION_APP` to the App's
     slug (`<org>-automation`), visible to all repositories. It names the
@@ -378,15 +386,17 @@ keeps them converged from then on.
 ### 3. Secrets
 
 - [ ] Set `PROJECT_TOKEN` (all repositories)
-- [ ] Make `APP_CLIENT_ID` and `APP_PRIVATE_KEY` for the org's automation App
-  available to the repository (every repository with an `ops.yml`, not only
-  libraries)
+- [ ] Confirm the org secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY` for the
+  org's automation App exist and are visible to all repositories. There is no
+  per-repository step for them.
 
 ```bash
 gh secret set PROJECT_TOKEN --repo vergil-project/<repo> --body "<token>"
-gh secret set APP_CLIENT_ID --repo vergil-project/<repo> --body "<client-id>"
-gh secret set APP_PRIVATE_KEY --repo vergil-project/<repo> --body "$(cat <key>.pem)"
+gh secret list --org vergil-project
 ```
+
+`gh secret list --org` must list both `APP_CLIENT_ID` and `APP_PRIVATE_KEY` as
+`Visible to all repositories`.
 
 ### 4. GitHub App installation
 

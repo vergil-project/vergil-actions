@@ -57,13 +57,17 @@ The action runs these steps in order:
     - If `pyproject.toml` declares `name = "vergil-tooling"`, the repository is
       vergil-tooling itself. The step runs `uv sync --frozen --group dev` and
       adds `.venv/bin` to `PATH`, so CI tests the PR's own code rather than a
-      released version. The sync runs with `UV_PYTHON_PREFERENCE=only-system`,
-      so it uses the system (image or runner) interpreter and never downloads a managed one
-      (issue #1002). `uv tool install` needs no such pin, because uv tool
-      commands ignore a project's uv settings.
+      released version. On a host runner the sync names `--python 3.15`, the
+      one Python series vergil-tooling supports, and uv provides that
+      interpreter. In a container job it runs with
+      `UV_PYTHON_PREFERENCE=only-system`, so it uses the image's interpreter
+      and never downloads a managed one (issue #1002). `uv tool install`
+      needs no such pin, because uv tool commands ignore a project's uv
+      settings.
     - Otherwise it reads `[dependencies].vergil` from `vergil.toml` (e.g.
       `v2.1`) and installs vergil-tooling at that tag:
-        - **`install-source: git`:** `uv tool install` from git. A release
+        - **`install-source: git`:** `uv tool install --python 3.15` from
+          git. A release
           line pin (`vX.Y`) installs the newest `vX.Y.Z` tag in that line,
           listed with `git ls-remote`, not the floating `vX.Y` tag: a release
           dispatches the package-index rebuild before it moves `vX.Y`, and
@@ -75,13 +79,14 @@ The action runs these steps in order:
           `uv tool install` from git. Where the job has both the vergil apt
           source (`/etc/apt/sources.list.d/vergil.sources`) and a core Python
           (`/opt/vergil/python/<series>/bin/python3`), it runs on the core
-          Python (`--python`); where it has neither, uv chooses the
-          interpreter, as before; where it has only one, or more than one core
+          Python (`--python <core>`); where it has neither, on Python 3.15
+          (`--python 3.15`); where it has only one, or more than one core
           Python, the job fails.
         - **A release line or exact release in a container job:** where the
           image has both the vergil apt source and a core Python, the
           packaged install from the vergil apt repository; where it has
-          neither, `uv tool install` from git; where it has only one, the job
+          neither, `uv tool install --python 3.15` from git; where it has
+          only one, the job
           fails rather than guess.
         - **A release line or exact release in a host job** (no
           `/.dockerenv`): the vergil apt repository is set up on the runner

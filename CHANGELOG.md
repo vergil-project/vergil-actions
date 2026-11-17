@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.80] - 2026-11-17
+
+### Bug fixes
+
+- give the install-tooling suite's CI-only reason its real cause (#1227)
+
+### CI
+
+- key the CD concurrency group by branch (#1277)
+- run vergil-actions CI on the prod container images (#1282)
+
+### Documentation
+
+- document the App secrets as org secrets, not per-repository (#1272)
+- move the example ops.yml cron to the 01:xx UTC hour (#1276)
+
+### Features
+
+- name --python 3.15 on every vergil-tooling install and sync (#1283)
+
 ## [2.1.79] - 2026-11-17
 
 ### Features

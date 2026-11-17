@@ -8,8 +8,11 @@ on:
 permissions:
   contents: write
 
+# Keyed by branch so a develop push never replaces a pending main run:
+# GitHub keeps one pending run per group even without cancel-in-progress.
+# The docs job's shared cd-docs group still serializes the site deploys.
 concurrency:
-  group: cd
+  group: cd-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
