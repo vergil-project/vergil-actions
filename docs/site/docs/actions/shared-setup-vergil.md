@@ -140,9 +140,10 @@ The action runs these steps in order:
     - `repository-type = "library"` builds the whole window; every other type
       resolves as an app, which builds exactly one version: the newest, or
       its single `[ci].versions` pin;
-    - C++ and TypeScript must pin `[ci].versions` until their lifecycle turn:
-      their versions carry a family (`clang-`/`gcc-`, `node-`), so there is no
-      single default;
+    - a language whose window has more than one family must pin
+      `[ci].versions`, since there is no single default: today only C++
+      (`clang-`/`gcc-`). A family prefix alone (TypeScript's `node-24`) needs
+      no pin;
     - a packaged Python app (`[package].builder = "python"`) builds the newest
       version that has a published `vergil-python` runtime; a packaged
       library keeps the whole window (only its deployed runtime needs a
@@ -157,9 +158,9 @@ The action runs these steps in order:
    Any resolver failure fails the job, and every line of the resolver's
    message becomes an `::error::` annotation. That includes a window that
    cannot be fetched or is invalid, a pin outside the window, an app that
-   pins more than one version, a C++ or TypeScript repository with no pin, a
-   packaged Python repository with no published runtime among its versions,
-   an invalid `primary-version`, and a missing or invalid `vergil.toml`. It
+   pins more than one version, a C++ repository with no pin, a packaged
+   Python repository with no published runtime among its versions, an
+   invalid `primary-version`, and a missing or invalid `vergil.toml`. It
    also fails when `vrg-ci-resolve` is not on `PATH` (a `[dependencies].vergil`
    pin older than vergil-tooling 2.1.253). There is no fallback. A resolver
    stderr line starting `warning:` becomes a `::warning::` annotation and does
