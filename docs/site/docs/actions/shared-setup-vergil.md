@@ -76,18 +76,12 @@ The action runs these steps in order:
           it never falls back to `vX.Y`. An exact or dev pin installs at that
           tag.
         - **A dev tag** (anything but `vX.Y` or `vX.Y.Z`, such as `develop`):
-          `uv tool install` from git. Where the job has both the vergil apt
-          source (`/etc/apt/sources.list.d/vergil.sources`) and a core Python
-          (`/opt/vergil/python/<series>/bin/python3`), it runs on the core
-          Python (`--python <core>`); where it has neither, on Python 3.15
-          (`--python 3.15`); where it has only one, or more than one core
-          Python, the job fails.
-        - **A release line or exact release in a container job:** where the
-          image has both the vergil apt source and a core Python, the
-          packaged install from the vergil apt repository; where it has
-          neither, `uv tool install --python 3.15` from git; where it has
-          only one, the job
-          fails rather than guess.
+          `uv tool install` from git. In a container job it runs on the
+          image's core Python (`--python
+          /opt/vergil/python/<series>/bin/python3`); on a host runner, on
+          Python 3.15 (`--python 3.15`).
+        - **A release line or exact release in a container job:** the
+          packaged install from the vergil apt repository.
         - **A release line or exact release in a host job** (no
           `/.dockerenv`): the vergil apt repository is set up on the runner
           the way vergil-tooling's `repo_setup.bootstrap` does it. The runner's

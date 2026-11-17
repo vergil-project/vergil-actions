@@ -318,7 +318,7 @@ case_real_pins_shape() {
 
 case_container_packaged() {
   local name="container_packaged"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   FAKE_CANDIDATE="2.1.7-1"
   run_script --with-uv -- v2.1
   expect_status "$name" 0 || return
@@ -334,42 +334,9 @@ case_container_packaged() {
   pass_case "$name"
 }
 
-case_container_uv() {
-  local name="container_uv"
-  new_case; as_container
-  run_script --with-uv -- v2.1
-  expect_status "$name" 0 || return
-  expect_stderr "$name" "vergil-tooling: uv tool install from git (image without the vergil apt repository)" || return
-  expect_calls "$name" "uv tool install --python 3.15 vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1" || return
-  expect_no_calls "$name" "apt-get" || return
-  pass_case "$name"
-}
-
-case_container_half_source_only() {
-  local name="container_half_source_only"
-  new_case; as_container; with_vergil_source
-  run_script --with-uv -- v2.1
-  expect_status "$name" 1 || return
-  expect_stderr "$name" "but not a core Python" || return
-  expect_stderr "$name" "refusing to guess" || return
-  expect_nothing_installed "$name" || return
-  expect_no_calls "$name" "apt-get" || return
-  pass_case "$name"
-}
-
-case_container_half_runtime_only() {
-  local name="container_half_runtime_only"
-  new_case; as_container; with_core_python
-  run_script --with-uv -- v2.1
-  expect_status "$name" 1 || return
-  expect_stderr "$name" "but not the vergil apt source" || return
-  expect_nothing_installed "$name" || return
-  pass_case "$name"
-}
-
 case_container_candidate_mismatch() {
   local name="container_candidate_mismatch"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   FAKE_CANDIDATE="2.2.0-1"
   run_script --with-uv -- v2.1
   expect_status "$name" 1 || return
@@ -381,7 +348,7 @@ case_container_candidate_mismatch() {
 
 case_container_exact_pins_version() {
   local name="container_exact_pins_version"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   FAKE_CANDIDATE="2.1.3-1"
   run_script --with-uv -- v2.1.3
   expect_status "$name" 0 || return
@@ -395,7 +362,7 @@ case_container_exact_pins_version() {
 
 case_container_exact_candidate_mismatch() {
   local name="container_exact_candidate_mismatch"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   FAKE_CANDIDATE="2.1.4-1"
   run_script --with-uv -- v2.1.3
   expect_status "$name" 1 || return
@@ -405,7 +372,7 @@ case_container_exact_candidate_mismatch() {
 
 case_container_apt_update_failure() {
   local name="container_apt_update_failure_fails"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   FAKE_CANDIDATE="2.1.7-1"
   FAKE_APT_UPDATE_FAIL=1
   run_script --with-uv -- v2.1
@@ -419,7 +386,7 @@ case_container_apt_update_failure() {
 
 case_packaged_check_refuses_foreign_interpreter() {
   local name="packaged_check_refuses_foreign_interpreter"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   FAKE_CANDIDATE="2.1.7-1"
   FAKE_VENV_HOME="/usr/bin"
   run_script --with-uv -- v2.1
@@ -487,7 +454,7 @@ case_host_packaged_leaves_uv_on_path() {
 
 case_container_packaged_leaves_uv_on_path() {
   local name="container_packaged_leaves_uv_on_path"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   FAKE_CANDIDATE="2.1.7-1"
   run_script -- v2.1
   expect_status "$name" 0 || return
@@ -772,32 +739,12 @@ case_dev_tag_installs_pinned_uv() {
 
 case_dev_tag_container_binds_core_python() {
   local name="dev_tag_container_binds_core_python"
-  new_case; as_container; with_vergil_source; with_core_python
+  new_case; as_container; with_core_python
   run_script --with-uv -- feature/x
   expect_status "$name" 0 || return
   expect_stderr "$name" "uv tool install from git on the core Python (feature/x)" || return
   expect_calls "$name" "uv tool install --python ${root}/opt/vergil/python/3.15/bin/python3 vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@feature/x" || return
   expect_no_calls "$name" "curl" || return
-  pass_case "$name"
-}
-
-case_dev_tag_container_two_cores_refused() {
-  local name="dev_tag_container_two_cores_refused"
-  new_case; as_container; with_vergil_source; with_core_python 3.15; with_core_python 3.16
-  run_script --with-uv -- develop
-  expect_status "$name" 1 || return
-  expect_stderr "$name" "found 2 core Pythons" || return
-  expect_nothing_installed "$name" || return
-  pass_case "$name"
-}
-
-case_dev_tag_container_half_refused() {
-  local name="dev_tag_container_half_refused"
-  new_case; as_container; with_vergil_source
-  run_script --with-uv -- develop
-  expect_status "$name" 1 || return
-  expect_stderr "$name" "refusing to guess" || return
-  expect_nothing_installed "$name" || return
   pass_case "$name"
 }
 
@@ -827,9 +774,6 @@ case_missing_pin_fails() {
 
 case_real_pins_shape || true
 case_container_packaged || true
-case_container_uv || true
-case_container_half_source_only || true
-case_container_half_runtime_only || true
 case_container_candidate_mismatch || true
 case_container_exact_pins_version || true
 case_container_exact_candidate_mismatch || true
@@ -858,8 +802,6 @@ case_install_source_git_exact_tag || true
 case_install_source_invalid || true
 case_dev_tag_installs_pinned_uv || true
 case_dev_tag_container_binds_core_python || true
-case_dev_tag_container_two_cores_refused || true
-case_dev_tag_container_half_refused || true
 case_dev_tag_uv_hash_mismatch || true
 case_missing_pin_fails || true
 
