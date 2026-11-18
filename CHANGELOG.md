@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.83] - 2026-11-18
+
+### Documentation
+
+- name all four languages the toolchain-assert tests cover (#1306)
+
+### Features
+
+- assert the TypeScript leg's Node major (#1304)
+
 ## [2.1.82] - 2026-11-18
 
 ### Documentation
