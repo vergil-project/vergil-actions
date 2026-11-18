@@ -4,8 +4,8 @@
 # version CI resolved for it.
 #
 # Framework-free and developer-runnable: `bash assert.test.sh`. Each case puts
-# a fake `uv`, `go` or `rustc` first on PATH, printing a chosen version (or failing),
-# runs assert.sh, and asserts the exit status and the annotation.
+# a fake `uv`, `go`, `rustc` or `node` first on PATH, printing a chosen version
+# (or failing), runs assert.sh, and asserts the exit status and the annotation.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,8 +30,8 @@ stderr=""
 calls=""
 
 # run_assert <language> <expected> <tool> <tool stdout> [<tool exit status>]
-# Fakes <tool> (uv, go or rustc) to print <tool stdout> and exit with the status, and
-# records the arguments it was called with in $calls.
+# Fakes <tool> (uv, go, rustc or node) to print <tool stdout> and exit with the
+# status, and records the arguments it was called with in $calls.
 run_assert() {
   local bin so se log
   bin="$(mktemp -d)"
@@ -211,6 +211,86 @@ case_rust_garbage() {
   pass_case "$name"
 }
 
+case_typescript_match() {
+  local name="typescript-node-prefixed-match-passes"
+  run_assert typescript node-26 node "26.1.0\\n/opt/node/26/bin/node"
+  assert_pass "$name" || return 0
+  assert_eq_calls "$name" '-p process.versions.node + "\n" + process.execPath' \
+    || return 0
+  case "$stdout" in
+    *"assert-toolchain: the job's Node is /opt/node/26/bin/node"*) ;;
+    *)
+      fail_case "$name" "expected the Node path in the log, got '$stdout'"
+      return 0
+      ;;
+  esac
+  case "$stdout" in
+    *"assert-toolchain: typescript 26 matches the resolved version 26"*) ;;
+    *)
+      fail_case "$name" "expected the match line in the log, got '$stdout'"
+      return 0
+      ;;
+  esac
+  pass_case "$name"
+}
+
+case_typescript_bare_major() {
+  local name="typescript-bare-major-passes"
+  run_assert typescript 26 node "26.1.0\\n/opt/node/26/bin/node"
+  assert_pass "$name" || return 0
+  pass_case "$name"
+}
+
+case_typescript_mismatch() {
+  local name="typescript-mismatch-fails"
+  run_assert typescript node-24 node "26.1.0\\n/opt/node/26/bin/node"
+  assert_fail "$name" "CI resolved 24 but the job runs 26" || return 0
+  pass_case "$name"
+}
+
+case_typescript_bad_expected() {
+  local value name
+  for value in node-x 24.1 v26 node-; do
+    name="typescript-expected-${value}-rejected"
+    run_assert typescript "$value" node "26.1.0\\n/opt/node/26/bin/node"
+    assert_fail "$name" \
+      "assert-toolchain: expected must be a Node major for typescript (got '${value}')" \
+      || continue
+    if [ -n "$calls" ]; then
+      fail_case "$name" "node was called for a bad expected value: '$calls'"
+      continue
+    fi
+    pass_case "$name"
+  done
+}
+
+case_typescript_node_fails() {
+  local name="typescript-node-fails"
+  run_assert typescript node-26 node "node: cannot start" 1
+  assert_fail "$name" \
+    "assert-toolchain: cannot ask node for its version: node: cannot start" \
+    || return 0
+  pass_case "$name"
+}
+
+case_typescript_garbage() {
+  local name="typescript-unexpected-answer"
+  run_assert typescript node-26 node garbage
+  assert_fail "$name" \
+    "assert-toolchain: unexpected answer from the job's Node: 'garbage'" \
+    || return 0
+  pass_case "$name"
+}
+
+case_typescript_no_path() {
+  local name="typescript-answer-without-node-path"
+  run_assert typescript node-26 node 26.1.0
+  assert_fail "$name" \
+    "assert-toolchain: unexpected answer from the job's Node: '26.1.0'" \
+    || return 0
+  pass_case "$name"
+}
+
 case_bad_expected() {
   local name="expected-not-x-y"
   run_assert python latest uv 3.14
@@ -251,6 +331,13 @@ case_rust_three_digit_minor
 case_rust_three_digit_minor_mismatch
 case_rust_fails
 case_rust_garbage
+case_typescript_match
+case_typescript_bare_major
+case_typescript_mismatch
+case_typescript_bad_expected
+case_typescript_node_fails
+case_typescript_garbage
+case_typescript_no_path
 case_bad_expected
 case_other_language
 

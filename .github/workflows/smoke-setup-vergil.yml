@@ -70,8 +70,9 @@ name: Smoke - setup/vergil outputs
 #         none on prepare, which has a read-only token, the develop guard
 #         first in each job, no if:, both timeouts and the per-repo
 #         concurrency group (epic vergil-project/.github#1168);
-#       - ci/toolchain/assert assert.sh: Python and Go version checks against a
-#         fake uv/go, and the notice for other languages;
+#       - ci/toolchain/assert assert.sh: Python, Go, Rust and TypeScript
+#         version checks against a fake uv, go, rustc and node, and the
+#         notice for other languages;
 #       - ci/toolchain/pin-python pin.sh: UV_PYTHON and
 #         UV_PYTHON_PREFERENCE=only-system written to GITHUB_ENV, loud failure
 #         on a bad version, every Python leg of ci-quality, ci-audit and

@@ -19,12 +19,18 @@
 #            `toolchain` switch in go.mod is what gets reported.
 #   rust   — `rustc --version` (rustc 1.100.0 (...) -> 1.100). Run in the repo
 #            checkout, so a rustup override would be what gets reported.
+#   typescript — `node -p` for the version and the executable's path
+#            (26.1.0 -> 26), compared as a major (epic
+#            vergil-project/.github#1281, spec §6.4). Run in the repo
+#            checkout; the path is logged, so the log shows whether the
+#            family Node or another one ran.
 #   other  — no assertion yet (each language's turn adds one); a notice says so.
 #
 # On a mismatch it prints `::error::CI resolved <expected> but the job runs
 # <actual>` and exits 1. Any failure to ask the toolchain is also an error.
 #
-# Inputs (env): LANGUAGE, EXPECTED (the leg's resolved version, x.y).
+# Inputs (env): LANGUAGE, EXPECTED (the leg's resolved version: x.y, or for
+# typescript a Node major, bare or with a leading `node-`, e.g. node-26).
 set -euo pipefail
 
 language="${LANGUAGE:-}"
@@ -102,9 +108,39 @@ case "$language" in
       error "assert-toolchain: rustc --version gave '${raw}', which has no x.y version"
     fi
     ;;
+  typescript)
+    # CI passes the leg as node-<major>; a bare major is accepted too.
+    major="${expected#node-}"
+    if ! [[ "$major" =~ ^[0-9]+$ ]]; then
+      error "assert-toolchain: expected must be a Node major for typescript" \
+        "(got '${expected}')"
+    fi
+    expected="$major"
+    err_file="$(mktemp)"
+    trap 'rm -f "$err_file"' EXIT
+    rc=0
+    # Line 1: the version. Line 2: the executable's path, reported so the
+    # log shows which Node the leg actually runs.
+    # shellcheck disable=SC2016 # a JavaScript expression, not a shell one
+    answer="$(node -p 'process.versions.node + "\n" + process.execPath' \
+      2>"$err_file")" || rc=$?
+    cat "$err_file" >&2
+    if [ "$rc" -ne 0 ]; then
+      error "assert-toolchain: cannot ask node for its version:" \
+        "${answer} $(tr '\n' ' ' <"$err_file")"
+    fi
+    version="$(sed -n 1p <<<"$answer")"
+    node_path="$(sed -n 2p <<<"$answer")"
+    if ! [[ "$version" =~ ^([0-9]+)\.[0-9]+\.[0-9]+([-+].*)?$ ]] \
+      || [ -z "$node_path" ]; then
+      error "assert-toolchain: unexpected answer from the job's Node: '${answer}'"
+    fi
+    actual="${BASH_REMATCH[1]}"
+    echo "assert-toolchain: the job's Node is ${node_path}"
+    ;;
   *)
     echo "::notice::assert-toolchain: no toolchain assertion for language" \
-      "'${language}' yet; only python, go and rust are checked"
+      "'${language}' yet; only python, go, rust and typescript are checked"
     exit 0
     ;;
 esac
