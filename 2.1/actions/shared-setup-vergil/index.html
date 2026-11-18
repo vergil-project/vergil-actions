@@ -867,6 +867,8 @@
       
         
       
+        
+      
     
     
     
@@ -919,6 +921,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.82/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.82
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7766,18 +7796,12 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
   it never falls back to <code>vX.Y</code>. An exact or dev pin installs at that
   tag.</li>
 <li><strong>A dev tag</strong> (anything but <code>vX.Y</code> or <code>vX.Y.Z</code>, such as <code>develop</code>):
-  <code>uv tool install</code> from git. Where the job has both the vergil apt
-  source (<code>/etc/apt/sources.list.d/vergil.sources</code>) and a core Python
-  (<code>/opt/vergil/python/&lt;series&gt;/bin/python3</code>), it runs on the core
-  Python (<code>--python &lt;core&gt;</code>); where it has neither, on Python 3.15
-  (<code>--python 3.15</code>); where it has only one, or more than one core
-  Python, the job fails.</li>
-<li><strong>A release line or exact release in a container job:</strong> where the
-  image has both the vergil apt source and a core Python, the
-  packaged install from the vergil apt repository; where it has
-  neither, <code>uv tool install --python 3.15</code> from git; where it has
-  only one, the job
-  fails rather than guess.</li>
+  <code>uv tool install</code> from git. In a container job it runs on the
+  image's core Python (<code>--python
+  /opt/vergil/python/&lt;series&gt;/bin/python3</code>); on a host runner, on
+  Python 3.15 (<code>--python 3.15</code>).</li>
+<li><strong>A release line or exact release in a container job:</strong> the
+  packaged install from the vergil apt repository.</li>
 <li><strong>A release line or exact release in a host job</strong> (no
   <code>/.dockerenv</code>): the vergil apt repository is set up on the runner
   the way vergil-tooling's <code>repo_setup.bootstrap</code> does it. The runner's
@@ -7829,9 +7853,10 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <li><code>repository-type = "library"</code> builds the whole window; every other type
   resolves as an app, which builds exactly one version: the newest, or
   its single <code>[ci].versions</code> pin;</li>
-<li>C++ and TypeScript must pin <code>[ci].versions</code> until their lifecycle turn:
-  their versions carry a family (<code>clang-</code>/<code>gcc-</code>, <code>node-</code>), so there is no
-  single default;</li>
+<li>a language whose window has more than one family must pin
+  <code>[ci].versions</code>, since there is no single default: today only C++
+  (<code>clang-</code>/<code>gcc-</code>). A family prefix alone (TypeScript's <code>node-24</code>) needs
+  no pin;</li>
 <li>a packaged Python app (<code>[package].builder = "python"</code>) builds the newest
   version that has a published <code>vergil-python</code> runtime; a packaged
   library keeps the whole window (only its deployed runtime needs a
@@ -7848,9 +7873,9 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <p>Any resolver failure fails the job, and every line of the resolver's
    message becomes an <code>::error::</code> annotation. That includes a window that
    cannot be fetched or is invalid, a pin outside the window, an app that
-   pins more than one version, a C++ or TypeScript repository with no pin, a
-   packaged Python repository with no published runtime among its versions,
-   an invalid <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It
+   pins more than one version, a C++ repository with no pin, a packaged
+   Python repository with no published runtime among its versions, an
+   invalid <code>primary-version</code>, and a missing or invalid <code>vergil.toml</code>. It
    also fails when <code>vrg-ci-resolve</code> is not on <code>PATH</code> (a <code>[dependencies].vergil</code>
    pin older than vergil-tooling 2.1.253). There is no fallback. A resolver
    stderr line starting <code>warning:</code> becomes a <code>::warning::</code> annotation and does
