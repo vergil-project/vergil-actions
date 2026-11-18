@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.82] - 2026-11-18
+
+### Documentation
+
+- a [ci].versions pin is required only for a multi-family window (C++), not TypeScript (#1292)
+- point the smoke workflow's only-system comment at the documented exemptions (#1296)
+
+### Refactoring
+
+- remove the cutover install switch from container jobs (#1300)
+
 ## [2.1.81] - 2026-11-17
 
 ### Documentation
