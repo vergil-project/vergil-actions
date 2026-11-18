@@ -7617,8 +7617,9 @@ definition and optional supporting scripts.</p>
   (<code>UV_PYTHON</code>, <code>UV_PYTHON_PREFERENCE=only-system</code>); auto-wired into the
   Python matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
 <li><strong><a href="ci-toolchain-assert/">ci/toolchain/assert</a></strong> — Fails a CI leg whose
-  running Python, Go or Rust is not the version CI resolved for it; auto-wired
-  into the matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
+  running Python, Go, Rust or Node (TypeScript) is not the version CI resolved
+  for it; auto-wired into the matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and
+  <code>ci-test</code>.</li>
 <li><strong><a href="ci-evidence-emit/">ci/evidence/emit</a></strong>
   — Writes a gate's <code>evidence.json</code> and uploads it with the gate's report files
   as a <code>ci-evidence-&lt;gate&gt;</code> artifact for the release-time evidence bundle.</li>

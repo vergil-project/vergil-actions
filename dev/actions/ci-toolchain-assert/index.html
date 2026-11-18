@@ -7668,7 +7668,9 @@ behind Vergil's back (for Python, <code>.python-version</code> or uv's
 and a leg would then pass on a version it never ran. This action is the
 backstop for that. For Rust, the image already pins rustup to its own release
 (<code>RUSTUP_TOOLCHAIN</code>, with auto-install off) and <code>vrg-validate</code> rejects a
-<code>rust-toolchain.toml</code>, so the assertion is the last check behind those.</p>
+<code>rust-toolchain.toml</code>, so the assertion is the last check behind those. For
+TypeScript, Vergil selects the Node runtime, and the assertion checks that the
+Node on the job's <code>PATH</code> is the leg's major.</p>
 <p>This action is <strong>wired automatically</strong> into every matrix leg of <code>ci-quality</code>,
 <code>ci-audit</code> and <code>ci-test</code>, as the <code>assert-toolchain</code> step. It runs after the
 dependency install. For Python, an earlier step in the leg
@@ -7704,7 +7706,7 @@ not add it themselves.</p>
 <td><code>expected</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>The version CI resolved for this leg, as <code>x.y</code> (e.g. <code>3.14</code>, <code>1.26</code>, <code>1.100</code>). Ignored for languages without an assertion.</td>
+<td>The version CI resolved for this leg, as <code>x.y</code> (e.g. <code>3.14</code>, <code>1.26</code>, <code>1.100</code>), or for <code>typescript</code> a Node major, bare or with a leading <code>node-</code> (e.g. <code>node-26</code>, <code>26</code>). Ignored for languages without an assertion.</td>
 </tr>
 </tbody>
 </table>
@@ -7730,6 +7732,10 @@ not add it themselves.</p>
 <td>Runs <code>rustc --version</code> in the repository checkout (so a rustup override would be what gets reported) and compares its <code>x.y</code> (<code>rustc 1.100.0</code> is <code>1.100</code>).</td>
 </tr>
 <tr>
+<td><code>typescript</code></td>
+<td>Runs <code>node -p 'process.versions.node + "\n" + process.execPath'</code> once, in the repository checkout, and compares the version's major (<code>26.1.0</code> is <code>26</code>) with <code>expected</code> (a leading <code>node-</code> stripped), logging the Node executable's path.</td>
+</tr>
+<tr>
 <td>Any other</td>
 <td>No check yet; prints a <code>::notice::</code> saying so and passes.</td>
 </tr>
@@ -7737,11 +7743,12 @@ not add it themselves.</p>
 </table>
 <p>On a mismatch the step fails with
 <code>::error::CI resolved &lt;expected&gt; but the job runs &lt;actual&gt;</code>. It also fails,
-with an <code>::error::</code> annotation, when <code>expected</code> is not an <code>x.y</code> version or the
-toolchain cannot be asked for its version.</p>
+with an <code>::error::</code> annotation, when <code>expected</code> is not an <code>x.y</code> version (for
+<code>typescript</code>, not a Node major), or the toolchain cannot be asked for its
+version or gives an answer it cannot read.</p>
 <h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h2>
 <p>The logic is in <code>assert.sh</code> next to <code>action.yml</code>, so it can be unit tested
-(<code>tests/assert.test.sh</code>, which fakes <code>uv</code>, <code>go</code> and <code>rustc</code>). The
+(<code>tests/assert.test.sh</code>, which fakes <code>uv</code>, <code>go</code>, <code>rustc</code> and <code>node</code>). The
 <code>smoke-setup-vergil</code> workflow runs the tests.</p>
 <h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
