@@ -5,8 +5,10 @@ description: >-
   A repo's own files can pick the interpreter behind Vergil's back, so a leg
   could otherwise pass on a version it never ran. Python is checked with
   `uv run --frozen python` (pin uv with ci/toolchain/pin-python first; the
-  interpreter's path is logged too), Go with `go env GOVERSION` and Rust
-  with `rustc --version`; every other language is a no-op with a notice.
+  interpreter's path is logged too), Go with `go env GOVERSION`, Rust with
+  `rustc --version` and TypeScript with `node -p` (its major, with the
+  executable's path logged too); every other language is a no-op with a
+  notice.
 
 inputs:
   language:
@@ -14,8 +16,9 @@ inputs:
     required: true
   expected:
     description: >-
-      The version CI resolved for this leg, as x.y (e.g. 3.14, 1.26). Ignored
-      for languages without an assertion.
+      The version CI resolved for this leg, as x.y (e.g. 3.14, 1.26), or for
+      typescript a Node major, bare or with a leading node- (e.g. node-26,
+      26). Ignored for languages without an assertion.
     required: true
 
 runs:
