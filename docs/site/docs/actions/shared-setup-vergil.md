@@ -76,18 +76,12 @@ The action runs these steps in order:
           it never falls back to `vX.Y`. An exact or dev pin installs at that
           tag.
         - **A dev tag** (anything but `vX.Y` or `vX.Y.Z`, such as `develop`):
-          `uv tool install` from git. Where the job has both the vergil apt
-          source (`/etc/apt/sources.list.d/vergil.sources`) and a core Python
-          (`/opt/vergil/python/<series>/bin/python3`), it runs on the core
-          Python (`--python <core>`); where it has neither, on Python 3.15
-          (`--python 3.15`); where it has only one, or more than one core
-          Python, the job fails.
-        - **A release line or exact release in a container job:** where the
-          image has both the vergil apt source and a core Python, the
-          packaged install from the vergil apt repository; where it has
-          neither, `uv tool install --python 3.15` from git; where it has
-          only one, the job
-          fails rather than guess.
+          `uv tool install` from git. In a container job it runs on the
+          image's core Python (`--python
+          /opt/vergil/python/<series>/bin/python3`); on a host runner, on
+          Python 3.15 (`--python 3.15`).
+        - **A release line or exact release in a container job:** the
+          packaged install from the vergil apt repository.
         - **A release line or exact release in a host job** (no
           `/.dockerenv`): the vergil apt repository is set up on the runner
           the way vergil-tooling's `repo_setup.bootstrap` does it. The runner's
@@ -140,9 +134,10 @@ The action runs these steps in order:
     - `repository-type = "library"` builds the whole window; every other type
       resolves as an app, which builds exactly one version: the newest, or
       its single `[ci].versions` pin;
-    - C++ and TypeScript must pin `[ci].versions` until their lifecycle turn:
-      their versions carry a family (`clang-`/`gcc-`, `node-`), so there is no
-      single default;
+    - a language whose window has more than one family must pin
+      `[ci].versions`, since there is no single default: today only C++
+      (`clang-`/`gcc-`). A family prefix alone (TypeScript's `node-24`) needs
+      no pin;
     - a packaged Python app (`[package].builder = "python"`) builds the newest
       version that has a published `vergil-python` runtime; a packaged
       library keeps the whole window (only its deployed runtime needs a
@@ -157,9 +152,9 @@ The action runs these steps in order:
    Any resolver failure fails the job, and every line of the resolver's
    message becomes an `::error::` annotation. That includes a window that
    cannot be fetched or is invalid, a pin outside the window, an app that
-   pins more than one version, a C++ or TypeScript repository with no pin, a
-   packaged Python repository with no published runtime among its versions,
-   an invalid `primary-version`, and a missing or invalid `vergil.toml`. It
+   pins more than one version, a C++ repository with no pin, a packaged
+   Python repository with no published runtime among its versions, an
+   invalid `primary-version`, and a missing or invalid `vergil.toml`. It
    also fails when `vrg-ci-resolve` is not on `PATH` (a `[dependencies].vergil`
    pin older than vergil-tooling 2.1.253). There is no fallback. A resolver
    stderr line starting `warning:` becomes a `::warning::` annotation and does
