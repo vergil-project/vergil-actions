@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.86] - 2026-11-19
+
+### Bug fixes
+
+- remove early-exit pipes under pipefail and guard against them (#1326)
+
 ## [2.1.85] - 2026-11-19
 
 ### Features
