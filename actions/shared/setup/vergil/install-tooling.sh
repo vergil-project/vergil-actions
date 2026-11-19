@@ -38,7 +38,9 @@
 # After the install, `vrg-*` live in uv's tool bin directory
 # (`uv tool dir --bin`), which is added to PATH and GITHUB_PATH. The check
 # then requires `vrg-whoami` to resolve to that directory, as later steps
-# will see it, and to run.
+# will see it, and to run, and the tool environment's interpreter to be a
+# released Python 3.15 (`Python 3.15.N`, never a pre-release), which it logs.
+# The self repo's host sync gets the same interpreter check.
 #
 # Every path leaves uv on PATH: later steps (and the scripts they run) rely
 # on it. When none is on PATH, uv is installed from its release tarball at
@@ -62,10 +64,13 @@
 set -euo pipefail
 
 # Bump all three together, from the release's uv-<triple>.tar.gz.sha256 files
-# (https://github.com/astral-sh/uv/releases).
-UV_VERSION="0.12.23"
-UV_SHA256_AMD64="9167d72b3319674b6303c4cbe071854bba13ebdf3d76b1a7cbdc175471fb66d6"
-UV_SHA256_ARM64="6524bd338177ed50d035d39354e12545e993bbeba2ecbddf0480c5b3a81d313f"
+# (https://github.com/astral-sh/uv/releases). The uv's managed-Python list
+# must offer a released 3.15: check_python fails the job on a pre-release
+# such as 3.15.0rc3, which uv 0.12.23 resolved `--python 3.15` to (issue
+# vergil-project/vergil-actions#1331).
+UV_VERSION="0.13.9"
+UV_SHA256_AMD64="a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5"
+UV_SHA256_ARM64="0797542018e541a9288855df555c8077eed06f7a47d206362030480e8ecc9f3d"
 
 GIT_URL="https://github.com/vergil-project/vergil-tooling"
 PACKAGE="vergil-tooling"
@@ -156,6 +161,7 @@ self_repo_install() {
     # 3.15 and let uv provide it.
     log "host runner: syncing on Python 3.15, provided by uv"
     uv sync --frozen --group dev --python 3.15
+    check_python "${GITHUB_WORKSPACE}/.venv/bin/python"
   else
     # A project command, so it honours the repo's uv settings: pin the
     # interpreter source to the image's Python, never a download (issue #1002).
@@ -263,9 +269,22 @@ python_source() {
   log "on the image's managed Python in ${dir} (UV_PYTHON_DOWNLOADS=never)"
 }
 
-# check_install: vrg-whoami resolves to uv's tool bin directory and runs.
+# check_python <python>: <python> is a released Python 3.15 (`Python
+# 3.15.N`), never a pre-release such as 3.15.0rc3 or another series. Logs the
+# version, so the job log names the interpreter vergil-tooling runs on.
+check_python() {
+  local py="$1" version
+  version="$("$py" --version 2>&1)" || die "could not run ${py} --version"
+  if [[ ! "$version" =~ ^Python\ 3\.15\.[0-9]+$ ]]; then
+    die "${py} is '${version}', not a released Python 3.15: the uv in use offers no stable 3.15 (bump UV_VERSION in install-tooling.sh, or the uv on PATH)"
+  fi
+  log "vergil-tooling runs on Python ${version#Python } (${py})"
+}
+
+# check_install: vrg-whoami resolves to uv's tool bin directory and runs, and
+# the tool environment runs on a released Python 3.15.
 check_install() {
-  local bin loc
+  local bin loc tools
   bin="$(uv tool dir --bin --no-config)" ||
     die "could not read uv's tool bin directory (uv tool dir --bin)"
   export PATH="${bin}:${PATH}"
@@ -275,6 +294,9 @@ check_install() {
     die "vrg-whoami resolves to ${loc}, not the installed ${bin}/vrg-whoami"
   fi
   "$loc" --mode >/dev/null || die "${bin}/vrg-whoami does not run"
+  tools="$(uv tool dir --no-config)" ||
+    die "could not read uv's tool directory (uv tool dir)"
+  check_python "${tools}/${PACKAGE}/bin/python"
   echo "$bin" >>"$GITHUB_PATH"
   log "vrg-* run from ${bin}"
 }

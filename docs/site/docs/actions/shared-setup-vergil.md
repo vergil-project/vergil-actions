@@ -113,12 +113,20 @@ The action runs these steps in order:
       (`uv tool dir --bin`, usually `~/.local/bin`), which is added to `PATH`
       for later steps. `vrg-whoami` must resolve to that directory and run;
       otherwise the job fails, so a stale copy that would answer in its place
-      (such as an old packaged `/usr/bin/vrg-whoami`) is caught.
+      (such as an old packaged `/usr/bin/vrg-whoami`) is caught. The tool
+      environment's interpreter must also be a released Python 3.15
+      (`python --version` prints `Python 3.15.N`), and the step logs it, for
+      example `vergil-tooling: vergil-tooling runs on Python 3.15.2 (<path>)`.
+      A pre-release such as `3.15.0rc3`, or another series, fails the job.
+      The self repo's host sync is checked the same way.
 
       A path that needs `uv` and finds none on `PATH` installs uv from its
       release tarball at the version and SHA-256 pinned in
       `install-tooling.sh`, into `$RUNNER_TEMP/uv/bin`, and adds that to
-      `PATH`. uv is never installed with `pip`.
+      `PATH`. uv is never installed with `pip`. The pinned uv's
+      managed-Python list must offer a released 3.15: uv 0.12.23 resolved
+      `--python 3.15` to `3.15.0rc3` (issue #1331), which the interpreter
+      check now catches.
 
       The tag is read by `read-pin.sh`, which fails the job with a single
       `::error::` annotation naming the file or key, and nothing is installed,
