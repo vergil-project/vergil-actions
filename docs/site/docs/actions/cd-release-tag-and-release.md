@@ -113,9 +113,10 @@ as command-line git config, so the push authenticates as the App alone.
 
 ## GitHub configuration
 
-- **Tag protection** — The Tag protection ruleset restricts release tags to
-  the repository Admin role and the automation App; epic
-  [vergil-project/.github#1350](https://github.com/vergil-project/.github/issues/1350)
-  adds creation to its update and deletion rules. So the tags are pushed as
-  the App, which needs Contents write on the repository; see
+- **Tag protection** — The Tag protection ruleset restricts the creation,
+  update and deletion of release tags to the repository Admin role and the
+  automation App (creation since epic
+  [vergil-project/.github#1350](https://github.com/vergil-project/.github/issues/1350)).
+  So the tags are pushed as the App, which needs Contents write on the
+  repository; see
   [APP_CLIENT_ID and APP_PRIVATE_KEY](../configuration.md#app_client_id-and-app_private_key).

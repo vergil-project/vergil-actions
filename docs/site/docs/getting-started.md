@@ -176,7 +176,7 @@ Each action documents its required workflow permissions. Common patterns:
 | Permission | Actions that require it |
 | ------------ | ---------------------- |
 | `contents: read` | All actions (repository checkout) |
-| `contents: write` | docs-deploy, publish/tag-and-release |
+| `contents: write` | cd/docs/deploy, cd/release/tag-and-release |
 | `security-events: write` | security/codeql, security/semgrep, security/trivy |
 
 ## Self-referencing CI

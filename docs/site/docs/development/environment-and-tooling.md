@@ -11,11 +11,10 @@ and `vrg-commit` wrappers and by PR CI. See the vergil-tooling
 ## Host prerequisites
 
 Install the vergil-tooling host tool, which provides `vrg-container-run`,
-`vrg-commit`, `vrg-validate`, and other workflow commands:
-
-```bash
-uv tool install 'vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@v2.1'
-```
+`vrg-commit`, `vrg-validate`, and other workflow commands, as vergil-tooling's
+[Getting Started](https://github.com/vergil-project/vergil-tooling/blob/develop/docs/site/docs/getting-started.md#1-install-vergil-tooling-on-the-host)
+says. Its lines install one exact release tag, with its dependencies pinned by
+that tag's own `uv.lock`, on uv's managed Python.
 
 Docker must be running for `vrg-container-run` to work.
 

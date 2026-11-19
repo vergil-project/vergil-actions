@@ -83,7 +83,10 @@ name: Smoke - setup/vergil outputs
 #         #1002; the exemptions are documented in
 #         docs/site/docs/actions/ci-toolchain-pin-python.md);
 #       - the package setup action's detect.sh (self-repo vs.
-#         [dependencies].vergil install spec; epic vergil-project/.github#356);
+#         [dependencies].vergil install spec, epic vergil-project/.github#356;
+#         a line pin resolved to its newest vX.Y.Z tag and one commit SHA,
+#         that commit's uv.lock exported as constraints, and the install run
+#         with --no-config --managed-python, issue #1318);
 #       - the package setup action's check-toolchain.sh: a package toolchain
 #         image's /etc/vergil/package-toolchain marker against the tools on
 #         PATH, failing on a missing marker (a raw image), a required tool
