@@ -560,7 +560,7 @@ case_check_expects_uv_bin_dir_not_usr_bin() {
   with_git_refs v2.1.7
   printf '#!/usr/bin/env bash\necho stale\n' >"${root}/usr/bin/vrg-whoami"
   chmod +x "${root}/usr/bin/vrg-whoami"
-  FAKE_UV_NO_SHIM=1
+  export FAKE_UV_NO_SHIM=1
   run_script -- v2.1.7
   expect_status "$name" 1 || return
   expect_stderr "$name" "vrg-whoami resolves to ${root}/usr/bin/vrg-whoami, not the installed ${case_dir}/uv-bin/vrg-whoami" || return
@@ -658,14 +658,14 @@ case_failed_install_exits_nonzero_with_named_error() {
   local name="failed_install_exits_nonzero_with_named_error"
   new_case
   with_git_refs v2.1.7
-  FAKE_UV_INSTALL_FAIL=1
+  export FAKE_UV_INSTALL_FAIL=1
   run_script -- v2.1
   expect_status "$name" 1 || return
   expect_stderr "$name" "::error::vergil-tooling: uv tool install of vergil-tooling v2.1.7 ($(commit_of v2.1.7)) failed" || return
   expect_no_calls "$name" "uv tool dir" || return
   # A dev ref's failure is named too.
   new_case
-  FAKE_UV_INSTALL_FAIL=1
+  export FAKE_UV_INSTALL_FAIL=1
   run_script -- develop
   expect_status "$name" 1 || return
   expect_stderr "$name" "::error::vergil-tooling: uv tool install of vergil-tooling at dev ref develop failed" || return
@@ -678,7 +678,7 @@ case_failed_lock_export_exits_nonzero_with_named_error() {
   # The commit fetch fails.
   new_case
   with_git_refs v2.1.7
-  FAKE_GIT_FETCH_FAIL=1
+  export FAKE_GIT_FETCH_FAIL=1
   run_script -- v2.1.7
   expect_status "$name" 1 || return
   expect_stderr "$name" "::error::vergil-tooling: lock export of ${sha}: could not fetch the commit from ${GIT_URL}" || return
@@ -686,7 +686,7 @@ case_failed_lock_export_exits_nonzero_with_named_error() {
   # uv export finds no lock.
   new_case
   with_git_refs v2.1.7
-  FAKE_UV_EXPORT_FAIL=1
+  export FAKE_UV_EXPORT_FAIL=1
   run_script -- v2.1.7
   expect_status "$name" 1 || return
   expect_stderr "$name" "::error::vergil-tooling: lock export of ${sha}: exporting its uv.lock failed" || return
@@ -700,7 +700,7 @@ case_constraints_naming_the_project_fail() {
   for c in 'click==8.1.8\nvergil-tooling==2.1.7\n' 'click==8.1.8\n-e .\n'; do
     new_case
     with_git_refs v2.1.7
-    FAKE_CONSTRAINTS="$c"
+    export FAKE_CONSTRAINTS="$c"
     run_script -- v2.1.7
     expect_status "$name" 1 || return
     expect_stderr "$name" "the constraints name vergil-tooling itself or an editable install" || return
