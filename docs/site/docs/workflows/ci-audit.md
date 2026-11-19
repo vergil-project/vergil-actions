@@ -40,7 +40,9 @@ thin: they pass only `language:` and `container-suffix:`.
 
 Each `dependencies` leg stages the language's audit reports for the
 `ci-evidence-audit` artifact: `pip-audit.json` and `licenses.json` for Python,
-`cargo-deny.json` for Rust, `npm-audit.json` for TypeScript. The names come
+`cargo-deny.json` for Rust, `npm-audit.json` and `licenses.json` for
+TypeScript. As for Python, `licenses.json` is the license report: TypeScript's
+is written by `vrg-npm-license-gate`. The names come
 from [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose
 audit passed but wrote no report fails. A language with no audit report
 contract yet (Go, C++) gets a warning and stages nothing, and the
@@ -75,7 +77,8 @@ jobs:
 
 The `dependencies` job runs each language's real audit through
 `vrg-validate --check audit`: pip-audit and pip-licenses for Python,
-cargo-deny for Rust, `npm audit` for TypeScript. The audit commands live in
+cargo-deny for Rust, `npm audit` and `vrg-npm-license-gate` for TypeScript.
+The audit commands live in
 vergil-tooling, not in this workflow. Each leg then stages its reports
 through [`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose
 table is the one place this repository records a language's audit report

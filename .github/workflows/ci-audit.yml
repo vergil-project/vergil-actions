@@ -126,10 +126,11 @@ jobs:
       # The dependencies job and the evidence job run on separate runners with
       # separate filesystems, so the reports produced here are stranded unless
       # uploaded. The language's report names come from ci/evidence/reports
-      # (pip-audit.json and licenses.json for Python, cargo-deny.json for Rust;
-      # #1211), renamed to version-suffixed basenames so each version's report
-      # stays distinct after the evidence job's emit step (flattens by
-      # basename). A passing audit that wrote no report fails this step.
+      # (pip-audit.json and licenses.json for Python, cargo-deny.json for Rust,
+      # npm-audit.json and licenses.json for TypeScript; #1211), renamed to
+      # version-suffixed basenames so each version's report stays distinct
+      # after the evidence job's emit step (flattens by basename). A passing
+      # audit that wrote no report fails this step.
       - name: Stage audit reports for evidence
         if: always()
         uses: ./actions/ci/evidence/reports
