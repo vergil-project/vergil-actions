@@ -7804,10 +7804,12 @@ inline on the command line. There are four exceptions:</p>
 <ul>
 <li><code>ci/toolchain/assert</code> is pinned by its caller.</li>
 <li><code>package/setup/detect.sh</code> reads <code>vergil.toml</code> in package toolchain images
-  that ship no Python, so it needs uv's managed interpreter. Instead of the
-  pin, every uv command in it must pass <code>--no-config</code>, so the repository's uv
-  settings cannot reach it at all (issue #1003). Without it, a repository that
-  sets <code>python-downloads = "manual"</code> stops uv downloading that interpreter.</li>
+  that ship no Python, so it needs uv's managed interpreter, and exports a
+  release commit's <code>uv.lock</code> (<code>uv export</code>) in a fetched copy of that commit.
+  Instead of the pin, every uv command in it must pass <code>--no-config</code>, so the
+  repository's uv settings cannot reach it at all (issue #1003). Without it, a
+  repository that sets <code>python-downloads = "manual"</code> stops uv downloading that
+  interpreter.</li>
 <li><code>shared/setup/vergil/install-tooling.sh</code>'s self-repo sync on a host runner,
   <code>uv sync --frozen --group dev --python 3.15</code>, is exempt as that exact line.
   It runs only in vergil-tooling's own CI, whose runner Python is not a series

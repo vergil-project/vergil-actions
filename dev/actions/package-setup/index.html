@@ -7778,7 +7778,7 @@ Consuming repositories do not add it themselves.</p>
 <tr>
 <td><code>python</code></td>
 <td><code>"3.15"</code></td>
-<td>Python version for the driver <code>vergil-tooling</code>. It is the only place the version is written: the install step passes it to <code>uv tool install --python</code> and to <code>detect.sh</code> as <code>VRG_DRIVER_PYTHON</code>.</td>
+<td>Python version for the driver <code>vergil-tooling</code>, uv-managed. It is the only place the version is written: the install step passes it to <code>uv tool install --python</code> (with <code>--managed-python</code>) and to <code>detect.sh</code> as <code>VRG_DRIVER_PYTHON</code>.</td>
 </tr>
 </tbody>
 </table>
@@ -7790,15 +7790,37 @@ Consuming repositories do not add it themselves.</p>
    <code>safe.directory</code>.</li>
 <li><strong>Install vergil-tooling.</strong> <code>detect.sh</code> resolves the install spec. In
    <code>vergil-tooling</code> itself it is the checkout, so CI exercises the PR's own
-   <code>vrg-package</code>. Elsewhere it is <code>[dependencies].vergil</code> from <code>vergil.toml</code>,
-   read with <code>uv run --no-config</code> under a uv-managed Python of the <code>python</code>
-   input's version. <code>detect.sh</code> fails if <code>VRG_DRIVER_PYTHON</code> is unset or empty;
-   there is no default. <code>--no-config</code> ignores the repository's uv settings
-   (<code>[tool.uv]</code>, <code>uv.toml</code>), so settings such as <code>python-downloads = "manual"</code>
-   cannot stop the download. The tools land in uv's tool bin directory under
-   <code>$HOME</code>, never in <code>/usr/local/bin</code>. That way install-test smoke checks,
-   which run with a system-only <code>PATH</code>, cannot resolve this copy.</li>
+   <code>vrg-package</code>. Elsewhere it reads <code>[dependencies].vergil</code> from
+   <code>vergil.toml</code> with <code>uv run --no-config</code> under a uv-managed Python of the
+   <code>python</code> input's version, then:<ul>
+<li>A line pin <code>vX.Y</code> resolves to the newest <code>vX.Y.Z</code> tag, never the moving
+  <code>vX.Y</code> tag. An exact pin <code>vX.Y.Z</code> is that tag. Either way, one
+  <code>git ls-remote</code> resolves the tag to its commit SHA, and everything after
+  uses that SHA. The spec is
+  <code>vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@&lt;sha&gt;</code>.
+  <code>detect.sh</code> fetches that commit alone over git and exports its
+  <code>uv.lock</code> (<code>uv export --frozen --no-dev --no-emit-project --no-hashes</code>)
+  as the install's constraints. The step logs the tag and the SHA.</li>
+<li>Any other ref is a dev ref. It installs as written, with no
+  constraints.</li>
+</ul>
+</li>
 </ol>
+<p>A failed <code>ls-remote</code>, a line with no release tag, a failed fetch or
+   export, or a commit with no <code>uv.lock</code> fails the job with a named error. It
+   never falls back to an older or unconstrained install. <code>detect.sh</code> also
+   fails if <code>VRG_DRIVER_PYTHON</code> is unset or empty; there is no default.</p>
+<p>The install is <code>uv tool install --force --no-config --python &lt;python&gt;
+   --managed-python</code>, with <code>--constraints</code> for a released ref. It runs with
+   <code>UV_PYTHON</code>, <code>UV_PYTHON_PREFERENCE</code> and <code>UV_NO_MANAGED_PYTHON</code> unset.
+   <code>--no-config</code> ignores the repository's uv settings (<code>[tool.uv]</code>,
+   <code>uv.toml</code>), so settings such as <code>python-downloads = "manual"</code> cannot stop
+   the download. The cleared variables mean the job's env cannot pick another
+   interpreter either. The tools land in uv's tool bin directory under
+   <code>$HOME</code>, never in <code>/usr/local/bin</code>. That way install-test smoke checks,
+   which run with a system-only <code>PATH</code>, cannot resolve this copy. The step
+   then checks that <code>vrg-whoami</code> resolves to that directory and runs, and
+   that <code>vrg-package</code> runs.</p>
 <p>The action installs no OS packages, <code>uv</code> or nFPM itself. A job in a raw
 <code>ubuntu</code> or UBI image fails at the first step:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>::error::package jobs require a vergil package toolchain image; /etc/vergil/package-toolchain not found
