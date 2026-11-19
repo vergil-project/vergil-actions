@@ -1,16 +1,20 @@
 name: Install vergil-tooling
 description: >-
   Reads the pinned vergil version from vergil.toml and installs vergil-tooling
-  through install-tooling.sh, which chooses the install path by explicit
-  checks and logs the one it took: the packaged install from the vergil apt
-  repository (on a host runner, after setting up that repository with its key
-  checked against the pinned fingerprint; in a container job, for a released
-  tag), `uv tool install` from git (a dev tag in a container job, on the
-  image's core Python; a dev tag on a host runner, or `install-source: git`,
-  with `--python 3.15`), or, when the consumer repo is vergil-tooling itself,
-  `uv sync` so CI validates the PR's code instead of the released version (on a
-  host runner with `--python 3.15`, uv providing that interpreter; in a
-  container pinned to the image's interpreter with
+  through install-tooling.sh with `uv tool install` from git, on a uv-managed
+  Python 3.15 (`--python 3.15 --managed-python`, with `--no-config` and the
+  job's UV_PYTHON, UV_PYTHON_PREFERENCE and UV_NO_MANAGED_PYTHON cleared). A
+  released ref (vX.Y or vX.Y.Z) is resolved once, with `git ls-remote`, to the
+  commit of one vX.Y.Z tag (for a line, its newest), and that commit is
+  installed, constrained by its own uv.lock read over git; a dev ref installs
+  unconstrained. In a container job on a Vergil image the install uses the
+  image's managed Python from VERGIL_CORE_PYTHON_DIR and never downloads one.
+  The vrg-* commands land in uv's tool bin directory, which is added to PATH
+  and checked. Nothing reads the vergil package repository, and a failure
+  fails the job (epic vergil-project/.github#1350). When the consumer repo is
+  vergil-tooling itself it runs `uv sync` instead, so CI validates the PR's
+  code (on a host runner with `--python 3.15`, uv providing that interpreter;
+  in a container pinned to the image's interpreter with
   UV_PYTHON_PREFERENCE=only-system). A path that needs uv and finds none
   installs a pinned, hash-checked uv release; uv is never installed with pip
   (epic vergil-project/.github#649).
@@ -26,14 +30,12 @@ description: >-
 inputs:
   install-source:
     description: >-
-      `auto` (the default) chooses the install path from the tag and the
-      environment. `git` always installs vergil-tooling with `uv tool install`
-      from git, never from the vergil apt repository: for the job that rebuilds
-      that repository's index (publish-index's build-index), which must not
-      depend on the index it is about to repair. With a line pin (vX.Y) it
-      installs the newest vX.Y.Z release tag in that line, not the floating
-      vX.Y tag, so the rebuild a release dispatches runs that release even
-      before vX.Y moves; a failed tag lookup fails the job.
+      `auto` (the default) or `git`, which install the same way: `uv tool
+      install` from git, never from the vergil apt repository, with a line pin
+      (vX.Y) installing the newest vX.Y.Z release tag in that line, not the
+      floating vX.Y tag (epic vergil-project/.github#1350). `git` stays for the
+      callers that set it, such as publish-index's build-index. Any other
+      value fails the job.
     required: false
     default: auto
   version-window:
@@ -94,9 +96,10 @@ runs:
 
     # install-tooling.sh reads the [dependencies].vergil pin itself, through
     # read-pin.sh (which emits the ::error:: annotation when it is missing or
-    # invalid), and logs which install path it took. Its `uv tool install`
-    # commands need no UV_PYTHON_PREFERENCE pin: uv tool commands ignore a
-    # project's uv settings; its self-repo `uv sync` carries the pin.
+    # invalid), and logs the ref, tag and SHA it installs. Its `uv tool
+    # install` and lock export clear the job's uv interpreter variables and
+    # pass --no-config; its self-repo `uv sync` carries the
+    # UV_PYTHON_PREFERENCE pin.
     - name: Install vergil-tooling
       shell: bash
       env:
