@@ -8130,12 +8130,12 @@ are configured in the org's <strong>Settings &gt; Secrets and variables &gt; Act
 </tr>
 <tr>
 <td><code>APP_CLIENT_ID</code></td>
-<td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and <code>[package]</code> repositories</td>
+<td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and every repository that releases through <code>cd-release.yml</code></td>
 <td>Client ID of the org's automation GitHub App (<code>&lt;org&gt;-automation</code>)</td>
 </tr>
 <tr>
 <td><code>APP_PRIVATE_KEY</code></td>
-<td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and <code>[package]</code> repositories</td>
+<td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and every repository that releases through <code>cd-release.yml</code></td>
 <td>Private key of the org's automation GitHub App</td>
 </tr>
 </tbody>
@@ -8242,6 +8242,11 @@ only library repositories:</p>
 <td>Calling repository only</td>
 </tr>
 <tr>
+<td><a href="../workflows/cd-release/#secrets"><code>cd-release.yml</code></a></td>
+<td><code>release</code> (pushes the release tags)</td>
+<td>Calling repository only, Contents write</td>
+</tr>
+<tr>
 <td><a href="../workflows/cd-release-packages/"><code>cd-release.yml</code></a></td>
 <td>Package-index dispatch</td>
 <td><code>&lt;org&gt;/packages</code> only</td>
@@ -8278,7 +8283,7 @@ permissions:</p>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>automation/upstream-refresh/&lt;run-id&gt;</code> branch, and deletes an earlier run's branch when it closes that run's PR); <code>cd-release.yml</code> package-index dispatch to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>automation/upstream-refresh/&lt;run-id&gt;</code> branch, and deletes an earlier run's branch when it closes that run's PR); <code>cd-release.yml</code> pushes the release tags and dispatches the package index to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
 </tr>
 <tr>
 <td>Pull requests</td>
@@ -8605,7 +8610,7 @@ is automatically created per workflow run and scoped to the repository.</p>
    (<code>APP_CLIENT_ID</code> + <code>APP_PRIVATE_KEY</code>) is required for the nightly ops jobs
    (config update (<code>vrg-github-repo-config update</code>), branch sweep, Dependabot
    alert audit), the epic roll-up and
-   sweep, and the package-index dispatch. See
+   sweep, the release tag pushes and the package-index dispatch. See
    <a href="#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>.</li>
 </ol>
 <h2 id="auto-merge">Auto-merge<a class="headerlink" href="#auto-merge" title="Permanent link">&para;</a></h2>
