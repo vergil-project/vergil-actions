@@ -17,7 +17,9 @@
 # The uv stubs log every uv call with the interpreter variables set at the
 # call, simulate a managed-Python download (logged) or its refusal under
 # UV_PYTHON_DOWNLOADS=never, and fail any call that would read a uv.toml in
-# its working directory (it lacks --no-config).
+# its working directory (it lacks --no-config). The environment a `uv tool
+# install` or `uv sync` builds gets a fake python whose --version names
+# FAKE_PYTHON_VERSION (default 3.15.2), for the released-3.15 check.
 #
 # The script under test is a copy whose pinned uv SHA-256 lines are rewritten to
 # the hash of a fake uv tarball the stub curl serves (or to a wrong hash, for
@@ -59,6 +61,13 @@ write_stub() {
 # ---------------------------------------------------------------------------
 uv_body="${work}/uv-body"
 cat >"$uv_body" <<'STUB'
+# fake_python <path>: an interpreter whose --version names FAKE_PYTHON_VERSION
+# (default 3.15.2), like the one uv provides the environment it builds.
+fake_python() {
+  mkdir -p "$(dirname "$1")"
+  printf '#!/usr/bin/env bash\necho "Python %s"\n' "${FAKE_PYTHON_VERSION:-3.15.2}" >"$1"
+  chmod +x "$1"
+}
 line="uv $*"
 for v in UV_PYTHON UV_PYTHON_PREFERENCE UV_NO_MANAGED_PYTHON UV_PYTHON_INSTALL_DIR UV_PYTHON_DOWNLOADS; do
   [ -n "${!v+x}" ] && line+=" [${v}=${!v}]"
@@ -72,7 +81,13 @@ if [ "$no_config" -eq 0 ] && [ -e uv.toml ]; then
 fi
 case "${1:-} ${2:-}" in
   "--version "*) echo "uv 0.0.0-fake" ;;
-  "tool dir") echo "$FAKE_UV_BIN_DIR" ;;
+  "tool dir")
+    case " $* " in
+      *" --bin "*) echo "$FAKE_UV_BIN_DIR" ;;
+      *) echo "$FAKE_UV_TOOL_DIR" ;;
+    esac
+    ;;
+  "sync "*) fake_python .venv/bin/python ;;
   "tool install")
     if [ -n "${FAKE_UV_INSTALL_FAIL:-}" ]; then
       echo "error: fake install failure" >&2
@@ -90,6 +105,7 @@ case "${1:-} ${2:-}" in
       printf '#!/usr/bin/env bash\necho user\n' >"$FAKE_UV_BIN_DIR/vrg-whoami"
       chmod +x "$FAKE_UV_BIN_DIR/vrg-whoami"
     fi
+    fake_python "${FAKE_UV_TOOL_DIR}/vergil-tooling/bin/python"
     ;;
   "export "*)
     if [ -n "${FAKE_UV_EXPORT_FAIL:-}" ]; then
@@ -205,7 +221,7 @@ new_case() {
   : >"${case_dir}/calls"
   : >"${case_dir}/github-path"
   unset FAKE_GIT_REFS FAKE_GIT_FETCH_FAIL FAKE_UV_INSTALL_FAIL FAKE_UV_EXPORT_FAIL \
-    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS
+    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS FAKE_PYTHON_VERSION
 }
 
 as_container() {
@@ -253,7 +269,7 @@ run_script() {
     esac
   done
   for v in FAKE_GIT_REFS FAKE_GIT_FETCH_FAIL FAKE_UV_INSTALL_FAIL FAKE_UV_EXPORT_FAIL \
-    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS; do
+    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS FAKE_PYTHON_VERSION; do
     [ -z "${!v:-}" ] || extra+=("${v}=${!v}")
   done
   local err="${case_dir}/stderr"
@@ -265,7 +281,7 @@ run_script() {
       VRG_ROOT="$root" CALLS="${case_dir}/calls" \
       RUNNER_TEMP="${case_dir}/runner-temp" GITHUB_PATH="${case_dir}/github-path" \
       GITHUB_WORKSPACE="${case_dir}/ws" FAKE_UV_TARBALL="${work}/uv.tar.gz" \
-      FAKE_UV_BIN_DIR="${case_dir}/uv-bin" \
+      FAKE_UV_BIN_DIR="${case_dir}/uv-bin" FAKE_UV_TOOL_DIR="${case_dir}/uv-tools" \
       "${extra[@]}" bash "$s" "$@"
   ) >/dev/null 2>"$err" || status=$?
   stderr="$(cat "$err")"
@@ -396,6 +412,41 @@ case_released_ref_installs_sha_with_constraints() {
   esac
   expect_bin_on_github_path "$name" || return
   expect_stderr "$name" "vrg-* run from ${case_dir}/uv-bin" || return
+  expect_stderr "$name" "vergil-tooling: vergil-tooling runs on Python 3.15.2 (${case_dir}/uv-tools/vergil-tooling/bin/python)" || return
+  pass_case "$name"
+}
+
+# The installed environment must run on a released 3.15: a stale uv whose
+# managed list offers only a pre-release (uv 0.12.23 gave 3.15.0rc3, issue
+# vergil-project/vergil-actions#1331), or another series, fails the job, and
+# the tool bin dir is not added to GITHUB_PATH. The self repo's host sync is
+# checked the same way.
+case_prerelease_or_other_python_fails() {
+  local name="prerelease_or_other_python_fails" ref v
+  for v in 3.15.0rc3 3.15.1a1 3.14.2; do
+    for ref in v2.1.7 develop; do
+      new_case
+      with_git_refs v2.1.7
+      export FAKE_PYTHON_VERSION="$v"
+      run_script -- "$ref"
+      expect_status "$name" 1 || return
+      expect_stderr "$name" "::error::vergil-tooling: ${case_dir}/uv-tools/vergil-tooling/bin/python is 'Python ${v}', not a released Python 3.15" || return
+      if grep -qx "${case_dir}/uv-bin" "${case_dir}/github-path"; then
+        fail_case "$name" "${v} ${ref}: a failed check still added the bin dir to GITHUB_PATH"
+        return
+      fi
+    done
+    new_case
+    printf '[project]\nname = "vergil-tooling"\n' >"${case_dir}/ws/pyproject.toml"
+    export FAKE_PYTHON_VERSION="$v"
+    run_script --
+    expect_status "$name" 1 || return
+    expect_stderr "$name" "::error::vergil-tooling: ${case_dir}/ws/.venv/bin/python is 'Python ${v}', not a released Python 3.15" || return
+    if grep -qx "${case_dir}/ws/.venv/bin" "${case_dir}/github-path"; then
+      fail_case "$name" "${v} self repo: a failed check still added .venv/bin to GITHUB_PATH"
+      return
+    fi
+  done
   pass_case "$name"
 }
 
@@ -787,6 +838,7 @@ case_self_repo_host_installs_pinned_uv() {
   # On a host runner the sync names 3.15 and lets uv provide it: no
   # UV_PYTHON_PREFERENCE=only-system, which would bind it to the runner's Python.
   expect_stderr "$name" "host runner: syncing on Python 3.15, provided by uv" || return
+  expect_stderr "$name" "vergil-tooling runs on Python 3.15.2 (${case_dir}/ws/.venv/bin/python)" || return
   if ! grep -qx -- "uv sync --frozen --group dev --python 3.15" <<<"$(calls)"; then
     fail_case "$name" "no exact host uv sync call (calls: $(calls | tr '\n' '|'))"
     return
@@ -814,6 +866,11 @@ case_self_repo_container_pins_image_python() {
     return
   fi
   expect_no_calls "$name" "--python" || return
+  # The image's interpreter is the matrix leg's series, not always 3.15, so
+  # the 3.15 check does not apply here.
+  case "$stderr" in
+    *"runs on Python"*) fail_case "$name" "the container sync was held to 3.15 (stderr: ${stderr})"; return ;;
+  esac
   if ! grep -qx "${case_dir}/ws/.venv/bin" "${case_dir}/github-path"; then
     fail_case "$name" "GITHUB_PATH lacks the .venv bin dir: $(tr '\n' '|' <"${case_dir}/github-path")"
     return
@@ -834,6 +891,7 @@ case_missing_pin_fails() {
 case_real_pins_shape || true
 case_no_interpreter_path_or_cdn || true
 case_released_ref_installs_sha_with_constraints || true
+case_prerelease_or_other_python_fails || true
 case_exact_lightweight_tag || true
 case_exact_tag_missing || true
 case_line_ref_resolves_newest_patch || true
