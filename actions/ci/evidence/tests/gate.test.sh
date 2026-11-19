@@ -77,13 +77,12 @@ case_evidence_structure() {
 # case_stage <job>
 case_stage() {
   local job="$1" name="${1}-gates-quality-evidence" want
-  if ! printf '%s\n' "$needs" | grep -qxF "$job"; then
+  if ! grep -qxF "$job" <<<"$needs"; then
     fail_case "$name" "${job} is not in jobs.evidence.needs"
     return 0
   fi
   want="${job}=\${{ needs.${job}.result }}"
-  if ! printf '%s\n' "$results" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' |
-    grep -qxF "$want"; then
+  if ! grep -qxF "$want" <<<"$(sed 's/^[[:space:]]*//;s/[[:space:]]*$//' <<<"$results")"; then
     fail_case "$name" "no '${want}' line in the RESULTS env of '${assert_step}'"
     return 0
   fi
@@ -104,12 +103,12 @@ case_build() {
     fail_case "$name" "build job's if is not needs.matrix.outputs.build-enabled == 'true'"
     return 0
   fi
-  if ! printf '%s\n' "$needs" | grep -qxF build ||
-    ! printf '%s\n' "$needs" | grep -qxF matrix; then
+  if ! grep -qxF build <<<"$needs" ||
+    ! grep -qxF matrix <<<"$needs"; then
     fail_case "$name" "build and matrix are not both in jobs.evidence.needs"
     return 0
   fi
-  if printf '%s\n' "$results" | grep -q '^[[:space:]]*build='; then
+  if grep -q '^[[:space:]]*build=' <<<"$results"; then
     fail_case "$name" "build has a RESULTS line in '${assert_step}'; a skipped build must not fail it"
     return 0
   fi
@@ -143,7 +142,7 @@ while IFS= read -r job; do
   fi
   case_stage "$job"
 done <<<"$stage_jobs"
-if ! printf '%s\n' "$stage_jobs" | grep -qxF build; then
+if ! grep -qxF build <<<"$stage_jobs"; then
   fail_case "build-gates-quality-evidence" "ci-quality.yml has no build job"
 fi
 

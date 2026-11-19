@@ -158,7 +158,7 @@ case_no_command_skip() {
     fail_case "${name}" "expected exit 0, got ${rc}; output: ${out}"
     return
   fi
-  if ! printf '%s' "${out}" | grep -q "skipping"; then
+  if ! grep -q "skipping" <<<"${out}"; then
     fail_case "${name}" "expected a skip message; output: ${out}"
     return
   fi

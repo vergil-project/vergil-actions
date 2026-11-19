@@ -45,7 +45,7 @@ for tool in yq jq dpkg-deb vrg-package; do
 done
 
 # A too-old vergil-tooling is a setup error, not a set of failing cases.
-if ! vrg-package build --help | grep -q -- '--runtime'; then
+if ! grep -q -- '--runtime' <<<"$(vrg-package build --help)"; then
   printf 'package-runtime.test.sh needs vrg-package build --runtime (vergil-tooling >= 2.1.262)\n' >&2
   exit 1
 fi

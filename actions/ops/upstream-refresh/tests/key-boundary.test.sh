@@ -108,8 +108,8 @@ violations() {
   # The publish step: the one step of publish that runs the tool's publish
   # mode. Its env is the only place the App's credentials may appear.
   count="$(yq -r '[.jobs.publish.steps[] | select((.run // "") | test("vrg-upstream-refresh publish"))] | length' "$wf")"
-  pub_idx="$(yq -r '.jobs.publish.steps | to_entries | .[]
-    | select((.value.run // "") | test("vrg-upstream-refresh publish")) | .key' "$wf" | head -n 1)"
+  pub_idx="$(yq -r '[.jobs.publish.steps | to_entries | .[]
+    | select((.value.run // "") | test("vrg-upstream-refresh publish")) | .key] | .[0] // ""' "$wf")"
   if [ "$count" != "1" ]; then
     printf 'publish has %s steps running vrg-upstream-refresh publish, not 1\n' "$count"
   fi

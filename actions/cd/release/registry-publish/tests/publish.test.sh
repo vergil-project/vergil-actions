@@ -89,7 +89,7 @@ expect_refused() {
     fail_case "${name}" "publish command ran despite the refusal; output: ${out}"
     return
   fi
-  if ! printf '%s\n' "${out}" | grep -q "^::error::.*${pattern}"; then
+  if ! grep -q "^::error::.*${pattern}" <<<"${out}"; then
     rm -rf "${dir}"
     fail_case "${name}" "expected an ::error:: matching '${pattern}'; output: ${out}"
     return

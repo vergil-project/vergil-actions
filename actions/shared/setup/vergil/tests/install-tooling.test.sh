@@ -292,14 +292,14 @@ expect_stderr() {
 }
 
 expect_calls() {
-  if ! calls | grep -qF -- "$2"; then
+  if ! grep -qF -- "$2" <<<"$(calls)"; then
     fail_case "$1" "no call matching '$2' (calls: $(calls | tr '\n' '|'))"
     return 1
   fi
 }
 
 expect_no_calls() {
-  if calls | grep -qF -- "$2"; then
+  if grep -qF -- "$2" <<<"$(calls)"; then
     fail_case "$1" "unexpected call matching '$2' (calls: $(calls | tr '\n' '|'))"
     return 1
   fi
@@ -316,7 +316,7 @@ expect_call_count() {
 }
 
 # install_call: the one `uv tool install` call.
-install_call() { calls | grep -E '^uv tool install' | head -n 1; }
+install_call() { grep -m 1 -E '^uv tool install' <<<"$(calls)"; }
 
 expect_nothing_installed() {
   if calls | grep -E '^uv tool install' >/dev/null; then
@@ -366,7 +366,7 @@ case_real_pins_shape() {
 case_no_interpreter_path_or_cdn() {
   local name="no_interpreter_path_or_cdn_url"
   if grep -nE '/opt/vergil/python|raw\.githubusercontent\.com|vergil-project\.github\.io' "$script" >/dev/null; then
-    fail_case "$name" "install-tooling.sh names $(grep -noE '/opt/vergil/python|raw\.githubusercontent\.com|vergil-project\.github\.io' "$script" | head -n 1)"
+    fail_case "$name" "install-tooling.sh names $(grep -m 1 -noE '/opt/vergil/python|raw\.githubusercontent\.com|vergil-project\.github\.io' "$script")"
     return
   fi
   pass_case "$name"
@@ -787,7 +787,7 @@ case_self_repo_host_installs_pinned_uv() {
   # On a host runner the sync names 3.15 and lets uv provide it: no
   # UV_PYTHON_PREFERENCE=only-system, which would bind it to the runner's Python.
   expect_stderr "$name" "host runner: syncing on Python 3.15, provided by uv" || return
-  if ! calls | grep -qx -- "uv sync --frozen --group dev --python 3.15"; then
+  if ! grep -qx -- "uv sync --frozen --group dev --python 3.15" <<<"$(calls)"; then
     fail_case "$name" "no exact host uv sync call (calls: $(calls | tr '\n' '|'))"
     return
   fi
@@ -809,7 +809,7 @@ case_self_repo_container_pins_image_python() {
   printf '[project]\nname = "vergil-tooling"\n' >"${case_dir}/ws/pyproject.toml"
   run_script --with-uv --
   expect_status "$name" 0 || return
-  if ! calls | grep -qx -- "uv sync --frozen --group dev \[UV_PYTHON_PREFERENCE=only-system\]"; then
+  if ! grep -qx -- "uv sync --frozen --group dev \[UV_PYTHON_PREFERENCE=only-system\]" <<<"$(calls)"; then
     fail_case "$name" "no exact container uv sync call (calls: $(calls | tr '\n' '|'))"
     return
   fi

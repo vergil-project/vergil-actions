@@ -113,7 +113,7 @@ case_setup_suffix() {
 
 case_release_uses_setup() {
   local name="release-runs-on-the-derived-tag" image if_expr validate
-  if ! q '.jobs.release.needs[]' | grep -qx setup; then
+  if ! grep -qx setup <<<"$(q '.jobs.release.needs[]')"; then
     fail_case "$name" "release does not need setup"
     return 0
   fi
@@ -170,7 +170,7 @@ case_deprecated_input() {
 case_no_caller_tag_images() {
   local name="no-job-image-from-a-caller-tag" wf hits=""
   for wf in "$workflows"/*.yml; do
-    if yq -r '.jobs[]?.container // "" | tostring' "$wf" | grep -q 'inputs\.container-tag'; then
+    if grep -q 'inputs\.container-tag' <<<"$(yq -r '.jobs[]?.container // "" | tostring' "$wf")"; then
       hits="${hits} $(basename "$wf")"
     fi
   done

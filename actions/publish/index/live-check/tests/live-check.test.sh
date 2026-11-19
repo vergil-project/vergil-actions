@@ -103,7 +103,7 @@ expect_rc() {
 
 expect_out() {
   local name="$1" pattern="$2"
-  if ! printf '%s\n' "$out" | grep -qE -- "$pattern"; then
+  if ! grep -qE -- "$pattern" <<<"$out"; then
     fail_case "$name" "expected output matching '${pattern}'; output: ${out}"
     return 1
   fi
@@ -273,7 +273,7 @@ case_verify_partial_names_only_wrong() {
   run_verify "$d" --manifest "${d}/manifest" --attempts 2 --interval 0
   expect_rc "$name" 1 || return
   expect_out "$name" '^::error::.*repomd.xml is not the file' || return
-  if printf '%s\n' "$out" | grep -qE '^::error::.*InRelease is not the file'; then
+  if grep -qE '^::error::.*InRelease is not the file' <<<"$out"; then
     fail_case "$name" "a live InRelease was reported wrong; output: ${out}"
     return
   fi
