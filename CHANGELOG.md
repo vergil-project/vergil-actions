@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.85] - 2026-11-19
+
+### Features
+
+- install vergil-tooling from one release commit with uv (#1320)
+- install the driver vergil-tooling from one release commit (#1321)
+- push release tags with the automation App token (#1322)
+
 ## [2.1.84] - 2026-11-19
 
 ### Features
