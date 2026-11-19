@@ -80,6 +80,9 @@ jobs:
         uses: ./actions/cd/release/tag-and-release
         with:
           version: ${{ steps.version.outputs.version }}
+          # The same App token the checkout used; it carries the Workflows
+          # write this repo's tag push needs.
+          tag-token: ${{ steps.app-token.outputs.token }}
 
   docs:
     uses: ./.github/workflows/cd-docs.yml

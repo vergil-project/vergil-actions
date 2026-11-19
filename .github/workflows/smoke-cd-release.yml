@@ -25,16 +25,28 @@ name: Smoke - cd-release
 # outputs, passes them on byte for byte with the default `prod`, and refuses
 # any other prefix or a missing or malformed output. It checks both
 # workflows' wiring and runs the action's apply.sh on fixture outputs.
+#
+# release-tag-token.test.sh and tag-and-release/tests/push-tag.test.sh (issue
+# #1315, epic vergil-project/.github#1350): release tags are pushed only with
+# the automation App's installation token. tag-and-release pushes every tag
+# through push-tag.sh with its required tag-token input; cd-release checks
+# both App secrets and mints a Contents-write token scoped to the repository
+# before the evidence gate, the registry publish and the tag, and fails
+# naming any secret the caller did not pass; vergil-actions' own cd.yml
+# passes its App token. push-tag.sh is run against a local HTTP server to
+# show it sends the App token's Authorization header and not the checkout's.
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
+      - .github/workflows/cd.yml
       - .github/workflows/cd-release.yml
       - .github/workflows/ci-package.yml
       - .github/workflows/smoke-cd-release.yml
       - actions/shared/setup/primary-suffix/**
       - actions/cd/release/tests/**
+      - actions/cd/release/tag-and-release/**
       - actions/package/image-prefix/**
       - actions/shared/setup/vergil/**
 
@@ -80,3 +92,16 @@ jobs:
       - name: Run package-runtime harness
         shell: bash
         run: bash actions/cd/release/tests/package-runtime.test.sh
+
+  release-tag-token:
+    name: release-tag-token fixtures
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run release-tag-token harness
+        shell: bash
+        run: bash actions/cd/release/tests/release-tag-token.test.sh
+      - name: Run push-tag harness
+        shell: bash
+        run: bash actions/cd/release/tag-and-release/tests/push-tag.test.sh
