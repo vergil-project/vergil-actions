@@ -22,7 +22,7 @@ must be the ones the language's gate commands write:
 | `rust` | `lint` | `quality-clippy.json` | rustfmt, clippy |
 | `rust` | `typecheck` | `quality-cargo-check.json` | cargo |
 | `typescript` | `test` | `coverage.xml`, `junit.xml` | vitest, @vitest/coverage-v8 |
-| `typescript` | `audit` | `npm-audit.json` | npm audit |
+| `typescript` | `audit` | `npm-audit.json`, `licenses.json` | npm audit, vrg-npm-license-gate |
 | `typescript` | `lint` | `quality-eslint.json` | prettier, eslint |
 | `typescript` | `typecheck` | `quality-tsc.txt` | tsc |
 
@@ -50,6 +50,15 @@ formatter output as `quality-eslint.json`, and the `tsc --diagnostics`
 output as `quality-tsc.txt`. Prettier runs first in the `lint` gate and
 writes no report. As for Rust, a repository pinned to a vergil-tooling
 release without them fails its passing legs here.
+
+Like Python's, the TypeScript `audit` gate also writes a license report,
+`licenses.json`: `vrg-npm-license-gate` checks each package in the committed
+`package-lock.json` against the license policy and writes its findings there,
+from
+[vergil-tooling#4722](https://github.com/vergil-project/vergil-tooling/issues/4722)
+on (released in vergil-tooling v2.1.327). A repository pinned to an earlier
+vergil-tooling release fails its passing TypeScript `audit` legs here, on the
+missing `licenses.json`.
 
 This table, in `actions/ci/evidence/reports/reports.sh`, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
