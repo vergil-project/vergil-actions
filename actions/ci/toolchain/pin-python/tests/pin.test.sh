@@ -172,7 +172,8 @@ caller_pinned_actions='ci/toolchain/assert/'
 #     --no-project --python "$VRG_DRIVER_PYTHON"` (the setup action's
 #     `python` input) in package toolchain images that ship no Python, so it
 #     needs uv's managed interpreter; it never runs the repo's code. Without
-#     --no-config a repo's python-downloads = "manual" breaks it.
+#     --no-config a repo's python-downloads = "manual" breaks it. Its
+#     `uv export` of a release commit's uv.lock passes --no-config too.
 config_free_files='package/setup/detect.sh'
 
 # Single uv commands that run without the pin by design, each with its reason.

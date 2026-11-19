@@ -27,7 +27,7 @@ Consuming repositories do not add it themselves.
 | Input | Default | Description |
 | ----- | ------- | ----------- |
 | `nfpm` | `"false"` | Require nFPM in the toolchain image. Build cells pass `"true"`; install-test cells leave it off. |
-| `python` | `"3.15"` | Python version for the driver `vergil-tooling`. It is the only place the version is written: the install step passes it to `uv tool install --python` and to `detect.sh` as `VRG_DRIVER_PYTHON`. |
+| `python` | `"3.15"` | Python version for the driver `vergil-tooling`, uv-managed. It is the only place the version is written: the install step passes it to `uv tool install --python` (with `--managed-python`) and to `detect.sh` as `VRG_DRIVER_PYTHON`. |
 
 ## Steps
 
@@ -37,14 +37,36 @@ Consuming repositories do not add it themselves.
    `safe.directory`.
 2. **Install vergil-tooling.** `detect.sh` resolves the install spec. In
    `vergil-tooling` itself it is the checkout, so CI exercises the PR's own
-   `vrg-package`. Elsewhere it is `[dependencies].vergil` from `vergil.toml`,
-   read with `uv run --no-config` under a uv-managed Python of the `python`
-   input's version. `detect.sh` fails if `VRG_DRIVER_PYTHON` is unset or empty;
-   there is no default. `--no-config` ignores the repository's uv settings
-   (`[tool.uv]`, `uv.toml`), so settings such as `python-downloads = "manual"`
-   cannot stop the download. The tools land in uv's tool bin directory under
+   `vrg-package`. Elsewhere it reads `[dependencies].vergil` from
+   `vergil.toml` with `uv run --no-config` under a uv-managed Python of the
+   `python` input's version, then:
+    - A line pin `vX.Y` resolves to the newest `vX.Y.Z` tag, never the moving
+      `vX.Y` tag. An exact pin `vX.Y.Z` is that tag. Either way, one
+      `git ls-remote` resolves the tag to its commit SHA, and everything after
+      uses that SHA. The spec is
+      `vergil-tooling @ git+https://github.com/vergil-project/vergil-tooling@<sha>`.
+      `detect.sh` fetches that commit alone over git and exports its
+      `uv.lock` (`uv export --frozen --no-dev --no-emit-project --no-hashes`)
+      as the install's constraints. The step logs the tag and the SHA.
+    - Any other ref is a dev ref. It installs as written, with no
+      constraints.
+
+   A failed `ls-remote`, a line with no release tag, a failed fetch or
+   export, or a commit with no `uv.lock` fails the job with a named error. It
+   never falls back to an older or unconstrained install. `detect.sh` also
+   fails if `VRG_DRIVER_PYTHON` is unset or empty; there is no default.
+
+   The install is `uv tool install --force --no-config --python <python>
+   --managed-python`, with `--constraints` for a released ref. It runs with
+   `UV_PYTHON`, `UV_PYTHON_PREFERENCE` and `UV_NO_MANAGED_PYTHON` unset.
+   `--no-config` ignores the repository's uv settings (`[tool.uv]`,
+   `uv.toml`), so settings such as `python-downloads = "manual"` cannot stop
+   the download. The cleared variables mean the job's env cannot pick another
+   interpreter either. The tools land in uv's tool bin directory under
    `$HOME`, never in `/usr/local/bin`. That way install-test smoke checks,
-   which run with a system-only `PATH`, cannot resolve this copy.
+   which run with a system-only `PATH`, cannot resolve this copy. The step
+   then checks that `vrg-whoami` resolves to that directory and runs, and
+   that `vrg-package` runs.
 
 The action installs no OS packages, `uv` or nFPM itself. A job in a raw
 `ubuntu` or UBI image fails at the first step:
