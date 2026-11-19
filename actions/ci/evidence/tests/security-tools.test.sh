@@ -76,7 +76,7 @@ check_workflow() {
     echo "no job uploads a ci-evidence-security-part-* artifact"
     return 1
   fi
-  if ! printf '%s\n' "$all" | grep -qxF codeql; then
+  if ! grep -qxF codeql <<<"$all"; then
     echo "no codeql scanner partial"
     return 1
   fi

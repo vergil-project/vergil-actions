@@ -38,7 +38,7 @@ shellcheck, yamllint, and actionlint.
 
 After the common checks, `vrg-validate` runs the repository's own
 validator, `scripts/bin/validate-custom` (in CI, the `quality / custom`
-job). It runs the two checks below, then the action test suites, then the
+job). It runs the three checks below, then the action test suites, then the
 checks' own tests in `scripts/tests/`.
 
 ### Test script modes
@@ -59,6 +59,18 @@ or when it sits directly in `scripts/tests/`, whose suites `validate-custom`
 runs. A path named only in a comment or outside a workflow does not count.
 The check reads the workflow text, so a step whose job never runs still
 counts.
+
+### Early-exit pipes
+
+The third check, `scripts/bin/check-early-exit-pipes`, fails naming each
+line, in the `*.sh`, `*.bash`, `*.yml` and `*.yaml` files and
+`scripts/bin/*` tracked in git, where a pipeline feeds a consumer that
+exits before reading all its input: `grep -q`, `grep -m`, `grep --quiet`,
+`--silent`, `--max-count` or `head`. Under `set -o pipefail`, which every
+suite here and GitHub's default `bash` shell set, such a consumer exits
+on its first match, the producer dies of SIGPIPE writing its next line,
+and the pipeline fails although it matched. Test the output with no pipe
+instead: `grep -q <pattern> <<<"$(<producer>)"`.
 
 ### Action test suites
 

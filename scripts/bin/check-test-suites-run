@@ -88,8 +88,7 @@ fi
 validation_runs_scripts_tests=0
 validate_custom="$root/scripts/bin/validate-custom"
 if [[ -f "$validate_custom" ]] &&
-	sed -E 's/(^|[[:space:]])#.*//' "$validate_custom" |
-	grep -qF 'scripts/tests/*.test.sh'; then
+	grep -qF 'scripts/tests/*.test.sh' <<<"$(sed -E 's/(^|[[:space:]])#.*//' "$validate_custom")"; then
 	validation_runs_scripts_tests=1
 fi
 

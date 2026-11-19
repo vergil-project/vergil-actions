@@ -95,11 +95,11 @@ expect() {
     fail_case "${name}" "expected ${want_calls} scan attempt(s), got ${calls}; output: ${out}"
     return
   fi
-  if [ -n "${want_text}" ] && ! printf '%s' "${out}" | grep -qF -- "${want_text}"; then
+  if [ -n "${want_text}" ] && ! grep -qF -- "${want_text}" <<<"${out}"; then
     fail_case "${name}" "missing '${want_text}'; output: ${out}"
     return
   fi
-  if [ -n "${absent}" ] && printf '%s' "${out}" | grep -qF -- "${absent}"; then
+  if [ -n "${absent}" ] && grep -qF -- "${absent}" <<<"${out}"; then
     fail_case "${name}" "unexpected '${absent}'; output: ${out}"
     return
   fi

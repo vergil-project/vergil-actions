@@ -124,7 +124,7 @@ case_structure() {
   expect "$name" "container-suffix cross-check" \
     "$(printf '%s\n' "$step" | yq -r '.with."container-suffix"')" \
     '${{ inputs.container-suffix }}' || return 0
-  if ! q "$wf" ".jobs.\"${job}\".needs | [.] | flatten | .[]" | grep -qx setup; then
+  if ! grep -qx setup <<<"$(q "$wf" ".jobs.\"${job}\".needs | [.] | flatten | .[]")"; then
     fail_case "$name" "${job} does not need setup"
     return 0
   fi
@@ -138,8 +138,7 @@ case_structure() {
 case_no_caller_suffix_images() {
   local name="no-job-image-from-a-caller-suffix" wf hits=""
   for wf in "$workflows"/*.yml; do
-    if yq -r '.jobs[]?.container // "" | tostring' "$wf" |
-      grep -q 'inputs\.\(container-suffix\|language\)'; then
+    if grep -q 'inputs\.\(container-suffix\|language\)' <<<"$(yq -r '.jobs[]?.container // "" | tostring' "$wf")"; then
       hits="${hits} $(basename "$wf")"
     fi
   done
