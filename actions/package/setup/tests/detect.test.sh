@@ -376,7 +376,7 @@ case_no_lock() {
 
 case_export_failure() {
   expect_detect_failure "test_failed_lock_export_exits_nonzero_with_named_error" "$(line_dir)" \
-    "uv export of commit ${sha_10}'s uv.lock failed" STUB_EXPORT_RC=2
+    "exporting the uv.lock of commit ${sha_10} failed" STUB_EXPORT_RC=2
 }
 
 case_export_names_project() {

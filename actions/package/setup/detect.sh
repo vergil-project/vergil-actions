@@ -130,10 +130,10 @@ export_constraints() {
   if ! (cd "$src" && uv export --no-config --frozen --no-dev --no-emit-project --no-hashes \
     --format requirements-txt -o "$constraints" >/dev/null); then
     rm -rf "$src" "$constraints"
-    die "uv export of commit ${sha}'s uv.lock failed"
+    die "exporting the uv.lock of commit ${sha} failed"
   fi
   rm -rf "$src"
-  [ -f "$constraints" ] || die "uv export of commit ${sha}'s uv.lock wrote no ${constraints}"
+  [ -f "$constraints" ] || die "exporting the uv.lock of commit ${sha} wrote no ${constraints}"
   # Constraints name third-party pins only: never the project, nor an editable
   # or path line, which uv tool install would reject or install from.
   if grep -Eq '^[[:space:]]*(-e[[:space:]]|--editable|\.|/|vergil-tooling([^[:alnum:]_.-]|$))' "$constraints"; then
