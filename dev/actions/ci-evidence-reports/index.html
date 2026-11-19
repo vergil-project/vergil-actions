@@ -7745,8 +7745,8 @@ must be the ones the language's gate commands write:</p>
 <tr>
 <td><code>typescript</code></td>
 <td><code>audit</code></td>
-<td><code>npm-audit.json</code></td>
-<td>npm audit</td>
+<td><code>npm-audit.json</code>, <code>licenses.json</code></td>
+<td>npm audit, vrg-npm-license-gate</td>
 </tr>
 <tr>
 <td><code>typescript</code></td>
@@ -7784,6 +7784,14 @@ formatter output as <code>quality-eslint.json</code>, and the <code>tsc --diagno
 output as <code>quality-tsc.txt</code>. Prettier runs first in the <code>lint</code> gate and
 writes no report. As for Rust, a repository pinned to a vergil-tooling
 release without them fails its passing legs here.</p>
+<p>Like Python's, the TypeScript <code>audit</code> gate also writes a license report,
+<code>licenses.json</code>: <code>vrg-npm-license-gate</code> checks each package in the committed
+<code>package-lock.json</code> against the license policy and writes its findings there,
+from
+<a href="https://github.com/vergil-project/vergil-tooling/issues/4722">vergil-tooling#4722</a>
+on (released in vergil-tooling v2.1.327). A repository pinned to an earlier
+vergil-tooling release fails its passing TypeScript <code>audit</code> legs here, on the
+missing <code>licenses.json</code>.</p>
 <p>This table, in <code>actions/ci/evidence/reports/reports.sh</code>, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
 gate commands (<code>lib/languages.py</code>), so a change to a gate's report names
