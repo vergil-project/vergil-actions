@@ -871,6 +871,8 @@
       
         
       
+        
+      
     
     
     
@@ -923,6 +925,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.84/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.84
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7801,7 +7831,9 @@ thin: they pass only <code>language:</code> and <code>container-suffix:</code>.<
 <h2 id="evidence-reports">Evidence reports<a class="headerlink" href="#evidence-reports" title="Permanent link">&para;</a></h2>
 <p>Each <code>dependencies</code> leg stages the language's audit reports for the
 <code>ci-evidence-audit</code> artifact: <code>pip-audit.json</code> and <code>licenses.json</code> for Python,
-<code>cargo-deny.json</code> for Rust, <code>npm-audit.json</code> for TypeScript. The names come
+<code>cargo-deny.json</code> for Rust, <code>npm-audit.json</code> and <code>licenses.json</code> for
+TypeScript. As for Python, <code>licenses.json</code> is the license report: TypeScript's
+is written by <code>vrg-npm-license-gate</code>. The names come
 from <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose
 audit passed but wrote no report fails. A language with no audit report
 contract yet (Go, C++) gets a warning and stages nothing, and the
@@ -7828,7 +7860,8 @@ chain so <code>conan audit</code> can authenticate:</p>
 <h2 id="extension-points">Extension points<a class="headerlink" href="#extension-points" title="Permanent link">&para;</a></h2>
 <p>The <code>dependencies</code> job runs each language's real audit through
 <code>vrg-validate --check audit</code>: pip-audit and pip-licenses for Python,
-cargo-deny for Rust, <code>npm audit</code> for TypeScript. The audit commands live in
+cargo-deny for Rust, <code>npm audit</code> and <code>vrg-npm-license-gate</code> for TypeScript.
+The audit commands live in
 vergil-tooling, not in this workflow. Each leg then stages its reports
 through <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose
 table is the one place this repository records a language's audit report
