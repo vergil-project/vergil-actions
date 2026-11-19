@@ -47,11 +47,11 @@ jobs:
       # matrix.
       - name: Resolve versions with vrg-ci-resolve
         id: setup
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.87
 
       - name: Resolve CI matrix
         id: resolve
-        uses: ./actions/ci/matrix
+        uses: vergil-project/vergil-actions/actions/ci/matrix@v2.1.87
         with:
           language: ${{ inputs.language }}
           versions: ${{ steps.setup.outputs.versions }}
@@ -94,13 +94,13 @@ jobs:
 
       - name: Resolve the primary version with vrg-ci-resolve
         id: derive
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.87
 
       # The primary version's image suffix. Fails when the caller passes a
       # container-suffix that disagrees with it.
       - name: Resolve primary-container-suffix
         id: suffix
-        uses: ./actions/shared/setup/primary-suffix
+        uses: vergil-project/vergil-actions/actions/shared/setup/primary-suffix@v2.1.87
         with:
           primary-version: ${{ steps.derive.outputs.primary-version }}
           container-suffixes: ${{ steps.derive.outputs.container-suffixes }}
@@ -116,7 +116,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.87
 
       # Capture the common checks' full transcript as a quality report (#925).
       # For a language-less repo (image suffix base, no lint/typecheck
@@ -165,11 +165,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.87
 
       - name: Pin uv to the primary Python interpreter
         if: inputs.language == 'python'
-        uses: ./actions/ci/toolchain/pin-python
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/pin-python@v2.1.87
         with:
           version: ${{ needs.setup.outputs.primary-version }}
 
@@ -181,7 +181,7 @@ jobs:
       # the job if the interpreter or toolchain it actually runs is not the
       # primary version CI resolved.
       - name: assert-toolchain
-        uses: ./actions/ci/toolchain/assert
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/assert@v2.1.87
         with:
           language: ${{ inputs.language }}
           expected: ${{ needs.setup.outputs.primary-version }}
@@ -214,7 +214,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.87
 
       # Hand uv the leg's resolved version and pin its source to the image
       # (spec §6.5 of epic vergil-project/.github#407): UV_PYTHON plus
@@ -223,7 +223,7 @@ jobs:
       # repo file selects or uv downloads.
       - name: Pin uv to the leg's Python interpreter
         if: inputs.language == 'python'
-        uses: ./actions/ci/toolchain/pin-python
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/pin-python@v2.1.87
         with:
           version: ${{ matrix.version }}
 
@@ -234,7 +234,7 @@ jobs:
       # Backstop for the pin above: fail the leg if the interpreter or
       # toolchain it actually runs is not the version CI resolved for it.
       - name: assert-toolchain
-        uses: ./actions/ci/toolchain/assert
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/assert@v2.1.87
         with:
           language: ${{ inputs.language }}
           expected: ${{ matrix.version }}
@@ -252,7 +252,7 @@ jobs:
       # this step.
       - name: Stage lint report for evidence
         if: always()
-        uses: ./actions/ci/evidence/reports
+        uses: vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1.87
         with:
           mode: stage
           language: ${{ inputs.language }}
@@ -287,7 +287,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.87
 
       # Hand uv the leg's resolved version and pin its source to the image
       # (spec §6.5 of epic vergil-project/.github#407): UV_PYTHON plus
@@ -296,7 +296,7 @@ jobs:
       # repo file selects or uv downloads.
       - name: Pin uv to the leg's Python interpreter
         if: inputs.language == 'python'
-        uses: ./actions/ci/toolchain/pin-python
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/pin-python@v2.1.87
         with:
           version: ${{ matrix.version }}
 
@@ -307,7 +307,7 @@ jobs:
       # Backstop for the pin above: fail the leg if the interpreter or
       # toolchain it actually runs is not the version CI resolved for it.
       - name: assert-toolchain
-        uses: ./actions/ci/toolchain/assert
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/assert@v2.1.87
         with:
           language: ${{ inputs.language }}
           expected: ${{ matrix.version }}
@@ -325,7 +325,7 @@ jobs:
       # fails this step.
       - name: Stage typecheck report for evidence
         if: always()
-        uses: ./actions/ci/evidence/reports
+        uses: vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1.87
         with:
           mode: stage
           language: ${{ inputs.language }}
@@ -365,13 +365,13 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.87
 
       # As on the lint and typecheck legs: pin uv to the leg's version and the
       # image's interpreter, so the build runs on the version CI resolved.
       - name: Pin uv to the leg's Python interpreter
         if: inputs.language == 'python'
-        uses: ./actions/ci/toolchain/pin-python
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/pin-python@v2.1.87
         with:
           version: ${{ matrix.version }}
 
@@ -382,7 +382,7 @@ jobs:
       # Backstop for the pin above: fail the leg if the interpreter or
       # toolchain it actually runs is not the version CI resolved for it.
       - name: assert-toolchain
-        uses: ./actions/ci/toolchain/assert
+        uses: vergil-project/vergil-actions/actions/ci/toolchain/assert@v2.1.87
         with:
           language: ${{ inputs.language }}
           expected: ${{ matrix.version }}
@@ -455,7 +455,7 @@ jobs:
       # skipped build with BUILD on included) fails here, before any report
       # is emitted.
       - name: Assert the build job matches the BUILD flag
-        uses: ./actions/ci/evidence/assert
+        uses: vergil-project/vergil-actions/actions/ci/evidence/assert@v2.1.87
         with:
           build-enabled: ${{ needs.matrix.outputs.build-enabled }}
           build-result: ${{ needs.build.result }}
@@ -472,7 +472,7 @@ jobs:
       # language's contract names (#1249). A language with no contract warns,
       # or for a repository with no fleet primary language notes, and passes.
       - name: Require the lint and typecheck reports
-        uses: ./actions/ci/evidence/reports
+        uses: vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1.87
         with:
           mode: expect
           language: ${{ inputs.language }}
@@ -482,7 +482,7 @@ jobs:
       # typecheck legs' tools from the same per-language contract.
       - name: Resolve lint evidence tools
         id: lint-tools
-        uses: ./actions/ci/evidence/reports
+        uses: vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1.87
         with:
           mode: tools
           language: ${{ inputs.language }}
@@ -490,7 +490,7 @@ jobs:
 
       - name: Resolve typecheck evidence tools
         id: typecheck-tools
-        uses: ./actions/ci/evidence/reports
+        uses: vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1.87
         with:
           mode: tools
           language: ${{ inputs.language }}
@@ -514,7 +514,7 @@ jobs:
       # of the language's declared lint and typecheck reports (the stage step
       # copies nothing else), all named quality-*.
       - name: Emit ci-evidence-quality artifact
-        uses: ./actions/ci/evidence/emit
+        uses: vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1.87
         with:
           gate: quality
           files: evidence-reports/quality-*
