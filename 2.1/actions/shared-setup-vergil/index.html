@@ -877,6 +877,8 @@
       
         
       
+        
+      
     
     
     
@@ -929,6 +931,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.87/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.87
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7953,11 +7983,19 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
   (<code>uv tool dir --bin</code>, usually <code>~/.local/bin</code>), which is added to <code>PATH</code>
   for later steps. <code>vrg-whoami</code> must resolve to that directory and run;
   otherwise the job fails, so a stale copy that would answer in its place
-  (such as an old packaged <code>/usr/bin/vrg-whoami</code>) is caught.</p>
+  (such as an old packaged <code>/usr/bin/vrg-whoami</code>) is caught. The tool
+  environment's interpreter must also be a released Python 3.15
+  (<code>python --version</code> prints <code>Python 3.15.N</code>), and the step logs it, for
+  example <code>vergil-tooling: vergil-tooling runs on Python 3.15.2 (&lt;path&gt;)</code>.
+  A pre-release such as <code>3.15.0rc3</code>, or another series, fails the job.
+  The self repo's host sync is checked the same way.</p>
 <p>A path that needs <code>uv</code> and finds none on <code>PATH</code> installs uv from its
   release tarball at the version and SHA-256 pinned in
   <code>install-tooling.sh</code>, into <code>$RUNNER_TEMP/uv/bin</code>, and adds that to
-  <code>PATH</code>. uv is never installed with <code>pip</code>.</p>
+  <code>PATH</code>. uv is never installed with <code>pip</code>. The pinned uv's
+  managed-Python list must offer a released 3.15: uv 0.12.23 resolved
+  <code>--python 3.15</code> to <code>3.15.0rc3</code> (issue #1331), which the interpreter
+  check now catches.</p>
 <p>The tag is read by <code>read-pin.sh</code>, which fails the job with a single
   <code>::error::</code> annotation naming the file or key, and nothing is installed,
   when:
