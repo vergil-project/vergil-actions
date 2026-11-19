@@ -86,6 +86,7 @@ case_action_pushes_with_tag_token() {
     tok="$(yq -r ".runs.steps[$i].env.TAG_TOKEN" "$action_yml")"
     expect "$name" "step $i TAG_TOKEN" "$tok" "$token_expr" || return 0
     run="$(yq -r ".runs.steps[$i].run" "$action_yml")"
+    # shellcheck disable=SC2016 # the pattern is literal shell text the step must contain
     case "$run" in
       *'bash "${GITHUB_ACTION_PATH}/push-tag.sh" '*) ;;
       *)
@@ -139,7 +140,7 @@ case_action_refuses_empty_token_before_tagging() {
 }
 
 case_cd_release_mints_before_publish() {
-  local name="cd-release-checks-and-mints-before-publish-and-tag" s q
+  local name="cd-release-checks-and-mints-before-publish-and-tag" s
   local -A at=()
   for s in "Check if tag already exists" "Require the automation App secrets" \
     "Mint release tag token" "CI evidence gate (pre-publish)" "Build and publish" \
