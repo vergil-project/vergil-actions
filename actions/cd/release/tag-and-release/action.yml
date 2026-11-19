@@ -3,11 +3,20 @@ description: >-
   Creates an annotated git tag, a develop changelog boundary tag, and a GitHub
   Release.  Rolling minor tags (vX.Y) are handled by vrg-promote in the release
   orchestrator.  All mutating steps are skipped when the tag already exists,
-  making the action safe to re-run.
+  making the action safe to re-run.  Every tag push uses the automation App's
+  installation token passed as tag-token, never the checkout's GITHUB_TOKEN.
 
 inputs:
   version:
     description: Semver version string (e.g. 1.2.3).
+    required: true
+  tag-token:
+    description: >-
+      The automation App's installation token (from
+      actions/create-github-app-token with APP_CLIENT_ID and APP_PRIVATE_KEY,
+      Contents write on this repository) that every tag push uses.  The
+      action fails before tagging when it is empty.  The GitHub Release is
+      still created with the job's GITHUB_TOKEN.
     required: true
   release-title:
     description: >-
@@ -62,6 +71,19 @@ runs:
           echo "created=true" >> "$GITHUB_OUTPUT"
         fi
 
+    # Fail before any tag is created when there is no App token, rather than
+    # tag locally and fail on the push.
+    - name: Require the tag token
+      if: steps.check.outputs.created == 'true'
+      shell: bash
+      env:
+        TAG_TOKEN: ${{ inputs.tag-token }}
+      run: |
+        if [ -z "$TAG_TOKEN" ]; then
+          echo "::error::tag-and-release: the tag-token input is empty. Release tags are pushed only with the automation App's installation token (actions/create-github-app-token with APP_CLIENT_ID and APP_PRIVATE_KEY), never the checkout's GITHUB_TOKEN. Nothing was tagged."
+          exit 1
+        fi
+
     - name: Configure git identity
       if: steps.check.outputs.created == 'true'
       shell: bash
@@ -74,21 +96,23 @@ runs:
       shell: bash
       env:
         TAG: ${{ steps.meta.outputs.tag }}
+        TAG_TOKEN: ${{ inputs.tag-token }}
         VERSION: ${{ inputs.version }}
       run: |
         git tag -a "$TAG" \
           -m "Release $VERSION"
-        git push origin "$TAG"
+        bash "${GITHUB_ACTION_PATH}/push-tag.sh" origin "$TAG"
 
     - name: Tag develop for changelog boundaries
       if: steps.check.outputs.created == 'true'
       shell: bash
       env:
         TAG: ${{ steps.meta.outputs.tag }}
+        TAG_TOKEN: ${{ inputs.tag-token }}
       run: |
         git fetch origin develop
         git tag "develop-$TAG" origin/develop
-        git push origin "develop-$TAG"
+        bash "${GITHUB_ACTION_PATH}/push-tag.sh" origin "develop-$TAG"
 
     - name: Create GitHub Release
       if: steps.check.outputs.created == 'true'
@@ -121,4 +145,26 @@ runs:
           release_args+=( $INPUT_RELEASE_ARTIFACTS )
         fi
         gh release create "${release_args[@]}"
+
+    # A tag can reach the remote with missing objects; clone it back and, if
+    # that fails, re-push it whole. The re-push is a tag update, so it uses
+    # the App token like every other tag push.
+    - name: Verify tag is resolvable from remote
+      if: steps.check.outputs.created == 'true'
+      shell: bash
+      env:
+        TAG: ${{ steps.meta.outputs.tag }}
+        TAG_TOKEN: ${{ inputs.tag-token }}
+        GITHUB_REPO: ${{ github.repository }}
+      run: |
+        repo_url="https://github.com/${GITHUB_REPO}"
+        tmp="$(mktemp -d)"
+        if git clone --depth 1 --branch "$TAG" "$repo_url" "$tmp" 2>/dev/null; then
+          rm -rf "$tmp"
+          exit 0
+        fi
+        echo "::warning::Tag $TAG has missing objects on remote — resyncing"
+        bash "${GITHUB_ACTION_PATH}/push-tag.sh" --no-thin origin "$TAG" --force
+        git clone --depth 1 --branch "$TAG" "$repo_url" "$tmp"
+        rm -rf "$tmp"
 

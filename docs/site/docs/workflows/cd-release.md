@@ -73,3 +73,30 @@ The caller's `permissions:` must include `actions: read` (the evidence gate
 downloads the release PR's CI evidence artifacts), `contents: write`,
 `id-token: write` and `attestations: write`. A packaged repo must pass
 `secrets: inherit`; see [binary packages](cd-release-packages.md).
+
+## Secrets
+
+| Secret | Required | Description |
+| ------ | -------- | ----------- |
+| `APP_CLIENT_ID` | yes | Client ID of the org's automation GitHub App ([APP_CLIENT_ID and APP_PRIVATE_KEY](../configuration.md#app_client_id-and-app_private_key)) |
+| `APP_PRIVATE_KEY` | yes | Private key of the same App |
+| `CARGO_REGISTRY_TOKEN` | Rust registry publish only | crates.io token for `registry-publish` |
+
+Every release needs the two App secrets. The `release` job pushes the
+`v<version>` and `develop-v<version>` tags with the App's installation
+token, never its `GITHUB_TOKEN`, so that the Tag protection ruleset can let
+only the repository Admin role and the App create a release tag. The token
+is scoped to the calling repository with Contents write only. A packaged
+release also uses the App to dispatch the package index.
+
+The workflow declares both App secrets optional, so a caller that does not
+pass them still runs. Its `release` job then fails at its first release
+step, `Require the automation App secrets`, with an error naming each
+missing secret, before the evidence gate, the registry publish or any tag.
+Pass them by name, or with `secrets: inherit`:
+
+```yaml
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+```

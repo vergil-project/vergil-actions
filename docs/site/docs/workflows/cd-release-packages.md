@@ -41,8 +41,9 @@ A packaged repo needs:
   `secrets-inherit` rule flags this, so suppress it on that line with a
   justification (`# nosemgrep: …`; honored by the SARIF gate since
   vergil-project/vergil-tooling#3107). `inherit` also forwards the org App
-  secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which the index dispatch
-  needs. The App must be installed on
+  secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which every release needs
+  to push its tags and the index dispatch needs too. The App must be
+  installed on
   `<owner>/packages` with permission to create repository dispatches
   (`contents: write`).
 - **The same permissions the release job already needs.** The package jobs

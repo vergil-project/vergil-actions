@@ -17,8 +17,8 @@ are configured in the org's **Settings > Secrets and variables > Actions**.
 | Secret | Required by | Purpose |
 | ------ | ----------- | ------- |
 | `PROJECT_TOKEN` | All repositories | Adds new issues to the GitHub Project via the `add-to-project` workflow |
-| `APP_CLIENT_ID` | Every repository with an `ops.yml` or `epic-rollup.yml`, and `[package]` repositories | Client ID of the org's automation GitHub App (`<org>-automation`) |
-| `APP_PRIVATE_KEY` | Every repository with an `ops.yml` or `epic-rollup.yml`, and `[package]` repositories | Private key of the org's automation GitHub App |
+| `APP_CLIENT_ID` | Every repository with an `ops.yml` or `epic-rollup.yml`, and every repository that releases through `cd-release.yml` | Client ID of the org's automation GitHub App (`<org>-automation`) |
+| `APP_PRIVATE_KEY` | Every repository with an `ops.yml` or `epic-rollup.yml`, and every repository that releases through `cd-release.yml` | Private key of the org's automation GitHub App |
 
 ### PROJECT_TOKEN
 
@@ -90,6 +90,7 @@ only library repositories:
 | [`ops-epic-rollup.yml`](workflows/ops-epic-rollup.md) | `epic-rollup` (from the caller's `epic-rollup.yml`) | Calling repository and the epic repository |
 | [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
 | [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `publish` (`vrg-upstream-refresh publish` mints the token itself) | Calling repository only |
+| [`cd-release.yml`](workflows/cd-release.md#secrets) | `release` (pushes the release tags) | Calling repository only, Contents write |
 | [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
 | vergil-actions' own `cd.yml` | `release` | vergil-actions only |
 
@@ -101,7 +102,7 @@ permissions:
 | ---------- | ------ | --------- |
 | Metadata | Read-only | Required by GitHub (always enabled) |
 | Administration | Read & write | `github-config`, which runs `vrg-github-repo-config update`: it reads and converges repository settings, branch protection, rulesets (whose bypass actors GitHub returns only to a caller that can edit them), Actions permissions and whether vulnerability alerts are enabled |
-| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `automation/upstream-refresh/<run-id>` branch, and deletes an earlier run's branch when it closes that run's PR); `cd-release.yml` package-index dispatch to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; `epic-sweep` reads each repository's `vergil.toml` |
+| Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `automation/upstream-refresh/<run-id>` branch, and deletes an earlier run's branch when it closes that run's PR); `cd-release.yml` pushes the release tags and dispatches the package index to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; `epic-sweep` reads each repository's `vergil.toml` |
 | Pull requests | Read & write | `upstream-refresh` (opens the refresh PR with auto-merge, updates its branch from `develop`, merges it, and closes an earlier run's open one); `github-config` (opens the sync PR, closes an earlier one and turns on auto-merge); `branch-sweep` and `epic-sweep` read them |
 | Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues) |
 | Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); `github-config`, the automatic fleet sync, whose PRs can change files under `.github/workflows/`; `upstream-refresh`, only for the wait's branch update, which merges `develop` into the PR branch and is refused without it whenever `develop` has changed a workflow file (the path fence keeps every refresh patch out of `.github/**`) |
@@ -357,7 +358,7 @@ The `GITHUB_TOKEN` is insufficient in two cases:
    (`APP_CLIENT_ID` + `APP_PRIVATE_KEY`) is required for the nightly ops jobs
    (config update (`vrg-github-repo-config update`), branch sweep, Dependabot
    alert audit), the epic roll-up and
-   sweep, and the package-index dispatch. See
+   sweep, the release tag pushes and the package-index dispatch. See
    [APP_CLIENT_ID and APP_PRIVATE_KEY](#app_client_id-and-app_private_key).
 
 ## Auto-merge

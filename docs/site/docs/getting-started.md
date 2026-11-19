@@ -105,18 +105,23 @@ jobs:
 
 ### Release publishing secrets
 
-A repo **without** a `[package]` section in `vergil.toml` must forward only
-the publishing credentials the target ecosystem needs, never a blanket
-`secrets: inherit`. The generated `cd.yml` emits an explicit `secrets:` block
-(or none at all) matching the language:
+Every release forwards the org automation App's `APP_CLIENT_ID` and
+`APP_PRIVATE_KEY`: the release tags are pushed with the App's installation
+token, and a release without them fails before anything is published or
+tagged ([CD Release: secrets](workflows/cd-release.md#secrets)).
 
-| Ecosystem | Secrets to forward |
-| --------- | ------------------ |
+A repo **without** a `[package]` section in `vergil.toml` must forward only
+those and the publishing credentials the target ecosystem needs, never a
+blanket `secrets: inherit`, in an explicit `secrets:` block:
+
+| Ecosystem | Publishing secrets to forward |
+| --------- | ----------------------------- |
 | `python` | None — OIDC trusted publishing (requires `id-token: write`) |
 | `go` | None |
 | `rust` | `CARGO_REGISTRY_TOKEN` |
 
-For example, a Rust release job forwards a single least-privilege secret:
+For example, a Rust release job forwards the App secrets and one
+least-privilege publishing secret:
 
 ```yaml
   release:
@@ -125,6 +130,8 @@ For example, a Rust release job forwards a single least-privilege secret:
     with:
       language: rust
     secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 ```
 
@@ -136,8 +143,8 @@ environment, and environment secrets reach a cross-repo reusable workflow
 only through `secrets: inherit`. An explicit `secrets:` map does not deliver
 them, so the signing key arrives empty and `package-sign` fails (verified by
 a controlled probe, vergil-project/packages#6). `inherit` also forwards
-`APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which the release uses to dispatch
-the package index. Semgrep's `secrets-inherit` rule flags the line, so
+`APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which the release uses to push the
+tags and dispatch the package index. Semgrep's `secrets-inherit` rule flags the line, so
 suppress it there with the rule ID:
 
 ```yaml
