@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -8063,11 +8063,12 @@ as command-line git config, so the push authenticates as the App alone.</p>
 </code></pre></div>
 <h2 id="github-configuration">GitHub configuration<a class="headerlink" href="#github-configuration" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Tag protection</strong> — The Tag protection ruleset restricts release tags to
-  the repository Admin role and the automation App; epic
-  <a href="https://github.com/vergil-project/.github/issues/1350">vergil-project/.github#1350</a>
-  adds creation to its update and deletion rules. So the tags are pushed as
-  the App, which needs Contents write on the repository; see
+<li><strong>Tag protection</strong> — The Tag protection ruleset restricts the creation,
+  update and deletion of release tags to the repository Admin role and the
+  automation App (creation since epic
+  <a href="https://github.com/vergil-project/.github/issues/1350">vergil-project/.github#1350</a>).
+  So the tags are pushed as the App, which needs Contents write on the
+  repository; see
   <a href="../../configuration/#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>.</li>
 </ul>
 
