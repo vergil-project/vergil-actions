@@ -44,7 +44,7 @@ result() {
 	else
 		fail=$((fail + 1))
 		echo "FAIL: $1"
-		sed 's/^/    /' <<<"$3"
+		printf '%s\n' "$3"
 	fi
 }
 
