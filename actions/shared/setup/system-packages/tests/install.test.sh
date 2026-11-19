@@ -115,7 +115,7 @@ case_fail_closed_bogus() {
     fail_case "${name}" "expected non-zero exit, got 0; output: ${out}"
     return
   fi
-  if ! printf '%s' "${out}" | grep -q "not installable"; then
+  if ! grep -q "not installable" <<<"${out}"; then
     fail_case "${name}" "missing fail-closed message; output: ${out}"
     return
   fi
@@ -151,7 +151,7 @@ case_retry_then_success() {
     fail_case "${name}" "expected exit 0 after retry, got ${rc}; output: ${out}"
     return
   fi
-  if ! printf '%s' "${out}" | grep -q "attempt 1/3 failed"; then
+  if ! grep -q "attempt 1/3 failed" <<<"${out}"; then
     fail_case "${name}" "expected a reported first-attempt failure; output: ${out}"
     return
   fi
@@ -181,7 +181,7 @@ case_no_packages_skip() {
     fail_case "${name}" "expected exit 0, got ${rc}; output: ${out}"
     return
   fi
-  if ! printf '%s' "${out}" | grep -q "skipping"; then
+  if ! grep -q "skipping" <<<"${out}"; then
     fail_case "${name}" "expected a skip message; output: ${out}"
     return
   fi

@@ -56,7 +56,7 @@ runs:
             "(git ls-remote exit ${ls_remote_rc})." >&2
           exit "$ls_remote_rc"
         fi
-        if printf '%s\n' "$tags" | grep -qE 'refs/tags/v[0-9]+\.[0-9]+\.[0-9]+'; then
+        if grep -qE 'refs/tags/v[0-9]+\.[0-9]+\.[0-9]+' <<<"$tags"; then
           echo "first-release=false" >> "$GITHUB_OUTPUT"
         else
           echo "No release tag found; treating as a first-release no-op" \

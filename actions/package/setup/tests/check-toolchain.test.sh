@@ -91,7 +91,7 @@ expect() {
     return 1
   fi
   for s in "$@"; do
-    if ! printf '%s\n' "$err" | grep -F -- "$s" | grep -q '^::error::'; then
+    if ! grep -q '^::error::' <<<"$(grep -F -- "$s" <<<"$err")"; then
       fail_case "$name" "stderr has no ::error:: line containing '${s}'; stderr: ${err}"
       return 1
     fi
@@ -101,7 +101,7 @@ expect() {
 
 # expect_no_errors <name> — a passing run prints no ::error:: line.
 expect_no_errors() {
-  if printf '%s\n' "$err" "$out" | grep -q '::error::'; then
+  if grep -q '::error::' <<<"$err" || grep -q '::error::' <<<"$out"; then
     fail_case "$1" "a passing run printed ::error::; stdout: ${out}; stderr: ${err}"
     return 1
   fi

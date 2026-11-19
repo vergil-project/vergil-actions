@@ -721,8 +721,7 @@ assert_no_language_notice() {
     fail_case "$name" "raised an error or warning: ${stderr}"
     return 1
   fi
-  if ! grep -F -- "::notice::" <<<"$stderr" |
-    grep -qF -- "is not a fleet primary language" ||
+  if ! grep -qF -- "is not a fleet primary language" <<<"$(grep -F -- "::notice::" <<<"$stderr")" ||
     ! grep -qF -- "its ${gate} leg has no report contract" <<<"$stderr"; then
     fail_case "$name" "no ::notice:: for the ${gate} leg; got '${stderr}'"
     return 1
@@ -803,7 +802,7 @@ else
   rm "${ws}/evidence-reports/quality-clippy-1.99.json"
   run_expect rust evidence-reports
   if assert_error "$name" "no rust lint leg staged its quality-clippy.json"; then
-    if grep -F '::error::' <<<"$stderr" | grep -qF "quality-cargo-check.json"; then
+    if grep -qF "quality-cargo-check.json" <<<"$(grep -F '::error::' <<<"$stderr")"; then
       fail_case "$name" "named a report that exists: ${stderr}"
     else
       pass_case "$name"
@@ -858,7 +857,7 @@ else
   rm "${ws}/evidence-reports/quality-tsc-node-24.txt"
   run_expect typescript evidence-reports
   if assert_error "$name" "no typescript typecheck leg staged its quality-tsc.txt"; then
-    if grep -F '::error::' <<<"$stderr" | grep -qF "quality-eslint.json"; then
+    if grep -qF "quality-eslint.json" <<<"$(grep -F '::error::' <<<"$stderr")"; then
       fail_case "$name" "named a report that exists: ${stderr}"
     else
       pass_case "$name"
@@ -949,8 +948,7 @@ case_workflow() {
     fail_case "$name" "the emit step does not take its tools from the action"
     return 0
   fi
-  if sed -E 's/(^|[[:space:]])#.*//' "$wf" |
-    grep -qE '(pip-audit|licenses|cargo-deny|npm-audit|coverage|junit)[-.*]'; then
+  if grep -qE '(pip-audit|licenses|cargo-deny|npm-audit|coverage|junit)[-.*]' <<<"$(sed -E 's/(^|[[:space:]])#.*//' "$wf")"; then
     fail_case "$name" "names a report file outside the action"
     return 0
   fi

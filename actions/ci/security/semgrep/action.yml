@@ -39,12 +39,11 @@ runs:
       run: |
         args=(--language "$LANGUAGE")
 
-        if find . -name "Dockerfile*" -not -path './.git/*' | head -1 | grep -q .; then
+        if [ -n "$(find . -name "Dockerfile*" -not -path './.git/*' -print -quit)" ]; then
           args+=(--has-dockerfiles)
         fi
 
-        if find .github/workflows -name "*.yml" -o -name "*.yaml" 2>/dev/null \
-            | head -1 | grep -q .; then
+        if [ -n "$(find .github/workflows \( -name "*.yml" -o -name "*.yaml" \) -print -quit 2>/dev/null)" ]; then
           args+=(--has-workflows)
         fi
 

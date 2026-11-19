@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# check-early-exit-pipes — fail when a shell pipeline in a file tracked in
+# git feeds a consumer that exits before reading all its input: `grep -q`,
+# `grep -m`, `grep --quiet`, `--silent`, `--max-count` or `head` (#1325).
+#
+# Under `set -o pipefail` (every suite here, and GitHub's default bash
+# shell for `run:` steps), such a consumer exits on its first match, the
+# producer is killed by SIGPIPE writing its next line, and the pipeline
+# reports status 141: the check takes its "no match" branch at random.
+# Test the producer's output with no pipe instead, for example
+# `grep -q pat <<<"$(producer)"`.
+#
+# Usage: check-early-exit-pipes <repo-root>
+#
+# Scans the tracked *.sh, *.bash, *.yml and *.yaml files and scripts/bin/*,
+# line by line, skipping comment lines. A pipe that ends a line counts for
+# the consumer that starts the next one; a YAML block scalar (`run: |`)
+# does not.
+set -euo pipefail
+
+if [[ "$#" -ne 1 ]]; then
+	echo "usage: check-early-exit-pipes <repo-root>" >&2
+	exit 2
+fi
+root="$1"
+
+if ! listing="$(git -C "$root" -c core.quotePath=false ls-files -- \
+	'*.sh' '*.bash' '*.yml' '*.yaml' 'scripts/bin/*')"; then
+	echo "ERROR: could not list the files tracked in git" >&2
+	exit 1
+fi
+if [[ -z "$listing" ]]; then
+	echo "ERROR: no shell or YAML files are tracked in git" >&2
+	exit 1
+fi
+mapfile -t files <<<"$listing"
+
+cd "$root"
+# shellcheck disable=SC2016 # $0 and friends are awk's, not the shell's
+if ! awk '
+	FNR == 1 { cont = 0 }
+	/^[[:space:]]*#/ { cont = 0; next }
+	{
+		s = (cont ? "| " : "") $0
+		if (s ~ /(^|[^|])\|[[:space:]]*(head([^A-Za-z0-9_-]|$)|[ef]?grep[[:space:]]([^|]*[[:space:]])?(-[A-Za-z]*[qm]|--(quiet|silent|max-count)))/) {
+			printf "ERROR: %s:%d: early-exit consumer in a pipeline: %s\n", FILENAME, FNR, $0 > "/dev/stderr"
+			bad++
+		}
+		cont = ($0 ~ /(^|[^|])\|[[:space:]]*\\?[[:space:]]*$/ && $0 !~ /:[[:space:]]*\|[[:space:]]*$/)
+	}
+	END { exit (bad > 0) }
+' "${files[@]}"; then
+	echo "ERROR: test the producer's output with no pipe (grep -q pat <<<\"\$(producer)\"), see #1325" >&2
+	exit 1
+fi
+echo "Early-exit pipes: ${#files[@]} files OK"
