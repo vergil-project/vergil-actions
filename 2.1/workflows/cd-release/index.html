@@ -873,6 +873,8 @@
       
         
       
+        
+      
     
     
     
@@ -925,6 +927,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.85/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.85
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7018,6 +7048,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7658,6 +7699,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7823,6 +7875,48 @@ fails <code>setup</code> too, and <code>release</code> does not run.</p>
 downloads the release PR's CI evidence artifacts), <code>contents: write</code>,
 <code>id-token: write</code> and <code>attestations: write</code>. A packaged repo must pass
 <code>secrets: inherit</code>; see <a href="../cd-release-packages/">binary packages</a>.</p>
+<h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APP_CLIENT_ID</code></td>
+<td>yes</td>
+<td>Client ID of the org's automation GitHub App (<a href="../../configuration/#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>)</td>
+</tr>
+<tr>
+<td><code>APP_PRIVATE_KEY</code></td>
+<td>yes</td>
+<td>Private key of the same App</td>
+</tr>
+<tr>
+<td><code>CARGO_REGISTRY_TOKEN</code></td>
+<td>Rust registry publish only</td>
+<td>crates.io token for <code>registry-publish</code></td>
+</tr>
+</tbody>
+</table>
+<p>Every release needs the two App secrets. The <code>release</code> job pushes the
+<code>v&lt;version&gt;</code> and <code>develop-v&lt;version&gt;</code> tags with the App's installation
+token, never its <code>GITHUB_TOKEN</code>, so that the Tag protection ruleset can let
+only the repository Admin role and the App create a release tag. The token
+is scoped to the calling repository with Contents write only. A packaged
+release also uses the App to dispatch the package index.</p>
+<p>The workflow declares both App secrets optional, so a caller that does not
+pass them still runs. Its <code>release</code> job then fails at its first release
+step, <code>Require the automation App secrets</code>, with an error naming each
+missing secret, before the evidence gate, the registry publish or any tag.
+Pass them by name, or with <code>secrets: inherit</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
+</code></pre></div>
 
 
 
