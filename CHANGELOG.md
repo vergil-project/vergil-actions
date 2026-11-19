@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.87] - 2026-11-19
+
+### Bug fixes
+
+- pin uv 0.13.9 and require a released Python 3.15 for vergil-tooling (#1333)
+
 ## [2.1.86] - 2026-11-19
 
 ### Bug fixes
