@@ -60,20 +60,31 @@ project command (`uv run`, `uv sync`, `uv lock` and so on) or uses
 point: through this action, or with a job-level `env`. Jobs that resolve no
 version, such as the `ci-docs` and `cd-docs` docs jobs, use the job `env`. Every
 composite action or script that runs one must pin it on the step's `env` or
-inline on the command line. There are three exceptions:
+inline on the command line. There are four exceptions:
 
 - `ci/toolchain/assert` is pinned by its caller.
 - `package/setup/detect.sh` reads `vergil.toml` in package toolchain images
-  that ship no Python, so it needs uv's managed interpreter. Instead of the
-  pin, every uv command in it must pass `--no-config`, so the repository's uv
-  settings cannot reach it at all (issue #1003). Without it, a repository that
-  sets `python-downloads = "manual"` stops uv downloading that interpreter.
+  that ship no Python, so it needs uv's managed interpreter, and exports a
+  release commit's `uv.lock` (`uv export`) in a fetched copy of that commit.
+  Instead of the pin, every uv command in it must pass `--no-config`, so the
+  repository's uv settings cannot reach it at all (issue #1003). Without it, a
+  repository that sets `python-downloads = "manual"` stops uv downloading that
+  interpreter.
 - `shared/setup/vergil/install-tooling.sh`'s self-repo sync on a host runner,
   `uv sync --frozen --group dev --python 3.15`, is exempt as that exact line.
   It runs only in vergil-tooling's own CI, whose runner Python is not a series
   vergil-tooling supports, so it names 3.15 and uv provides it (epic
   vergil-project/.github#1256). Any other uv command in the file must still
   pin the source; its container sync does.
+- `shared/setup/vergil/install-tooling.sh`'s lock export, `uv export
+  --no-config --frozen --no-dev --no-emit-project --no-hashes --format
+  requirements-txt --directory "$1" -o "$2" >/dev/null`, is exempt as that
+  exact line. It exports the `uv.lock` of the released vergil-tooling commit
+  being installed, fetched into a temporary directory, never the repository's
+  own project. Like every vergil-tooling install, it runs with `--no-config`
+  and with `UV_PYTHON`, `UV_PYTHON_PREFERENCE` and `UV_NO_MANAGED_PYTHON`
+  unset (epic vergil-project/.github#1350), so pinning the source there would
+  break that rule.
 
 `uv tool` commands are not checked, because uv ignores a project's uv
 settings for them. Fixture workflows and actions test the guard both ways.

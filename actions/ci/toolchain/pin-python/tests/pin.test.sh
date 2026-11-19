@@ -172,7 +172,8 @@ caller_pinned_actions='ci/toolchain/assert/'
 #     --no-project --python "$VRG_DRIVER_PYTHON"` (the setup action's
 #     `python` input) in package toolchain images that ship no Python, so it
 #     needs uv's managed interpreter; it never runs the repo's code. Without
-#     --no-config a repo's python-downloads = "manual" breaks it.
+#     --no-config a repo's python-downloads = "manual" breaks it. Its
+#     `uv export` of a release commit's uv.lock passes --no-config too.
 config_free_files='package/setup/detect.sh'
 
 # Single uv commands that run without the pin by design, each with its reason.
@@ -184,8 +185,15 @@ config_free_files='package/setup/detect.sh'
 #     vergil-tooling supports, so the sync names 3.15 and uv provides it (epic
 #     vergil-project/.github#1256). The repo is always vergil-tooling, whose uv
 #     settings set no interpreter preference; the container sync keeps the pin.
+#   shared/setup/vergil/install-tooling.sh — the lock export of a released
+#     vergil-tooling commit (epic vergil-project/.github#1350). It runs on
+#     vergil-tooling's own fetched commit, never the consumer repo's project,
+#     with --no-config and with UV_PYTHON, UV_PYTHON_PREFERENCE and
+#     UV_NO_MANAGED_PYTHON unset: every vergil-tooling install clears them.
+# shellcheck disable=SC2016 # the $1 and $2 are the command's own, literally.
 unpinned_commands=(
   'shared/setup/vergil/install-tooling.sh|uv sync --frozen --group dev --python 3.15'
+  'shared/setup/vergil/install-tooling.sh|uv export --no-config --frozen --no-dev --no-emit-project --no-hashes --format requirements-txt --directory "$1" -o "$2" >/dev/null'
 )
 
 # The config-ignoring form: --no-config among uv's options, so it is uv's flag

@@ -7,8 +7,9 @@ description: >-
   prerequisites, uv and nFPM preinstalled but no Python and no vergil-tooling.
   The container must run as root (the GitHub Actions container default).
   vergil-tooling is installed from the checkout in vergil-tooling itself,
-  otherwise from [dependencies].vergil in vergil.toml. Run it after
-  actions/checkout.
+  otherwise from the one release commit [dependencies].vergil in
+  vergil.toml resolves to, constrained by that commit's uv.lock. Run it
+  after actions/checkout.
 
 inputs:
   nfpm:
@@ -19,8 +20,8 @@ inputs:
     default: "false"
   python:
     description: >-
-      Python version for the driver vergil-tooling: the interpreter
-      `uv tool install` runs it under, and the one detect.sh reads
+      Python version for the driver vergil-tooling: the uv-managed
+      interpreter `uv tool install` runs it under, and the one detect.sh reads
       vergil.toml with. This is the only place the version is written.
     required: false
     default: "3.15"
@@ -49,15 +50,45 @@ runs:
     # vergil-tooling lands in uv's tool bin dir (under $HOME), never
     # /usr/local/bin: install-test runs smoke checks with a system-only PATH
     # that must not resolve this copy of vergil-tooling (spec §8.1).
+    #
+    # detect.sh resolves a released pin to one commit and writes that commit's
+    # uv.lock as constraints (epic vergil-project/.github#1350, spec §4.2).
+    # The install runs on the `python` input's version, uv-managed
+    # (--managed-python), with no uv config file read (--no-config) and the
+    # three uv variables that pick the interpreter cleared, so neither the
+    # repo nor the job's env can change or block it (spec §4.1). It then
+    # checks that vrg-whoami resolves to uv's tool bin dir and runs (§4.3).
+    # tests/detect.test.sh runs this step against stubs.
     - name: Install vergil-tooling
       shell: bash
       env:
         VRG_DRIVER_PYTHON: ${{ inputs.python }}
       run: |
         set -euo pipefail
-        spec="$(bash "${GITHUB_ACTION_PATH}/detect.sh" .)"
+        unset UV_PYTHON UV_PYTHON_PREFERENCE UV_NO_MANAGED_PYTHON
+        work="$(mktemp -d)"
+        trap 'rm -rf "$work"' EXIT
+        constraints="${work}/constraints.txt"
+        spec="$(bash "${GITHUB_ACTION_PATH}/detect.sh" . "$constraints")"
+        constraint_args=()
+        if [ -f "$constraints" ]; then
+          constraint_args=(--constraints "$constraints")
+        fi
         echo "Installing vergil-tooling: ${spec}"
-        uv tool install --python "$VRG_DRIVER_PYTHON" "$spec"
-        bin_dir="$(uv tool dir --bin)"
+        uv tool install --force --no-config --python "$VRG_DRIVER_PYTHON" --managed-python "${constraint_args[@]}" "$spec"
+        bin_dir="$(uv --no-config tool dir --bin)"
         echo "$bin_dir" >> "$GITHUB_PATH"
+        export PATH="${bin_dir}:${PATH}"
+        found="$(command -v vrg-whoami)" || {
+          echo "::error::vrg-whoami is not on PATH after installing vergil-tooling into ${bin_dir}"
+          exit 1
+        }
+        if [ "$found" != "${bin_dir}/vrg-whoami" ]; then
+          echo "::error::vrg-whoami resolves to ${found}, not ${bin_dir}/vrg-whoami"
+          exit 1
+        fi
+        vrg-whoami --mode >/dev/null || {
+          echo "::error::the installed vrg-whoami (${found}) does not run"
+          exit 1
+        }
         "${bin_dir}/vrg-package" --help >/dev/null

@@ -16,13 +16,14 @@ name: Smoke - setup/vergil outputs
 #       - read-pin.sh: the pinned [dependencies].vergil tag, and a clean
 #         ::error:: for a missing file, missing key, or empty/invalid value
 #         (issue #977);
-#       - install-tooling.sh: the install path chosen from the tag and the
-#         environment (packaged in a container for a released tag, uv from
-#         git on the core Python for a dev tag; on a host runner the vergil
-#         apt repository bootstrapped with the pinned key fingerprint and the
-#         bootstrap source removed; the dev-tag, self-repo and
-#         install-source: git paths), the apt candidate check,
-#         and the pinned, hash-checked uv (epic vergil-project/.github#649);
+#       - install-tooling.sh: `uv tool install` from git on every path (a
+#         released ref resolved once to one commit SHA and installed with
+#         that commit's uv.lock as constraints, a dev ref unconstrained),
+#         with --no-config and the uv interpreter variables cleared, the
+#         image's VERGIL_CORE_PYTHON_DIR in container jobs, the check that
+#         vrg-whoami runs from uv's tool bin directory, no apt call on any
+#         path, the self-repo sync, and the pinned, hash-checked uv (epics
+#         vergil-project/.github#649 and #1350);
 #       - ci/matrix resolve.sh: images from the resolver's tags and suffixes,
 #         the run-once collapse to the primary, and loud failure on a missing
 #         tag/suffix or a container-suffix the resolver did not choose;

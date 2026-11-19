@@ -80,9 +80,14 @@ on:
       # finding is ignored narrowly in .github/actionlint.yaml.
       CARGO_REGISTRY_TOKEN:
         required: false
-      # The org GitHub App, used only to dispatch `package-released` to
-      # <owner>/packages after a packaged release (spec §8.2). Repos without
-      # [package] need not pass them.
+      # The org's automation GitHub App. Every release needs them: the
+      # release tags are pushed with its installation token, never this
+      # workflow's GITHUB_TOKEN (vergil-project/vergil-actions#1315), and a
+      # packaged release also dispatches `package-released` to
+      # <owner>/packages with it (spec §8.2). They stay declared optional so
+      # that a caller without them gets the release job's own error naming
+      # them ("Require the automation App secrets"), before anything is
+      # published or tagged, rather than GitHub's bare refusal of the call.
       APP_CLIENT_ID:
         required: false
       APP_PRIVATE_KEY:
@@ -484,6 +489,43 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Release tags are pushed with the automation App's installation token,
+      # never this job's GITHUB_TOKEN (vergil-project/vergil-actions#1315,
+      # epic vergil-project/.github#1350), so that the Tag protection ruleset
+      # can let only the Admin role and the App create, update or delete a
+      # release tag. Both secrets are checked, and the token minted, before
+      # the evidence gate and the registry publish, so a caller that does not
+      # pass them (or an App that cannot mint) fails here with nothing
+      # published or tagged. An installation token lasts an hour, so the
+      # evidence gate and registry publish between here and the tag push
+      # must finish within it, or the push fails on an expired token.
+      - name: Require the automation App secrets
+        if: steps.tag_check.outputs.exists == 'false'
+        env:
+          APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: |
+          missing=()
+          [ -n "${APP_CLIENT_ID:-}" ] || missing+=(APP_CLIENT_ID)
+          [ -n "${APP_PRIVATE_KEY:-}" ] || missing+=(APP_PRIVATE_KEY)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::cd-release pushes the release tags with the automation App's installation token, and the caller did not pass ${missing[*]}. Pass APP_CLIENT_ID and APP_PRIVATE_KEY to cd-release.yml from the calling cd.yml (under secrets:, or with secrets: inherit). Nothing has been published or tagged."
+            exit 1
+          fi
+
+      # Scoped to this repository with Contents write only: a tag push needs
+      # nothing more, as the GITHUB_TOKEN it replaces had nothing more.
+      - name: Mint release tag token
+        id: tag_token
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
       # Evidence-first (spec §9), split in two so the bundle is both gated before
       # publish AND self-contained + attachable after it:
       #   * GATE (here, pre-publish) — resolve the release PR, harvest the
@@ -631,6 +673,7 @@ jobs:
         with:
           version: ${{ steps.version.outputs.version }}
           release-artifacts: ${{ steps.resolved.outputs.release-artifacts }}
+          tag-token: ${{ steps.tag_token.outputs.token }}
 
       # Post-publish attach (spec §9): the Release now exists (upload target) and
       # the SBOM has been built by registry-publish (bundle content), so the
@@ -670,23 +713,6 @@ jobs:
         run: |
           echo "::error::CI evidence bundle was NOT attached in enforcing mode, but release ${TAG} has ALREADY been tagged and published — the release is missing its evidence bundle and needs operator attention (attach outcome='${ATTACH_OUTCOME}', attached='${ATTACHED}')"
           exit 1
-
-      - name: Verify tag is resolvable from remote
-        if: steps.tag_check.outputs.exists == 'false'
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-          GITHUB_REPO: ${{ github.repository }}
-        run: |
-          repo_url="https://github.com/${GITHUB_REPO}"
-          tmp="$(mktemp -d)"
-          if git clone --depth 1 --branch "$TAG" "$repo_url" "$tmp" 2>/dev/null; then
-            rm -rf "$tmp"
-            exit 0
-          fi
-          echo "::warning::Tag $TAG has missing objects on remote — resyncing"
-          git push --no-thin origin "$TAG" --force
-          git clone --depth 1 --branch "$TAG" "$repo_url" "$tmp"
-          rm -rf "$tmp"
 
       # Packaged repos only, and only for a newly created release: ask
       # <owner>/packages to re-index (spec §8.2). Both steps are deferred
