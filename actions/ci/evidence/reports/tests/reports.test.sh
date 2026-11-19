@@ -144,17 +144,36 @@ case_stage rust-audit-stages-cargo-deny rust audit \
 case_stage typescript-test-stages-coverage-and-junit typescript test \
   "coverage-1.0.xml junit-1.0.xml " coverage.xml junit.xml npm-audit.json
 case_stage typescript-audit-stages-npm-audit typescript audit \
-  "npm-audit-1.0.json " npm-audit.json coverage.xml junit.xml
+  "licenses-1.0.json npm-audit-1.0.json " npm-audit.json licenses.json \
+  coverage.xml junit.xml
 
-# TypeScript's audit report is npm-audit.json, never another language's
-# names: a workspace holding only Python's and Rust's audit reports fails a
-# passing TypeScript audit.
+# TypeScript's audit reports are npm-audit.json and licenses.json, never
+# another language's names: a workspace holding only Python's and Rust's own
+# audit reports fails a passing TypeScript audit, naming both.
 name="typescript-audit-ignores-other-names"
-workspace "$name" pip-audit.json licenses.json cargo-deny.json
+workspace "$name" pip-audit.json cargo-deny.json
 run_reports stage typescript audit node-24 success
-if assert_error "$name" "typescript audit gate passed but wrote no npm-audit.json"; then
+if assert_error "$name" \
+  "typescript audit gate passed but wrote no npm-audit.json" \
+  "typescript audit gate passed but wrote no licenses.json"; then
   if [ -n "$(staged)" ]; then
     fail_case "$name" "staged '$(staged)', expected nothing"
+  else
+    pass_case "$name"
+  fi
+fi
+
+# A passing TypeScript audit leg that wrote npm-audit.json but no
+# licenses.json (a vergil-tooling release without vrg-npm-license-gate) fails
+# naming licenses.json, and still stages the npm-audit.json it has.
+name="typescript-audit-requires-licenses"
+workspace "$name" npm-audit.json
+run_reports stage typescript audit node-24 success
+if assert_error "$name" "typescript audit gate passed but wrote no licenses.json"; then
+  if grep -F '::error::' <<<"$stderr" | grep -F "npm-audit.json" >/dev/null; then
+    fail_case "$name" "named a report that exists: ${stderr}"
+  elif [ "$(staged)" != "npm-audit-node-24.json " ]; then
+    fail_case "$name" "staged '$(staged)', expected 'npm-audit-node-24.json '"
   else
     pass_case "$name"
   fi
@@ -439,7 +458,7 @@ case_tools python audit '[{"name":"pip-audit"},{"name":"pip-licenses"}]'
 case_tools rust test '[{"name":"cargo-llvm-cov"},{"name":"cargo-nextest"}]'
 case_tools rust audit '[{"name":"cargo-deny"}]'
 case_tools typescript test '[{"name":"vitest"},{"name":"@vitest/coverage-v8"}]'
-case_tools typescript audit '[{"name":"npm audit"}]'
+case_tools typescript audit '[{"name":"npm audit"},{"name":"vrg-npm-license-gate"}]'
 case_tools typescript lint '[{"name":"prettier"},{"name":"eslint"}]'
 case_tools typescript typecheck '[{"name":"tsc"}]'
 
@@ -454,7 +473,7 @@ for gate in test audit lint typecheck; do
     ok=0
   fi
   workspace "${name}-stage-${gate}" coverage.xml junit.xml npm-audit.json \
-    quality-eslint.json quality-tsc.txt
+    licenses.json quality-eslint.json quality-tsc.txt
   run_reports stage typescript "$gate" node-24 success
   if [ "$rc" -ne 0 ] || grep -qF -- "::warning::" <<<"${stdout}${stderr}"; then
     fail_case "$name" "stage ${gate}: rc ${rc}, output '${stdout}${stderr}'"

@@ -4,8 +4,9 @@ description: >-
   gates and of the `quality` gate's `lint` and `typecheck` legs (issues #1211,
   #1249, #1260). In `stage` mode, copies one matrix leg's report files (for
   example coverage.xml and junit.xml, Rust's cargo-deny.json, TypeScript's
-  npm-audit.json, or a lint leg's quality-ruff.json, quality-clippy.json or
-  quality-eslint.json) into a directory as version-suffixed basenames,
+  npm-audit.json and licenses.json, or a lint leg's quality-ruff.json,
+  quality-clippy.json or quality-eslint.json) into a directory as
+  version-suffixed basenames,
   failing when the gate passed but a report the language's gate writes is
   missing or empty. In `tools` mode, outputs the gate's tools JSON for the
   emit action. In `expect` mode, fails unless a directory of downloaded legs

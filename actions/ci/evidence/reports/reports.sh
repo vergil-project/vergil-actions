@@ -19,7 +19,7 @@
 #   rust        lint       quality-clippy.json           rustfmt, clippy
 #   rust        typecheck  quality-cargo-check.json      cargo
 #   typescript  test       coverage.xml junit.xml        vitest, @vitest/coverage-v8
-#   typescript  audit      npm-audit.json                npm audit
+#   typescript  audit      npm-audit.json licenses.json  npm audit, vrg-npm-license-gate
 #   typescript  lint       quality-eslint.json           prettier, eslint
 #   typescript  typecheck  quality-tsc.txt               tsc
 #
@@ -36,7 +36,11 @@
 # coverage (copied to coverage.xml), `npm audit --json`, ESLint's JSON
 # formatter output and `tsc --diagnostics` output. Prettier runs first in the
 # lint gate and writes no report. As for Rust, a passing TypeScript leg on a
-# vergil-tooling release without them fails here.
+# vergil-tooling release without them fails here. The TypeScript audit gate
+# also writes licenses.json, vrg-npm-license-gate's license report, from
+# vergil-tooling#4722 on (released in v2.1.327; epic
+# vergil-project/.github#1339), so a passing TypeScript audit leg on an earlier
+# release fails here on the missing licenses.json.
 #
 # `lint` and `typecheck` are the quality gate's per-language legs. The quality
 # gate's common and custom transcripts (quality-common.log and
@@ -188,7 +192,7 @@ report_files() {
     typescript/test) printf '%s\n' coverage.xml junit.xml ;;
     python/audit) printf '%s\n' pip-audit.json licenses.json ;;
     rust/audit) printf '%s\n' cargo-deny.json ;;
-    typescript/audit) printf '%s\n' npm-audit.json ;;
+    typescript/audit) printf '%s\n' npm-audit.json licenses.json ;;
     python/lint) printf '%s\n' quality-ruff.json ;;
     rust/lint) printf '%s\n' quality-clippy.json ;;
     typescript/lint) printf '%s\n' quality-eslint.json ;;
@@ -223,7 +227,7 @@ report_tools() {
     rust/lint) printf '%s\n' '[{"name":"rustfmt"},{"name":"clippy"}]' ;;
     rust/typecheck) printf '%s\n' '[{"name":"cargo"}]' ;;
     typescript/test) printf '%s\n' '[{"name":"vitest"},{"name":"@vitest/coverage-v8"}]' ;;
-    typescript/audit) printf '%s\n' '[{"name":"npm audit"}]' ;;
+    typescript/audit) printf '%s\n' '[{"name":"npm audit"},{"name":"vrg-npm-license-gate"}]' ;;
     typescript/lint) printf '%s\n' '[{"name":"prettier"},{"name":"eslint"}]' ;;
     typescript/typecheck) printf '%s\n' '[{"name":"tsc"}]' ;;
     *)
