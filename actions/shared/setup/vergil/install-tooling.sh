@@ -1,64 +1,64 @@
 #!/usr/bin/env bash
 #
-# Install vergil-tooling for the setup action (epic vergil-project/.github#649,
-# plan Task 5). The install path is chosen by explicit checks, the choice is
-# logged, and a failure on the chosen path fails the job: nothing falls back
-# after a failure.
+# Install vergil-tooling for the setup action (epic vergil-project/.github#1350,
+# plan Task 8). Every install is `uv tool install` from git: nothing reads the
+# vergil package repository, and nothing falls back after a failure. The path
+# taken is logged, and a failure on it fails the job.
 #
 #   * Self repo (vergil-tooling's own CI): the checkout is the project under
 #     test, so `uv sync` installs it from source. On a host runner it syncs
 #     with `--python 3.15` and lets uv provide that interpreter; in a
 #     container it keeps UV_PYTHON_PREFERENCE=only-system, so it runs on the
 #     image's interpreter (issue #1002).
-#   * install-source: git (publish-index's build-index, which rebuilds the
-#     vergil apt index and so never installs from it): `uv tool install` from
-#     git. A line pin (vX.Y) installs the newest vX.Y.Z tag in that line, found
-#     with `git ls-remote`, not the floating vX.Y tag: a release dispatches the
-#     index rebuild before vX.Y moves, and the rebuild must run the release
-#     that triggered it (issue #1144). A failed lookup, or a line with no
-#     release, fails the job; it never falls back to vX.Y. An exact or dev pin
-#     installs at that tag.
-#   * A dev tag (anything but vX.Y or vX.Y.Z): `uv tool install` from git. In a
-#     container job it runs on the image's core Python
-#     (`--python /opt/vergil/python/<series>/bin/python3`); on a host runner,
-#     on Python 3.15 (`--python 3.15`).
-#   * A line (vX.Y) or exact (vX.Y.Z) tag in a container job: the packaged
-#     install.
-#   * A line or exact tag in a host job (no /.dockerenv): the vergil apt
-#     repository is set up on the runner as vergil-tooling's
-#     `lib/package/repo_setup.bootstrap` does (key checked against the pinned
-#     primary fingerprint before any source is written), then the packaged
-#     install.
+#   * A released ref, a line (vX.Y) or an exact release (vX.Y.Z): resolved to
+#     one commit SHA with a single `git ls-remote`, the peeled commit of the
+#     release tag (a line resolves to its newest vX.Y.Z tag, never the moving
+#     vX.Y tag). Everything after uses that SHA: the commit's own uv.lock,
+#     fetched over git and exported as constraints, and the install of
+#     `vergil-tooling @ git+…@<sha>`. The log names the tag and the SHA. A
+#     failed lookup, a missing tag, a failed lock export or a failed install
+#     fails the job; nothing installs unconstrained or from an older release.
+#   * A dev ref (anything else): `uv tool install` from git at that ref,
+#     unconstrained.
 #
-# Every `uv tool install` from git that does not run on a core Python, and the
-# self-repo sync on a host runner, names `--python 3.15`: vergil-tooling
-# supports the newest Python series alone (epic vergil-project/.github#1256).
-# The packaged installs already run on vergil-python 3.15.
+# Every `uv tool install`, and the lock export, runs with --no-config (so no
+# uv.toml or [tool.uv] in the working directory, and no user config, can
+# change or block it) and with UV_PYTHON, UV_PYTHON_PREFERENCE and
+# UV_NO_MANAGED_PYTHON unset; the install names `--python 3.15
+# --managed-python`, so it runs on a uv-managed 3.15, never a system
+# interpreter. When the job's environment sets VERGIL_CORE_PYTHON_DIR (a
+# Vergil image publishes its managed Python's directory there), the install
+# uses that directory as UV_PYTHON_INSTALL_DIR with UV_PYTHON_DOWNLOADS=never,
+# so a missing or wrong interpreter fails the install instead of downloading
+# one. Without it, uv may download 3.15, and the log says so.
 #
-# A packaged install pins vergil-tooling to the tag in
-# /etc/apt/preferences.d/vergil-tooling, checks apt's candidate against the tag
-# (prefix X.Y. for a line, exactly X.Y.Z-1 for an exact tag) as `vrg-vm update`
-# does (vergil-tooling `lib/vm_packages.packaged_install`), installs it, and
-# checks that `vrg-whoami` runs from /usr/bin on a venv whose interpreter lives
-# under /opt/vergil/python/.
+# The install-source input keeps its two values, auto and git, which now
+# install the same way.
 #
-# Every path leaves uv on PATH, including the packaged installs, which do not
-# need it themselves: the action has always provided uv, and later steps (and
-# the scripts they run) rely on it. When none is on PATH, uv is installed from
-# its release tarball at UV_VERSION, checked against the SHA-256 pinned below,
-# into $RUNNER_TEMP/uv/bin (added to GITHUB_PATH). uv is never installed with
-# pip.
+# After the install, `vrg-*` live in uv's tool bin directory
+# (`uv tool dir --bin`), which is added to PATH and GITHUB_PATH. The check
+# then requires `vrg-whoami` to resolve to that directory, as later steps
+# will see it, and to run.
+#
+# Every path leaves uv on PATH: later steps (and the scripts they run) rely
+# on it. When none is on PATH, uv is installed from its release tarball at
+# UV_VERSION, checked against the SHA-256 pinned below, into
+# $RUNNER_TEMP/uv/bin (added to GITHUB_PATH). uv is never installed with pip.
+#
+# The resolve-and-install rules are the same as vergil-tooling's
+# `lib/tooling_install.py`, kept equivalent by hand.
 #
 # Usage: install-tooling.sh [<tag>]
 #   <tag> defaults to the [dependencies].vergil pin, read by read-pin.sh. It is
 #   not read for the self repo.
 #
 # Environment:
-#   INSTALL_SOURCE   the action's `install-source` input: auto (default) or git
+#   INSTALL_SOURCE           the action's `install-source` input: auto (default) or git
+#   VERGIL_CORE_PYTHON_DIR   set by a Vergil image: its managed Python directory
 #   RUNNER_TEMP, GITHUB_PATH, GITHUB_WORKSPACE   set by the Actions runner
 #
 # Test seams (tests/install-tooling.test.sh); unset in real use:
-#   VRG_ROOT   filesystem root prefix for every probed or written path (default "")
+#   VRG_ROOT   filesystem root prefix for the /.dockerenv probe (default "")
 set -euo pipefail
 
 # Bump all three together, from the release's uv-<triple>.tar.gz.sha256 files
@@ -67,34 +67,11 @@ UV_VERSION="0.12.23"
 UV_SHA256_AMD64="9167d72b3319674b6303c4cbe071854bba13ebdf3d76b1a7cbdc175471fb66d6"
 UV_SHA256_ARM64="6524bd338177ed50d035d39354e12545e993bbeba2ecbddf0480c5b3a81d313f"
 
-# The vergil org's package repository (vergil-tooling `lib/package/orgs.py`).
-VERGIL_BASE_URL="https://vergil-project.github.io/packages"
-VERGIL_FINGERPRINT="B3A1D804DC03AB036566A4E367861822166ECABE"
-KEYRING_PACKAGE="vergil-archive-keyring"
-# The registered deb suites (vergil-tooling `lib/package/targets.py`).
-DEB_SUITES="noble resolute"
-
 GIT_URL="https://github.com/vergil-project/vergil-tooling"
 PACKAGE="vergil-tooling"
 
-# vergil-tooling `lib/package/repo_setup.APT_FAIL_FAST`.
-APT_FAIL_FAST=(
-  -o Acquire::Retries=3
-  -o Acquire::Retries::Delay=false
-  -o Acquire::http::Timeout=20
-  -o Acquire::https::Timeout=20
-  -o DPkg::Lock::Timeout=60
-)
-
 root="${VRG_ROOT:-}"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-PERMANENT_SOURCE="${root}/etc/apt/sources.list.d/vergil.sources"
-INSTALLED_KEY="${root}/usr/share/keyrings/${KEYRING_PACKAGE}.asc"
-BOOTSTRAP_SOURCE="${root}/etc/apt/sources.list.d/vergil-bootstrap.sources"
-BOOTSTRAP_KEY="${root}/etc/apt/keyrings/vergil-bootstrap.asc"
-PIN_FILE="${root}/etc/apt/preferences.d/vergil-tooling"
-CORE_PYTHON_GLOB="/opt/vergil/python/*/bin/python3"
 
 log() {
   printf 'vergil-tooling: %s\n' "$*" >&2
@@ -103,30 +80,6 @@ log() {
 die() {
   printf '::error::vergil-tooling: %s\n' "$*" >&2
   exit 1
-}
-
-# Run a privileged command: directly as root (container jobs), else with sudo.
-priv() {
-  if [ "$(id -u)" -eq 0 ]; then
-    "$@"
-  else
-    sudo "$@"
-  fi
-}
-
-apt_get() {
-  priv apt-get "${APT_FAIL_FAST[@]}" "$@"
-}
-
-# write_root_file <dest> <content>: replace a root-owned file atomically. The
-# temporary name ends in .vergil-new, which apt never reads as a source or pin.
-write_root_file() {
-  local dest="$1" content="$2" tmp
-  tmp="$(mktemp)"
-  printf '%s' "$content" >"$tmp"
-  priv install -D -m 0644 "$tmp" "${dest}.vergil-new"
-  priv mv -f "${dest}.vergil-new" "$dest"
-  rm -f "$tmp"
 }
 
 # classify <tag>: line, exact or dev (vergil-tooling `vm_packages.classify_ref`).
@@ -191,216 +144,7 @@ ensure_uv() {
 }
 
 # ---------------------------------------------------------------------------
-# Installs from git
-# ---------------------------------------------------------------------------
-
-# Sets core_pythons to every core Python present (zero or more). It always
-# returns 0, so that with none present the caller fails loudly at
-# "${core_pythons[0]}" under `set -u` rather than `set -e` exiting with no
-# message.
-find_core_pythons() {
-  core_pythons=()
-  local p
-  for p in ${root}${CORE_PYTHON_GLOB}; do
-    [ -e "$p" ] && core_pythons+=("$p")
-  done
-  return 0
-}
-
-uv_git_install() {
-  uv tool install --python 3.15 "${PACKAGE} @ git+${GIT_URL}@$1"
-}
-
-# ---------------------------------------------------------------------------
-# The vergil apt repository on a host runner (repo_setup.bootstrap)
-# ---------------------------------------------------------------------------
-
-# primary_fingerprint <key file>: the primary-key fingerprint of a key file
-# that holds exactly one primary key (repo_setup.parse_primary_fingerprint).
-primary_fingerprint() {
-  local colons parsed
-  colons="$(gpg --show-keys --with-colons "$1")" || die "gpg could not read the key file $1"
-  parsed="$(printf '%s\n' "$colons" | awk -F: '
-    $1 == "pub" { n++; fp[n] = ""; expecting = 1; next }
-    $1 == "fpr" && expecting { fp[n] = $10; expecting = 0 }
-    END {
-      if (n > 1) { print "multi " n; exit }
-      if (n == 0 || fp[1] == "") { print "none"; exit }
-      print "ok " fp[1]
-    }')"
-  case "$parsed" in
-    "ok "*) echo "${parsed#ok }" ;;
-    "multi "*)
-      die "the key file $1 must hold exactly one primary key, found ${parsed#multi }"
-      ;;
-    *) die "no primary key fingerprint in the key file $1" ;;
-  esac
-}
-
-# Prints the registered deb suite this runner's OS is, or fails.
-runner_codename() {
-  local codename suite
-  codename="$(sed -n 's/^VERSION_CODENAME="\{0,1\}\([^"[:space:]]*\)"\{0,1\}$/\1/p' \
-    "${root}/etc/os-release" 2>/dev/null | head -n 1)"
-  for suite in $DEB_SUITES; do
-    if [ "$codename" = "$suite" ]; then
-      echo "$codename"
-      return
-    fi
-  done
-  die "runner OS codename ${codename:-(unknown)} is not a supported package target (supported: ${DEB_SUITES// /, })"
-}
-
-# Prints installed, source and key for what of the keyring package's permanent
-# setup is in place (repo_setup.keyring_probe).
-keyring_state() {
-  if dpkg-query -W -f='${Status}' "$KEYRING_PACKAGE" 2>/dev/null | grep -qx 'install ok installed'; then
-    echo installed
-  fi
-  [ -e "$PERMANENT_SOURCE" ] && echo source
-  [ -e "$INSTALLED_KEY" ] && echo key
-  return 0
-}
-
-bootstrap_vergil_repository() {
-  local codename missing state reinstall tmp got rc content
-  codename="$(runner_codename)"
-
-  # 1. Bootstrap files a broken earlier run left would make apt reject the
-  #    source list next to the keyring's own source: remove them first.
-  priv rm -f "$BOOTSTRAP_SOURCE" "$BOOTSTRAP_KEY"
-
-  # The bootstrap prerequisites, installed only when missing.
-  missing=()
-  dpkg-query -W -f='${Status}' ca-certificates 2>/dev/null | grep -qx 'install ok installed' ||
-    missing+=(ca-certificates)
-  command -v curl >/dev/null 2>&1 || missing+=(curl)
-  command -v gpg >/dev/null 2>&1 || missing+=(gnupg)
-  if [ "${#missing[@]}" -gt 0 ]; then
-    log "installing the bootstrap prerequisites: ${missing[*]}"
-    apt_get update
-    apt_get install -y "${missing[@]}"
-  fi
-
-  # 2. The keyring package already in place: check its key, skip the bootstrap.
-  state="$(keyring_state | tr '\n' ' ')"
-  if [ "$state" = "installed source key " ]; then
-    got="$(primary_fingerprint "$INSTALLED_KEY")"
-    if [ "$got" != "$VERGIL_FINGERPRINT" ]; then
-      die "installed vergil key ${INSTALLED_KEY} has primary fingerprint ${got}, pinned ${VERGIL_FINGERPRINT}: refusing to trust it"
-    fi
-    log "${KEYRING_PACKAGE} is already installed; its key matches the pinned fingerprint"
-    return
-  fi
-  # Installed without its source or key: only a reinstall re-runs what wrote them.
-  reinstall=()
-  case "$state" in
-    *installed*) reinstall=(--reinstall) ;;
-  esac
-
-  # 3. The codename was checked above, before any change.
-  # 4. Download the key and check it before anything touches the sources.
-  tmp="$(mktemp -d)"
-  curl -fsSL "${VERGIL_BASE_URL}/keys/vergil.asc" -o "${tmp}/vergil.asc"
-  got="$(primary_fingerprint "${tmp}/vergil.asc")"
-  if [ "$got" != "$VERGIL_FINGERPRINT" ]; then
-    rm -rf "$tmp"
-    die "vergil package key fingerprint mismatch: published ${got}, pinned ${VERGIL_FINGERPRINT} (${VERGIL_BASE_URL}/keys/vergil.asc)"
-  fi
-
-  # 5. The bootstrap key and source.
-  content="Types: deb
-URIs: ${VERGIL_BASE_URL}/deb
-Suites: ${codename}
-Components: main
-Signed-By: ${BOOTSTRAP_KEY}
-"
-  priv install -D -m 0644 "${tmp}/vergil.asc" "$BOOTSTRAP_KEY"
-  rm -rf "$tmp"
-  write_root_file "$BOOTSTRAP_SOURCE" "$content"
-
-  # 6. Refresh and install the keyring from the bootstrap source alone, then
-  #    remove the bootstrap files whatever the outcome.
-  rc=0
-  {
-    apt_get -o "Dir::Etc::sourcelist=${BOOTSTRAP_SOURCE}" -o Dir::Etc::sourceparts=- \
-      -o APT::Get::List-Cleanup=0 update &&
-      apt_get -o "Dir::Etc::sourcelist=${BOOTSTRAP_SOURCE}" -o Dir::Etc::sourceparts=- \
-        install -y "${reinstall[@]}" "$KEYRING_PACKAGE"
-  } || rc=$?
-  priv rm -f "$BOOTSTRAP_SOURCE" "$BOOTSTRAP_KEY"
-  if [ "$rc" -ne 0 ]; then
-    die "installing ${KEYRING_PACKAGE} from the bootstrap source failed (exit ${rc})"
-  fi
-  state="$(keyring_state | tr '\n' ' ')"
-  if [ "$state" != "installed source key " ]; then
-    die "installing ${KEYRING_PACKAGE} did not leave its setup in place (found: ${state:-nothing}; source ${PERMANENT_SOURCE}, key ${INSTALLED_KEY})"
-  fi
-  log "${KEYRING_PACKAGE} installed; the bootstrap source and key are removed"
-}
-
-# ---------------------------------------------------------------------------
-# The packaged install
-# ---------------------------------------------------------------------------
-
-write_pin() {
-  local tag="$1" kind="$2" version
-  if [ "$kind" = exact ]; then
-    version="${tag#v}-1"
-  else
-    version="${tag#v}.*"
-  fi
-  write_root_file "$PIN_FILE" "Package: ${PACKAGE}
-Pin: version ${version}
-Pin-Priority: 1001
-"
-}
-
-# check_candidate <tag> <kind>: fail unless apt's candidate matches the tag.
-check_candidate() {
-  local tag="$1" kind="$2" policy candidate ok=0
-  policy="$(apt-cache policy "$PACKAGE")"
-  candidate="$(printf '%s\n' "$policy" | sed -n 's/^[[:space:]]*Candidate:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -n 1)"
-  if [ "$kind" = exact ]; then
-    [ "$candidate" = "${tag#v}-1" ] && ok=1
-  else
-    case "$candidate" in
-      "${tag#v}."*) ok=1 ;;
-    esac
-  fi
-  if [ "$ok" -ne 1 ]; then
-    die "no packaged ${PACKAGE} matching ${tag} in ${VERGIL_BASE_URL} (apt candidate: ${candidate:-(none)}). Release ${tag} first, or pin a git ref in [dependencies].vergil (a dev install)."
-  fi
-  log "apt candidate ${candidate} matches ${tag}"
-}
-
-# The installed vrg-* commands run from the package, on vergil-python.
-verify_packaged() {
-  local loc target venv home
-  loc="$(command -v vrg-whoami)" || die "vrg-whoami is not on PATH after the packaged install"
-  if [ "$loc" != "${root}/usr/bin/vrg-whoami" ]; then
-    die "vrg-whoami resolves to ${loc}, not the packaged /usr/bin/vrg-whoami"
-  fi
-  target="$(readlink -f "$loc")"
-  venv="$(dirname "$(dirname "$target")")"
-  home="$(sed -n 's/^home[[:space:]]*=[[:space:]]*//p' "${venv}/pyvenv.cfg" 2>/dev/null | head -n 1)"
-  case "$home" in
-    "${root}"/opt/vergil/python/*) ;;
-    *) die "the packaged vrg-whoami runs on ${home:-an unknown interpreter} (${venv}/pyvenv.cfg), not a vergil-python under /opt/vergil/python/" ;;
-  esac
-  "$loc" --mode >/dev/null || die "the packaged vrg-whoami does not run"
-  log "vrg-* run from /usr/bin on ${home}"
-}
-
-packaged_install() {
-  local tag="$1" kind="$2" spec="$PACKAGE"
-  [ "$kind" = exact ] && spec="${PACKAGE}=${tag#v}-1"
-  apt_get install -y "$spec"
-  verify_packaged
-}
-
-# ---------------------------------------------------------------------------
-# The paths
+# The self repo
 # ---------------------------------------------------------------------------
 
 self_repo_install() {
@@ -420,65 +164,147 @@ self_repo_install() {
   echo "${GITHUB_WORKSPACE}/.venv/bin" >>"$GITHUB_PATH"
 }
 
-# newest_release <line>: the newest vX.Y.Z tag in the vX.Y line <line>, from
-# the vergil-tooling repository's tags.
-newest_release() {
-  local line="$1" refs newest
-  refs="$(git ls-remote --tags --refs "$GIT_URL" "refs/tags/${line}.*")" ||
-    die "could not list the ${line}.* tags of ${GIT_URL}"
-  newest="$(printf '%s\n' "$refs" |
-    sed -n "s#^[0-9a-f]*[[:space:]]*refs/tags/\(${line//./\\.}\.[0-9][0-9]*\)\$#\1#p" |
-    sort -t. -k3,3n | tail -n 1)"
-  [ -n "$newest" ] || die "no ${line}.Z release tag in ${GIT_URL}"
-  echo "$newest"
+# ---------------------------------------------------------------------------
+# One resolution, one commit
+# ---------------------------------------------------------------------------
+
+# resolve_sha <kind> <ref>: resolves a line or exact ref with one
+# `git ls-remote` and sets resolved_tag (the vX.Y.Z tag) and resolved_sha (its
+# commit). Release tags are annotated, so the commit is the peeled `^{}` entry;
+# a lightweight tag has none and names its commit directly.
+resolve_sha() {
+  local kind="$1" ref="$2" refs tag_re sha name tag peeled newest="" patch best=-1
+  local -A tag_object=() tag_commit=()
+  if [ "$kind" = line ]; then
+    refs="$(git ls-remote --tags "$GIT_URL" "refs/tags/${ref}.*")" ||
+      die "could not list the ${ref}.* tags of ${GIT_URL}"
+    tag_re="^${ref//./\\.}\\.[0-9]+\$"
+  else
+    refs="$(git ls-remote --tags "$GIT_URL" "refs/tags/${ref}" "refs/tags/${ref}^{}")" ||
+      die "could not look up the tag ${ref} in ${GIT_URL}"
+    tag_re="^${ref//./\\.}\$"
+  fi
+  while read -r sha name; do
+    [ -n "${name:-}" ] || continue
+    tag="${name#refs/tags/}"
+    peeled=0
+    if [[ "$tag" == *'^{}' ]]; then
+      tag="${tag%'^{}'}"
+      peeled=1
+    fi
+    [[ "$tag" =~ $tag_re ]] || continue
+    [[ "$sha" =~ ^[0-9a-f]{40}$ ]] ||
+      die "git ls-remote of ${GIT_URL} gave '${sha}' for ${tag}, not a commit SHA"
+    if [ "$peeled" -eq 1 ]; then
+      tag_commit["$tag"]="$sha"
+    else
+      tag_object["$tag"]="$sha"
+    fi
+  done <<<"$refs"
+  for tag in "${!tag_object[@]}"; do
+    patch="${tag##*.}"
+    if [ "$patch" -gt "$best" ]; then
+      best="$patch"
+      newest="$tag"
+    fi
+  done
+  if [ -z "$newest" ]; then
+    if [ "$kind" = line ]; then
+      die "no ${ref}.Z release tag in ${GIT_URL}"
+    fi
+    die "no tag ${ref} in ${GIT_URL}"
+  fi
+  resolved_tag="$newest"
+  resolved_sha="${tag_commit[$newest]:-${tag_object[$newest]}}"
 }
 
-git_source_install() {
-  local tag="$1" kind="$2" ref="$1"
-  if [ "$kind" = line ]; then
-    ref="$(newest_release "$tag")"
-    log "the newest ${tag} release is ${ref}"
+# lock_export <project dir> <constraints file>: the commit's uv.lock as
+# third-party pins only (no vergil-tooling itself, no editable line). Its own
+# line, so the uv source guard (ci/toolchain/pin-python's pin.test.sh) can
+# exempt exactly this command from the UV_PYTHON_PREFERENCE pin.
+lock_export() {
+  uv export --no-config --frozen --no-dev --no-emit-project --no-hashes --format requirements-txt --directory "$1" -o "$2" >/dev/null
+}
+
+# export_constraints <sha> <work dir>: fetches the commit alone over git and
+# writes its uv.lock, exported, to <work dir>/constraints.txt.
+export_constraints() {
+  local sha="$1" src="$2/src" constraints="$2/constraints.txt"
+  log "exporting the uv.lock of ${sha} as constraints"
+  mkdir -p "$src"
+  git -C "$src" init -q ||
+    die "lock export of ${sha}: git init failed"
+  git -C "$src" fetch -q --depth 1 "$GIT_URL" "$sha" ||
+    die "lock export of ${sha}: could not fetch the commit from ${GIT_URL}"
+  git -C "$src" -c advice.detachedHead=false checkout -q FETCH_HEAD ||
+    die "lock export of ${sha}: could not check out the fetched commit"
+  lock_export "$src" "$constraints" ||
+    die "lock export of ${sha}: exporting its uv.lock failed"
+  if grep -Eq '^(-e|--editable)([[:space:]]|$)|^vergil-tooling([^[:alnum:]._-]|$)' "$constraints"; then
+    die "lock export of ${sha}: the constraints name ${PACKAGE} itself or an editable install"
   fi
-  log "uv tool install from git (${ref}; install-source: git, never the vergil apt repository)"
+}
+
+# ---------------------------------------------------------------------------
+# The install
+# ---------------------------------------------------------------------------
+
+# python_source: where the managed 3.15 comes from.
+python_source() {
+  local dir="${VERGIL_CORE_PYTHON_DIR:-}"
+  if [ -z "$dir" ]; then
+    log "no VERGIL_CORE_PYTHON_DIR; uv may download 3.15"
+    return
+  fi
+  [ -d "$dir" ] ||
+    die "VERGIL_CORE_PYTHON_DIR is ${dir}, which is not a directory: the image's managed Python is missing; refusing to download one"
+  export UV_PYTHON_INSTALL_DIR="$dir"
+  export UV_PYTHON_DOWNLOADS=never
+  log "on the image's managed Python in ${dir} (UV_PYTHON_DOWNLOADS=never)"
+}
+
+# check_install: vrg-whoami resolves to uv's tool bin directory and runs.
+check_install() {
+  local bin loc
+  bin="$(uv tool dir --bin --no-config)" ||
+    die "could not read uv's tool bin directory (uv tool dir --bin)"
+  export PATH="${bin}:${PATH}"
+  loc="$(command -v vrg-whoami)" ||
+    die "vrg-whoami is not on PATH after the install (expected ${bin}/vrg-whoami)"
+  if [ "$loc" != "${bin}/vrg-whoami" ]; then
+    die "vrg-whoami resolves to ${loc}, not the installed ${bin}/vrg-whoami"
+  fi
+  "$loc" --mode >/dev/null || die "${bin}/vrg-whoami does not run"
+  echo "$bin" >>"$GITHUB_PATH"
+  log "vrg-* run from ${bin}"
+}
+
+released_install() {
+  local ref="$1" kind="$2" work
+  resolve_sha "$kind" "$ref"
+  log "${ref} resolves to ${resolved_tag} at ${resolved_sha}"
   ensure_uv
-  uv_git_install "$ref"
+  work="$(mktemp -d)"
+  # shellcheck disable=SC2064 # expand now: work is local to this function.
+  trap "rm -rf '${work}'" EXIT
+  export_constraints "$resolved_sha" "$work"
+  python_source
+  log "uv tool install from git: ${resolved_tag} (${resolved_sha}), constrained by its uv.lock"
+  uv tool install --force --no-config --python 3.15 --managed-python \
+    -c "${work}/constraints.txt" "${PACKAGE} @ git+${GIT_URL}@${resolved_sha}" ||
+    die "uv tool install of ${PACKAGE} ${resolved_tag} (${resolved_sha}) failed"
+  check_install
 }
 
 dev_install() {
-  local tag="$1"
-  if is_host; then
-    log "uv tool install from git (dev ref ${tag}; host runner)"
-    ensure_uv
-    uv_git_install "$tag"
-  else
-    log "uv tool install from git on the core Python (${tag})"
-    find_core_pythons
-    ensure_uv
-    # --python overrides any UV_PYTHON the job exports for its family.
-    uv tool install --python "${core_pythons[0]}" "${PACKAGE} @ git+${GIT_URL}@${tag}"
-  fi
-}
-
-container_install() {
-  local tag="$1" kind="$2"
-  log "packaged install (${tag})"
-  write_pin "$tag" "$kind"
-  apt_get update
-  check_candidate "$tag" "$kind"
-  packaged_install "$tag" "$kind"
+  local ref="$1"
+  log "uv tool install from git: dev ref ${ref}, unconstrained"
   ensure_uv
-}
-
-host_install() {
-  local tag="$1" kind="$2"
-  log "packaged install (${tag}) on the host runner, from the vergil apt repository"
-  bootstrap_vergil_repository
-  # 7. The keyring's own source, refreshed with every other source.
-  apt_get update
-  write_pin "$tag" "$kind"
-  check_candidate "$tag" "$kind"
-  packaged_install "$tag" "$kind"
-  ensure_uv
+  python_source
+  uv tool install --force --no-config --python 3.15 --managed-python \
+    "${PACKAGE} @ git+${GIT_URL}@${ref}" ||
+    die "uv tool install of ${PACKAGE} at dev ref ${ref} failed"
+  check_install
 }
 
 main() {
@@ -500,14 +326,14 @@ main() {
   fi
   kind="$(classify "$tag")"
 
-  if [ "$install_source" = git ]; then
-    git_source_install "$tag" "$kind"
-  elif [ "$kind" = dev ]; then
+  # The interpreter is uv's own 3.15, whatever the job exports for its
+  # project's Python. Only this script's own uv commands see the change.
+  unset UV_PYTHON UV_PYTHON_PREFERENCE UV_NO_MANAGED_PYTHON
+
+  if [ "$kind" = dev ]; then
     dev_install "$tag"
-  elif is_host; then
-    host_install "$tag" "$kind"
   else
-    container_install "$tag" "$kind"
+    released_install "$tag" "$kind"
   fi
 }
 
