@@ -315,7 +315,9 @@ Every managed repository uses six rulesets to enforce merge requirements (a
   need not be up to date
 - **CI gates (main)** — The same required status checks for `main`; the
   branch must be up to date
-- **Tag protection** — Protect release tags (`v*.*.*`) and rolling minor tags (`v*.*`)
+- **Tag protection** — Protect release tags (`v*.*.*`) and rolling minor tags
+  (`v*.*`); only the repository Admin role and the org automation App may
+  create, move or delete them
 - **Rolling tag branch names** — Block branches named like a rolling tag (`v[0-9]*`)
 - **Automation branches** — Only the org automation App and the repository
   Admin role may write `automation/**` branches

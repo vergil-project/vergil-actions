@@ -83,7 +83,7 @@ space. `<tool>` is a command name. `<version>` is the first
 marker always lists `uv`, `nfpm`, `curl`, `git`, `gpg`, `tar` and `gzip`:
 
 ```text
-uv 0.12.23
+uv 0.13.9
 nfpm 2.47.0
 curl 8.5.0
 git 2.43.0

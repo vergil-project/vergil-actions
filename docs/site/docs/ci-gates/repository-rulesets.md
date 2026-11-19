@@ -160,15 +160,18 @@ merge through `quality / evidence`, as does `quality / custom`.
 
 Applies to the full semver release tags (such as `v1.1.1` or `v2.0.0`) and to
 the rolling minor tags (such as `v1.1`) that consumers follow as their deploy
-ref. Only the repository Admin role may move or delete either.
+ref. Only the repository Admin role and the org automation App may create,
+move or delete either: the release workflow pushes each `vX.Y.Z` tag with the
+App's installation token.
 
 | Setting | Value |
 | --------- | ------- |
 | Patterns | `refs/tags/v*.*.*`, `refs/tags/v*.*` |
+| Restrict creations | Yes |
 | Block deletion | Yes |
 | Block non-fast-forward | Yes |
 | Block update | Yes |
-| Bypass actors | Repository Admin role (`RepositoryRole`, `actor_id: 5`, `bypass_mode: always`) |
+| Bypass actors | The org automation App (`Integration`, its per-org App ID, `bypass_mode: always`) and the repository Admin role (`RepositoryRole`, `actor_id: 5`, `bypass_mode: always`) |
 
 ### Why both `v*.*.*` and `v*.*`
 
@@ -181,13 +184,21 @@ sensitive as moving a release tag. `v*.*.*` covers the immutable release tags
 them in the release orchestrator's `promote` phase (see
 [`cd/release/tag-and-release`](../actions/cd-release-tag-and-release.md)).
 
-### Admin bypass
+### Bypass actors
 
-The repository Admin role is the ruleset's only bypass actor. It is the human
-release identity, so moving a rolling tag to a new patch release and cleanup
-operations (e.g., removing a tag created against the wrong branch) both run
-under it. No other identity, the agent Apps and the automation App included,
-can move or delete a protected tag.
+The ruleset has two bypass actors. The org automation App creates the
+`vX.Y.Z` release tags: the
+[`cd/release/tag-and-release`](../actions/cd-release-tag-and-release.md)
+action pushes them with the App's installation token, never the workflow's
+`GITHUB_TOKEN` (see [CD release](../workflows/cd-release.md)). The repository
+Admin role is the human release identity, so moving a rolling tag to a new
+patch release with `vrg-promote` and cleanup operations (e.g., removing a tag
+created against the wrong branch) both run under it. No other identity, the
+agent Apps and the GitHub Actions integration included, can create, move or
+delete a protected tag: a bypass for the GitHub Actions integration would let
+any workflow's `GITHUB_TOKEN` create a release tag. The App's numeric ID
+differs per org, as for the
+[Automation branches ruleset](#automation-branches-ruleset).
 
 ## Rolling tag branch names ruleset
 
