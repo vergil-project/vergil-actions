@@ -64,10 +64,12 @@ inline on the command line. There are four exceptions:
 
 - `ci/toolchain/assert` is pinned by its caller.
 - `package/setup/detect.sh` reads `vergil.toml` in package toolchain images
-  that ship no Python, so it needs uv's managed interpreter. Instead of the
-  pin, every uv command in it must pass `--no-config`, so the repository's uv
-  settings cannot reach it at all (issue #1003). Without it, a repository that
-  sets `python-downloads = "manual"` stops uv downloading that interpreter.
+  that ship no Python, so it needs uv's managed interpreter, and exports a
+  release commit's `uv.lock` (`uv export`) in a fetched copy of that commit.
+  Instead of the pin, every uv command in it must pass `--no-config`, so the
+  repository's uv settings cannot reach it at all (issue #1003). Without it, a
+  repository that sets `python-downloads = "manual"` stops uv downloading that
+  interpreter.
 - `shared/setup/vergil/install-tooling.sh`'s self-repo sync on a host runner,
   `uv sync --frozen --group dev --python 3.15`, is exempt as that exact line.
   It runs only in vergil-tooling's own CI, whose runner Python is not a series
