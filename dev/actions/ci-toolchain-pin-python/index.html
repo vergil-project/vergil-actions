@@ -7800,7 +7800,7 @@ project command (<code>uv run</code>, <code>uv sync</code>, <code>uv lock</code>
 point: through this action, or with a job-level <code>env</code>. Jobs that resolve no
 version, such as the <code>ci-docs</code> and <code>cd-docs</code> docs jobs, use the job <code>env</code>. Every
 composite action or script that runs one must pin it on the step's <code>env</code> or
-inline on the command line. There are three exceptions:</p>
+inline on the command line. There are four exceptions:</p>
 <ul>
 <li><code>ci/toolchain/assert</code> is pinned by its caller.</li>
 <li><code>package/setup/detect.sh</code> reads <code>vergil.toml</code> in package toolchain images
@@ -7814,6 +7814,15 @@ inline on the command line. There are three exceptions:</p>
   vergil-tooling supports, so it names 3.15 and uv provides it (epic
   vergil-project/.github#1256). Any other uv command in the file must still
   pin the source; its container sync does.</li>
+<li><code>shared/setup/vergil/install-tooling.sh</code>'s lock export, <code>uv export
+  --no-config --frozen --no-dev --no-emit-project --no-hashes --format
+  requirements-txt --directory "$1" -o "$2" &gt;/dev/null</code>, is exempt as that
+  exact line. It exports the <code>uv.lock</code> of the released vergil-tooling commit
+  being installed, fetched into a temporary directory, never the repository's
+  own project. Like every vergil-tooling install, it runs with <code>--no-config</code>
+  and with <code>UV_PYTHON</code>, <code>UV_PYTHON_PREFERENCE</code> and <code>UV_NO_MANAGED_PYTHON</code>
+  unset (epic vergil-project/.github#1350), so pinning the source there would
+  break that rule.</li>
 </ul>
 <p><code>uv tool</code> commands are not checked, because uv ignores a project's uv
 settings for them. Fixture workflows and actions test the guard both ways.</p>

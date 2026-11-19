@@ -7777,7 +7777,7 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <td><code>install-source</code></td>
 <td>No</td>
 <td><code>auto</code></td>
-<td><code>auto</code> chooses the install path from the tag and the environment (below). <code>git</code> always installs vergil-tooling with <code>uv tool install</code> from git and never touches the vergil apt repository; with a line pin (<code>vX.Y</code>) it installs the newest <code>vX.Y.Z</code> release tag in that line rather than the floating <code>vX.Y</code> tag. <code>publish-index</code>'s <code>build-index</code> job sets it, because it rebuilds that repository's index and must not install from the index it is about to repair. Any other value fails the job.</td>
+<td><code>auto</code> or <code>git</code>. Both install vergil-tooling the same way, with <code>uv tool install</code> from git (below); neither touches the vergil apt repository. <code>git</code> stays for the callers that set it, such as <code>publish-index</code>'s <code>build-index</code> job, which rebuilds that repository's index. Any other value fails the job.</td>
 </tr>
 <tr>
 <td><code>version-window</code></td>
@@ -7829,10 +7829,10 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
    <code>safe.directory</code> list, because inside a container the workspace is owned by
    a different UID than the user git runs as.</li>
 <li>
-<p><strong>Install vergil-tooling.</strong> <code>install-tooling.sh</code> chooses the install path
-   by explicit checks, logs the one it took (each log line starts
-   <code>vergil-tooling:</code>), and fails the job when the chosen path fails. Nothing
-   falls back to another path after a failure.</p>
+<p><strong>Install vergil-tooling.</strong> <code>install-tooling.sh</code> installs it with <code>uv tool
+   install</code> from git, logs what it installs (each log line starts
+   <code>vergil-tooling:</code>), and fails the job when any step fails. Nothing reads
+   the vergil package repository, and nothing falls back after a failure.</p>
 <ul>
 <li>If <code>pyproject.toml</code> declares <code>name = "vergil-tooling"</code>, the repository is
   vergil-tooling itself. The step runs <code>uv sync --frozen --group dev</code> and
@@ -7845,43 +7845,55 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
   needs no such pin, because uv tool commands ignore a project's uv
   settings.</li>
 <li>Otherwise it reads <code>[dependencies].vergil</code> from <code>vergil.toml</code> (e.g.
-  <code>v2.1</code>) and installs vergil-tooling at that tag:<ul>
-<li><strong><code>install-source: git</code>:</strong> <code>uv tool install --python 3.15</code> from
-  git. A release
-  line pin (<code>vX.Y</code>) installs the newest <code>vX.Y.Z</code> tag in that line,
-  listed with <code>git ls-remote</code>, not the floating <code>vX.Y</code> tag: a release
-  dispatches the package-index rebuild before it moves <code>vX.Y</code>, and
-  the rebuild must run the release that triggered it (issue #1144).
-  A failed tag lookup, or a line with no <code>vX.Y.Z</code> tag, fails the job;
-  it never falls back to <code>vX.Y</code>. An exact or dev pin installs at that
-  tag.</li>
-<li><strong>A dev tag</strong> (anything but <code>vX.Y</code> or <code>vX.Y.Z</code>, such as <code>develop</code>):
-  <code>uv tool install</code> from git. In a container job it runs on the
-  image's core Python (<code>--python
-  /opt/vergil/python/&lt;series&gt;/bin/python3</code>); on a host runner, on
-  Python 3.15 (<code>--python 3.15</code>).</li>
-<li><strong>A release line or exact release in a container job:</strong> the
-  packaged install from the vergil apt repository.</li>
-<li><strong>A release line or exact release in a host job</strong> (no
-  <code>/.dockerenv</code>): the vergil apt repository is set up on the runner
-  the way vergil-tooling's <code>repo_setup.bootstrap</code> does it. The runner's
-  Ubuntu codename must be a registered package target (<code>noble</code> or
-  <code>resolute</code>). The published key must hold exactly one primary key
-  whose fingerprint is <code>B3A1D804DC03AB036566A4E367861822166ECABE</code>,
-  checked before any apt source is written. The
-  <code>vergil-archive-keyring</code> package is installed from a temporary
-  bootstrap source, which is then removed. When the keyring is already
-  installed, its key is checked against the same fingerprint instead.
-  Then the packaged install.</li>
+  <code>v2.1</code>) and installs vergil-tooling at that ref, the same way on a host
+  runner and in a container job:<ul>
+<li><strong>A released ref</strong>, a line (<code>vX.Y</code>) or an exact release
+  (<code>vX.Y.Z</code>), is resolved to one commit with a single <code>git
+  ls-remote</code> of the vergil-tooling repository. A line resolves to its
+  newest <code>vX.Y.Z</code> tag, never the floating <code>vX.Y</code> tag, so a pin never
+  installs an older release; an exact pin to that tag. The commit is
+  the tag's peeled commit. The log names the tag and the SHA, for
+  example <code>vergil-tooling: v2.1 resolves to v2.1.327 at &lt;sha&gt;</code>, with
+  the full 40-character SHA.
+  From then on only the SHA is used: the step fetches that commit
+  alone over git, exports its <code>uv.lock</code> (<code>uv export --frozen
+  --no-dev --no-emit-project --no-hashes</code>) as constraints, and runs
+  <code>uv tool install --force --no-config --python 3.15
+  --managed-python -c &lt;constraints&gt; 'vergil-tooling @
+  git+https://github.com/vergil-project/vergil-tooling@&lt;sha&gt;'</code>. A
+  failed tag lookup, a line with no <code>vX.Y.Z</code> tag, a missing exact
+  tag, a failed commit fetch or lock export, constraints that name
+  vergil-tooling itself or an editable install, and a failed install
+  each fail the job with an <code>::error::</code> naming the ref or commit and
+  the step. Nothing installs unconstrained.</li>
+<li><strong>A dev ref</strong> (anything but <code>vX.Y</code> or <code>vX.Y.Z</code>, such as <code>develop</code>):
+  <code>uv tool install --force --no-config --python 3.15
+  --managed-python</code> from git at that ref, with no constraints.</li>
 </ul>
 </li>
 </ul>
-<p>The packaged install pins vergil-tooling to the tag in
-  <code>/etc/apt/preferences.d/vergil-tooling</code> and checks apt's candidate
-  against it: a version starting <code>X.Y.</code> for a line, exactly <code>X.Y.Z-1</code> for
-  an exact release. A mismatch fails the job with nothing installed.
-  After the install, <code>vrg-whoami</code> must resolve to <code>/usr/bin/vrg-whoami</code>,
-  run on a venv whose interpreter is under <code>/opt/vergil/python/</code>, and run.</p>
+<p>Every install, and the lock export, runs with <code>--no-config</code>, so no
+  <code>uv.toml</code> or <code>[tool.uv]</code> in the repository, and no user uv config, can
+  change or block it, and with the job's <code>UV_PYTHON</code>,
+  <code>UV_PYTHON_PREFERENCE</code> and <code>UV_NO_MANAGED_PYTHON</code> unset, so it always
+  runs on a uv-managed Python 3.15, never a family image's or the
+  runner's interpreter. The variables are cleared for this step's uv
+  commands only.</p>
+<p>Where the Python comes from:
+    - <strong><code>VERGIL_CORE_PYTHON_DIR</code> set</strong> (a Vergil image publishes its
+      managed Python's directory there): the install uses that directory
+      as <code>UV_PYTHON_INSTALL_DIR</code> with <code>UV_PYTHON_DOWNLOADS=never</code>, so it
+      never downloads an interpreter. A path that is not a directory, or
+      one without a managed 3.15, fails the job instead of downloading.
+    - <strong>Not set</strong> (a host runner, an image older than the managed core
+      Python, or a non-Vergil image): uv may download its managed 3.15,
+      and the step logs <code>vergil-tooling: no VERGIL_CORE_PYTHON_DIR; uv
+      may download 3.15</code>.</p>
+<p>After the install, the <code>vrg-*</code> commands are in uv's tool bin directory
+  (<code>uv tool dir --bin</code>, usually <code>~/.local/bin</code>), which is added to <code>PATH</code>
+  for later steps. <code>vrg-whoami</code> must resolve to that directory and run;
+  otherwise the job fails, so a stale copy that would answer in its place
+  (such as an old packaged <code>/usr/bin/vrg-whoami</code>) is caught.</p>
 <p>A path that needs <code>uv</code> and finds none on <code>PATH</code> installs uv from its
   release tarball at the version and SHA-256 pinned in
   <code>install-tooling.sh</code>, into <code>$RUNNER_TEMP/uv/bin</code>, and adds that to
@@ -7943,7 +7955,8 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <p>The install, the pin reading and the derivation live in <code>install-tooling.sh</code>,
 <code>read-pin.sh</code> and <code>derive.sh</code> rather than inline YAML so they can be unit
 tested; see <code>tests/install-tooling.test.sh</code>, which runs every install path
-against stubbed apt, gpg, curl and uv under a temporary root, and
+against stubbed git, curl and uv (and apt, gpg and sudo stubs that must never
+be called), and
 <code>actions/shared/setup/vergil/tests/derive.test.sh</code>, which runs the real
 resolver against the fixture window in <code>tests/fixtures/window.json</code> (one case
 stubs the resolver to test the <code>warning:</code> passthrough), and
