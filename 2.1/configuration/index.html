@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -879,6 +879,8 @@
       
         
       
+        
+      
     
     
     
@@ -931,6 +933,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.88/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.88
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8640,7 +8670,9 @@ secret.</p>
   need not be up to date</li>
 <li><strong>CI gates (main)</strong> — The same required status checks for <code>main</code>; the
   branch must be up to date</li>
-<li><strong>Tag protection</strong> — Protect release tags (<code>v*.*.*</code>) and rolling minor tags (<code>v*.*</code>)</li>
+<li><strong>Tag protection</strong> — Protect release tags (<code>v*.*.*</code>) and rolling minor tags
+  (<code>v*.*</code>); only the repository Admin role and the org automation App may
+  create, move or delete them</li>
 <li><strong>Rolling tag branch names</strong> — Block branches named like a rolling tag (<code>v[0-9]*</code>)</li>
 <li><strong>Automation branches</strong> — Only the org automation App and the repository
   Admin role may write <code>automation/**</code> branches</li>

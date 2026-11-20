@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -879,6 +879,8 @@
       
         
       
+        
+      
     
     
     
@@ -931,6 +933,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.88/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.88
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7911,10 +7941,10 @@
 
 
 <h1 id="cdreleasetag-and-release">cd/release/tag-and-release<a class="headerlink" href="#cdreleasetag-and-release" title="Permanent link">&para;</a></h1>
-<p>Creates an annotated git tag, a develop changelog boundary tag, and a GitHub
-Release. All mutating steps are skipped when the tag already exists, making the
-action safe to re-run. Every tag push uses the automation App's installation
-token passed as <code>tag-token</code>, never the checkout's <code>GITHUB_TOKEN</code>.</p>
+<p>Creates an annotated git tag and a GitHub Release. All mutating steps are
+skipped when the tag already exists, making the action safe to re-run. Every
+tag push uses the automation App's installation token passed as <code>tag-token</code>,
+never the checkout's <code>GITHUB_TOKEN</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Rolling minor tags</p>
 <p>Rolling minor tags (e.g. <code>v1.2</code>) are no longer created by this action.
@@ -8029,9 +8059,6 @@ They are now managed by <code>vrg-promote</code> in the release orchestrator's
 <li><strong>Configure git identity</strong> — Sets the git user to <code>github-actions[bot]</code>.</li>
 <li><strong>Create annotated tag</strong> — Creates <code>v&lt;version&gt;</code> with message
    <code>Release &lt;version&gt;</code> and pushes it with the App token.</li>
-<li><strong>Tag develop for changelog boundaries</strong> — Fetches <code>develop</code> and creates a
-   <code>develop-v&lt;version&gt;</code> tag pointing at <code>origin/develop</code>, then pushes it with
-   the App token. This enables changelog generation between releases.</li>
 <li><strong>Create GitHub Release</strong> — Uses <code>gh release create</code> with the job's
    <code>GITHUB_TOKEN</code>, the provided title and notes, and optional artifacts.</li>
 <li><strong>Verify tag is resolvable from remote</strong> — Clones the tag back from
@@ -8063,11 +8090,12 @@ as command-line git config, so the push authenticates as the App alone.</p>
 </code></pre></div>
 <h2 id="github-configuration">GitHub configuration<a class="headerlink" href="#github-configuration" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Tag protection</strong> — The Tag protection ruleset restricts release tags to
-  the repository Admin role and the automation App; epic
-  <a href="https://github.com/vergil-project/.github/issues/1350">vergil-project/.github#1350</a>
-  adds creation to its update and deletion rules. So the tags are pushed as
-  the App, which needs Contents write on the repository; see
+<li><strong>Tag protection</strong> — The Tag protection ruleset restricts the creation,
+  update and deletion of release tags to the repository Admin role and the
+  automation App (creation since epic
+  <a href="https://github.com/vergil-project/.github/issues/1350">vergil-project/.github#1350</a>).
+  So the tags are pushed as the App, which needs Contents write on the
+  repository; see
   <a href="../../configuration/#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>.</li>
 </ul>
 

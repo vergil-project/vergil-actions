@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -879,6 +879,8 @@
       
         
       
+        
+      
     
     
     
@@ -931,6 +933,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.88/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.88
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7561,10 +7591,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#admin-bypass" class="md-nav__link">
+  <a href="#bypass-actors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Admin bypass
+        Bypass actors
       
     </span>
   </a>
@@ -8000,10 +8030,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#admin-bypass" class="md-nav__link">
+  <a href="#bypass-actors" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Admin bypass
+        Bypass actors
       
     </span>
   </a>
@@ -8321,7 +8351,9 @@ merge through <code>quality / evidence</code>, as does <code>quality / custom</c
 <h2 id="tag-protection-ruleset">Tag protection ruleset<a class="headerlink" href="#tag-protection-ruleset" title="Permanent link">&para;</a></h2>
 <p>Applies to the full semver release tags (such as <code>v1.1.1</code> or <code>v2.0.0</code>) and to
 the rolling minor tags (such as <code>v1.1</code>) that consumers follow as their deploy
-ref. Only the repository Admin role may move or delete either.</p>
+ref. Only the repository Admin role and the org automation App may create,
+move or delete either: the release workflow pushes each <code>vX.Y.Z</code> tag with the
+App's installation token.</p>
 <table>
 <thead>
 <tr>
@@ -8333,6 +8365,10 @@ ref. Only the repository Admin role may move or delete either.</p>
 <tr>
 <td>Patterns</td>
 <td><code>refs/tags/v*.*.*</code>, <code>refs/tags/v*.*</code></td>
+</tr>
+<tr>
+<td>Restrict creations</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td>Block deletion</td>
@@ -8348,7 +8384,7 @@ ref. Only the repository Admin role may move or delete either.</p>
 </tr>
 <tr>
 <td>Bypass actors</td>
-<td>Repository Admin role (<code>RepositoryRole</code>, <code>actor_id: 5</code>, <code>bypass_mode: always</code>)</td>
+<td>The org automation App (<code>Integration</code>, its per-org App ID, <code>bypass_mode: always</code>) and the repository Admin role (<code>RepositoryRole</code>, <code>actor_id: 5</code>, <code>bypass_mode: always</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -8361,12 +8397,20 @@ sensitive as moving a release tag. <code>v*.*.*</code> covers the immutable rele
 <code>tag-and-release</code> action no longer moves rolling tags: <code>vrg-promote</code> moves
 them in the release orchestrator's <code>promote</code> phase (see
 <a href="../../actions/cd-release-tag-and-release/"><code>cd/release/tag-and-release</code></a>).</p>
-<h3 id="admin-bypass">Admin bypass<a class="headerlink" href="#admin-bypass" title="Permanent link">&para;</a></h3>
-<p>The repository Admin role is the ruleset's only bypass actor. It is the human
-release identity, so moving a rolling tag to a new patch release and cleanup
-operations (e.g., removing a tag created against the wrong branch) both run
-under it. No other identity, the agent Apps and the automation App included,
-can move or delete a protected tag.</p>
+<h3 id="bypass-actors">Bypass actors<a class="headerlink" href="#bypass-actors" title="Permanent link">&para;</a></h3>
+<p>The ruleset has two bypass actors. The org automation App creates the
+<code>vX.Y.Z</code> release tags: the
+<a href="../../actions/cd-release-tag-and-release/"><code>cd/release/tag-and-release</code></a>
+action pushes them with the App's installation token, never the workflow's
+<code>GITHUB_TOKEN</code> (see <a href="../../workflows/cd-release/">CD release</a>). The repository
+Admin role is the human release identity, so moving a rolling tag to a new
+patch release with <code>vrg-promote</code> and cleanup operations (e.g., removing a tag
+created against the wrong branch) both run under it. No other identity, the
+agent Apps and the GitHub Actions integration included, can create, move or
+delete a protected tag: a bypass for the GitHub Actions integration would let
+any workflow's <code>GITHUB_TOKEN</code> create a release tag. The App's numeric ID
+differs per org, as for the
+<a href="#automation-branches-ruleset">Automation branches ruleset</a>.</p>
 <h2 id="rolling-tag-branch-names-ruleset">Rolling tag branch names ruleset<a class="headerlink" href="#rolling-tag-branch-names-ruleset" title="Permanent link">&para;</a></h2>
 <p>Blocks any branch whose name has the shape of a rolling tag. Some consumers,
 Claude Code among them, resolve a ref such as <code>v2.1</code> as a branch before a tag
