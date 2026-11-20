@@ -17,8 +17,8 @@
 # Cases:
 #   * tag-and-release requires its tag-token input, fails before tagging
 #     when it is empty, and pushes every tag through push-tag.sh with
-#     TAG_TOKEN set from it; no step runs `git push` itself, and only the
-#     GitHub Release step uses github.token;
+#     TAG_TOKEN set from it; no step runs `git push` itself or creates a
+#     develop tag, and only the GitHub Release step uses github.token;
 #   * cd-release's release job checks both App secrets, then mints a token
 #     scoped to this repository with Contents write only, before the
 #     evidence gate, the registry publish and the tag; it passes that token
@@ -78,10 +78,14 @@ case_action_pushes_with_tag_token() {
   # No step pushes with git directly.
   n="$(yq -r '[.runs.steps[] | select((.run // "") | test("git push"))] | length' "$action_yml")"
   expect "$name" "steps running git push directly" "$n" "0" || return 0
-  # The three tag pushes (release tag, develop tag, resync) go through
-  # push-tag.sh, each with TAG_TOKEN from the input.
+  # The two tag pushes (release tag, resync) go through push-tag.sh, each
+  # with TAG_TOKEN from the input.
   n="$(yq -r '[.runs.steps[] | select((.run // "") | test("push-tag\.sh"))] | length' "$action_yml")"
-  expect "$name" "steps calling push-tag.sh" "$n" "3" || return 0
+  expect "$name" "steps calling push-tag.sh" "$n" "2" || return 0
+  # No develop-v<version> tag: the action creates only v<version> and the
+  # GitHub Release (epic vergil-project/.github#1406).
+  n="$(yq -r '[.runs.steps[] | select((.run // "") | test("develop"))] | length' "$action_yml")"
+  expect "$name" "steps touching develop" "$n" "0" || return 0
   for i in $(yq -r '.runs.steps | to_entries | .[] | select((.value.run // "") | test("push-tag\.sh")) | .key' "$action_yml"); do
     tok="$(yq -r ".runs.steps[$i].env.TAG_TOKEN" "$action_yml")"
     expect "$name" "step $i TAG_TOKEN" "$tok" "$token_expr" || return 0

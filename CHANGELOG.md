@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.88] - 2026-11-20
+
+### Documentation
+
+- document the tag creation rule, host install and detect.sh after the uv install (#1344)
+
+### Features
+
+- stop creating develop-vX.Y.Z tags and delete the unused cliff configs (#1345)
+
 ## [2.1.87] - 2026-11-19
 
 ### Bug fixes

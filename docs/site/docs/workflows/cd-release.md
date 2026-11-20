@@ -83,9 +83,9 @@ downloads the release PR's CI evidence artifacts), `contents: write`,
 | `CARGO_REGISTRY_TOKEN` | Rust registry publish only | crates.io token for `registry-publish` |
 
 Every release needs the two App secrets. The `release` job pushes the
-`v<version>` and `develop-v<version>` tags with the App's installation
-token, never its `GITHUB_TOKEN`, so that the Tag protection ruleset can let
-only the repository Admin role and the App create a release tag. The token
+`v<version>` tag with the App's installation token, never its
+`GITHUB_TOKEN`, so that the Tag protection ruleset can let only the
+repository Admin role and the App create a release tag. The token
 is scoped to the calling repository with Contents write only. A packaged
 release also uses the App to dispatch the package index.
 
