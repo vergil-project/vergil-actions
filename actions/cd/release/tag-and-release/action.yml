@@ -1,10 +1,10 @@
 name: Tag and release
 description: >-
-  Creates an annotated git tag, a develop changelog boundary tag, and a GitHub
-  Release.  Rolling minor tags (vX.Y) are handled by vrg-promote in the release
-  orchestrator.  All mutating steps are skipped when the tag already exists,
-  making the action safe to re-run.  Every tag push uses the automation App's
-  installation token passed as tag-token, never the checkout's GITHUB_TOKEN.
+  Creates an annotated git tag and a GitHub Release.  Rolling minor tags
+  (vX.Y) are handled by vrg-promote in the release orchestrator.  All
+  mutating steps are skipped when the tag already exists, making the action
+  safe to re-run.  Every tag push uses the automation App's installation
+  token passed as tag-token, never the checkout's GITHUB_TOKEN.
 
 inputs:
   version:
@@ -102,17 +102,6 @@ runs:
         git tag -a "$TAG" \
           -m "Release $VERSION"
         bash "${GITHUB_ACTION_PATH}/push-tag.sh" origin "$TAG"
-
-    - name: Tag develop for changelog boundaries
-      if: steps.check.outputs.created == 'true'
-      shell: bash
-      env:
-        TAG: ${{ steps.meta.outputs.tag }}
-        TAG_TOKEN: ${{ inputs.tag-token }}
-      run: |
-        git fetch origin develop
-        git tag "develop-$TAG" origin/develop
-        bash "${GITHUB_ACTION_PATH}/push-tag.sh" origin "develop-$TAG"
 
     - name: Create GitHub Release
       if: steps.check.outputs.created == 'true'

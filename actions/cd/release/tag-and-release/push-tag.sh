@@ -3,8 +3,8 @@
 # Push release tags with the automation App's installation token, never the
 # checkout's GITHUB_TOKEN (vergil-project/vergil-actions#1315, epic
 # vergil-project/.github#1350). Every tag push of tag-and-release goes
-# through here: the `v<version>` tag, its `develop-v<version>` changelog tag
-# and the resync of a tag with missing objects.
+# through here: the `v<version>` tag and the resync of a tag with missing
+# objects.
 #
 # Only the repository Admin role and the automation App may create, update or
 # delete a release tag once the Tag protection ruleset carries its creation

@@ -1,9 +1,9 @@
 # cd/release/tag-and-release
 
-Creates an annotated git tag, a develop changelog boundary tag, and a GitHub
-Release. All mutating steps are skipped when the tag already exists, making the
-action safe to re-run. Every tag push uses the automation App's installation
-token passed as `tag-token`, never the checkout's `GITHUB_TOKEN`.
+Creates an annotated git tag and a GitHub Release. All mutating steps are
+skipped when the tag already exists, making the action safe to re-run. Every
+tag push uses the automation App's installation token passed as `tag-token`,
+never the checkout's `GITHUB_TOKEN`.
 
 !!! note "Rolling minor tags"
     Rolling minor tags (e.g. `v1.2`) are no longer created by this action.
@@ -71,12 +71,9 @@ token passed as `tag-token`, never the checkout's `GITHUB_TOKEN`.
 4. **Configure git identity** — Sets the git user to `github-actions[bot]`.
 5. **Create annotated tag** — Creates `v<version>` with message
    `Release <version>` and pushes it with the App token.
-6. **Tag develop for changelog boundaries** — Fetches `develop` and creates a
-   `develop-v<version>` tag pointing at `origin/develop`, then pushes it with
-   the App token. This enables changelog generation between releases.
-7. **Create GitHub Release** — Uses `gh release create` with the job's
+6. **Create GitHub Release** — Uses `gh release create` with the job's
    `GITHUB_TOKEN`, the provided title and notes, and optional artifacts.
-8. **Verify tag is resolvable from remote** — Clones the tag back from
+7. **Verify tag is resolvable from remote** — Clones the tag back from
    GitHub. If that fails, the tag reached the remote with missing objects:
    it is re-pushed whole with the App token and cloned again.
 
