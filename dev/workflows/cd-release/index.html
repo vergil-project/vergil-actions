@@ -7963,9 +7963,9 @@ downloads the release PR's CI evidence artifacts), <code>contents: write</code>,
 </tbody>
 </table>
 <p>Every release needs the two App secrets. The <code>release</code> job pushes the
-<code>v&lt;version&gt;</code> and <code>develop-v&lt;version&gt;</code> tags with the App's installation
-token, never its <code>GITHUB_TOKEN</code>, so that the Tag protection ruleset can let
-only the repository Admin role and the App create a release tag. The token
+<code>v&lt;version&gt;</code> tag with the App's installation token, never its
+<code>GITHUB_TOKEN</code>, so that the Tag protection ruleset can let only the
+repository Admin role and the App create a release tag. The token
 is scoped to the calling repository with Contents write only. A packaged
 release also uses the App to dispatch the package index.</p>
 <p>The workflow declares both App secrets optional, so a caller that does not
