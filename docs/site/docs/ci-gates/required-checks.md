@@ -109,7 +109,6 @@ input):
 | ---- | -------- | ------- |
 | `run-security` | `security / codeql`, `security / trivy`, `security / semgrep` jobs | `true` |
 | `run-codeql` | `security / codeql` job (requires `run-security` to also be true) | `true` |
-| `upload-sarif` | Upload of SARIF to code scanning; when false, `security / codeql` is skipped | `true` |
 
 ```yaml
 security:
@@ -117,7 +116,6 @@ security:
   permissions:
     contents: read
     security-events: write
-    actions: read
   with:
     language: <lang>
 ```

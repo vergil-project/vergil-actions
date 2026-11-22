@@ -26,15 +26,6 @@ on:
           Disable for languages CodeQL does not support (e.g. shell).
         type: boolean
         default: true
-      upload-sarif:
-        description: >-
-          Upload scanner SARIF results to GitHub code scanning.
-          Disable on private repos without GitHub Advanced Security:
-          Trivy and Semgrep results are preserved as build artifacts
-          instead, and the CodeQL job is skipped entirely (CodeQL
-          cannot run on private repos without GHAS).
-        type: boolean
-        default: true
       container-suffix:
         type: string
         required: false
@@ -48,21 +39,14 @@ on:
         description: >-
           Container image name prefix (prod or dev). Defaults to "prod".
 
-# actions: read is required by codeql-action/upload-sarif on private
-# repos (it reads the workflow run via the Actions API); public repos
-# do not need it, which is why the gap was invisible there. See #693.
 permissions:
   contents: read
   security-events: write
-  actions: read
 
 jobs:
   codeql:
     name: codeql
-    # upload-sarif gates this job entirely: CodeQL requires GitHub code
-    # scanning, which on private repos requires GHAS. upload-sarif: false
-    # signals code scanning is unavailable, so CodeQL cannot run at all.
-    if: ${{ inputs.run-security && inputs.run-codeql && inputs.upload-sarif }}
+    if: ${{ inputs.run-security && inputs.run-codeql }}
     runs-on: ubuntu-24.04
     # No container: CodeQL autobuild for compiled languages (go, rust)
     # needs the language toolchain on PATH. The prod-base image has none, and
@@ -73,7 +57,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -104,7 +87,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -113,17 +95,15 @@ jobs:
       # accepted-suppressed results from the copy uploaded to code scanning
       # (issue #920). trivy-results.sarif itself stays unfiltered.
       - name: Install vergil-tooling
-        if: ${{ inputs.upload-sarif }}
         uses: ./actions/shared/setup/vergil
 
       - name: Run Trivy vulnerability scan
         uses: ./actions/shared/security/trivy
         with:
           scan-type: fs
-          upload-sarif: ${{ inputs.upload-sarif }}
 
-      # Upload the Trivy SARIF as an evidence partial UNCONDITIONALLY, whether
-      # or not it was also pushed to code scanning (spec §7). This is the
+      # Upload the Trivy SARIF as an evidence partial UNCONDITIONALLY, beside
+      # the copy pushed to code scanning (spec §7). This is the
       # UNFILTERED file: accepted-suppressed results are kept here for audit;
       # only the code-scanning upload copy omits them (issue #920).
       - name: Upload Trivy SARIF evidence partial
@@ -151,7 +131,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -163,10 +142,9 @@ jobs:
         uses: ./actions/ci/security/semgrep
         with:
           language: ${{ inputs.language }}
-          upload-sarif: ${{ inputs.upload-sarif }}
 
-      # Upload the Semgrep SARIF as an evidence partial UNCONDITIONALLY, whether
-      # or not it was also pushed to code scanning (spec §7). This is the
+      # Upload the Semgrep SARIF as an evidence partial UNCONDITIONALLY, beside
+      # the copy pushed to code scanning (spec §7). This is the
       # UNFILTERED file: accepted-suppressed results are kept here for audit;
       # only the code-scanning upload copy omits them (issue #920).
       - name: Upload Semgrep SARIF evidence partial
@@ -182,18 +160,20 @@ jobs:
     # Consolidate every scanner's SARIF partial into the single
     # ci-evidence-security artifact the harvester expects. Runs once the
     # scanners have settled: trivy and semgrep must have passed, and codeql
-    # must have passed or been legitimately skipped (no GHAS / run-codeql
-    # false). A failed scanner means the security gate failed, so no evidence
-    # is emitted and — per the publish invariant — nothing is released.
+    # must have passed when run-codeql is true, or been skipped when it is
+    # false. Only run-codeql false accepts a skipped codeql job;
+    # actions/ci/evidence/tests/security-gate.test.sh pins it. A failed
+    # scanner means the security gate failed, so no evidence is emitted
+    # and — per the publish invariant — nothing is released.
     needs: [codeql, trivy, semgrep]
     if: >-
       ${{ always() && needs.trivy.result == 'success' &&
       needs.semgrep.result == 'success' &&
-      (needs.codeql.result == 'success' || needs.codeql.result == 'skipped') }}
+      ((inputs.run-codeql && needs.codeql.result == 'success') ||
+      (!inputs.run-codeql && needs.codeql.result == 'skipped')) }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      actions: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -208,7 +188,7 @@ jobs:
       # The tools are the scanners whose SARIF the gate holds (issue #1215).
       # This job runs only when trivy and semgrep passed, so both are always
       # named; codeql is named only when its job ran and passed, never when
-      # it was skipped (no GHAS, or run-codeql false). Each scanner job that
+      # it was skipped (run-codeql false). Each scanner job that
       # uploads a ci-evidence-security-part-<scanner> partial must appear
       # here; actions/ci/evidence/tests/security-tools.test.sh checks it.
       - name: Emit ci-evidence-security artifact
