@@ -8433,6 +8433,11 @@ only library repositories:</p>
 <td>Calling repository only</td>
 </tr>
 <tr>
+<td><a href="../workflows/ops-github-config/#trusted-authors-check"><code>ops-github-config.yml</code></a></td>
+<td><code>trusted-authors-check</code> (in <code>&lt;org&gt;/.github</code> only, skipped elsewhere)</td>
+<td>Every repository the App is installed on in the org, read-only</td>
+</tr>
+<tr>
 <td><a href="../workflows/ops-epic-rollup/"><code>ops-epic-rollup.yml</code></a></td>
 <td><code>epic-rollup</code> (from the caller's <code>epic-rollup.yml</code>)</td>
 <td>Calling repository and the epic repository</td>
@@ -8511,6 +8516,16 @@ permissions:</p>
 <td>Read-only</td>
 <td><code>dependabot-audit</code> (<code>vrg-dependabot-audit</code> lists open alerts)</td>
 </tr>
+<tr>
+<td>Variables</td>
+<td>Read-only</td>
+<td><code>trusted-authors-check</code>, in the org's <code>.github</code> repository only (<code>vrg-trusted-authors check</code> lists every repository's Actions variables, for a repository-level copy of <code>VRG_TRUSTED_AUTHORS</code> or <code>VRG_AUTOMATION_APP</code>)</td>
+</tr>
+<tr>
+<td>Variables (organization permission)</td>
+<td>Read-only</td>
+<td><code>trusted-authors-check</code>, in the org's <code>.github</code> repository only (<code>vrg-trusted-authors check</code> reads the org variables <code>VRG_TRUSTED_AUTHORS</code> and <code>VRG_AUTOMATION_APP</code>)</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Why the App holds no Repository security advisories permission.</strong> The App
@@ -8536,7 +8551,8 @@ token is scoped, as <a href="#token-scoping">Token scoping</a> describes.</p>
 <li>Click <strong>New GitHub App</strong>.</li>
 <li>Name it <code>&lt;org&gt;-automation</code> and set the homepage URL.</li>
 <li>Under <strong>Permissions &gt; Repository permissions</strong>, grant the permissions listed
-   above.</li>
+   above, and under <strong>Permissions &gt; Organization permissions</strong>, grant
+   Variables: Read-only.</li>
 <li>Disable webhooks (not needed).</li>
 <li>Create the app and note the <strong>Client ID</strong> from the app's settings page.</li>
 <li>Under <strong>Private keys</strong>, click <strong>Generate a private key</strong>. Save the downloaded
@@ -8601,6 +8617,11 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 <td><code>ops-github-config.yml</code></td>
 <td><code>github-config</code> (from <code>develop</code> only)</td>
 <td><code>administration: write</code>, <code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>metadata: read</code> (<code>update</code>; <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a> also returns the merge settings only with Contents read and write)</td>
+</tr>
+<tr>
+<td><code>ops-github-config.yml</code></td>
+<td><code>trusted-authors-check</code> (in <code>&lt;org&gt;/.github</code> only, skipped elsewhere; the org's whole installation, not the calling repository)</td>
+<td><code>organization-actions-variables: read</code>, <code>actions-variables: read</code>, <code>metadata: read</code></td>
 </tr>
 <tr>
 <td><code>ops-github-config.yml</code></td>
