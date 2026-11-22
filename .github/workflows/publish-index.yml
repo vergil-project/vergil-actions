@@ -82,6 +82,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
           PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-package index --config packages.toml --keys keys --out _site
 
       # The sha256 of every signed InRelease and repomd.xml just built: what

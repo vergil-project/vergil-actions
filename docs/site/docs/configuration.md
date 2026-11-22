@@ -232,6 +232,28 @@ scheduled run and a dispatch of the same job never overlap. The
 tool runs, so the `git clone` and `git push` the tooling makes authenticate
 as the App with that job's scoped token.
 
+## Variables
+
+### VRG_TRUSTED_AUTHORS
+
+The org-level Actions variable `VRG_TRUSTED_AUTHORS`, visible to all
+repositories, holds the trusted-authors configuration that vergil-tooling
+judges GitHub content against: the `human` and `agents` logins and the
+automation App of every Vergil org, as compact JSON. It is derived from the
+human's host configuration and published by the human at org setup and
+whenever that configuration changes, never edited by hand.
+
+Under GitHub Actions, with no configuration file on the runner,
+vergil-tooling reads it from the environment and stops when it is missing
+or invalid. The reusable workflows pass it, as
+`VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}`, into the `env` of each
+step that runs a `vrg-*` command that calls GitHub, and into the step that
+uses a composite action running one (a composite action cannot read
+`vars`). Only those steps get it: no workflow-level or job-level `env`
+sets it. `actions/shared/setup/vergil/tests/trusted-authors-env.test.sh`
+checks this. A repository-level variable of the same name would override
+the org copy in that repository's jobs, so none is set.
+
 ## Binary package environments
 
 Repositories whose `vergil.toml` has a `[package]` section, and the

@@ -55,4 +55,5 @@ jobs:
       - name: Roll up parent epic
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-epic-rollup --task "${{ github.repository }}#${{ github.event.issue.number }}"

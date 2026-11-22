@@ -4,8 +4,9 @@ description: >-
   branch in the job summary. Branches of merged PRs, which mean GitHub skipped
   its after-merge processing, are flagged in a warning block and as
   `::warning::` annotations. Fails when the sweep fails or its output cannot be
-  reconciled with its summary line. Needs vergil-tooling on PATH and a
-  GH_TOKEN with contents:write and pull-requests:read on the repo. The
+  reconciled with its summary line. Needs vergil-tooling on PATH, a
+  GH_TOKEN with contents:write and pull-requests:read on the repo, and
+  VRG_TRUSTED_AUTHORS from the org variable in the calling step's env. The
   reporting logic lives in sweep.sh so it is unit-testable
   (tests/sweep.test.sh).
 

@@ -21,12 +21,18 @@ repositories do not add it themselves.
 
 - name: Stage documentation sources
   uses: vergil-project/vergil-actions/actions/shared/docs/stage@v2.1
+  env:
+    VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
   with:
     mkdocs-config: docs/site/mkdocs.yml
 ```
 
 The action needs `vergil-tooling` on `PATH` and a checkout with full history
 (`fetch-depth: 0`), because the staging reads git tags.
+It also needs `VRG_TRUSTED_AUTHORS` set from `${{ vars.VRG_TRUSTED_AUTHORS }}`
+in the calling step's `env`: a composite action cannot read `vars`, and
+vergil-tooling stops when the variable is missing or invalid (see
+[Variables](../configuration.md#variables)).
 
 ## Inputs
 

@@ -3,7 +3,9 @@ description: >-
   Stages changelog and release-notes pages and patches the mkdocs nav with
   release versions. Shared by the CI build-only verification and the CD deploy
   so both build the docs from an identical source tree — a green CI docs check
-  reliably predicts a green CD docs deploy.
+  reliably predicts a green CD docs deploy. vrg-docs-stage reads the
+  repository's releases, so the calling step sets VRG_TRUSTED_AUTHORS from
+  the org variable in its env.
 
 inputs:
   mkdocs-config:
