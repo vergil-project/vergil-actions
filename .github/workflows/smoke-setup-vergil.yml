@@ -74,6 +74,13 @@ name: Smoke - setup/vergil outputs
 #         vergil-project/.github#1168), and ops-github-config's update step
 #         sets it, so a token-less step (the setup action's vrg-whoami check)
 #         never runs as the automation identity (issue #1192);
+#       - ops/github-config trusted-authors-check.test.sh: ops-github-config's
+#         trusted-authors-check job runs only in the org's .github
+#         repository, and runs `vrg-trusted-authors check --org` as the
+#         automation App, with a token scoped to the org's installation
+#         and read-only Variables and Metadata only, and uploads the
+#         --values-out file as trusted-authors-values with `if: always()`
+#         (issue #1353);
 #       - ops/upstream-refresh key-boundary.test.sh: ops-upstream-refresh's
 #         key boundary, the App's credentials only on publish's tool step,
 #         none on prepare, which has a read-only token, the develop guard
@@ -180,6 +187,9 @@ jobs:
       - name: Run ops/github-config automation-env harness
         shell: bash
         run: bash actions/ops/github-config/tests/automation-env.test.sh
+      - name: Run ops/github-config trusted-authors-check harness
+        shell: bash
+        run: bash actions/ops/github-config/tests/trusted-authors-check.test.sh
       - name: Run ops/upstream-refresh key-boundary harness
         shell: bash
         run: bash actions/ops/upstream-refresh/tests/key-boundary.test.sh

@@ -8,3 +8,12 @@ paths:
       # under on.workflow_call.secrets, and actionlint cannot see environment
       # secrets, so ignore exactly these two references.
       - 'property "package_signing_(key|passphrase)" is not defined in object type'
+  .github/workflows/ops-github-config.yml:
+    ignore:
+      # The trusted-authors-check token asks for read-only organization and
+      # repository Variables. actions/create-github-app-token's metadata
+      # declares no input for either, but the action turns every
+      # permission-* input into a token permission (organization_actions_variables
+      # and actions_variables in GitHub's App permissions), so ignore exactly
+      # these two inputs.
+      - 'input "permission-(organization-)?actions-variables" is not defined in action'

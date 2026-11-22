@@ -87,6 +87,7 @@ only library repositories:
 | Workflow | Job or step | Token scope |
 | -------- | ----------- | ----------- |
 | [`ops-github-config.yml`](workflows/ops-github-config.md) | `branch-sweep`, `github-config`, `dependabot-audit` | Calling repository only |
+| [`ops-github-config.yml`](workflows/ops-github-config.md#trusted-authors-check) | `trusted-authors-check` (in `<org>/.github` only, skipped elsewhere) | Every repository the App is installed on in the org, read-only |
 | [`ops-epic-rollup.yml`](workflows/ops-epic-rollup.md) | `epic-rollup` (from the caller's `epic-rollup.yml`) | Calling repository and the epic repository |
 | [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
 | [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `publish` (`vrg-upstream-refresh publish` mints the token itself) | Calling repository only |
@@ -107,6 +108,8 @@ permissions:
 | Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues) |
 | Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); `github-config`, the automatic fleet sync, whose PRs can change files under `.github/workflows/`; `upstream-refresh`, only for the wait's branch update, which merges `develop` into the PR branch and is refused without it whenever `develop` has changed a workflow file (the path fence keeps every refresh patch out of `.github/**`) |
 | Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
+| Variables | Read-only | `trusted-authors-check`, in the org's `.github` repository only (`vrg-trusted-authors check` lists every repository's Actions variables, for a repository-level copy of `VRG_TRUSTED_AUTHORS` or `VRG_AUTOMATION_APP`) |
+| Variables (organization permission) | Read-only | `trusted-authors-check`, in the org's `.github` repository only (`vrg-trusted-authors check` reads the org variables `VRG_TRUSTED_AUTHORS` and `VRG_AUTOMATION_APP`) |
 
 **Why the App holds no Repository security advisories permission.** The App
 must not hold Repository security advisories at any access level. No
@@ -133,7 +136,8 @@ token is scoped, as [Token scoping](#token-scoping) describes.
 2. Click **New GitHub App**.
 3. Name it `<org>-automation` and set the homepage URL.
 4. Under **Permissions > Repository permissions**, grant the permissions listed
-   above.
+   above, and under **Permissions > Organization permissions**, grant
+   Variables: Read-only.
 5. Disable webhooks (not needed).
 6. Create the app and note the **Client ID** from the app's settings page.
 7. Under **Private keys**, click **Generate a private key**. Save the downloaded
@@ -189,6 +193,7 @@ explicit `permission-*` inputs, and each job requests only what it needs:
 | -------- | ----------- | --------------------- |
 | `ops-github-config.yml` | `branch-sweep` | `contents: write`, `pull-requests: read` |
 | `ops-github-config.yml` | `github-config` (from `develop` only) | `administration: write`, `contents: write`, `pull-requests: write`, `workflows: write`, `metadata: read` (`update`; [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository) also returns the merge settings only with Contents read and write) |
+| `ops-github-config.yml` | `trusted-authors-check` (in `<org>/.github` only, skipped elsewhere; the org's whole installation, not the calling repository) | `organization-actions-variables: read`, `actions-variables: read`, `metadata: read` |
 | `ops-github-config.yml` | `dependabot-audit` | `vulnerability-alerts: read` |
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
 | `ops-epic-sweep.yml` | `epic-sweep` | `issues: write`, `pull-requests: read`, `contents: read` |
