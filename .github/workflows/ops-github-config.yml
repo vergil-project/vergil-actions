@@ -58,6 +58,7 @@ jobs:
         uses: ./actions/ops/github-config/branch-sweep
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
 
   # The automatic fleet sync (epic vergil-project/.github#1064): converges the
   # repository's settings and rulesets, and opens one auto-merging PR on an
@@ -173,6 +174,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-github-repo-config update --repo "${{ github.repository }}"
 
   # Report-only Dependabot gate (epic vergil-project/.github#420): alerts are
@@ -210,4 +212,5 @@ jobs:
       - name: Audit open Dependabot alerts
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-dependabot-audit --repo "${{ github.repository }}"

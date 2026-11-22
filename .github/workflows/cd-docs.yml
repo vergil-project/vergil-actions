@@ -58,10 +58,13 @@ jobs:
           # be in the env. The org `.github` epic home is public, so the
           # repo-scoped default token suffices — no App-token minting needed.
           GH_TOKEN: ${{ github.token }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: eval "$PRE_DEPLOY_COMMAND"
 
       - name: Stage documentation sources
         uses: ./actions/shared/docs/stage
+        env:
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         with:
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
 

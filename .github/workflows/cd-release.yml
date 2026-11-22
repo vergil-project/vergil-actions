@@ -180,6 +180,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: |
           set -euo pipefail
           version=$(vrg-version show)
@@ -562,6 +563,8 @@ jobs:
         if: steps.tag_check.outputs.exists == 'false'
         continue-on-error: ${{ !inputs.evidence-enforce }}
         uses: ./actions/cd/release/ci-evidence-gate
+        env:
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         with:
           version: ${{ steps.version.outputs.version }}
           enforce: ${{ inputs.evidence-enforce }}
