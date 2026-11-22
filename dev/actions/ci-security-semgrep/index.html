@@ -8028,18 +8028,11 @@ rulesets.</p>
 <td><code>""</code></td>
 <td>Additional Semgrep config strings, space-separated (e.g. <code>p/owasp-top-ten</code>).</td>
 </tr>
-<tr>
-<td><code>upload-sarif</code></td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by <code>vrg-sarif-filter</code>; requires vergil-tooling on <code>PATH</code>). Set to <code>false</code> on private repos without GHAS; results are attached as a build artifact instead.</td>
-</tr>
 </tbody>
 </table>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>security-events: write</code> (required for uploading SARIF results)</li>
-<li><code>actions: read</code> (required by the SARIF upload on <strong>private</strong> repositories)</li>
 <li><code>contents: read</code></li>
 </ul>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
@@ -8074,9 +8067,7 @@ rulesets.</p>
    scanning using <code>github/codeql-action/upload-sarif@v4</code>, categorized as
    <code>semgrep</code>. The unfiltered <code>semgrep-results.sarif</code> is left in place for the
    evidence bundle. These steps run even if the scan finds issues
-   (<code>if: always()</code>) and need vergil-tooling on <code>PATH</code>. When
-   <code>upload-sarif</code> is <code>false</code>, the SARIF file is attached to the workflow run
-   as a build artifact (<code>semgrep-sarif</code>) instead.</li>
+   (<code>if: always()</code>) and need vergil-tooling on <code>PATH</code>.</li>
 </ol>
 <h2 id="rule-exclusions">Rule exclusions<a class="headerlink" href="#rule-exclusions" title="Permanent link">&para;</a></h2>
 <p>The underlying <code>vrg-semgrep-scan</code> supports a repeatable <code>--exclude-rule
@@ -8118,8 +8109,7 @@ the rule does not apply to them regardless of the backlog above.</p>
 <h2 id="github-configuration">GitHub configuration<a class="headerlink" href="#github-configuration" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>GitHub Advanced Security (GHAS)</strong> — Must be enabled for SARIF upload.
-  On private repos without GHAS, set <code>upload-sarif: false</code> to preserve
-  results as a build artifact instead.</li>
+  It is available by default on public repositories.</li>
 <li><strong>Code scanning alerts</strong> — Results appear in the repository's <strong>Security &gt;
   Code scanning alerts</strong> tab alongside CodeQL results.</li>
 </ul>
