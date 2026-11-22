@@ -881,6 +881,8 @@
       
         
       
+        
+      
     
     
     
@@ -933,6 +935,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.89/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.89
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7813,11 +7843,11 @@ section. Calling it without one fails the run. Its gate job surfaces as
 </thead>
 <tbody>
 <tr>
-<td>Pull request from <code>release/*</code> into <code>main</code></td>
+<td>Pull request from <code>release/*</code> of the same repository into <code>main</code></td>
 <td><code>full</code></td>
 </tr>
 <tr>
-<td>Any other pull request</td>
+<td>Any other pull request, a fork's <code>release/*</code> head included</td>
 <td><code>reduced</code></td>
 </tr>
 <tr>
@@ -7826,6 +7856,8 @@ section. Calling it without one fails the run. Its gate job surfaces as
 </tr>
 </tbody>
 </table>
+<p>A fork chooses its own branch names, so only a <code>release/*</code> head in the
+repository itself gets the <code>full</code> tier automatically.</p>
 <p>The <code>reduced</code> tier keeps every build cell but runs only one <code>install-test</code>
 leg per format, so feature PRs get feedback sooner. For each format it picks
 from that format's shared (non-<code>native</code>) targets, or from its <code>native</code> ones if

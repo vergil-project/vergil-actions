@@ -881,6 +881,8 @@
       
         
       
+        
+      
     
     
     
@@ -933,6 +935,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.89/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.89
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6946,23 +6976,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Required permissions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#upgrading-from-v212-or-earlier" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrading from v2.1.2 or earlier
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -6981,17 +6994,6 @@
     <span class="md-ellipsis">
       
         Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#private-repos-without-github-advanced-security" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Private repos without GitHub Advanced Security
       
     </span>
   </a>
@@ -7793,23 +7795,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Required permissions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#upgrading-from-v212-or-earlier" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrading from v2.1.2 or earlier
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -7828,17 +7813,6 @@
     <span class="md-ellipsis">
       
         Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#private-repos-without-github-advanced-security" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Private repos without GitHub Advanced Security
       
     </span>
   </a>
@@ -7910,13 +7884,6 @@ that bundles their SARIF results for the release harvester.</p>
 <td>Run CodeQL analysis (disable for languages CodeQL does not support, such as <code>shell</code>)</td>
 </tr>
 <tr>
-<td><code>upload-sarif</code></td>
-<td>boolean</td>
-<td>no</td>
-<td><code>true</code></td>
-<td>Upload scanner SARIF to GitHub code scanning (disable on private repos without GHAS; see below)</td>
-</tr>
-<tr>
 <td><code>container-prefix</code></td>
 <td>string</td>
 <td>no</td>
@@ -7944,26 +7911,18 @@ that bundles their SARIF results for the release harvester.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 </code></pre></div>
-<p><code>actions: read</code> is required by <code>codeql-action/upload-sarif</code> on <strong>private</strong>
-repositories (it reads the workflow run via the Actions API). Public
-repositories do not need it, but reusable-workflow jobs can only downgrade
-caller permissions, so the caller must grant it for the workflow-level
-grant to take effect.</p>
-<h3 id="upgrading-from-v212-or-earlier">Upgrading from v2.1.2 or earlier<a class="headerlink" href="#upgrading-from-v212-or-earlier" title="Permanent link">&para;</a></h3>
-<p>v2.1.3 added <code>actions: read</code> to this workflow's <code>permissions:</code> request.
-GitHub validates the request against the calling job's <strong>effective</strong>
-permissions at startup, so a caller whose <code>security:</code> job carries an
-explicit <code>permissions:</code> block (the standard posture) must add
-<code>actions: read</code> to that job-level block — the job block fully replaces
-any workflow-level block in the caller, so a workflow-level grant alone
-is not sufficient. Callers without the grant fail with <code>startup_failure</code>
-and no registered checks.</p>
-<p>The grant is backward-compatible with earlier releases, so it can merge
-before the workflow pin moves to v2.1.3. See
-<a href="https://github.com/vergil-project/vergil-actions/issues/698">#698</a> for
-the incident that motivated this note.</p>
+<p>GitHub validates the workflow's <code>permissions:</code> request against the calling
+job's <strong>effective</strong> permissions at startup, so a caller whose <code>security:</code>
+job carries an explicit <code>permissions:</code> block (the standard posture) must
+grant both there. The job block fully replaces any workflow-level block in
+the caller, so a workflow-level grant alone is not sufficient. A caller
+missing a grant fails with <code>startup_failure</code> and no registered checks.</p>
+<p>The workflow no longer requests <code>actions: read</code>, which v2.1.3 added for
+SARIF uploads from private repositories (epic
+<a href="https://github.com/vergil-project/.github/issues/1476">vergil-project/.github#1476</a>
+removed it). A caller that still grants it keeps working and can drop the
+grant.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <p>GitHub names each check <code>&lt;caller job&gt; / &lt;job&gt;</code>. With the caller job keyed
 <code>security</code> (the standard posture, as in the usage examples below):</p>
@@ -7979,7 +7938,7 @@ the incident that motivated this note.</p>
 <tr>
 <td><code>codeql</code></td>
 <td><code>security / codeql</code></td>
-<td><code>run-security</code>, <code>run-codeql</code>, and <code>upload-sarif</code> are all true</td>
+<td><code>run-security</code> and <code>run-codeql</code> are both true</td>
 </tr>
 <tr>
 <td><code>trivy</code></td>
@@ -7994,7 +7953,7 @@ the incident that motivated this note.</p>
 <tr>
 <td><code>evidence</code></td>
 <td><code>security / evidence</code></td>
-<td><code>trivy</code> and <code>semgrep</code> succeeded, and <code>codeql</code> succeeded or was skipped</td>
+<td><code>trivy</code> and <code>semgrep</code> succeeded, and <code>codeql</code> succeeded (<code>run-codeql</code> true) or was skipped (<code>run-codeql</code> false)</td>
 </tr>
 </tbody>
 </table>
@@ -8005,8 +7964,8 @@ scanners whose SARIF it holds in <code>tools</code>: <code>trivy</code> and <cod
 not run, so no security evidence is emitted. It is not a required check; see
 <a href="../../ci-gates/required-checks/">Required Checks</a> for which of these checks
 branch protection requires.</p>
-<p>When SARIF is uploaded to code scanning, GitHub also adds its own SARIF
-analysis checks (<code>CodeQL</code>, <code>Trivy</code>, <code>Semgrep OSS</code>); see
+<p>Each scanner also uploads its SARIF to code scanning, and GitHub adds its
+own SARIF analysis checks (<code>CodeQL</code>, <code>Trivy</code>, <code>Semgrep OSS</code>); see
 <a href="../../ci-gates/security-scanning/">Security Scanning</a>.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">jobs</span><span class="p">:</span>
@@ -8015,9 +7974,8 @@ analysis checks (<code>CodeQL</code>, <code>Trivy</code>, <code>Semgrep OSS</cod
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 </code></pre></div>
 <p>To skip CodeQL for languages it does not support:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">jobs</span><span class="p">:</span>
@@ -8026,38 +7984,10 @@ analysis checks (<code>CodeQL</code>, <code>Trivy</code>, <code>Semgrep OSS</cod
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shell</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="nt">run-codeql</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shell</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">run-codeql</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </code></pre></div>
-<h2 id="private-repos-without-github-advanced-security">Private repos without GitHub Advanced Security<a class="headerlink" href="#private-repos-without-github-advanced-security" title="Permanent link">&para;</a></h2>
-<p>GitHub code scanning on private repositories requires GitHub Advanced
-Security (GHAS). On a private repo without GHAS, set <code>upload-sarif: false</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">jobs</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">security</span><span class="p">:</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/ci-security.yml@v2.1</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="nt">upload-sarif</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</code></pre></div>
-<p>With <code>upload-sarif: false</code>:</p>
-<ul>
-<li>Trivy and Semgrep scans still run and still fail the job on findings;
-  their SARIF results are attached to the workflow run as build artifacts
-  (<code>trivy-fs-sarif</code>, <code>semgrep-sarif</code>) instead of being uploaded to code
-  scanning.</li>
-<li>The <code>codeql</code> job is skipped entirely — CodeQL cannot run on private
-  repos without GHAS, regardless of the upload destination.</li>
-</ul>
-<p>The scans themselves do not require GHAS; only the code-scanning upload
-destination does. Failing CI because the reporting destination is
-unavailable, when the scan itself passed, is the wrong outcome — this
-input degrades the destination, not the scanning.</p>
 <h2 id="implementation-notes">Implementation notes<a class="headerlink" href="#implementation-notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The <code>semgrep</code> job runs inside the
@@ -8067,9 +7997,9 @@ input degrades the destination, not the scanning.</p>
 <li>The <code>codeql</code> and <code>trivy</code> jobs run directly on <code>ubuntu-24.04</code>, with no
   container. CodeQL autobuild for compiled languages needs the language
   toolchains that the runner provides.</li>
-<li>Each scanner job uploads its <strong>unfiltered</strong> SARIF as an evidence partial
-  regardless of <code>upload-sarif</code>. For Trivy and Semgrep, the copy sent to code
-  scanning omits accepted-suppressed results (via <code>vrg-sarif-filter</code>); the
+<li>Each scanner job uploads its <strong>unfiltered</strong> SARIF as an evidence partial,
+  beside the copy sent to code scanning. For Trivy and Semgrep, the copy sent
+  to code scanning omits accepted-suppressed results (via <code>vrg-sarif-filter</code>); the
   evidence copy keeps them so they remain auditable.</li>
 <li>The Semgrep action auto-detects repository content and enables additional
   rulesets: <code>p/dockerfile</code> when Dockerfiles are present, <code>p/github-actions</code>

@@ -881,6 +881,8 @@
       
         
       
+        
+      
     
     
     
@@ -933,6 +935,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.89/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.89
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8014,18 +8044,8 @@
 </table>
 <h2 id="ghas-requirements">GHAS requirements<a class="headerlink" href="#ghas-requirements" title="Permanent link">&para;</a></h2>
 <p>All three tools upload results in SARIF format to GitHub Code Scanning, which
-requires <strong>GitHub Advanced Security (GHAS)</strong>:</p>
-<ul>
-<li><strong>Public repositories</strong> — GHAS is available by default at no cost.</li>
-<li><strong>Private repositories</strong> — A GHAS license is required. Contact your GitHub
-  administrator.</li>
-</ul>
-<p>On a private repository <strong>without</strong> GHAS, set <code>upload-sarif: false</code> on the
-<a href="../../workflows/ci-security/">ci-security workflow</a>: Trivy and Semgrep still
-run (and still fail on findings) but attach their SARIF results as build
-artifacts instead of uploading to code scanning, and the CodeQL job is
-skipped (CodeQL cannot run on private repos without GHAS at all). See
-<a href="../../workflows/ci-security/#private-repos-without-github-advanced-security">Private repos without GitHub Advanced Security</a>.</p>
+requires <strong>GitHub Advanced Security (GHAS)</strong>. GHAS is available by default, at
+no cost, on public repositories.</p>
 <h2 id="accepted-suppressions-uploaded-sarif-vs-evidence">Accepted suppressions: uploaded SARIF vs. evidence<a class="headerlink" href="#accepted-suppressions-uploaded-sarif-vs-evidence" title="Permanent link">&para;</a></h2>
 <p>The SARIF gate passes a finding that has been accepted in source (for
 example a justified <code># nosemgrep: …</code>), but GitHub code scanning does not
@@ -8040,8 +8060,8 @@ bundle, so every accepted suppression remains auditable there.</p>
 <p>CodeQL is not filtered: <code>github/codeql-action/analyze</code> uploads its results
 itself, so there is no separate upload step to hand a filtered file to.</p>
 <h2 id="check-names-in-the-pr-status-area">Check names in the PR status area<a class="headerlink" href="#check-names-in-the-pr-status-area" title="Permanent link">&para;</a></h2>
-<p>When SARIF is uploaded to code scanning, each security scanner produces <strong>two</strong>
-check runs on a pull request:</p>
+<p>Each security scanner uploads its SARIF to code scanning, so it produces
+<strong>two</strong> check runs on a pull request:</p>
 <table>
 <thead>
 <tr>
@@ -8162,15 +8182,12 @@ the CI check. Set <code>exit-code: "0"</code> for advisory-only mode:</p>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">exit-code</span><span class="p">:</span><span class="w"> </span><span class="s">"0"</span>
 </code></pre></div>
 <h2 id="workflow-permissions">Workflow permissions<a class="headerlink" href="#workflow-permissions" title="Permanent link">&para;</a></h2>
-<p>All security scanning jobs require the <code>security-events: write</code> permission,
-plus <code>actions: read</code>, which <code>codeql-action/upload-sarif</code> needs on <strong>private</strong>
-repositories (it reads the workflow run via the Actions API):</p>
+<p>All security scanning jobs require the <code>security-events: write</code> permission:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">codeql</span><span class="p">:</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="nt">security-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 </code></pre></div>
 
 
