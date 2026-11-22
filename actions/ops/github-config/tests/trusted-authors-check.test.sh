@@ -3,9 +3,10 @@
 # Test the trusted-authors-check job of ops-github-config.yml (issue #1353,
 # epic vergil-project/.github#1467, spec §5.1a).
 #
-# The daily config audit checks the org Actions variables VRG_TRUSTED_AUTHORS
-# and VRG_AUTOMATION_APP, and every repository-level variable of either name,
-# with `vrg-trusted-authors check`, as the org automation App. It uploads the
+# The daily config audit, in the org's own .github repository only, checks
+# the org Actions variables VRG_TRUSTED_AUTHORS and VRG_AUTOMATION_APP, and
+# every repository-level variable of either name, with
+# `vrg-trusted-authors check`, as the org automation App. It uploads the
 # values check read as the trusted-authors-values artifact, on success and on
 # failure, for hoshin start to compare with the host configuration.
 #
@@ -15,6 +16,9 @@
 # GitHub's ubuntu runners) and touches no network.
 #
 # The rules, checked on the trusted-authors-check job:
+#   * the job runs only in the org's own .github repository: its `if:` is
+#     exactly `github.repository == format('{0}/.github',
+#     github.repository_owner)`, so every other calling repository skips it;
 #   * exactly one step runs `vrg-trusted-authors check`, with
 #     `--org "$ORG"`, ORG from `${{ github.repository_owner }}`, and
 #     `--values-out <file>`;
@@ -47,6 +51,7 @@ fi
 owner_expr='${{ github.repository_owner }}'
 # shellcheck disable=SC2016 # a literal GitHub Actions expression
 automation_expr='${{ vars.VRG_AUTOMATION_APP }}'
+job_if="github.repository == format('{0}/.github', github.repository_owner)"
 expected_permissions='permission-actions-variables=read
 permission-metadata=read
 permission-organization-actions-variables=read'
@@ -75,6 +80,10 @@ violations() {
   if [ "$(yq -r "${job} | type" "$wf")" != "!!map" ]; then
     printf 'no trusted-authors-check job\n'
     return 0
+  fi
+  if [ "$(yq -r "${job}.if // \"<unset>\"" "$wf")" != "$job_if" ]; then
+    printf 'the job does not run only in the org .github repository: if is %s\n' \
+      "$(yq -r "${job}.if // \"<unset>\"" "$wf")"
   fi
   count="$(yq -r "[${job}.steps[] | select((.run // \"\") | test(\"vrg-trusted-authors check\"))] | length" "$wf")"
   if [ "$count" != "1" ]; then
@@ -175,6 +184,7 @@ good_fixture() {
   cat >"$1" <<'YAML'
 jobs:
   trusted-authors-check:
+    if: github.repository == format('{0}/.github', github.repository_owner)
     steps:
       - id: app-token
         uses: actions/create-github-app-token@v3
@@ -218,6 +228,14 @@ case_fixtures() {
 
   broken "fixture-no-job-caught" 'del(.jobs."trusted-authors-check")' \
     "no trusted-authors-check job"
+  broken "fixture-no-if-caught" "del(${job}.if)" \
+    "does not run only in the org .github repository"
+  broken "fixture-hardcoded-org-if-caught" \
+    "${job}.if = \"github.repository == 'vergil-project/.github'\"" \
+    "does not run only in the org .github repository"
+  broken "fixture-repo-name-only-if-caught" \
+    "${job}.if = \"github.event.repository.name == '.github'\"" \
+    "does not run only in the org .github repository"
   broken "fixture-no-check-step-caught" "del(${job}.steps[2])" \
     "0 steps running vrg-trusted-authors check"
   # shellcheck disable=SC2016 # the literal violation text

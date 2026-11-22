@@ -75,8 +75,9 @@ name: Smoke - setup/vergil outputs
 #         sets it, so a token-less step (the setup action's vrg-whoami check)
 #         never runs as the automation identity (issue #1192);
 #       - ops/github-config trusted-authors-check.test.sh: ops-github-config's
-#         trusted-authors-check job runs `vrg-trusted-authors check --org` as
-#         the automation App, with a token scoped to the org's installation
+#         trusted-authors-check job runs only in the org's .github
+#         repository, and runs `vrg-trusted-authors check --org` as the
+#         automation App, with a token scoped to the org's installation
 #         and read-only Variables and Metadata only, and uploads the
 #         --values-out file as trusted-authors-values with `if: always()`
 #         (issue #1353);

@@ -10,7 +10,9 @@ this workflow on a schedule, and it runs four independent jobs:
   App, and runs only from `develop`.
 - **`trusted-authors-check`** checks the org's trusted-authors Actions
   variables with `vrg-trusted-authors check`, as the org automation App, and
-  uploads the values it read as the `trusted-authors-values` artifact.
+  uploads the values it read as the `trusted-authors-values` artifact. It
+  runs only in the org's own `.github` repository (`<org>/.github`) and is
+  skipped in every other calling repository.
 - **`dependabot-audit`** fails when the calling repository has any open
   Dependabot alert, at any severity.
 
@@ -46,7 +48,7 @@ read-only permissions only.
 | ----- | ------------ | ------------- |
 | `branch-sweep` | `<caller> / branch-sweep` | Deletes finished branches via [`ops/github-config/branch-sweep`](../actions/ops-github-config-branch-sweep.md) |
 | `github-config` | `<caller> / github-config` | From `develop` only: runs `vrg-github-repo-config update --repo <calling repo>` as the automation App |
-| `trusted-authors-check` | `<caller> / trusted-authors-check` | Runs `vrg-trusted-authors check --org <calling repo's owner>` as the automation App and uploads the `trusted-authors-values` artifact |
+| `trusted-authors-check` | `<caller> / trusted-authors-check` | In `<org>/.github` only (skipped elsewhere): runs `vrg-trusted-authors check --org <calling repo's owner>` as the automation App and uploads the `trusted-authors-values` artifact |
 | `dependabot-audit` | `<caller> / dependabot-audit` | Runs `vrg-dependabot-audit --repo <calling repo>` |
 
 ## Behavior
@@ -197,7 +199,8 @@ vergil-tooling verifies that the token was minted by the automation App.
 trusted-authors configuration, so the step needs no `VRG_TRUSTED_AUTHORS`.
 The `smoke-setup-vergil` workflow runs
 `actions/ops/github-config/tests/trusted-authors-check.test.sh`, which holds
-the job to its identity, its token's scope and permissions, and the upload.
+the job to where it runs, its identity, its token's scope and permissions,
+and the upload.
 
 The exit codes:
 
@@ -215,8 +218,14 @@ configuration implies, so drift between the source and the published copy
 is caught. When the check could not run it writes no file, and the upload
 step fails too.
 
-The job runs in every repository whose `ops.yml` calls this workflow, and
-each run checks the whole org.
+**Where it runs.** The check covers the whole org, so one run a night is
+enough. The job runs only in the org's own `.github` repository: its condition
+is `if: github.repository == format('{0}/.github', github.repository_owner)`,
+which names that repository from the calling repository's owner, so it holds
+for any org. In every other repository whose `ops.yml` calls this workflow,
+the job is skipped. That one run's artifact is the org's single latest
+configuration-audit result, and a finding turns only the `.github`
+repository's nightly run red.
 
 ### dependabot-audit
 

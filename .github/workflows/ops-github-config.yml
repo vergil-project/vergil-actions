@@ -185,9 +185,14 @@ jobs:
   # fail the job. The values it read (logins and slugs only, all public) are
   # uploaded as the trusted-authors-values artifact on success and on
   # failure, for hoshin start to compare with the host configuration.
+  # The check covers the whole org, so it runs only in the org's own .github
+  # repository (<owner>/.github), once a night, and is skipped in every other
+  # calling repository: that run's artifact is the org's one latest result,
+  # and a finding turns only that repository's run red.
   # actions/ops/github-config/tests/trusted-authors-check.test.sh guards this.
   trusted-authors-check:
     name: trusted-authors-check
+    if: github.repository == format('{0}/.github', github.repository_owner)
     runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.repository }}/trusted-authors-check
