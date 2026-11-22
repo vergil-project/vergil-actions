@@ -30,7 +30,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
     steps:
       - uses: actions/checkout@v6
       - uses: vergil-project/vergil-actions/actions/ci/security/codeql@v2.1
@@ -71,7 +70,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
     with:
       language: python
 ```

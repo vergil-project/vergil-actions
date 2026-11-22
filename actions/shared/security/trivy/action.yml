@@ -2,7 +2,10 @@ name: Trivy security scan
 description: >-
   Runs Trivy vulnerability scanning, SBOM generation, or container image
   scanning. The calling workflow must grant security-events: write permission
-  when scan-type is "fs" or "image".
+  when scan-type is "fs" or "image". Those scans upload their SARIF to GitHub
+  code scanning: the uploaded copy omits accepted-suppressed results (via
+  vrg-sarif-filter, so vergil-tooling must be on PATH), and the unfiltered
+  output-file is left in the workspace for evidence.
 
 inputs:
   scan-type:
@@ -49,16 +52,6 @@ inputs:
       registry timeouts. Override to pin a specific version or registry.
     required: false
     default: "ghcr.io/aquasecurity/trivy:0.76.2"
-  upload-sarif:
-    description: >-
-      Upload SARIF results to GitHub code scanning. The uploaded copy
-      omits accepted-suppressed results (via vrg-sarif-filter, so
-      vergil-tooling must be on PATH); the unfiltered output-file is left
-      in the workspace for evidence. Set to "false" on private repos
-      without GitHub Advanced Security; results are attached as a build
-      artifact instead.
-    required: false
-    default: "true"
 
 outputs:
   result:
@@ -135,7 +128,7 @@ runs:
       id: filter
       if: >-
         (inputs.scan-type == 'fs' || inputs.scan-type == 'image') &&
-        inputs.upload-sarif == 'true' && always()
+        always()
       shell: bash
       env:
         OUTPUT_FILE: ${{ inputs.output-file }}
@@ -156,22 +149,11 @@ runs:
     - name: Upload SARIF
       if: >-
         (inputs.scan-type == 'fs' || inputs.scan-type == 'image') &&
-        inputs.upload-sarif == 'true' && always() &&
-        steps.filter.outputs.present == 'true'
+        always() && steps.filter.outputs.present == 'true'
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ steps.filter.outputs.upload-file }}
         category: ${{ inputs.sarif-category || format('trivy-{0}', inputs.scan-type) }}
-
-    - name: Attach SARIF as build artifact
-      if: >-
-        (inputs.scan-type == 'fs' || inputs.scan-type == 'image') &&
-        inputs.upload-sarif != 'true' && always()
-      uses: actions/upload-artifact@v7
-      with:
-        name: ${{ inputs.sarif-category || format('trivy-{0}', inputs.scan-type) }}-sarif
-        path: ${{ inputs.output-file }}
-        if-no-files-found: warn
 
     - name: Generate SBOM
       if: inputs.scan-type == 'sbom'

@@ -13,18 +13,8 @@ Three security scanning tools provide layered coverage:
 ## GHAS requirements
 
 All three tools upload results in SARIF format to GitHub Code Scanning, which
-requires **GitHub Advanced Security (GHAS)**:
-
-- **Public repositories** — GHAS is available by default at no cost.
-- **Private repositories** — A GHAS license is required. Contact your GitHub
-  administrator.
-
-On a private repository **without** GHAS, set `upload-sarif: false` on the
-[ci-security workflow](../workflows/ci-security.md): Trivy and Semgrep still
-run (and still fail on findings) but attach their SARIF results as build
-artifacts instead of uploading to code scanning, and the CodeQL job is
-skipped (CodeQL cannot run on private repos without GHAS at all). See
-[Private repos without GitHub Advanced Security](../workflows/ci-security.md#private-repos-without-github-advanced-security).
+requires **GitHub Advanced Security (GHAS)**. GHAS is available by default, at
+no cost, on public repositories.
 
 ## Accepted suppressions: uploaded SARIF vs. evidence
 
@@ -45,8 +35,8 @@ itself, so there is no separate upload step to hand a filtered file to.
 
 ## Check names in the PR status area
 
-When SARIF is uploaded to code scanning, each security scanner produces **two**
-check runs on a pull request:
+Each security scanner uploads its SARIF to code scanning, so it produces
+**two** check runs on a pull request:
 
 | CI workflow job | SARIF analysis check |
 | ----------------- | ---------------------- |
@@ -155,15 +145,12 @@ the CI check. Set `exit-code: "0"` for advisory-only mode:
 
 ## Workflow permissions
 
-All security scanning jobs require the `security-events: write` permission,
-plus `actions: read`, which `codeql-action/upload-sarif` needs on **private**
-repositories (it reads the workflow run via the Actions API):
+All security scanning jobs require the `security-events: write` permission:
 
 ```yaml
 jobs:
   codeql:
     permissions:
       security-events: write
-      actions: read
       contents: read
 ```
