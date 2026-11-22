@@ -70,25 +70,45 @@ pass_case() {
   pass=$((pass + 1))
 }
 
-# runs_github_command — exit 0 when the shell text on stdin, comment lines
+# runs_github_command <text> — exit 0 when the shell text, comment lines
 # dropped, runs a GitHub-touching vrg-* command.
 runs_github_command() {
-  grep -vE '^[[:space:]]*#' | grep -qE "$github_commands"
+  local text="$1" code rc=0
+  # grep -v exits 1 when every line is a comment (no command) and 2 on an
+  # error, which fails the suite.
+  code="$(grep -vE '^[[:space:]]*#' <<<"$text")" || rc=$?
+  if [ "$rc" -gt 1 ]; then
+    printf 'trusted-authors-env.test.sh: grep failed (exit %s)\n' "$rc" >&2
+    exit 1
+  fi
+  [ "$rc" -eq 0 ] || return 1
+  rc=0
+  grep -qE "$github_commands" <<<"$code" || rc=$?
+  if [ "$rc" -gt 1 ]; then
+    printf 'trusted-authors-env.test.sh: grep failed (exit %s)\n' "$rc" >&2
+    exit 1
+  fi
+  return "$rc"
 }
 
 # composite_runs_github_command <actions root> <uses path> — exit 0 when the
 # local composite action at <uses path> (./actions/...) runs a GitHub-touching
 # command in a `run` step or in a script it ships (its tests excluded).
 composite_runs_github_command() {
-  local root="$1" uses="$2" dir script
+  local root="$1" uses="$2" dir script runs
   dir="${root}/${uses#./}"
-  [ -f "${dir}/action.yml" ] || return 1
-  if yq -r '(.runs.steps // [])[] | (.run // "")' "${dir}/action.yml" | runs_github_command; then
+  if [ ! -f "${dir}/action.yml" ]; then
+    printf 'trusted-authors-env.test.sh: %s has no action.yml\n' "$uses" >&2
+    exit 1
+  fi
+  runs="$(yq -r '(.runs.steps // [])[] | (.run // "")' "${dir}/action.yml")"
+  if runs_github_command "$runs"; then
     return 0
   fi
   while IFS= read -r script; do
     [ -n "$script" ] || continue
-    if runs_github_command <"$script"; then
+    runs="$(cat "$script")"
+    if runs_github_command "$runs"; then
       return 0
     fi
   done < <(find "$dir" -name '*.sh' -not -path '*/tests/*' | sort)
@@ -98,7 +118,7 @@ composite_runs_github_command() {
 # violations <workflow file> <actions root> — print one line per rule the
 # workflow breaks, nothing when it keeps them all.
 violations() {
-  local wf="$1" root="$2" job idx uses has value needs
+  local wf="$1" root="$2" job idx uses has value needs run
   if [ "$(yq -r '(.env // {}) | has("VRG_TRUSTED_AUTHORS")' "$wf")" = "true" ]; then
     printf 'workflow env sets VRG_TRUSTED_AUTHORS\n'
   fi
@@ -115,7 +135,8 @@ violations() {
       printf '%s step %s: VRG_TRUSTED_AUTHORS is not %s: %s\n' "$job" "$idx" "$expected" "$value"
     fi
     needs=""
-    if yq -r ".jobs.\"${job}\".steps[${idx}].run // \"\"" "$wf" | runs_github_command; then
+    run="$(yq -r ".jobs.\"${job}\".steps[${idx}].run // \"\"" "$wf")"
+    if runs_github_command "$run"; then
       needs="runs a GitHub-touching vrg-* command"
     elif [[ "$uses" == ./actions/* ]] && composite_runs_github_command "$root" "$uses"; then
       needs="uses ${uses}, which runs a GitHub-touching vrg-* command"
@@ -178,14 +199,14 @@ case_pre_deploy_step() {
 case_command_pattern() {
   local line
   for line in \
-    'vrg-epic-audit --close --window-days "$WINDOW_DAYS"' \
+    'vrg-epic-audit --close --window-days 7' \
     'vrg-epic-rollup --task "x#1"' \
     'vrg-roadmap > docs/site/docs/roadmap.md' \
-    'timeout "${T}m" vrg-ci-evidence harvest \' \
-    'vrg-package check-unpublished --version "$version"' \
+    'timeout 15m vrg-ci-evidence harvest --repo o/r' \
+    'vrg-package check-unpublished --version 1.2.3' \
     'vrg-package index --config packages.toml' \
     'vrg-release'; do
-    if printf '%s\n' "$line" | runs_github_command; then
+    if runs_github_command "$line"; then
       pass_case "pattern-matches: ${line}"
     else
       fail_case "pattern-matches: ${line}" "not matched"
@@ -197,7 +218,7 @@ case_command_pattern() {
     'vrg-package matrix --github-output' \
     'vrg-version show' \
     '# vrg-epic-audit runs in the next step'; do
-    if printf '%s\n' "$line" | runs_github_command; then
+    if runs_github_command "$line"; then
       fail_case "pattern-ignores: ${line}" "matched"
     else
       pass_case "pattern-ignores: ${line}"
@@ -207,7 +228,8 @@ case_command_pattern() {
 
 case_fixtures() {
   local root="${tmp}/repo"
-  mkdir -p "${root}/actions/fake/github" "${root}/actions/fake/offline"
+  mkdir -p "${root}/actions/fake/github" "${root}/actions/fake/offline" "${root}/actions/shared/setup/vergil"
+  printf 'runs:\n  using: composite\n  steps: []\n' >"${root}/actions/shared/setup/vergil/action.yml"
   cat >"${root}/actions/fake/github/action.yml" <<'YAML'
 runs:
   using: composite
@@ -215,7 +237,7 @@ runs:
     - shell: bash
       run: bash "${GITHUB_ACTION_PATH}/run.sh"
 YAML
-  printf '#!/usr/bin/env bash\nvrg-branch-sweep --repo "$REPO" --apply\n' \
+  printf '#!/usr/bin/env bash\nvrg-branch-sweep --repo o/r --apply\n' \
     >"${root}/actions/fake/github/run.sh"
   cat >"${root}/actions/fake/offline/action.yml" <<'YAML'
 runs:
