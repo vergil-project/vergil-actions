@@ -16,4 +16,4 @@ paths:
       # permission-* input into a token permission (organization_actions_variables
       # and actions_variables in GitHub's App permissions), so ignore exactly
       # these two inputs.
-      - 'input "permission-(organization-)?actions-variables" is not defined in action "actions/create-github-app-token@v3"'
+      - 'input "permission-(organization-)?actions-variables" is not defined in action'
