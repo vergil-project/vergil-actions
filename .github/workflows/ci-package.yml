@@ -7,8 +7,8 @@ name: CI Package
 # keyed `package`.
 #
 # Tiered matrix (vergil-project/vergil-actions#930): release PRs (head
-# `release/*` into `main`) and non-PR events (push, workflow_dispatch) run the
-# `full` matrix; every other pull request runs the `reduced` matrix. The
+# `release/*` of this same repository into `main`, issue #1352) and non-PR
+# events (push, workflow_dispatch) run the `full` matrix; every other pull request runs the `reduced` matrix. The
 # `package-tier` input overrides the automatic choice. The tier that ran is
 # recorded in the gate's evidence (`metrics.tier`). Requires a vergil-tooling
 # release whose `vrg-package matrix` accepts `--tier`.
@@ -30,8 +30,8 @@ on:
           Container image name prefix (prod or dev). Defaults to "prod".
       package-tier:
         description: >-
-          Package matrix tier: "auto" (default; full for release PRs into main
-          and for non-PR events, reduced for other PRs), "full", or "reduced".
+          Package matrix tier: "auto" (default; full for same-repo release PRs
+          into main and for non-PR events, reduced for other PRs), "full", or "reduced".
         type: string
         required: false
         default: auto
@@ -191,6 +191,9 @@ jobs:
     steps:
       # Decide the matrix tier. Event context arrives via env and is never
       # interpolated into the script: head_ref is attacker-controllable.
+      # A fork names its own branches, so a `release/*` head gets the full
+      # matrix only from this same repository (issue #1352);
+      # actions/cd/release/tests/package-tier.test.sh covers it.
       - name: Decide package tier
         id: tier
         shell: bash
@@ -199,6 +202,8 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           case "$REQUESTED" in
@@ -208,7 +213,8 @@ jobs:
             auto)
               if [ "$EVENT_NAME" != "pull_request" ]; then
                 tier=full
-              elif [ "$BASE_REF" = "main" ] && [[ "$HEAD_REF" == release/* ]]; then
+              elif [ "$BASE_REF" = "main" ] && [[ "$HEAD_REF" == release/* ]] \
+                && [ -n "$HEAD_REPO" ] && [ "$HEAD_REPO" = "$REPOSITORY" ]; then
                 tier=full
               else
                 tier=reduced
