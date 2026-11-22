@@ -70,6 +70,7 @@ case_tier_step_wiring() {
   expect "$name" "REPOSITORY" "$(yq -r "${step} | .env.REPOSITORY" "$ci_package_yml")" \
     '${{ github.repository }}' || return 0
   run="$(yq -r "${step} | .run" "$ci_package_yml")"
+  # shellcheck disable=SC2016 # a literal expression opener
   case "$run" in
     *'${{'*)
       fail_case "$name" "the step's script interpolates an expression"
@@ -101,7 +102,10 @@ check_tier() {
   local name="$1" want="$2"
   shift 2
   run_tier "$@"
-  expect "$name" "exit status" "$rc" "0" || return 1
+  if [ "$rc" -ne 0 ]; then
+    fail_case "$name" "the step exited ${rc}: ${out}"
+    return 1
+  fi
   expect "$name" "tier" "$tier" "$want" || return 1
 }
 
