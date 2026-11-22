@@ -130,9 +130,9 @@ violations() {
       fi
     fi
   fi
-  up_idx="$(yq -r "${job}.steps | to_entries | .[]
+  up_idx="$(yq -r "[${job}.steps | to_entries | .[]
     | select((.value.uses // \"\") | test(\"^actions/upload-artifact@\"))
-    | select(.value.with.name == \"trusted-authors-values\") | .key" "$wf" | head -n 1)"
+    | select(.value.with.name == \"trusted-authors-values\") | .key] | .[0] // \"\"" "$wf")"
   if [ -z "$up_idx" ]; then
     printf 'no step uploads the trusted-authors-values artifact\n'
     return 0
@@ -220,6 +220,7 @@ case_fixtures() {
     "no trusted-authors-check job"
   broken "fixture-no-check-step-caught" "del(${job}.steps[2])" \
     "0 steps running vrg-trusted-authors check"
+  # shellcheck disable=SC2016 # the literal violation text
   broken "fixture-no-org-caught" "${job}.steps[2].run = \"vrg-trusted-authors check --values-out values.json\"" \
     'does not pass --org "$ORG"'
   broken "fixture-no-values-out-caught" "${job}.steps[2].run = \"vrg-trusted-authors check --org \\\"\$ORG\\\"\"" \
