@@ -26,6 +26,11 @@ name: Smoke - cd-release
 # any other prefix or a missing or malformed output. It checks both
 # workflows' wiring and runs the action's apply.sh on fixture outputs.
 #
+# package-tier.test.sh (issue #1352): ci-package's matrix job gives a pull
+# request the full matrix automatically only for a `release/*` head of this
+# same repository into main; a fork's `release/*` head gets the reduced
+# matrix. It checks the tier step's env wiring and runs the step as written.
+#
 # release-tag-token.test.sh and tag-and-release/tests/push-tag.test.sh (issue
 # #1315, epic vergil-project/.github#1350): release tags are pushed only with
 # the automation App's installation token. tag-and-release pushes every tag
@@ -77,6 +82,16 @@ jobs:
       - name: Run package-image-prefix harness
         shell: bash
         run: bash actions/cd/release/tests/package-image-prefix.test.sh
+
+  package-tier:
+    name: package-tier fixtures
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run package-tier harness
+        shell: bash
+        run: bash actions/cd/release/tests/package-tier.test.sh
 
   package-runtime:
     name: package-runtime fixtures
