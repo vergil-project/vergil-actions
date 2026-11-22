@@ -14,9 +14,12 @@ The `matrix` job picks a tier and passes it to
 
 | Event | Tier |
 | ----- | ---- |
-| Pull request from `release/*` into `main` | `full` |
-| Any other pull request | `reduced` |
+| Pull request from `release/*` of the same repository into `main` | `full` |
+| Any other pull request, a fork's `release/*` head included | `reduced` |
 | Any non-PR event (`push`, `workflow_dispatch`, …) | `full` |
+
+A fork chooses its own branch names, so only a `release/*` head in the
+repository itself gets the `full` tier automatically.
 
 The `reduced` tier keeps every build cell but runs only one `install-test`
 leg per format, so feature PRs get feedback sooner. For each format it picks

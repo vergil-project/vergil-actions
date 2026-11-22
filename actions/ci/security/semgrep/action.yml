@@ -2,7 +2,10 @@ name: Semgrep SAST scan
 description: >-
   Runs Semgrep static analysis with language-specific and cross-cutting
   security rulesets. The calling workflow must grant security-events: write
-  permission.
+  permission. The SARIF is uploaded to GitHub code scanning: the uploaded
+  copy omits accepted-suppressed results (via vrg-sarif-filter, so
+  vergil-tooling must be on PATH), and the unfiltered semgrep-results.sarif
+  is left in the workspace for evidence.
 
 inputs:
   language:
@@ -17,16 +20,6 @@ inputs:
       "p/owasp-top-ten").
     required: false
     default: ""
-  upload-sarif:
-    description: >-
-      Upload SARIF results to GitHub code scanning. The uploaded copy
-      omits accepted-suppressed results (via vrg-sarif-filter, so
-      vergil-tooling must be on PATH); the unfiltered
-      semgrep-results.sarif is left in the workspace for evidence. Set to
-      "false" on private repos without GitHub Advanced Security; results
-      are attached as a build artifact instead.
-    required: false
-    default: "true"
 
 runs:
   using: composite
@@ -61,7 +54,7 @@ runs:
     # semgrep-results.sarif stays on disk for the evidence bundle so the
     # suppressions remain auditable (issue #920).
     - name: Filter accepted-suppressed results for upload
-      if: inputs.upload-sarif == 'true' && always()
+      if: always()
       shell: bash
       run: |
         if [ ! -f semgrep-results.sarif ]; then
@@ -71,16 +64,8 @@ runs:
         vrg-sarif-filter semgrep-results.sarif semgrep-results.upload.sarif
 
     - name: Upload SARIF
-      if: inputs.upload-sarif == 'true' && always()
+      if: always()
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: semgrep-results.upload.sarif
         category: semgrep
-
-    - name: Attach SARIF as build artifact
-      if: inputs.upload-sarif != 'true' && always()
-      uses: actions/upload-artifact@v7
-      with:
-        name: semgrep-sarif
-        path: semgrep-results.sarif
-        if-no-files-found: warn

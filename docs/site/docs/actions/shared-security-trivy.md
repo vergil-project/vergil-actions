@@ -28,7 +28,6 @@ Runs Trivy vulnerability scanning, SBOM generation, or container image scanning.
 | `sarif-category` | No | `""` | Category for SARIF upload. Use unique values when multiple matrix entries upload SARIF to avoid overwrites. Defaults to `trivy-fs` or `trivy-image` based on scan-type. |
 | `trivyignores` | No | `""` | Comma-separated list of `.trivyignore` file paths. |
 | `trivy-image` | No | `aquasec/trivy:0.70.0` | Docker image to use for Trivy. Override to pin a specific version. |
-| `upload-sarif` | No | `true` | Upload SARIF to GitHub code scanning (a copy with accepted-suppressed results removed by `vrg-sarif-filter`; requires vergil-tooling on `PATH`; the unfiltered `output-file` is kept). Set to `false` on private repos without GHAS; results are attached as a build artifact instead. |
 
 ## Outputs
 
@@ -40,7 +39,6 @@ Runs Trivy vulnerability scanning, SBOM generation, or container image scanning.
 
 - `security-events: write` (required for SARIF upload when `scan-type` is `fs`
   or `image`)
-- `actions: read` (required by the SARIF upload on **private** repositories)
 - `contents: read`
 
 ## Behavior
@@ -151,23 +149,10 @@ jobs:
     sarif-category: "trivy-fs-${{ matrix.target }}"
 ```
 
-### Private repo without GHAS (artifact fallback)
-
-```yaml
-- uses: vergil-project/vergil-actions/actions/shared/security/trivy@v2.1
-  with:
-    scan-type: fs
-    upload-sarif: false
-```
-
-The scan still runs and still fails on findings; the SARIF file is attached
-to the workflow run as a build artifact (named after the SARIF category,
-e.g. `trivy-fs-sarif`) instead of being uploaded to code scanning.
-
 ## GitHub configuration
 
 - **GitHub Advanced Security (GHAS)** — Must be enabled for SARIF upload
-  (`fs` and `image` scan types). On private repos without GHAS, set
-  `upload-sarif: false` to preserve results as a build artifact instead.
+  (`fs` and `image` scan types). It is available by default on public
+  repositories.
 - **Code scanning alerts** — Results appear in **Security > Code scanning
   alerts** with categories `trivy-fs` or `trivy-image`.

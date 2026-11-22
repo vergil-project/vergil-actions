@@ -75,6 +75,5 @@ jobs:
 
 - **GitHub Advanced Security (GHAS)** — Must be enabled on the repository for
   SARIF upload to work. For public repositories, GHAS is available by default.
-  For private repositories, a GHAS license is required.
 - **Code scanning alerts** — Results appear in the repository's **Security >
   Code scanning alerts** tab.
