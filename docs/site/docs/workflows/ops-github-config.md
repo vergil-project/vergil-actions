@@ -1,20 +1,25 @@
 # ops-github-config
 
 Nightly per-repository ops checks. Every managed repository's `ops.yml` calls
-this workflow on a schedule, and it runs three independent jobs against the
-calling repository:
+this workflow on a schedule, and it runs four independent jobs:
 
-- **`branch-sweep`** deletes branches whose pull-request work is finished.
-- **`github-config`** keeps the repository in sync with its expected
+- **`branch-sweep`** deletes the calling repository's branches whose
+  pull-request work is finished.
+- **`github-config`** keeps the calling repository in sync with its expected
   configuration with `vrg-github-repo-config update`, as the org automation
   App, and runs only from `develop`.
-- **`dependabot-audit`** fails when the repository has any open Dependabot
-  alert, at any severity.
+- **`trusted-authors-check`** checks the org's trusted-authors Actions
+  variables with `vrg-trusted-authors check`, as the org automation App, and
+  uploads the values it read as the `trusted-authors-values` artifact.
+- **`dependabot-audit`** fails when the calling repository has any open
+  Dependabot alert, at any severity.
 
 The jobs do not depend on each other, so one failing does not stop the
 others. Each one mints its own GitHub App token from the org's automation App
-(see [APP_CLIENT_ID and APP_PRIVATE_KEY](../configuration.md#app_client_id-and-app_private_key)),
-scoped to the calling repository only.
+(see [APP_CLIENT_ID and APP_PRIVATE_KEY](../configuration.md#app_client_id-and-app_private_key)).
+Every token is scoped to the calling repository only, except
+`trusted-authors-check`'s, which reads every repository of the org and holds
+read-only permissions only.
 
 ## Inputs
 
@@ -33,7 +38,7 @@ scoped to the calling repository only.
 
 | Variable | Required | Description |
 | -------- | -------- | ----------- |
-| `VRG_AUTOMATION_APP` | yes | Org-level Actions variable holding the automation App's slug (`<org>-automation`), visible to the calling repository (see [step 10 of the App setup](../configuration.md#app_client_id-and-app_private_key)). The `github-config` job fails when it is empty |
+| `VRG_AUTOMATION_APP` | yes | Org-level Actions variable holding the automation App's slug (`<org>-automation`), visible to the calling repository (see [step 10 of the App setup](../configuration.md#app_client_id-and-app_private_key)). The `github-config` and `trusted-authors-check` jobs fail when it is empty |
 
 ## Jobs and check names
 
@@ -41,6 +46,7 @@ scoped to the calling repository only.
 | ----- | ------------ | ------------- |
 | `branch-sweep` | `<caller> / branch-sweep` | Deletes finished branches via [`ops/github-config/branch-sweep`](../actions/ops-github-config-branch-sweep.md) |
 | `github-config` | `<caller> / github-config` | From `develop` only: runs `vrg-github-repo-config update --repo <calling repo>` as the automation App |
+| `trusted-authors-check` | `<caller> / trusted-authors-check` | Runs `vrg-trusted-authors check --org <calling repo's owner>` as the automation App and uploads the `trusted-authors-values` artifact |
 | `dependabot-audit` | `<caller> / dependabot-audit` | Runs `vrg-dependabot-audit --repo <calling repo>` |
 
 ## Behavior
@@ -48,10 +54,11 @@ scoped to the calling repository only.
 Every job runs in `ghcr.io/vergil-project/<prefix>-base:latest` and follows
 the same pattern:
 
-1. Mints an App token with `actions/create-github-app-token`. None of the
-   jobs passes an `owner` or `repositories` input, so each token is scoped to
-   the calling repository alone, and each passes explicit `permission-*`
-   inputs, so it carries only the permissions that job needs.
+1. Mints an App token with `actions/create-github-app-token`. Each job
+   passes explicit `permission-*` inputs, so its token carries only the
+   permissions that job needs. No job but `trusted-authors-check` passes an
+   `owner` or `repositories` input, so each other token is scoped to the
+   calling repository alone.
 2. Checks out the repository and installs vergil-tooling.
 3. Runs its command with the App token as `GH_TOKEN`.
 
@@ -66,6 +73,7 @@ is set, and its checkout pins `ref: develop` (see
 | --- | ------------------------- | --- |
 | `branch-sweep` | `contents: write`, `pull-requests: read` | Delete a branch ref, and read pull requests to decide which branches are finished |
 | `github-config` | `administration: write`, `contents: write`, `pull-requests: write`, `workflows: write`, `metadata: read` | `update` reads and converges repository settings, branch protection, rulesets (GitHub returns a ruleset's `bypass_actors` only to a caller that can edit it), Actions permissions and whether vulnerability alerts are enabled (Administration). It pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write (see [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository)) (Contents). It opens the sync PR, closes an earlier one and turns on auto-merge (Pull requests), and a sync PR can change files under `.github/workflows/` (Workflows). It makes no Issues call. Minted only after the job has checked that it runs from `develop` and that `VRG_AUTOMATION_APP` is set |
+| `trusted-authors-check` | `organization-actions-variables: read`, `actions-variables: read`, `metadata: read` (organization and repository **Variables: Read**), for the org's whole installation (`owner: ${{ github.repository_owner }}`) | Read the org variables and every repository's variables. `actions/create-github-app-token` declares no input for either Variables permission, but it turns every `permission-*` input into a token permission; `.github/actionlint.yaml` ignores exactly these two inputs |
 | `dependabot-audit` | `vulnerability-alerts: read` only (**Dependabot alerts: Read**) | List the repository's open Dependabot alerts |
 
 The org's automation App holds more than any one job requests, Administration
@@ -167,6 +175,48 @@ token anyway. Without the cap GitHub's default of 360 minutes would apply,
 and a run hung outside the tool's own deadline would hold the job's
 concurrency group for up to six hours. A run that comes close to the limit is
 a cue to look at the job's performance.
+
+### trusted-authors-check
+
+The daily check of the trusted-authors Actions copies (epic
+[vergil-project/.github#1467](https://github.com/vergil-project/.github/issues/1467)).
+The org variables `VRG_TRUSTED_AUTHORS` and `VRG_AUTOMATION_APP` are
+derived from the human's host configuration and published by the human with
+`vrg-trusted-authors publish` (see
+[VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). The job runs
+`vrg-trusted-authors check --org "${{ github.repository_owner }}"
+--values-out trusted-authors-values.json`, which flags a missing or invalid
+org variable, one not visible to every repository, and any repository-level
+variable of either name, since that would override the org copy in its
+repository's jobs.
+
+**Automation identity.** The check step sets `VRG_AUTOMATION_APP` next to
+the App token in `GH_TOKEN`, as `github-config`'s update step does, so
+vergil-tooling verifies that the token was minted by the automation App.
+`check` refuses the agent identity modes. With `--org` it reads no
+trusted-authors configuration, so the step needs no `VRG_TRUSTED_AUTHORS`.
+The `smoke-setup-vergil` workflow runs
+`actions/ops/github-config/tests/trusted-authors-check.test.sh`, which holds
+the job to its identity, its token's scope and permissions, and the upload.
+
+The exit codes:
+
+| Exit | Meaning | Job result |
+| ---- | ------- | ---------- |
+| `0` | The variables are clean | Pass |
+| `1` | At least one finding, printed as a `FINDING:` line | Fail |
+| `2` | The check could not run, for example a failed read or an empty `VRG_AUTOMATION_APP` | Fail |
+
+**The values artifact.** On success and on failure (`if: always()`), the job
+uploads the `--values-out` file as the artifact `trusted-authors-values`:
+`{"<org>": {"<name>": "<value>"}}`, the values the check read, logins and
+slugs only. `hoshin start` compares it with the values the host
+configuration implies, so drift between the source and the published copy
+is caught. When the check could not run it writes no file, and the upload
+step fails too.
+
+The job runs in every repository whose `ops.yml` calls this workflow, and
+each run checks the whole org.
 
 ### dependabot-audit
 

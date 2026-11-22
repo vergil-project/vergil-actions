@@ -177,6 +177,72 @@ jobs:
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-github-repo-config update --repo "${{ github.repository }}"
 
+  # The configuration check of the trusted-authors Actions copies (epic
+  # vergil-project/.github#1467, spec §5.1a): vrg-trusted-authors check reads
+  # the org variables VRG_TRUSTED_AUTHORS and VRG_AUTOMATION_APP and every
+  # repository-level variable of either name, as the org automation App.
+  # It exits 0 (clean), 1 (findings) or 2 (it could not run); both 1 and 2
+  # fail the job. The values it read (logins and slugs only, all public) are
+  # uploaded as the trusted-authors-values artifact on success and on
+  # failure, for hoshin start to compare with the host configuration.
+  # actions/ops/github-config/tests/trusted-authors-check.test.sh guards this.
+  trusted-authors-check:
+    name: trusted-authors-check
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: ${{ github.repository }}/trusted-authors-check
+      cancel-in-progress: false
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # The check reads the org's variables and every repository's, so
+          # this token alone is scoped to the whole installation (owner, no
+          # repositories input), and it holds read-only permissions only:
+          # organization and repository Variables, and Metadata. The
+          # action's metadata declares no Variables inputs, but it turns
+          # every permission-* input into a token permission, so these two
+          # reach GitHub as organization_actions_variables and
+          # actions_variables.
+          owner: ${{ github.repository_owner }}
+          permission-organization-actions-variables: read
+          permission-actions-variables: read
+          permission-metadata: read
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      # VRG_AUTOMATION_APP makes vergil-tooling verify that GH_TOKEN was
+      # minted by the automation App, and check refuses the agent identity
+      # modes. --org reads no trusted-authors configuration, so the step
+      # needs no VRG_TRUSTED_AUTHORS. The values file is workspace-relative:
+      # in a container job the runner.temp expression names the host path,
+      # which upload-artifact, running inside the container, cannot see.
+      - name: Check the trusted-authors variables
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          ORG: ${{ github.repository_owner }}
+        run: vrg-trusted-authors check --org "$ORG" --values-out trusted-authors-values.json
+
+      # Runs on failure too, so a run with findings still carries the values
+      # it read. Check writes no file when it could not run (exit 2); the
+      # upload then fails as well, on a job that has already failed.
+      - name: Upload the trusted-authors values
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trusted-authors-values
+          path: trusted-authors-values.json
+          if-no-files-found: error
+
   # Report-only Dependabot gate (epic vergil-project/.github#420): alerts are
   # on, Dependabot never opens a PR, and this job turns any open alert, at any
   # severity, into a red nightly run. vrg-dependabot-audit exits 0 (no open
