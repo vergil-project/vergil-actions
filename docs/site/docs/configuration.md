@@ -87,6 +87,7 @@ only library repositories:
 | Workflow | Job or step | Token scope |
 | -------- | ----------- | ----------- |
 | [`ops-github-config.yml`](workflows/ops-github-config.md) | `branch-sweep`, `github-config`, `dependabot-audit` | Calling repository only |
+| [`ops-github-config.yml`](workflows/ops-github-config.md#trusted-authors-check) | `trusted-authors-check` (in `<org>/.github` only, skipped elsewhere) | Every repository the App is installed on in the org, read-only |
 | [`ops-epic-rollup.yml`](workflows/ops-epic-rollup.md) | `epic-rollup` (from the caller's `epic-rollup.yml`) | Calling repository and the epic repository |
 | [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
 | [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `publish` (`vrg-upstream-refresh publish` mints the token itself) | Calling repository only |
