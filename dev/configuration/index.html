@@ -5548,6 +5548,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vrg_trusted_authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VRG_TRUSTED_AUTHORS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#binary-package-environments" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8026,6 +8054,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vrg_trusted_authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VRG_TRUSTED_AUTHORS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#binary-package-environments" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8610,6 +8666,24 @@ scheduled run and a dispatch of the same job never overlap. The
 <code>github-config</code> job runs <code>gh auth setup-git</code> with the App token before the
 tool runs, so the <code>git clone</code> and <code>git push</code> the tooling makes authenticate
 as the App with that job's scoped token.</p>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<h3 id="vrg_trusted_authors">VRG_TRUSTED_AUTHORS<a class="headerlink" href="#vrg_trusted_authors" title="Permanent link">&para;</a></h3>
+<p>The org-level Actions variable <code>VRG_TRUSTED_AUTHORS</code>, visible to all
+repositories, holds the trusted-authors configuration that vergil-tooling
+judges GitHub content against: the <code>human</code> and <code>agents</code> logins and the
+automation App of every Vergil org, as compact JSON. It is derived from the
+human's host configuration and published by the human at org setup and
+whenever that configuration changes, never edited by hand.</p>
+<p>Under GitHub Actions, with no configuration file on the runner,
+vergil-tooling reads it from the environment and stops when it is missing
+or invalid. The reusable workflows pass it, as
+<code>VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}</code>, into the <code>env</code> of each
+step that runs a <code>vrg-*</code> command that calls GitHub, and into the step that
+uses a composite action running one (a composite action cannot read
+<code>vars</code>). Only those steps get it: no workflow-level or job-level <code>env</code>
+sets it. <code>actions/shared/setup/vergil/tests/trusted-authors-env.test.sh</code>
+checks this. A repository-level variable of the same name would override
+the org copy in that repository's jobs, so none is set.</p>
 <h2 id="binary-package-environments">Binary package environments<a class="headerlink" href="#binary-package-environments" title="Permanent link">&para;</a></h2>
 <p>Repositories whose <code>vergil.toml</code> has a <code>[package]</code> section, and the
 organization's <code>&lt;org&gt;/packages</code> index repository, keep their signing key in
