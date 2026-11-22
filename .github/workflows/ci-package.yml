@@ -8,7 +8,8 @@ name: CI Package
 #
 # Tiered matrix (vergil-project/vergil-actions#930): release PRs (head
 # `release/*` of this same repository into `main`, issue #1352) and non-PR
-# events (push, workflow_dispatch) run the `full` matrix; every other pull request runs the `reduced` matrix. The
+# events (push, workflow_dispatch) run the `full` matrix; every other pull
+# request, a fork's `release/*` head included, runs the `reduced` matrix. The
 # `package-tier` input overrides the automatic choice. The tier that ran is
 # recorded in the gate's evidence (`metrics.tier`). Requires a vergil-tooling
 # release whose `vrg-package matrix` accepts `--tier`.
