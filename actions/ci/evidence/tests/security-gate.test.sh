@@ -238,16 +238,19 @@ expect_broken() {
 }
 
 # The old gate, which accepted a skipped codeql job even with run-codeql on.
-yq '.jobs.evidence.if = "${{ always() && needs.trivy.result == '"'"'success'"'"' &&
-  needs.semgrep.result == '"'"'success'"'"' &&
-  (needs.codeql.result == '"'"'success'"'"' ||
-  needs.codeql.result == '"'"'skipped'"'"') }}"' "$workflow" \
+old_gate="\${{ always() && needs.trivy.result == 'success' &&"
+old_gate+=" needs.semgrep.result == 'success' &&"
+old_gate+=" (needs.codeql.result == 'success' ||"
+old_gate+=" needs.codeql.result == 'skipped') }}"
+EXPR="$old_gate" yq '.jobs.evidence.if = strenv(EXPR)' "$workflow" \
   >"${tmp}/skip-always.yml"
 expect_broken "detects-a-gate-accepting-skipped-codeql" "${tmp}/skip-always.yml"
 
 # A codeql job gated on a further input, as it once was on code-scanning access.
-yq '.jobs.codeql.if = "${{ inputs.run-security && inputs.run-codeql &&
-  inputs.code-scanning }}"' "$workflow" >"${tmp}/further-input.yml"
+further="\${{ inputs.run-security && inputs.run-codeql &&"
+further+=" inputs.code-scanning }}"
+EXPR="$further" yq '.jobs.codeql.if = strenv(EXPR)' "$workflow" \
+  >"${tmp}/further-input.yml"
 expect_broken "detects-codeql-gated-on-a-further-input" "${tmp}/further-input.yml"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
