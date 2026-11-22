@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.89] - 2026-11-22
+
+### CI
+
+- give only same-repo release heads the full matrix (#1354)
+
+### Refactoring
+
+- drop the private-repo SARIF paths and every actions: read (#1355)
+
 ## [2.1.88] - 2026-11-20
 
 ### Documentation
