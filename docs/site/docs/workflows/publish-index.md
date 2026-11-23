@@ -40,6 +40,12 @@ the workflow; if the fault repeats, raise it with GitHub Support. See
 - **An `index-signing` environment** (below).
 - **`secrets: inherit`** and the job permissions shown in the example.
 
+The workflow also declares `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, the org
+automation App's credentials, as optional secrets. No job uses them yet: they
+are declared ahead of the operations-queue reporting (epic
+[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494)).
+A caller passing `secrets: inherit` already passes them.
+
 ## Signing environment and caller example
 
 The signing key comes from the caller repository's `index-signing`

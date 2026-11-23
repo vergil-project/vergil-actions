@@ -71,7 +71,21 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
       contents: write
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 ```
+
+### Operations-queue inputs
+
+`cd-docs.yml` declares the org automation App's `APP_CLIENT_ID` and
+`APP_PRIVATE_KEY` as optional secrets, and a boolean `report` input (default
+`true`). Neither is used yet: they are declared ahead of the operations-queue
+reporting (epic
+[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494)),
+so every caller can pass the secrets before the release whose reporting job
+needs them. `report: false` will keep that job off; `cd-docs-refresh.yml`
+passes it, because the refresh reports its own run.
 
 ### Interpreter source
 

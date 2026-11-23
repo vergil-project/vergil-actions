@@ -47,7 +47,7 @@ fi
 # vrg-ci-evidence and vrg-package, of which only the named subcommands do
 # (vrg-ci-evidence assemble works offline; vrg-package matrix, build,
 # check-runtime and install-test read only local files).
-github_commands='vrg-(activity-log|branch-sweep|dependabot-audit|docs-stage|epic-audit|epic-rollup|github-repo-config|promote|release|roadmap|upstream-refresh)([^a-z0-9-]|$)'
+github_commands='vrg-(activity-log|branch-sweep|dependabot-audit|docs-stage|epic-audit|epic-rollup|github-repo-config|ops-report|promote|release|roadmap|upstream-refresh)([^a-z0-9-]|$)'
 github_commands+='|vrg-ci-evidence[[:space:]]+(harvest|bundle)'
 github_commands+='|vrg-package[[:space:]]+(index|check-unpublished)'
 
@@ -205,6 +205,7 @@ case_command_pattern() {
     'timeout 15m vrg-ci-evidence harvest --repo o/r' \
     'vrg-package check-unpublished --version 1.2.3' \
     'vrg-package index --config packages.toml' \
+    'vrg-ops-report "${args[@]}"' \
     'vrg-release'; do
     if runs_github_command "$line"; then
       pass_case "pattern-matches: ${line}"
@@ -317,6 +318,45 @@ jobs:
 YAML
   expect_caught "fixture-workflow-env-caught" "${tmp}/workflow-env.yml" \
     "workflow env sets VRG_TRUSTED_AUTHORS" "$root"
+
+  # The reporting step of epic vergil-project/.github#1494 (issue #1361):
+  # vrg-ops-report reads issues through the trust layer, run directly or
+  # through this repo's real ops/report action.
+  cat >"${tmp}/ops-report-run.yml" <<'YAML'
+jobs:
+  report:
+    steps:
+      - env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+        run: vrg-ops-report --repo o/r --job docs-refresh --results failure --run-url https://x
+YAML
+  expect_caught "fixture-ops-report-run-without-it-caught" "${tmp}/ops-report-run.yml" \
+    "report step 0 runs a GitHub-touching vrg-* command but does not set VRG_TRUSTED_AUTHORS" "$root"
+
+  cat >"${tmp}/ops-report-action.yml" <<'YAML'
+jobs:
+  report:
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./actions/ops/report
+        env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+        with:
+          job: docs-refresh
+          results: ${{ needs.refresh.result }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
+YAML
+  expect_caught "fixture-ops-report-action-without-it-caught" "${tmp}/ops-report-action.yml" \
+    "report step 1 uses ./actions/ops/report, which runs a GitHub-touching vrg-* command but does not set VRG_TRUSTED_AUTHORS"
+
+  yq -i '.jobs.report.steps[1].env.VRG_TRUSTED_AUTHORS = "${{ vars.VRG_TRUSTED_AUTHORS }}"' \
+    "${tmp}/ops-report-action.yml"
+  expect_clean "fixture-ops-report-action-delivered-is-clean" "${tmp}/ops-report-action.yml"
 }
 
 case_real_workflows
