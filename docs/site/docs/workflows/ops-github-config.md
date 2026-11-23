@@ -249,10 +249,8 @@ App permission change that has not yet been accepted on the org's
 installation: until it is, minted tokens do not carry the new permission. See
 [Changing a permission later](../configuration.md#app_client_id-and-app_private_key).
 
-A private repository's log carries an itemized report. A public repository,
-or one whose visibility cannot be resolved, gets counts by severity and a
-link to the Security tab only, so a world-readable log never names a
-vulnerable package.
+The log carries counts by severity and a link to the Security tab only, so
+a world-readable log never names a vulnerable package.
 
 For the command's full reference, see vergil-tooling's
 [Dependabot Alert Audit](https://vergil-project.github.io/vergil-tooling/latest/reference/dependabot-audit/).

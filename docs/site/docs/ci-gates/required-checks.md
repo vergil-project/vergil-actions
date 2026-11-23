@@ -19,8 +19,8 @@ check `<caller job> / <job>`.
 | `security / trivy` | `ci-security.yml` | Always |
 | `security / semgrep` | `ci-security.yml` | Always |
 | `docs / docs` | `ci-docs.yml` | The repo publishes docs (`[publish].docs`) |
-| `Trivy`, `Semgrep OSS` | GitHub code scanning (SARIF upload) | GHAS is available |
-| `security / codeql`, `CodeQL` | `ci-security.yml`, GitHub code scanning | GHAS is available and the primary language is supported by CodeQL |
+| `Trivy`, `Semgrep OSS` | GitHub code scanning (SARIF upload) | Always |
+| `security / codeql`, `CodeQL` | `ci-security.yml`, GitHub code scanning | The primary language is supported by CodeQL |
 | `audit / evidence` | `ci-audit.yml` | The language has a dependency-audit check |
 | `test / evidence` | `ci-test.yml` | The language has a unit-test check |
 | `package / evidence` | `ci-package.yml` | `vergil.toml` has a `[package]` section |
@@ -28,8 +28,8 @@ check `<caller job> / <job>`.
 
 `Trivy`, `Semgrep OSS` and `CodeQL` are the SARIF analysis checks that GitHub
 creates when scanner results are uploaded to code scanning; see
-[Security Scanning](security-scanning.md). Without GHAS they never report, so
-they are required only where GHAS is available.
+[Security Scanning](security-scanning.md). Every repository is public, so GHAS
+is always available and these checks always report.
 
 ### Evidence gates are the required checks
 
@@ -92,7 +92,7 @@ checks](#evidence-gates-are-the-required-checks) above).
 | Workflow | Check names produced | Required check |
 | ---------- | ---------------------- | ---------------- |
 | `ci-docs.yml` | `docs / docs` | `docs / docs` (repos that publish docs) |
-| `ci-security.yml` | `security / codeql`, `security / trivy`, `security / semgrep`, `security / evidence` | `security / trivy`, `security / semgrep`; `security / codeql` with GHAS and a CodeQL-supported language |
+| `ci-security.yml` | `security / codeql`, `security / trivy`, `security / semgrep`, `security / evidence` | `security / trivy`, `security / semgrep`; `security / codeql` with a CodeQL-supported language |
 | `ci-quality.yml` | `quality / matrix`, `quality / setup`, `quality / common`, `quality / custom`, `quality / lint / <version>`, `quality / typecheck / <version>` legs + `quality / evidence` aggregate | `quality / evidence` |
 | `ci-audit.yml` | `audit / matrix`, `audit / dependencies / <version>` legs + `audit / evidence` aggregate | `audit / evidence` |
 | `ci-test.yml` | `test / matrix`, `test / unit / <version>` legs + `test / evidence` aggregate | `test / evidence` |

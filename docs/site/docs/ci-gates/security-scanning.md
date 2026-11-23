@@ -14,7 +14,8 @@ Three security scanning tools provide layered coverage:
 
 All three tools upload results in SARIF format to GitHub Code Scanning, which
 requires **GitHub Advanced Security (GHAS)**. GHAS is available by default, at
-no cost, on public repositories.
+no cost, on public repositories. Every repository is public, so GHAS is always
+available.
 
 ## Accepted suppressions: uploaded SARIF vs. evidence
 
@@ -54,10 +55,9 @@ Both columns are gated in both
 `CI gates (develop)` and `CI gates (main)`:
 
 - `security / trivy` and `security / semgrep` are always required.
-- `Trivy` and `Semgrep OSS` are required when GHAS is available. Without GHAS
-  they never report, so requiring them would block every merge.
-- `security / codeql` and `CodeQL` are required when GHAS is available and the
-  repository's primary language is supported by CodeQL.
+- `Trivy` and `Semgrep OSS` are always required.
+- `security / codeql` and `CodeQL` are required when the repository's primary
+  language is supported by CodeQL.
 
 See [Required Checks](required-checks.md) for the full required set.
 
