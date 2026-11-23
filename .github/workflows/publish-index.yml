@@ -29,7 +29,10 @@ on:
     # The org automation App's credentials, for the ops-report action (epic
     # vergil-project/.github#1494). Optional, and used by no job yet: every
     # caller passes them before the release whose reporting job needs them,
-    # so no caller's run turns red (spec §5.6).
+    # so no caller's run turns red (spec §5.6). PACKAGE_SIGNING_KEY and
+    # PACKAGE_SIGNING_PASSPHRASE are not declared: build-index reads them from
+    # its index-signing environment, which the caller's `secrets: inherit`
+    # delivers; .github/actionlint.yaml ignores exactly those references.
     secrets:
       APP_CLIENT_ID:
         required: false

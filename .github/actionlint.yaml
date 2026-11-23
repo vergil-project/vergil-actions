@@ -8,6 +8,16 @@ paths:
       # under on.workflow_call.secrets, and actionlint cannot see environment
       # secrets, so ignore exactly these two references.
       - 'property "package_signing_(key|passphrase)" is not defined in object type'
+  .github/workflows/publish-index.yml:
+    ignore:
+      # build-index reads PACKAGE_SIGNING_KEY / PACKAGE_SIGNING_PASSPHRASE from
+      # its `index-signing` environment (delivered because the caller passes
+      # `secrets: inherit`). Once the workflow declares its optional App
+      # secrets under on.workflow_call.secrets (issue #1361), actionlint
+      # checks every secrets.* reference against that list and cannot see
+      # environment secrets, so ignore exactly these two references, as for
+      # cd-release.yml.
+      - 'property "package_signing_(key|passphrase)" is not defined in object type'
   .github/workflows/ops-github-config.yml:
     ignore:
       # The trusted-authors-check token asks for read-only organization and
