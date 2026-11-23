@@ -36,8 +36,9 @@
 #   * ops-github-config.yml reports branch-sweep only: github-config,
 #     trusted-authors-check and dependabot-audit are security signals and
 #     get no reporting job (spec §2.3);
-#   * vergil-actions' own cd.yml passes both App secrets to its local
-#     cd-docs.yml call, which runs develop's copy at once.
+#   * vergil-actions' own cd.yml passes secrets: inherit to its local
+#     cd-docs.yml call, which runs develop's copy at once, so the App
+#     secrets in the automation environment reach it.
 # Fixture copies of the workflows, each broken one way, check that each rule
 # catches its violation.
 set -euo pipefail
@@ -185,23 +186,22 @@ security_violations() {
 }
 
 # cd_violations <workflow file> — cd.yml's local cd-docs.yml call passes
-# both App secrets.
+# secrets: inherit, the one way the App secrets in the automation
+# environment reach it (epic vergil-project/.github#1384).
 cd_violations() {
-  local wf="$1" job value name
+  local wf="$1" job value
   job="$(yq -r '(.jobs // {}) | to_entries | .[]
     | select((.value.uses // "") == "./.github/workflows/cd-docs.yml") | .key' "$wf")"
   if [ -z "$job" ]; then
     printf 'no job calls ./.github/workflows/cd-docs.yml\n'
     return 0
   fi
-  for name in APP_CLIENT_ID APP_PRIVATE_KEY; do
-    value="$(yq -r ".jobs.\"${job}\".secrets | select(tag == \"!!map\") | .${name} // \"<unset>\"" "$wf")"
-    # No map at all (no secrets, or secrets: inherit) prints nothing.
-    value="${value:-<unset>}"
-    if [ "$value" != "\${{ secrets.${name} }}" ]; then
-      printf '%s: does not pass %s: %s\n' "$job" "$name" "$value"
-    fi
-  done
+  # A map or no secrets at all prints <unset>; only the scalar inherit passes.
+  value="$(yq -r ".jobs.\"${job}\".secrets | select(tag == \"!!str\") // \"<unset>\"" "$wf")"
+  value="${value:-<unset>}"
+  if [ "$value" != "inherit" ]; then
+    printf '%s: does not pass secrets: inherit: %s\n' "$job" "$value"
+  fi
 }
 
 # all_violations <workflow dir> — every rule above, on the workflows in
@@ -308,7 +308,10 @@ case_fixtures() {
     "ops-epic-sweep.yml: the ops-report steps report epic-sweep,epic-sweep, not exactly epic-sweep"
   expect_caught "fixture-cd-without-secrets-caught" cd.yml \
     'del(.jobs.docs.secrets)' \
-    "cd.yml: docs: does not pass APP_CLIENT_ID: <unset>"
+    "cd.yml: docs: does not pass secrets: inherit: <unset>"
+  expect_caught "fixture-cd-explicit-map-caught" cd.yml \
+    '.jobs.docs.secrets = {"APP_CLIENT_ID": "${{ secrets.APP_CLIENT_ID }}", "APP_PRIVATE_KEY": "${{ secrets.APP_PRIVATE_KEY }}"}' \
+    "cd.yml: docs: does not pass secrets: inherit: <unset>"
 }
 
 case_real_workflows
