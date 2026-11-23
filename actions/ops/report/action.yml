@@ -99,7 +99,7 @@ runs:
     # when it is missing).
     - name: Install vergil-tooling
       if: steps.ref-guard.outputs.report == 'true'
-      uses: ./actions/shared/setup/vergil
+      uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.93
       env:
         GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
