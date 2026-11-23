@@ -58,7 +58,7 @@ name: CD Docs Refresh
 
 on:
   schedule:
-    - cron: "17 6 * * *"
+    - cron: "17 1 * * *"
   workflow_dispatch:
 
 permissions:
