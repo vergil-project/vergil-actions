@@ -889,6 +889,8 @@
       
         
       
+        
+      
     
     
     
@@ -941,6 +943,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.93/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.93
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5617,6 +5647,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#org-actions-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Org Actions variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#release-publishing-secrets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8016,6 +8057,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#org-actions-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Org Actions variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#release-publishing-secrets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8161,6 +8213,35 @@ Reference workflows using the full path to the workflow file:</p>
 <a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 <a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">    </span><span class="c1"># Python publishes via OIDC trusted publishing — no secret to pass.</span>
 </code></pre></div>
+<h3 id="org-actions-variables">Org Actions variables<a class="headerlink" href="#org-actions-variables" title="Permanent link">&para;</a></h3>
+<p>Besides the App secrets, the reusable workflows read two org-level Actions
+variables, visible to all repositories, which the human publishes once per
+org from the host configuration:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VRG_TRUSTED_AUTHORS</code></td>
+<td>The trusted-authors configuration, as compact JSON. Every step that runs a vergil-tooling command reading GitHub content gets it, and stops when it is missing or invalid</td>
+</tr>
+<tr>
+<td><code>VRG_AUTOMATION_APP</code></td>
+<td>The slug of the org's automation App</td>
+</tr>
+</tbody>
+</table>
+<p>Set them up in this order: add the org's <code>[orgs.&lt;org&gt;]</code> stanza to the host
+configuration, install a vergil-tooling release that carries the trust
+layer on the host, and run <code>vrg-trusted-authors publish --org &lt;org&gt;</code> right
+away. <code>vrg-trusted-authors render --org &lt;org&gt;</code> previews the values with no
+GitHub call. A job that runs that release before the variables are published
+stops loudly; re-run it once they are. See
+<a href="../configuration/#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a> for details.</p>
 <h3 id="release-publishing-secrets">Release publishing secrets<a class="headerlink" href="#release-publishing-secrets" title="Permanent link">&para;</a></h3>
 <p>Every release forwards the org automation App's <code>APP_CLIENT_ID</code> and
 <code>APP_PRIVATE_KEY</code>: the release tags are pushed with the App's installation

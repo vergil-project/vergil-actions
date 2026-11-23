@@ -889,6 +889,8 @@
       
         
       
+        
+      
     
     
     
@@ -941,6 +943,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.93/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.93
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7465,6 +7495,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jobs-and-check-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7976,6 +8017,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jobs-and-check-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8134,6 +8186,23 @@ relabelling, creating and linking issues, and creating labels),
 repository's <code>vergil.toml</code>).
 <code>vrg-epic-audit --close</code> makes no security-advisory call; the human or the
 user agent syncs advisory states with <code>vrg-security-record sync</code>.</p>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VRG_TRUSTED_AUTHORS</code></td>
+<td>yes</td>
+<td>Org-level Actions variable holding the trusted-authors configuration, published with <code>vrg-trusted-authors publish</code> (see <a href="../../configuration/#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a>). Passed to the <code>vrg-epic-audit --close</code> step and to the <code>report</code> job's <code>ops/report</code> step, which stop when it is missing or invalid</td>
+</tr>
+</tbody>
+</table>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
