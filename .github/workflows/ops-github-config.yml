@@ -128,6 +128,11 @@ jobs:
           #   turn on auto-merge.
           # - Workflows write: a sync PR can change files under
           #   .github/workflows/.
+          # - Actions read: read the automation environment and its
+          #   deployment branch policies (GitHub serves GET
+          #   .../environments/{name} and .../deployment-branch-policies
+          #   only with Actions read; creating or changing them is covered
+          #   by Administration write).
           # - Metadata read: always included, stated so the token's whole
           #   permission set is explicit.
           # No Issues permission: the repo-config code makes no Issues call.
@@ -135,6 +140,7 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
           permission-workflows: write
+          permission-actions: read
           permission-metadata: read
 
       - name: Checkout code
