@@ -99,11 +99,13 @@ Nothing passes unclassified. The check also fails on:
 - a secret that no table lists;
 - a dynamic read of the secrets context (`secrets[...]`, `toJSON(secrets)`);
 - a secret read in the workflow-level `env`, which every job sees;
-- an environment named by an expression;
 - a workflow that does not parse.
 
 To fix a failure, declare the job's environment (`environment: automation`,
-or the signing environment). A new secret goes into the table for the
+or the signing environment). An environment named by an expression, such as
+`${{ inputs.environment }}`, never counts as either, so a job that reads an
+automation or signing secret must name its environment literally. A job
+that reads no such secret may use one. A new secret goes into the table for the
 environment that holds it. An unscoped entry needs a reason that says why
 any job may read it.
 
