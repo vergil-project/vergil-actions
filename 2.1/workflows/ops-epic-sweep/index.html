@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5596,6 +5626,8 @@
       
         
       
+        
+      
     
     
     
@@ -5768,6 +5800,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -6154,6 +6214,8 @@
       
         
       
+        
+      
     
     
     
@@ -6214,6 +6276,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7946,9 +8036,8 @@ which makes three passes over the whole org:</p>
   (ad-hoc, intake and planning) into per-quarter archive epics.</li>
 <li><strong>Orphan pass.</strong> Enforces "every issue belongs to an epic": it links
   body-only <code>Parent:</code> lines as native sub-issues, removes the retired <code>triage</code>,
-  <code>idea</code> and <code>research</code> labels, moves a now-public repository's self-homed
-  intake and planning items under the org <code>.github</code> queues, and attaches every
-  orphan to its home's intake epic.</li>
+  <code>idea</code> and <code>research</code> labels, and attaches every orphan to its home's intake
+  epic.</li>
 </ul>
 <p>So the sweep changes labels and sub-issue links, not only issue state. Each
 pass acts only on provable drift, so a run with nothing new to fix changes
@@ -8048,9 +8137,7 @@ user agent syncs advisory states with <code>vrg-security-record sync</code>.</p>
 <li>Drains the ad-hoc epics, then the intake and planning epics, into
    per-quarter archives, and closes past archives.</li>
 <li>Runs the orphan pass: links body-only <code>Parent:</code> lines natively, strips the
-   retired labels, moves now-public repositories' queue items under <code>.github</code>
-   (closing each emptied self-homed queue epic), then attaches orphans to
-   intake.</li>
+   retired labels, then attaches orphans to intake.</li>
 </ol>
 <p>The log prints a count line for each step, for example
 <code>Retired kind labels stripped: 41 issue(s).</code> and
@@ -8088,7 +8175,7 @@ it.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">on</span><span class="p">:</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">schedule</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">cron</span><span class="p">:</span><span class="w"> </span><span class="s">'0</span><span class="nv"> </span><span class="s">7</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*'</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">cron</span><span class="p">:</span><span class="w"> </span><span class="s">'0</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*'</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nt">permissions</span><span class="p">:</span>

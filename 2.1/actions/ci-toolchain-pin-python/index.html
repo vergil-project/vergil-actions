@@ -16,7 +16,7 @@
         <link rel="prev" href="../ci-matrix/">
       
       
-        <link rel="next" href="../ci-toolchain-assert/">
+        <link rel="next" href="../ci-toolchain-install-python/">
       
       
         
@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5603,6 +5633,8 @@
       
         
       
+        
+      
     
     
     
@@ -5888,6 +5920,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -6269,6 +6329,8 @@
       
         
       
+        
+      
     
     
     
@@ -6332,6 +6394,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7935,7 +8025,8 @@ variables take precedence over a repository's uv settings.</p>
 <p>This action is <strong>wired automatically</strong> into every Python matrix leg of
 <code>ci-quality</code> (lint, typecheck), <code>ci-audit</code> (dependencies) and <code>ci-test</code>
 (unit), and into <code>ci-quality</code>'s single-container <code>custom</code> job (on the primary
-version), before the dependency install. Consuming repositories do not add it
+version), before the dependency install
+(<a href="../ci-toolchain-install-python/"><code>ci/toolchain/install-python</code></a>). Consuming repositories do not add it
 themselves. <a href="../ci-toolchain-assert/"><code>ci/toolchain/assert</code></a> is the backstop that
 checks the result.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>

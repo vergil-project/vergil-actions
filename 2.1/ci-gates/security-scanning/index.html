@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5596,6 +5626,8 @@
       
         
       
+        
+      
     
     
     
@@ -5768,6 +5800,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -6154,6 +6214,8 @@
       
         
       
+        
+      
     
     
     
@@ -6214,6 +6276,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -8075,7 +8165,8 @@
 <h2 id="ghas-requirements">GHAS requirements<a class="headerlink" href="#ghas-requirements" title="Permanent link">&para;</a></h2>
 <p>All three tools upload results in SARIF format to GitHub Code Scanning, which
 requires <strong>GitHub Advanced Security (GHAS)</strong>. GHAS is available by default, at
-no cost, on public repositories.</p>
+no cost, on public repositories. Every repository is public, so GHAS is always
+available.</p>
 <h2 id="accepted-suppressions-uploaded-sarif-vs-evidence">Accepted suppressions: uploaded SARIF vs. evidence<a class="headerlink" href="#accepted-suppressions-uploaded-sarif-vs-evidence" title="Permanent link">&para;</a></h2>
 <p>The SARIF gate passes a finding that has been accepted in source (for
 example a justified <code># nosemgrep: …</code>), but GitHub code scanning does not
@@ -8123,10 +8214,9 @@ results are uploaded (this needs the <code>security-events: write</code> permiss
 <code>CI gates (develop)</code> and <code>CI gates (main)</code>:</p>
 <ul>
 <li><code>security / trivy</code> and <code>security / semgrep</code> are always required.</li>
-<li><code>Trivy</code> and <code>Semgrep OSS</code> are required when GHAS is available. Without GHAS
-  they never report, so requiring them would block every merge.</li>
-<li><code>security / codeql</code> and <code>CodeQL</code> are required when GHAS is available and the
-  repository's primary language is supported by CodeQL.</li>
+<li><code>Trivy</code> and <code>Semgrep OSS</code> are always required.</li>
+<li><code>security / codeql</code> and <code>CodeQL</code> are required when the repository's primary
+  language is supported by CodeQL.</li>
 </ul>
 <p>See <a href="../required-checks/">Required Checks</a> for the full required set.</p>
 <h2 id="viewing-results">Viewing results<a class="headerlink" href="#viewing-results" title="Permanent link">&para;</a></h2>

@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5603,6 +5633,8 @@
       
         
       
+        
+      
     
     
     
@@ -5798,6 +5830,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../ci-toolchain-assert/" class="md-nav__link">
         
   
@@ -5951,6 +6011,17 @@
     <span class="md-ellipsis">
       
         Behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#not-bootstrapped-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not-bootstrapped repositories
       
     </span>
   </a>
@@ -6258,6 +6329,8 @@
       
         
       
+        
+      
     
     
     
@@ -6321,6 +6394,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7861,6 +7962,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#not-bootstrapped-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not-bootstrapped repositories
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -8147,6 +8259,8 @@ so the evidence job takes every file the legs uploaded.</p>
 <li>When the gate step did not succeed, the leg has already failed. The reports
   that exist are staged for diagnosis and the missing ones are noted.</li>
 <li>An empty or placeholder file is never staged.</li>
+<li>A gate skipped because the repository is not bootstrapped yet is accepted,
+  as <a href="#not-bootstrapped-repositories">Not-bootstrapped repositories</a> says.</li>
 <li>For a language with no entry in the table, the step warns (or, for a
   <code>lint</code> or <code>typecheck</code> leg of a repository with no fleet primary language,
   notes) and stages nothing, whatever <code>gate-outcome</code> says.</li>
@@ -8157,8 +8271,45 @@ with a warning or notice, for a language with no entry.</p>
 <code>reports-dir</code> must hold at least one non-empty, version-suffixed copy
 (<code>&lt;stem&gt;-&lt;version&gt;.&lt;ext&gt;</code>, for example <code>quality-clippy-1.95.json</code>). A missing
 one fails the step with an <code>::error::</code> naming it. For a language with no
-lint or typecheck entry, the step warns or notes as above and passes. An
-empty <code>reports-dir</code>, or one that is not a directory, fails.</p>
+lint or typecheck entry, the step warns or notes as above and passes. A gate
+whose legs were all skipped as not bootstrapped needs no report (see below).
+An empty <code>reports-dir</code>, or one that is not a directory, fails.</p>
+<h2 id="not-bootstrapped-repositories">Not-bootstrapped repositories<a class="headerlink" href="#not-bootstrapped-repositories" title="Permanent link">&para;</a></h2>
+<p>A freshly initialised repository has none of its language's manifests yet
+(no <code>pyproject.toml</code> or <code>uv.lock</code>, no <code>Cargo.toml</code> or <code>Cargo.lock</code>, no
+<code>package.json</code> or <code>package-lock.json</code>, or a <code>package.json</code> that declares no
+dependency and no <code>package-lock.json</code>) and no source of the language.
+<code>vrg-validate</code> skips its language stages for such a repository, loudly,
+recording each one <code>warn</code> in <code>.vergil/vrg-validate-last.json</code>
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/4384">vergil-tooling#4384</a>),
+and the gate passes having written no report.</p>
+<p>In <code>stage</code> mode a leg whose gate passed and wrote none of its reports is
+accepted as skipped only when all of these hold:</p>
+<ul>
+<li>the <code>vrg-validate</code> record is of the checked-out commit and the run exited 0;</li>
+<li>every stage the run recorded is <code>warn</code>, the gate's own among them, so no
+  stage really ran;</li>
+<li>every manifest of the language is missing, by the same strict test as
+  <code>vrg-validate</code>, repeated here; a partial bootstrap is not a skip;</li>
+<li>the repository has no source of the language.</li>
+</ul>
+<p>The step then prints a <code>::notice::</code> naming the leg and the reason, stages no
+report, and writes the leg's <strong>skip record</strong> into <code>out-dir</code>:
+<code>&lt;gate&gt;-not-bootstrapped-&lt;version&gt;.json</code>, or
+<code>quality-&lt;gate&gt;-not-bootstrapped-&lt;version&gt;.json</code> for a <code>lint</code> or <code>typecheck</code>
+leg. It is a JSON object with <code>"skipped": true</code>, <code>"reason":
+"not-bootstrapped"</code>, the gate, language, version, the commit (<code>head</code>) and the
+missing manifests. When any condition fails, each failing one is an
+<code>::error::</code> and the leg fails on its missing reports, as any passing gate that
+wrote no report does.</p>
+<p>In <code>expect</code> mode a <code>lint</code> or <code>typecheck</code> gate with no report passes, with a
+<code>::notice::</code>, when <code>reports-dir</code> holds its legs' skip records. A skip record
+of another language or gate, or one found beside a report of the same gate,
+fails the step.</p>
+<p>The skip record is uploaded with the leg's reports and reaches the gate's
+evidence artifact, so the release-time evidence gate finds the skip recorded
+in the gate's payload rather than an empty one. A bootstrapped repository
+never gets a skip record, so a missing report there still fails the leg.</p>
 
 
 

@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5596,6 +5626,8 @@
       
         
       
+        
+      
     
     
     
@@ -5768,6 +5800,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -6154,6 +6214,8 @@
       
         
       
+        
+      
     
     
     
@@ -6214,6 +6276,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7933,12 +8023,12 @@ check <code>&lt;caller job&gt; / &lt;job&gt;</code>.</p>
 <tr>
 <td><code>Trivy</code>, <code>Semgrep OSS</code></td>
 <td>GitHub code scanning (SARIF upload)</td>
-<td>GHAS is available</td>
+<td>Always</td>
 </tr>
 <tr>
 <td><code>security / codeql</code>, <code>CodeQL</code></td>
 <td><code>ci-security.yml</code>, GitHub code scanning</td>
-<td>GHAS is available and the primary language is supported by CodeQL</td>
+<td>The primary language is supported by CodeQL</td>
 </tr>
 <tr>
 <td><code>audit / evidence</code></td>
@@ -7964,8 +8054,8 @@ check <code>&lt;caller job&gt; / &lt;job&gt;</code>.</p>
 </table>
 <p><code>Trivy</code>, <code>Semgrep OSS</code> and <code>CodeQL</code> are the SARIF analysis checks that GitHub
 creates when scanner results are uploaded to code scanning; see
-<a href="../security-scanning/">Security Scanning</a>. Without GHAS they never report, so
-they are required only where GHAS is available.</p>
+<a href="../security-scanning/">Security Scanning</a>. Every repository is public, so GHAS
+is always available and these checks always report.</p>
 <h3 id="evidence-gates-are-the-required-checks">Evidence gates are the required checks<a class="headerlink" href="#evidence-gates-are-the-required-checks" title="Permanent link">&para;</a></h3>
 <p>The matrixed reusable workflows (<code>ci-audit</code>, <code>ci-quality</code>, <code>ci-test</code>) take
 their version matrix from <code>vrg-ci-resolve</code> at run time, which resolves the
@@ -8051,7 +8141,7 @@ checks</a> above).</p>
 <tr>
 <td><code>ci-security.yml</code></td>
 <td><code>security / codeql</code>, <code>security / trivy</code>, <code>security / semgrep</code>, <code>security / evidence</code></td>
-<td><code>security / trivy</code>, <code>security / semgrep</code>; <code>security / codeql</code> with GHAS and a CodeQL-supported language</td>
+<td><code>security / trivy</code>, <code>security / semgrep</code>; <code>security / codeql</code> with a CodeQL-supported language</td>
 </tr>
 <tr>
 <td><code>ci-quality.yml</code></td>

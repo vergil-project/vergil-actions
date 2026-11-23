@@ -73,6 +73,10 @@
          <lastmod>2026-11-23</lastmod>
     </url>
     <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-toolchain-install-python/</loc>
+         <lastmod>2026-11-23</lastmod>
+    </url>
+    <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ci-toolchain-pin-python/</loc>
          <lastmod>2026-11-23</lastmod>
     </url>
@@ -86,6 +90,10 @@
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ops-github-config-branch-sweep/</loc>
+         <lastmod>2026-11-23</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/actions/ops-report/</loc>
          <lastmod>2026-11-23</lastmod>
     </url>
     <url>
@@ -802,6 +810,10 @@
     </url>
     <url>
          <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.90/</loc>
+         <lastmod>2026-11-23</lastmod>
+    </url>
+    <url>
+         <loc>https://vergil-project.github.io/vergil-actions/2.1/releases/v2.1.91/</loc>
          <lastmod>2026-11-23</lastmod>
     </url>
     <url>

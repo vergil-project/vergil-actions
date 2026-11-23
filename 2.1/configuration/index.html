@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5931,6 +5961,8 @@
       
         
       
+        
+      
     
     
     
@@ -6103,6 +6135,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -6489,6 +6549,8 @@
       
         
       
+        
+      
     
     
     
@@ -6549,6 +6611,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -8497,6 +8587,11 @@ only library repositories:</p>
 <td><code>release</code></td>
 <td>vergil-actions only</td>
 </tr>
+<tr>
+<td>The <a href="../actions/ops-report/"><code>ops/report</code></a> action</td>
+<td>A workflow's reporting job (none uses it yet)</td>
+<td>Calling repository and <code>&lt;org&gt;/.github</code>, Issues write only</td>
+</tr>
 </tbody>
 </table>
 <p><strong>App permissions.</strong> Every org's automation App is configured identically,
@@ -8534,7 +8629,7 @@ permissions:</p>
 <tr>
 <td>Issues</td>
 <td>Read &amp; write</td>
-<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues)</td>
+<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues); the <code>ops/report</code> action (opens and comments on ops issues, creates the <code>ops-report</code> label, links issues under the operations epic)</td>
 </tr>
 <tr>
 <td>Workflows</td>
@@ -8672,6 +8767,11 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 <td><code>ops-upstream-refresh.yml</code></td>
 <td><code>publish</code> (minted in-process by <code>vrg-upstream-refresh</code>, from <code>develop</code> only)</td>
 <td><code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>metadata: read</code></td>
+</tr>
+<tr>
+<td><code>cd-release.yml</code></td>
+<td><code>release</code>, its "Mint release tag token" step (pushes the release tags)</td>
+<td><code>contents: write</code></td>
 </tr>
 <tr>
 <td><code>cd-release.yml</code></td>

@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5601,6 +5631,8 @@
       
         
       
+        
+      
     
     
     
@@ -5776,6 +5808,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -6165,6 +6225,8 @@
       
         
       
+        
+      
     
     
     
@@ -6228,6 +6290,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7856,6 +7946,11 @@ definition and optional supporting scripts.</p>
   Python leg's resolved version and to the image's interpreter
   (<code>UV_PYTHON</code>, <code>UV_PYTHON_PREFERENCE=only-system</code>); auto-wired into the
   Python matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
+<li><strong><a href="ci-toolchain-install-python/">ci/toolchain/install-python</a></strong> — Installs
+  a Python leg's dev dependencies (<code>uv sync --group dev --frozen</code>), or skips
+  the install with a notice on a repository with neither <code>pyproject.toml</code> nor
+  <code>uv.lock</code>; auto-wired into the Python legs of <code>ci-quality</code>, <code>ci-audit</code> and
+  <code>ci-test</code>.</li>
 <li><strong><a href="ci-toolchain-assert/">ci/toolchain/assert</a></strong> — Fails a CI leg whose
   running Python, Go, Rust or Node (TypeScript) is not the version CI resolved
   for it; auto-wired into the matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and
@@ -7895,6 +7990,10 @@ definition and optional supporting scripts.</p>
 <li><strong><a href="ops-github-config-branch-sweep/">ops/github-config/branch-sweep</a></strong> —
   Deletes branches whose PR is merged or closed and lists them in the job
   summary, flagging merged-PR leftovers (auto-wired into <code>ops-github-config</code>).</li>
+<li><strong><a href="ops-report/">ops/report</a></strong> — Reports a named unattended job's result
+  to the org's operations queue as the automation App, from <code>develop</code> only:
+  opens or comments on the job's ops issue on a failure, records the first
+  green run after one, and never closes an issue.</li>
 </ul>
 <h3 id="shared">Shared<a class="headerlink" href="#shared" title="Permanent link">&para;</a></h3>
 <ul>

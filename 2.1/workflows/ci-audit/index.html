@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5596,6 +5626,8 @@
       
         
       
+        
+      
     
     
     
@@ -5768,6 +5800,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -6154,6 +6214,8 @@
       
         
       
+        
+      
     
     
     
@@ -6214,6 +6276,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7982,8 +8072,11 @@ runs the shared setup action, which calls the resolver, and passes its
 versions, image tags and image suffixes to
 <a href="../../actions/ci-matrix/"><code>ci/matrix</code></a>. Each leg pins uv to its version and to
 the image's interpreter (Python, with
-<a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and then
-asserts the running toolchain with
+<a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>), installs
+Python's dev dependencies with
+<a href="../../actions/ci-toolchain-install-python/"><code>ci/toolchain/install-python</code></a>
+(skipped with a notice on a repository with neither <code>pyproject.toml</code> nor
+<code>uv.lock</code>) and then asserts the running toolchain with
 <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>. Callers are
 thin: they pass only <code>language:</code> and <code>container-suffix:</code>.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
@@ -8015,9 +8108,13 @@ thin: they pass only <code>language:</code> and <code>container-suffix:</code>.<
 TypeScript. As for Python, <code>licenses.json</code> is the license report: TypeScript's
 is written by <code>vrg-npm-license-gate</code>. The names come
 from <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose
-audit passed but wrote no report fails. A language with no audit report
-contract yet (Go, C++) gets a warning and stages nothing, and the
-release-time evidence gate decides.</p>
+audit passed but wrote no report fails, unless the repository is not
+bootstrapped yet and <code>vrg-validate</code> skipped the gate: the leg then prints a
+notice and stages a skip record, <code>audit-not-bootstrapped-&lt;version&gt;.json</code>, in
+place of its reports (see
+<a href="../../actions/ci-evidence-reports/#not-bootstrapped-repositories">Not-bootstrapped repositories</a>).
+A language with no audit report contract yet (Go, C++) gets a warning and
+stages nothing, and the release-time evidence gate decides.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">audit</span><span class="p">:</span>

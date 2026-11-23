@@ -885,6 +885,8 @@
       
         
       
+        
+      
     
     
     
@@ -937,6 +939,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.91
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5601,6 +5631,8 @@
       
         
       
+        
+      
     
     
     
@@ -5776,6 +5808,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -6260,6 +6320,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#operations-queue-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operations-queue inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#interpreter-source" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6364,6 +6435,8 @@
       
         
       
+        
+      
     
     
     
@@ -6427,6 +6500,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7997,6 +8098,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#operations-queue-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operations-queue inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#interpreter-source" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8175,7 +8287,19 @@ rather than calling the composite action directly:</p>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
 </code></pre></div>
+<h3 id="operations-queue-inputs">Operations-queue inputs<a class="headerlink" href="#operations-queue-inputs" title="Permanent link">&para;</a></h3>
+<p><code>cd-docs.yml</code> declares the org automation App's <code>APP_CLIENT_ID</code> and
+<code>APP_PRIVATE_KEY</code> as optional secrets, and a boolean <code>report</code> input (default
+<code>true</code>). Neither is used yet: they are declared ahead of the operations-queue
+reporting (epic
+<a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>),
+so every caller can pass the secrets before the release whose reporting job
+needs them. <code>report: false</code> will keep that job off; <code>cd-docs-refresh.yml</code>
+passes it, because the refresh reports its own run.</p>
 <h3 id="interpreter-source">Interpreter source<a class="headerlink" href="#interpreter-source" title="Permanent link">&para;</a></h3>
 <p>The action's "Deploy docs" step sets <code>UV_PYTHON_PREFERENCE=only-system</code>, and
 the <code>cd-docs.yml</code> <code>docs</code> job sets it in its job <code>env</code> too, so it also reaches
