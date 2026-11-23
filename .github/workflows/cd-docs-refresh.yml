@@ -76,6 +76,7 @@ jobs:
     needs: refresh
     if: always()
     runs-on: ubuntu-24.04
+    environment: automation
     permissions:
       contents: read
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest

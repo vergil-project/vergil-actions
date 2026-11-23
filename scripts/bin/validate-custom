@@ -109,6 +109,9 @@ echo "Running: test suite wiring check"
 echo "Running: early-exit pipe check"
 "$ROOT/scripts/bin/check-early-exit-pipes" "$ROOT" || status=1
 
+echo "Running: secret environment check"
+"$ROOT/scripts/bin/check-secret-environments" "$ROOT" || status=1
+
 echo "Running: action test suites"
 run_action_suites "$ROOT" || status=1
 

@@ -49,6 +49,7 @@ jobs:
   epic-sweep:
     name: epic-sweep
     runs-on: ubuntu-24.04
+    environment: automation
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     steps:
       - name: Generate app token
@@ -107,6 +108,7 @@ jobs:
     needs: epic-sweep
     if: always()
     runs-on: ubuntu-24.04
+    environment: automation
     permissions:
       contents: read
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
