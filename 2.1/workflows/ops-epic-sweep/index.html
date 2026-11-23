@@ -887,6 +887,8 @@
       
         
       
+        
+      
     
     
     
@@ -939,6 +941,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.92/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.92
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8118,6 +8148,11 @@ user agent syncs advisory states with <code>vrg-security-record sync</code>.</p>
 <td><code>epic-sweep</code></td>
 <td><code>&lt;caller&gt; / epic-sweep</code></td>
 <td>Runs <code>vrg-epic-audit --close</code> across the org</td>
+</tr>
+<tr>
+<td><code>report</code></td>
+<td><code>&lt;caller&gt; / report</code></td>
+<td>Always, after <code>epic-sweep</code>: reports its result as <code>epic-sweep</code> to the org's operations queue through <a href="../../actions/ops-report/"><code>ops/report</code></a></td>
 </tr>
 </tbody>
 </table>

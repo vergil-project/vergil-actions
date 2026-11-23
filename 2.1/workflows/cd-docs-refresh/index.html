@@ -887,6 +887,8 @@
       
         
       
+        
+      
     
     
     
@@ -939,6 +941,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.92/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.92
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8053,11 +8083,13 @@ the caller runs it on a schedule and on demand.</p>
 </tr>
 </tbody>
 </table>
-<p>Both are optional and used by no job yet. They are declared ahead of the
-operations-queue reporting (epic
+<p>The <code>report</code> job uses them to report the run to the org's operations queue
+(epic
 <a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>),
-so every caller can pass them before the release whose reporting job needs
-them. Pass them now:</p>
+and the <code>refresh</code> job forwards them to <code>cd-docs.yml</code>. They are declared
+optional, a release ahead of the reporting job, so every caller could pass
+them first; a run from <code>develop</code> that does not pass them turns <code>report</code> red.
+Pass them:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
@@ -8076,6 +8108,11 @@ them. Pass them now:</p>
 <td><code>refresh</code></td>
 <td><code>&lt;caller&gt; / refresh / docs</code></td>
 <td>Calls <code>cd-docs.yml</code>, whose <code>docs</code> job runs the command, stages the docs and deploys them</td>
+</tr>
+<tr>
+<td><code>report</code></td>
+<td><code>&lt;caller&gt; / report</code></td>
+<td>Always, after <code>refresh</code>: reports its result as <code>docs-refresh</code> to the org's operations queue through <a href="../../actions/ops-report/"><code>ops/report</code></a></td>
 </tr>
 </tbody>
 </table>

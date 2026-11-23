@@ -887,6 +887,8 @@
       
         
       
+        
+      
     
     
     
@@ -939,6 +941,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.92/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.92
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8537,7 +8567,10 @@ App token supplies the extra scopes (for example Dependabot alerts or branch
 deletion) and the cross-repository reach (the org's <code>.github</code> epics, the
 org's <code>packages</code> index) these workflows need.</p>
 <p><strong>Who uses it.</strong> Every repository with an <code>ops.yml</code> needs these secrets, not
-only library repositories:</p>
+only library repositories, and so does every caller of <code>cd-docs.yml</code>,
+<code>cd-docs-refresh.yml</code> or <code>publish-index.yml</code>, whose reporting jobs mint the
+App token on <code>develop</code> (the secrets are optional there, but a run that does
+not pass them turns its reporting job red):</p>
 <table>
 <thead>
 <tr>
@@ -8589,7 +8622,7 @@ only library repositories:</p>
 </tr>
 <tr>
 <td>The <a href="../actions/ops-report/"><code>ops/report</code></a> action</td>
-<td>A workflow's reporting job (none uses it yet)</td>
+<td>The reporting job of <code>ops-github-config.yml</code> (<code>report-branch-sweep</code>), <code>ops-epic-sweep.yml</code>, <code>ops-epic-rollup.yml</code>, <code>ops-upstream-refresh.yml</code>, <code>cd-docs.yml</code>, <code>cd-docs-refresh.yml</code> and <code>publish-index.yml</code> (each <code>report</code>)</td>
 <td>Calling repository and <code>&lt;org&gt;/.github</code>, Issues write only</td>
 </tr>
 </tbody>
