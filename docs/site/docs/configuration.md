@@ -275,19 +275,18 @@ reads the published values back. For the host configuration itself, see
 vergil-tooling's
 [account setup guide](https://vergil-project.github.io/vergil-tooling/latest/guides/account-setup/#trusted-authors).
 
-**The order.** The variable must exist before any job runs a vergil-tooling
-release that carries the trust layer:
+**The order.** Every job that runs a vergil-tooling release carrying the
+trust layer reads the variable, the release's own
+[CI evidence gate](actions/cd-release-ci-evidence-gate.md) included.
+`publish` ships in that same release, so:
 
 1. Add the org's `[orgs.<org>]` stanza, beside `[trusted_authors]`, to the
    host configuration.
-2. Run `vrg-trusted-authors publish --org <org>`.
-3. Only then run workflows on such a release. In particular, the variable
-   is published before the first vergil-tooling release that carries the
-   trust layer, since that release's own
-   [CI evidence gate](actions/cd-release-ci-evidence-gate.md) reads it.
+2. Install that vergil-tooling release on the host.
+3. Run `vrg-trusted-authors publish --org <org>` right away.
 
-A job that runs such a release before the variable is published stops
-loudly on the missing variable; re-run it once the variable is published.
+A job that runs the release before the variable is published stops loudly
+on the missing variable; re-run it once the variable is published.
 
 Under GitHub Actions, with no configuration file on the runner,
 vergil-tooling reads it from the environment and stops when it is missing

@@ -118,11 +118,11 @@ org from the host configuration:
 | `VRG_AUTOMATION_APP` | The slug of the org's automation App |
 
 Set them up in this order: add the org's `[orgs.<org>]` stanza to the host
-configuration, then run `vrg-trusted-authors publish --org <org>` before
-any workflow runs a vergil-tooling release that carries the trust layer.
-`vrg-trusted-authors render --org <org>` previews the values with no GitHub
-call. A job that runs before the variables are published stops loudly; re-run
-it once they are. See
+configuration, install a vergil-tooling release that carries the trust
+layer on the host, and run `vrg-trusted-authors publish --org <org>` right
+away. `vrg-trusted-authors render --org <org>` previews the values with no
+GitHub call. A job that runs that release before the variables are published
+stops loudly; re-run it once they are. See
 [VRG_TRUSTED_AUTHORS](configuration.md#vrg_trusted_authors) for details.
 
 ### Release publishing secrets
