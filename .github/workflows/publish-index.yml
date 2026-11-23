@@ -151,6 +151,7 @@ jobs:
     needs: [build-index, deploy]
     if: always()
     runs-on: ubuntu-24.04
+    environment: automation
     permissions:
       contents: read
     steps:

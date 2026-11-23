@@ -124,6 +124,7 @@ jobs:
     name: publish
     needs: prepare
     runs-on: ubuntu-24.04
+    environment: automation
     # The tool's own deadline is 120 minutes from its start, so it always
     # ends, revokes its token and logs how the wait ended before GitHub kills
     # the job: 120 minutes, plus 15 for the steps before it, plus a 5-minute
@@ -201,6 +202,7 @@ jobs:
     needs: [prepare, publish]
     if: always()
     runs-on: ubuntu-24.04
+    environment: automation
     permissions:
       contents: read
     container:
