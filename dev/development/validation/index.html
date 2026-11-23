@@ -7909,6 +7909,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#secret-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret environments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#nightly-harness-wiring" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8106,6 +8117,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#secret-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret environments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#nightly-harness-wiring" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8225,8 +8247,61 @@ suite here and GitHub's default <code>bash</code> shell set, such a consumer exi
 on its first match, the producer dies of SIGPIPE writing its next line,
 and the pipeline fails although it matched. Test the output with no pipe
 instead: <code>grep -q &lt;pattern&gt; &lt;&lt;&lt;"$(&lt;producer&gt;)"</code>.</p>
+<h3 id="secret-environments">Secret environments<a class="headerlink" href="#secret-environments" title="Permanent link">&para;</a></h3>
+<p>The fourth check, <code>scripts/bin/check-secret-environments</code>, fails naming
+each workflow job that reads a secret able to write or act without
+declaring the environment that holds it. The automation App's keys and the
+registry publishing tokens live in each repository's <code>automation</code>
+environment, whose deployment-branch policy admits only <code>develop</code> and
+<code>main</code>, so a run from any other branch sees them unset. The package-signing
+keys live in their own single-branch environments.</p>
+<p>It reads every tracked workflow and, for each job that runs steps, collects
+each <code>secrets.&lt;NAME&gt;</code> read inside a <code>${{ }}</code> expression, in any case and
+skipping quoted strings. A job that calls a reusable workflow with <code>uses:</code>
+runs no steps, so the called workflow's jobs are the ones checked. Each
+secret is checked against the tables at the top of the script:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Secrets</th>
+<th>Required environment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AUTOMATION_SECRETS</code></td>
+<td><code>APP_CLIENT_ID</code>, <code>APP_PRIVATE_KEY</code>, <code>CARGO_REGISTRY_TOKEN</code></td>
+<td><code>automation</code></td>
+</tr>
+<tr>
+<td><code>SIGNING_SECRETS</code></td>
+<td><code>PACKAGE_SIGNING_KEY</code>, <code>PACKAGE_SIGNING_PASSPHRASE</code></td>
+<td><code>package-signing</code> or <code>index-signing</code></td>
+</tr>
+<tr>
+<td><code>UNSCOPED_SECRETS</code></td>
+<td><code>GITHUB_TOKEN</code>, <code>CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER</code></td>
+<td>none, each with its reason</td>
+</tr>
+</tbody>
+</table>
+<p>Nothing passes unclassified. The check also fails on:</p>
+<ul>
+<li>a secret that no table lists;</li>
+<li>a dynamic read of the secrets context (<code>secrets[...]</code>, <code>toJSON(secrets)</code>);</li>
+<li>a secret read in the workflow-level <code>env</code>, which every job sees;</li>
+<li>a workflow that does not parse.</li>
+</ul>
+<p>To fix a failure, declare the job's environment (<code>environment: automation</code>,
+or the signing environment). An environment named by an expression, such as
+<code>${{ inputs.environment }}</code>, never counts as either, so a job that reads an
+automation or signing secret must name its environment literally. A job
+that reads no such secret may use one. A new secret goes into the table for the
+environment that holds it. An unscoped entry needs a reason that says why
+any job may read it.</p>
 <h3 id="nightly-harness-wiring">Nightly harness wiring<a class="headerlink" href="#nightly-harness-wiring" title="Permanent link">&para;</a></h3>
-<p><code>scripts/bin/check-nightly-harnesses</code> fails unless
+<p>The fifth check, <code>scripts/bin/check-nightly-harnesses</code>, fails unless
 <code>.github/workflows/nightly-harnesses.yml</code> calls every smoke workflow. Each
 tracked <code>smoke-&lt;name&gt;.yml</code> must declare a <code>workflow_call</code> trigger, and the
 nightly workflow must have a job <code>&lt;name&gt;</code> whose <code>uses:</code> is
