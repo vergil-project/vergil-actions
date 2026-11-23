@@ -52,6 +52,7 @@ user agent syncs advisory states with `vrg-security-record sync`.
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
 | `epic-sweep` | `<caller> / epic-sweep` | Runs `vrg-epic-audit --close` across the org |
+| `report` | `<caller> / report` | Always, after `epic-sweep`: reports its result as `epic-sweep` to the org's operations queue through [`ops/report`](../actions/ops-report.md) |
 
 ## Behavior
 

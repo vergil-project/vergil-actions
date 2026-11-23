@@ -20,6 +20,31 @@ conclusion and the date, never log text.
 A reporting job is the last job of its workflow, with `if: always()`, so it
 runs whatever the jobs it reports did.
 
+## The shared workflows' reporting jobs
+
+Each shared unattended workflow ends with one reporting job per stable job
+name:
+
+| Workflow | Reporting job | Stable name | Reports |
+|---|---|---|---|
+| [`ops-github-config.yml`](../workflows/ops-github-config.md) | `report-branch-sweep` | `branch-sweep` | `branch-sweep` |
+| [`ops-epic-sweep.yml`](../workflows/ops-epic-sweep.md) | `report` | `epic-sweep` | `epic-sweep` |
+| [`ops-epic-rollup.yml`](../workflows/ops-epic-rollup.md) | `report` | `epic-rollup` | `epic-rollup` |
+| [`ops-upstream-refresh.yml`](../workflows/ops-upstream-refresh.md) | `report` | `upstream-refresh` | `prepare`, `publish` |
+| `cd-docs.yml` | `report` | `docs-deploy-develop` | `docs` (job `deploy`) |
+| [`cd-docs-refresh.yml`](../workflows/cd-docs-refresh.md) | `report` | `docs-refresh` | `refresh` |
+| [`publish-index.yml`](../workflows/publish-index.md) | `report` | `publish-index` | `build-index`, `deploy` |
+
+`github-config`, `trusted-authors-check` and `dependabot-audit` get none:
+their failures are security signals, never a public ops issue.
+`cd-docs.yml`'s job also stays off when its caller passes `report: false`
+(`cd-docs-refresh.yml` does, and reports the run itself as `docs-refresh`)
+and for a release push: a push to `main`, or a `develop` push whose head
+commit merges a `release/*` branch, both of which the release records
+already track. `tests/reporting-jobs.test.sh`,
+`tests/ops-report-skipped.test.sh`, `tests/release-push-skip.test.sh` and
+`tests/docs-refresh-reports-once.test.sh` check these jobs.
+
 ## Usage
 
 ```yaml

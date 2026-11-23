@@ -18,15 +18,15 @@ on:
       report:
         description: >-
           Report this run's result to the org's operations queue (epic
-          vergil-project/.github#1494). Not used yet: the reporting job comes
-          in a later release. cd-docs-refresh.yml passes false, since it
-          reports the run itself under its own job name.
+          vergil-project/.github#1494) as docs-deploy-develop, through the report
+          job. cd-docs-refresh.yml passes false, since it reports the run
+          itself under its own job name.
         type: boolean
         default: true
     # The org automation App's credentials, for the ops-report action (epic
-    # vergil-project/.github#1494). Optional, and used by no job yet: every
-    # caller passes them before the release whose reporting job needs them,
-    # so no caller's run turns red (spec §5.6).
+    # vergil-project/.github#1494), used only by the report job. Declared
+    # optional a release before that job, so every caller could pass them
+    # first and no caller's run turned red (spec §5.6).
     secrets:
       APP_CLIENT_ID:
         required: false
@@ -98,3 +98,46 @@ jobs:
         with:
           version-command: vrg-version show --major-minor
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
+
+  # Reports the docs deploy as docs-deploy-develop to the org's operations
+  # queue (epic vergil-project/.github#1494, spec §5.3, §4.1). Off when the
+  # caller passes report: false (cd-docs-refresh.yml reports its run as
+  # docs-refresh), and off for a release push: a push to main, or a develop
+  # push whose head commit merges a release/* branch (a release's merge back
+  # into develop). Epic vergil-project/.github#1440's release records already
+  # track and recover those runs' failed CD jobs.
+  # actions/ops/report/tests/release-push-skip.test.sh and
+  # docs-refresh-reports-once.test.sh guard the condition.
+  # The checkout comes first: setting up Vergil reads the workspace's
+  # vergil.toml, and the local ./actions/ ref resolves against it. The action
+  # mints its own issues-only App token, only on refs/heads/develop, so this
+  # job's GITHUB_TOKEN stays read-only. No concurrency group: GitHub keeps one
+  # pending run per group and cancels the older, which would drop a report.
+  # actions/ops/report/tests/reporting-jobs.test.sh guards this layout.
+  report:
+    name: report
+    needs: deploy
+    if: >-
+      always() && inputs.report && github.ref != 'refs/heads/main' &&
+      !(startsWith(github.event.head_commit.message, 'Merge pull request #') &&
+      contains(github.event.head_commit.message, format(' from {0}/release/', github.repository_owner)))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Report docs-deploy-develop
+        uses: ./actions/ops/report
+        env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
+        with:
+          job: docs-deploy-develop
+          results: ${{ needs.deploy.result }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}

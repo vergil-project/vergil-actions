@@ -285,3 +285,40 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-dependabot-audit --repo "${{ github.repository }}"
+
+  # Reports branch-sweep's result to the org's operations queue (epic
+  # vergil-project/.github#1494, spec §5.3): ops-report opens or comments on
+  # its ops issue on a failure or cancel and records the first green run
+  # after one. github-config, trusted-authors-check and dependabot-audit get
+  # no reporting job: their failures are security signals, which never go to
+  # a public ops issue (spec §2.3).
+  # The checkout comes first: setting up Vergil reads the workspace's
+  # vergil.toml, and the local ./actions/ ref resolves against it. The action
+  # mints its own issues-only App token, only on refs/heads/develop, so this
+  # job's GITHUB_TOKEN stays read-only. No concurrency group: GitHub keeps one
+  # pending run per group and cancels the older, which would drop a report.
+  # actions/ops/report/tests/reporting-jobs.test.sh guards this layout.
+  report-branch-sweep:
+    name: report-branch-sweep
+    needs: branch-sweep
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Report branch-sweep
+        uses: ./actions/ops/report
+        env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
+        with:
+          job: branch-sweep
+          results: ${{ needs.branch-sweep.result }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}

@@ -88,3 +88,11 @@ jobs:
     uses: ./.github/workflows/cd-docs.yml
     permissions:
       contents: write
+    # The App secrets reach cd-docs.yml's report job, which reports this
+    # repo's develop docs deploys as docs-deploy-develop (epic
+    # vergil-project/.github#1494). A local call runs this branch's
+    # cd-docs.yml at once, so it passes them in the same change that adds
+    # the job.
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}

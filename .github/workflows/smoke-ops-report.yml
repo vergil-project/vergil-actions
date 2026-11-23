@@ -11,7 +11,16 @@ name: Smoke - ops/report
 #   * optional-secrets.test.sh: cd-docs.yml, cd-docs-refresh.yml and
 #     publish-index.yml declare APP_CLIENT_ID and APP_PRIVATE_KEY as
 #     optional, cd-docs.yml declares the `report` input, and the refresh's
-#     nested cd-docs.yml call passes `report: false` and both secrets.
+#     nested cd-docs.yml call passes `report: false` and both secrets;
+#   * reporting-jobs.test.sh (issue #1362): each shared unattended workflow
+#     ends with one reporting job per stable job name, run always, needing
+#     and passing the results of every GitHub job of that name, and none for
+#     the security-signal jobs;
+#   * ops-report-skipped.test.sh: upstream-refresh reports both prepare's
+#     and publish's results, unfiltered, so all-skipped reports nothing;
+#   * release-push-skip.test.sh: cd-docs.yml reports no release push;
+#   * docs-refresh-reports-once.test.sh: a docs refresh is reported once, as
+#     docs-refresh.
 # Each needs yq (preinstalled on GitHub's ubuntu runners) and no network.
 
 on:
@@ -22,6 +31,11 @@ on:
       - .github/workflows/cd-docs.yml
       - .github/workflows/cd-docs-refresh.yml
       - .github/workflows/publish-index.yml
+      - .github/workflows/ops-github-config.yml
+      - .github/workflows/ops-epic-sweep.yml
+      - .github/workflows/ops-epic-rollup.yml
+      - .github/workflows/ops-upstream-refresh.yml
+      - .github/workflows/cd.yml
       - .github/workflows/smoke-ops-report.yml
 
 permissions:
@@ -45,3 +59,15 @@ jobs:
       - name: Run optional App secrets harness
         shell: bash
         run: bash actions/ops/report/tests/optional-secrets.test.sh
+      - name: Run reporting jobs harness
+        shell: bash
+        run: bash actions/ops/report/tests/reporting-jobs.test.sh
+      - name: Run skipped results harness
+        shell: bash
+        run: bash actions/ops/report/tests/ops-report-skipped.test.sh
+      - name: Run release-push skip harness
+        shell: bash
+        run: bash actions/ops/report/tests/release-push-skip.test.sh
+      - name: Run docs-refresh reports-once harness
+        shell: bash
+        run: bash actions/ops/report/tests/docs-refresh-reports-once.test.sh

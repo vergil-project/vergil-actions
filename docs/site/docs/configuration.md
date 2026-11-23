@@ -82,7 +82,10 @@ deletion) and the cross-repository reach (the org's `.github` epics, the
 org's `packages` index) these workflows need.
 
 **Who uses it.** Every repository with an `ops.yml` needs these secrets, not
-only library repositories:
+only library repositories, and so does every caller of `cd-docs.yml`,
+`cd-docs-refresh.yml` or `publish-index.yml`, whose reporting jobs mint the
+App token on `develop` (the secrets are optional there, but a run that does
+not pass them turns its reporting job red):
 
 | Workflow | Job or step | Token scope |
 | -------- | ----------- | ----------- |
@@ -94,7 +97,7 @@ only library repositories:
 | [`cd-release.yml`](workflows/cd-release.md#secrets) | `release` (pushes the release tags) | Calling repository only, Contents write |
 | [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
 | vergil-actions' own `cd.yml` | `release` | vergil-actions only |
-| The [`ops/report`](actions/ops-report.md) action | A workflow's reporting job (none uses it yet) | Calling repository and `<org>/.github`, Issues write only |
+| The [`ops/report`](actions/ops-report.md) action | The reporting job of `ops-github-config.yml` (`report-branch-sweep`), `ops-epic-sweep.yml`, `ops-epic-rollup.yml`, `ops-upstream-refresh.yml`, `cd-docs.yml`, `cd-docs-refresh.yml` and `publish-index.yml` (each `report`) | Calling repository and `<org>/.github`, Issues write only |
 
 **App permissions.** Every org's automation App is configured identically,
 and this table is that configuration. Each org's App must hold exactly these

@@ -18,20 +18,29 @@
 # v4, preinstalled on GitHub's ubuntu runners) and touches no network.
 #
 # The rules, checked on ops-upstream-refresh.yml:
-#   * the jobs are exactly prepare and publish, and publish needs prepare;
+#   * the jobs are exactly prepare, publish and report; publish needs
+#     prepare, and report needs prepare and publish;
+#   * report (epic vergil-project/.github#1494) reports the run to the
+#     operations queue: it has exactly one step using the local ops-report
+#     action (`./actions/ops/report`), no step running
+#     `vrg-upstream-refresh` (so never the hook) and no step downloading an
+#     artifact;
 #   * secrets.APP_CLIENT_ID and secrets.APP_PRIVATE_KEY appear only as
 #     VRG_AUTOMATION_CLIENT_ID and VRG_AUTOMATION_PRIVATE_KEY in the `env` of
-#     publish's step that runs `vrg-upstream-refresh publish`; no other value
-#     names `secrets` and no job passes `secrets:` on;
-#   * both jobs have `permissions: contents: read`, and prepare sets no
+#     publish's step that runs `vrg-upstream-refresh publish`, and as the
+#     `app-client-id` and `app-private-key` inputs of report's ops-report
+#     step; no other value names `secrets` and no job passes `secrets:` on;
+#   * all three jobs have `permissions: contents: read`, and prepare sets no
 #     VRG_AUTOMATION_* variable anywhere;
 #   * no workflow-level or job-level `env` sets VRG_AUTOMATION_APP;
-#   * each job's first step is the develop guard: it reads github.ref as REF
-#     and vars.VRG_AUTOMATION_APP as AUTOMATION_APP, and fails unless REF is
-#     refs/heads/develop and AUTOMATION_APP is non-empty;
-#   * no job and no step has an `if:`;
+#   * the first step of prepare and of publish is the develop guard: it reads
+#     github.ref as REF and vars.VRG_AUTOMATION_APP as AUTOMATION_APP, and
+#     fails unless REF is refs/heads/develop and AUTOMATION_APP is non-empty
+#     (report's guard is the ops-report action's own first step);
+#   * the one `if:` is report's job-level `if: always()`: no other job and
+#     no step has one;
 #   * prepare has timeout-minutes 30 and publish 140;
-#   * both checkouts set persist-credentials: false;
+#   * every checkout sets persist-credentials: false;
 #   * prepare's tool step takes GH_TOKEN from github.token, the read-only
 #     token;
 #   * the workflow-level concurrency group is
@@ -92,17 +101,36 @@ check_guard() {
 # violations <workflow file> — print one line per rule the workflow breaks,
 # nothing when it keeps them all.
 violations() {
-  local wf="$1" jobs needs pub_idx path value expected job var
-  local timeout perms persist count
+  local wf="$1" jobs needs pub_idx rep_idx path value expected job var
+  local timeout perms persist count rep_count cond
 
   jobs="$(yq -r '(.jobs // {}) | keys | join(",")' "$wf")"
-  if [ "$jobs" != "prepare,publish" ]; then
-    printf 'the jobs are not exactly prepare and publish: %s\n' "$jobs"
+  if [ "$jobs" != "prepare,publish,report" ]; then
+    printf 'the jobs are not exactly prepare, publish and report: %s\n' "$jobs"
     return 0
   fi
   needs="$(yq -r '.jobs.publish.needs // "" | [.] | flatten | join(",")' "$wf")"
   if [ "$needs" != "prepare" ]; then
     printf 'publish does not need prepare: %s\n' "${needs:-<unset>}"
+  fi
+  needs="$(yq -r '.jobs.report.needs // "" | [.] | flatten | sort | join(",")' "$wf")"
+  if [ "$needs" != "prepare,publish" ]; then
+    printf 'report does not need prepare and publish: %s\n' "${needs:-<unset>}"
+  fi
+
+  # The report step: the one step of report that uses the ops-report action.
+  # Its inputs are the only other place the App's credentials may appear.
+  rep_count="$(yq -r '[.jobs.report.steps[] | select((.uses // "") == "./actions/ops/report")] | length' "$wf")"
+  rep_idx="$(yq -r '[.jobs.report.steps | to_entries | .[]
+    | select((.value.uses // "") == "./actions/ops/report") | .key] | .[0] // ""' "$wf")"
+  if [ "$rep_count" != "1" ]; then
+    printf 'report has %s steps using ./actions/ops/report, not 1\n' "$rep_count"
+  fi
+  if [ "$(yq -r '[.jobs.report.steps[] | select((.run // "") | test("vrg-upstream-refresh"))] | length' "$wf")" != "0" ]; then
+    printf 'report runs vrg-upstream-refresh\n'
+  fi
+  if [ "$(yq -r '[.jobs.report.steps[] | select((.uses // "") | test("^actions/download-artifact@"))] | length' "$wf")" != "0" ]; then
+    printf 'report downloads an artifact\n'
   fi
 
   # The publish step: the one step of publish that runs the tool's publish
@@ -130,8 +158,16 @@ violations() {
         # shellcheck disable=SC2016 # a literal GitHub Actions expression
         expected='${{ secrets.APP_PRIVATE_KEY }}'
         ;;
+      "jobs.report.steps.${rep_idx:-x}.with.app-client-id")
+        # shellcheck disable=SC2016 # a literal GitHub Actions expression
+        expected='${{ secrets.APP_CLIENT_ID }}'
+        ;;
+      "jobs.report.steps.${rep_idx:-x}.with.app-private-key")
+        # shellcheck disable=SC2016 # a literal GitHub Actions expression
+        expected='${{ secrets.APP_PRIVATE_KEY }}'
+        ;;
       *)
-        printf 'secrets referenced outside the publish step env: %s: %s\n' "$path" "$value"
+        printf 'secrets referenced outside the publish step env and the report step inputs: %s: %s\n' "$path" "$value"
         continue
         ;;
     esac
@@ -155,7 +191,9 @@ violations() {
     printf 'a job passes secrets: on\n'
   fi
 
-  for job in prepare publish; do
+  check_guard "$wf" prepare
+  check_guard "$wf" publish
+  for job in prepare publish report; do
     perms="$(yq -o=json -I=0 ".jobs.${job}.permissions // null" "$wf")"
     if [ "$perms" != '{"contents":"read"}' ]; then
       printf '%s: permissions are not exactly contents: read: %s\n' "$job" "$perms"
@@ -163,7 +201,6 @@ violations() {
     if [ "$(yq -r ".jobs.${job}.env // {} | has(\"VRG_AUTOMATION_APP\")" "$wf")" = "true" ]; then
       printf '%s: job env sets VRG_AUTOMATION_APP\n' "$job"
     fi
-    check_guard "$wf" "$job"
     persist="$(yq -r ".jobs.${job}.steps[] | select((.uses // \"\") | test(\"^actions/checkout@\"))
       | (.with // {}) | .\"persist-credentials\" | to_string" "$wf")"
     if [ -z "$persist" ]; then
@@ -187,11 +224,17 @@ violations() {
     printf 'prepare has no single tool step with GH_TOKEN from ${{ github.token }}\n'
   fi
 
+  # report runs whatever prepare and publish ended as: its `if: always()` is
+  # the one `if:` allowed.
+  cond="$(yq -r '.jobs.report.if // "<unset>"' "$wf")"
+  if [ "$cond" != "always()" ]; then
+    printf 'report: the if: is not always(): %s\n' "$cond"
+  fi
   # shellcheck disable=SC2016 # $j in the yq query below is a yq variable
   while IFS= read -r path; do
     [ -n "$path" ] || continue
     printf '%s has an if:\n' "$path"
-  done < <(yq -r '(.jobs | to_entries | .[] | select(.value | has("if")) | "jobs." + .key),
+  done < <(yq -r '(.jobs | to_entries | .[] | select(.key != "report" and (.value | has("if"))) | "jobs." + .key),
     (.jobs | to_entries | .[] | .key as $j | (.value.steps // []) | to_entries | .[]
       | select(.value | has("if")) | "jobs." + $j + ".steps." + (.key | to_string))' "$wf")
 
@@ -248,16 +291,16 @@ case_real_workflow() {
 case_fixtures() {
   expect_caught "fixture-key-on-prepare-caught" \
     '.jobs.prepare.steps[-1].env.KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
-    "secrets referenced outside the publish step env: jobs.prepare.steps"
+    "secrets referenced outside the publish step env and the report step inputs: jobs.prepare.steps"
   expect_caught "fixture-key-on-publish-job-env-caught" \
     '.jobs.publish.env.VRG_AUTOMATION_PRIVATE_KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
-    "secrets referenced outside the publish step env: jobs.publish.env.VRG_AUTOMATION_PRIVATE_KEY"
+    "secrets referenced outside the publish step env and the report step inputs: jobs.publish.env.VRG_AUTOMATION_PRIVATE_KEY"
   expect_caught "fixture-client-id-on-install-step-caught" \
     '(.jobs.publish.steps[] | select(.uses == "./actions/shared/setup/vergil")).env.X = "${{ secrets.APP_CLIENT_ID }}"' \
-    "secrets referenced outside the publish step env: jobs.publish.steps"
+    "secrets referenced outside the publish step env and the report step inputs: jobs.publish.steps"
   expect_caught "fixture-workflow-env-secret-caught" \
     '.env.K = "${{ toJSON(secrets) }}"' \
-    "secrets referenced outside the publish step env: env.K"
+    "secrets referenced outside the publish step env and the report step inputs: env.K"
   expect_caught "fixture-swapped-credentials-caught" \
     '(.jobs.publish.steps[] | select((.run // "") | test("vrg-upstream-refresh publish"))).env.VRG_AUTOMATION_CLIENT_ID = "${{ secrets.APP_PRIVATE_KEY }}"' \
     "VRG_AUTOMATION_CLIENT_ID is not \${{ secrets.APP_CLIENT_ID }}"
@@ -305,7 +348,7 @@ case_fixtures() {
     "publish does not need prepare"
   expect_caught "fixture-third-job-caught" \
     '.jobs.extra = {"runs-on": "ubuntu-24.04"}' \
-    "the jobs are not exactly prepare and publish"
+    "the jobs are not exactly prepare, publish and report"
   expect_caught "fixture-cancelled-concurrency-caught" \
     '.concurrency."cancel-in-progress" = true' \
     "the workflow concurrency is not"
@@ -315,6 +358,41 @@ case_fixtures() {
   expect_caught "fixture-setup-git-caught" \
     '.jobs.publish.steps += [{"run": "gh auth setup-git"}]' \
     "gh auth setup-git is run"
+  # The report job's rule: the App's credentials only as the ops-report
+  # step's inputs, no hook and no artifact, and the one `if:`.
+  expect_caught "fixture-key-on-report-checkout-caught" \
+    '(.jobs.report.steps[] | select(.uses == "actions/checkout@v6")).env.KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
+    "secrets referenced outside the publish step env and the report step inputs: jobs.report.steps.0.env.KEY"
+  expect_caught "fixture-key-on-report-step-env-caught" \
+    '(.jobs.report.steps[] | select(.uses == "./actions/ops/report")).env.VRG_AUTOMATION_PRIVATE_KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
+    "secrets referenced outside the publish step env and the report step inputs: jobs.report.steps.1.env.VRG_AUTOMATION_PRIVATE_KEY"
+  expect_caught "fixture-report-swapped-inputs-caught" \
+    '(.jobs.report.steps[] | select(.uses == "./actions/ops/report")).with."app-client-id" = "${{ secrets.APP_PRIVATE_KEY }}"' \
+    "jobs.report.steps.1.with.app-client-id is not \${{ secrets.APP_CLIENT_ID }}"
+  expect_caught "fixture-report-runs-hook-caught" \
+    '.jobs.report.steps += [{"run": "vrg-upstream-refresh prepare --out x"}]' \
+    "report runs vrg-upstream-refresh"
+  expect_caught "fixture-report-downloads-artifact-caught" \
+    '.jobs.report.steps += [{"uses": "actions/download-artifact@v7", "with": {"name": "upstream-refresh-prepare"}}]' \
+    "report downloads an artifact"
+  expect_caught "fixture-report-without-action-caught" \
+    'del(.jobs.report.steps[] | select(.uses == "./actions/ops/report"))' \
+    "report has 0 steps using ./actions/ops/report, not 1"
+  expect_caught "fixture-report-needs-only-publish-caught" \
+    '.jobs.report.needs = "publish"' \
+    "report does not need prepare and publish: publish"
+  expect_caught "fixture-report-if-success-caught" \
+    '.jobs.report.if = "success()"' \
+    "report: the if: is not always(): success()"
+  expect_caught "fixture-report-step-if-caught" \
+    '.jobs.report.steps[-1].if = "always()"' \
+    "jobs.report.steps.1 has an if:"
+  expect_caught "fixture-report-write-permission-caught" \
+    '.jobs.report.permissions.issues = "write"' \
+    "report: permissions are not exactly contents: read"
+  expect_caught "fixture-report-persisted-credentials-caught" \
+    'del((.jobs.report.steps[] | select(.uses == "actions/checkout@v6")).with."persist-credentials")' \
+    "report: a checkout does not set persist-credentials: false"
 }
 
 case_real_workflow
