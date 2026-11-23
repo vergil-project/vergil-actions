@@ -178,7 +178,7 @@ name: Ops
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 permissions:
