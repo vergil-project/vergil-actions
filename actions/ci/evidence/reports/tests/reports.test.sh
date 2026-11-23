@@ -814,6 +814,22 @@ marker_of() {
   esac
 }
 
+# has_notice <text> <substring>... — one ::notice line of <text> holds every
+# substring.
+has_notice() {
+  local text="$1" line needle ok
+  shift
+  while IFS= read -r line; do
+    [[ "$line" == *"::notice"* ]] || continue
+    ok=1
+    for needle in "$@"; do
+      [[ "$line" == *"$needle"* ]] || ok=0
+    done
+    [ "$ok" -eq 0 ] || return 0
+  done <<<"$text"
+  return 1
+}
+
 # assert_skipped <name> <language> <gate> <version> <manifests-json> — exit 0,
 # only the skip record staged, holding the leg, and a notice naming the leg
 # and the reason.
@@ -829,9 +845,9 @@ assert_skipped() {
     fail_case "$name" "unexpected skip record: $(cat "${ws}/ci-reports/${marker}")"
     return 1
   fi
-  if ! grep -F "::notice" <<<"$stdout" |
-    grep -F "the ${language} ${gate} leg ${version} wrote no reports" |
-    grep -qF "not bootstrapped yet"; then
+  if ! has_notice "$stdout" \
+    "the ${language} ${gate} leg ${version} wrote no reports" \
+    "not bootstrapped yet"; then
     fail_case "$name" "expected a notice naming the leg and the reason, got '${stdout}'"
     return 1
   fi
@@ -1154,10 +1170,10 @@ skip_record python typecheck 3.14
 run_expect python evidence-reports
 if [ "$rc" -ne 0 ]; then
   fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
-elif ! grep -F "::notice" <<<"$stdout" | grep -F "python lint legs were skipped" |
-  grep -qF "quality-lint-not-bootstrapped-3.14.json"; then
+elif ! has_notice "$stdout" "python lint legs were skipped" \
+  "quality-lint-not-bootstrapped-3.14.json"; then
   fail_case "$name" "expected a lint skip notice, got '${stdout}'"
-elif ! grep -F "::notice" <<<"$stdout" | grep -qF "python typecheck legs were skipped"; then
+elif ! has_notice "$stdout" "python typecheck legs were skipped"; then
   fail_case "$name" "expected a typecheck skip notice, got '${stdout}'"
 else
   pass_case "$name"
