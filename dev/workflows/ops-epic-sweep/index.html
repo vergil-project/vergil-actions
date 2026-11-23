@@ -7976,9 +7976,8 @@ which makes three passes over the whole org:</p>
   (ad-hoc, intake and planning) into per-quarter archive epics.</li>
 <li><strong>Orphan pass.</strong> Enforces "every issue belongs to an epic": it links
   body-only <code>Parent:</code> lines as native sub-issues, removes the retired <code>triage</code>,
-  <code>idea</code> and <code>research</code> labels, moves a now-public repository's self-homed
-  intake and planning items under the org <code>.github</code> queues, and attaches every
-  orphan to its home's intake epic.</li>
+  <code>idea</code> and <code>research</code> labels, and attaches every orphan to its home's intake
+  epic.</li>
 </ul>
 <p>So the sweep changes labels and sub-issue links, not only issue state. Each
 pass acts only on provable drift, so a run with nothing new to fix changes
@@ -8078,9 +8077,7 @@ user agent syncs advisory states with <code>vrg-security-record sync</code>.</p>
 <li>Drains the ad-hoc epics, then the intake and planning epics, into
    per-quarter archives, and closes past archives.</li>
 <li>Runs the orphan pass: links body-only <code>Parent:</code> lines natively, strips the
-   retired labels, moves now-public repositories' queue items under <code>.github</code>
-   (closing each emptied self-homed queue epic), then attaches orphans to
-   intake.</li>
+   retired labels, then attaches orphans to intake.</li>
 </ol>
 <p>The log prints a count line for each step, for example
 <code>Retired kind labels stripped: 41 issue(s).</code> and
