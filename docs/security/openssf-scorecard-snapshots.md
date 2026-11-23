@@ -99,57 +99,61 @@ All other checks are unchanged from the baseline.
 **Reason:** packaging workflow not detected
 
 **Warnings:**
+
 - `no GitHub/GitLab publishing workflow detected.`
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#packaging
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#packaging>
 
 ##### Signed-Releases (-1/10)
 
 **Reason:** no releases found
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#signed-releases
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#signed-releases>
 
 ##### CII-Best-Practices (0/10)
 
 **Reason:** no effort to earn an OpenSSF best practices badge detected
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#cii-best-practices
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#cii-best-practices>
 
 ##### Code-Review (0/10)
 
 **Reason:** Found 0/19 approved changesets -- score normalized to 0
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#code-review
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#code-review>
 
 ##### Contributors (0/10)
 
 **Reason:** project has 0 contributing companies or organizations -- score normalized to 0
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#contributors
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#contributors>
 
 ##### Dependency-Update-Tool (0/10)
 
 **Reason:** no update tool detected
 
 **Warnings:**
+
 - `no dependency update tool configurations found`
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#dependency-update-tool
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#dependency-update-tool>
 
 ##### Fuzzing (0/10)
 
 **Reason:** project is not fuzzed
 
 **Warnings:**
+
 - `no fuzzer integrations found`
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#fuzzing
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#fuzzing>
 
 ##### Pinned-Dependencies (0/10)
 
 **Reason:** dependency not pinned by hash detected -- score normalized to 0
 
 **Warnings:**
+
 - `third-party GitHubAction not pinned by hash: .github/workflows/cd-docs-refresh.yml:38`
 - `GitHub-owned GitHubAction not pinned by hash: .github/workflows/cd-docs.yml:33`
 - `GitHub-owned GitHubAction not pinned by hash: .github/workflows/cd-release.yml:95`
@@ -191,22 +195,21 @@ All other checks are unchanged from the baseline.
 - `GitHub-owned GitHubAction not pinned by hash: .github/workflows/ops-github-config.yml:29`
 - `GitHub-owned GitHubAction not pinned by hash: .github/workflows/ops-github-config.yml:35`
 
-<details><summary>Info details (2 items)</summary>
+**Info details (2 items):**
 
 - `0 out of 38 GitHub-owned GitHubAction dependencies pinned`
 - `0 out of 2 third-party GitHubAction dependencies pinned`
 
-Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
+Remediation helper (pin by hash): <https://app.stepsecurity.io/securerepo>
 
-</details>
-
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#pinned-dependencies
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#pinned-dependencies>
 
 ##### Token-Permissions (0/10)
 
 **Reason:** detected GitHub workflow tokens with excessive permissions
 
 **Warnings:**
+
 - `jobLevel 'contents' permission set to 'write': .github/workflows/cd-docs-refresh.yml:40`
 - `jobLevel 'contents' permission set to 'write': .github/workflows/cd-release.yml:85`
 - `jobLevel 'contents' permission set to 'write': .github/workflows/cd.yml:78`
@@ -225,7 +228,7 @@ Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
 - `no topLevel permission defined: .github/workflows/ci-version-bump.yml:1`
 - `topLevel 'security-events' permission set to 'write': .github/workflows/ci.yml:8`
 
-<details><summary>Info details (21 items)</summary>
+**Info details (21 items):**
 
 - `jobLevel 'actions' permission set to 'read': .github/workflows/cd-release.yml:92`
 - `jobLevel 'actions' permission set to 'read': .github/workflows/ci-security.yml:82`
@@ -249,20 +252,19 @@ Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
 - `topLevel 'contents' permission set to 'read': .github/workflows/ops-epic-sweep.yml:32`
 - `topLevel 'contents' permission set to 'read': .github/workflows/ops-github-config.yml:19`
 
-</details>
-
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#token-permissions
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#token-permissions>
 
 ##### Branch-Protection (4/10)
 
 **Reason:** branch protection is not maximal on development and all release branches
 
 **Warnings:**
+
 - `branch 'develop' does not require approvers`
 - `codeowners review is not required on branch 'develop'`
 - `'last push approval' is disabled on branch 'develop'`
 
-<details><summary>Info details (7 items)</summary>
+**Info details (7 items):**
 
 - `'allow deletion' disabled on branch 'develop'`
 - `'force pushes' disabled on branch 'develop'`
@@ -272,9 +274,7 @@ Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
 - `status check found to merge onto on branch 'develop'`
 - `PRs are required in order to make changes on branch 'develop'`
 
-</details>
-
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#branch-protection
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#branch-protection>
 
 ---
 
@@ -319,57 +319,61 @@ Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
 **Reason:** packaging workflow not detected
 
 **Warnings:**
+
 - `no GitHub/GitLab publishing workflow detected.`
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#packaging
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#packaging>
 
 ##### Signed-Releases (-1/10)
 
 **Reason:** no releases found
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#signed-releases
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#signed-releases>
 
 ##### CII-Best-Practices (0/10)
 
 **Reason:** no effort to earn an OpenSSF best practices badge detected
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#cii-best-practices
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#cii-best-practices>
 
 ##### Code-Review (0/10)
 
 **Reason:** Found 0/13 approved changesets -- score normalized to 0
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#code-review
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#code-review>
 
 ##### Contributors (0/10)
 
 **Reason:** project has 0 contributing companies or organizations -- score normalized to 0
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#contributors
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#contributors>
 
 ##### Dependency-Update-Tool (0/10)
 
 **Reason:** no update tool detected
 
 **Warnings:**
+
 - `no dependency update tool configurations found`
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#dependency-update-tool
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#dependency-update-tool>
 
 ##### Fuzzing (0/10)
 
 **Reason:** project is not fuzzed
 
 **Warnings:**
+
 - `no fuzzer integrations found`
 
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#fuzzing
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#fuzzing>
 
 ##### Pinned-Dependencies (0/10)
 
 **Reason:** dependency not pinned by hash detected -- score normalized to 0
 
 **Warnings:**
+
 - `GitHub-owned GitHubAction not pinned by hash: .github/workflows/cd-docs.yml:33`
 - `third-party GitHubAction not pinned by hash: .github/workflows/cd-docs.yml:38`
 - `third-party GitHubAction not pinned by hash: .github/workflows/cd-docs.yml:48`
@@ -409,20 +413,19 @@ Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
 - `GitHub-owned GitHubAction not pinned by hash: .github/workflows/ops-github-config.yml:15`
 - `third-party GitHubAction not pinned by hash: .github/workflows/ops-github-config.yml:18`
 
-<details><summary>Info details (2 items)</summary>
+**Info details (2 items):**
 
 - `0 out of  16 GitHub-owned GitHubAction dependencies pinned`
 - `0 out of  22 third-party GitHubAction dependencies pinned`
 
-</details>
-
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#pinned-dependencies
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#pinned-dependencies>
 
 ##### Token-Permissions (0/10)
 
 **Reason:** detected GitHub workflow tokens with excessive permissions
 
 **Warnings:**
+
 - `jobLevel 'contents' permission set to 'write': .github/workflows/cd-release.yml:81`
 - `jobLevel 'contents' permission set to 'write': .github/workflows/cd.yml:84`
 - `jobLevel 'security-events' permission set to 'write': .github/workflows/ci-security.yml:68`
@@ -439,27 +442,26 @@ Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
 - `no topLevel permission defined: .github/workflows/ci-version-bump.yml:1`
 - `topLevel 'security-events' permission set to 'write': .github/workflows/ci.yml:8`
 
-<details><summary>Info details (4 items)</summary>
+**Info details (4 items):**
 
 - `jobLevel 'contents' permission set to 'read': .github/workflows/ci.yml:25`
 - `topLevel 'contents' permission set to 'read': .github/workflows/ci-security.yml:44`
 - `topLevel 'contents' permission set to 'read': .github/workflows/ci.yml:7`
 - `topLevel 'contents' permission set to 'read': .github/workflows/ops-github-config.yml:7`
 
-</details>
-
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#token-permissions
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#token-permissions>
 
 ##### Branch-Protection (4/10)
 
 **Reason:** branch protection is not maximal on development and all release branches
 
 **Warnings:**
+
 - `branch 'develop' does not require approvers`
 - `codeowners review is not required on branch 'develop'`
 - `'last push approval' is disabled on branch 'develop'`
 
-<details><summary>Info details (7 items)</summary>
+**Info details (7 items):**
 
 - `'allow deletion' disabled on branch 'develop'`
 - `'force pushes' disabled on branch 'develop'`
@@ -469,6 +471,4 @@ Remediation helper (pin by hash): https://app.stepsecurity.io/securerepo
 - `status check found to merge onto on branch 'develop'`
 - `PRs are required in order to make changes on branch 'develop'`
 
-</details>
-
-**Documentation:** https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#branch-protection
+**Documentation:** <https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#branch-protection>
