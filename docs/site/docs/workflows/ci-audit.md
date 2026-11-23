@@ -14,7 +14,7 @@ Dependency audit workflow.
 
 | Secret | Required | Description |
 | -------- | ---------- | ------------- |
-| `CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER` | no | ConanCenter provider token for `conan audit`. Only meaningful for cpp repos; other ecosystems ignore it. Pass it explicitly via the caller's `secrets:` block — never `secrets: inherit`. When unset, the cpp audit command skips the conan gate with a notice instead of failing auth. |
+| `CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER` | no | ConanCenter provider token for `conan audit`. Only meaningful for cpp repos; other ecosystems ignore it. Pass it explicitly via the caller's `secrets:` block — never `secrets: inherit`. It is not required because non-cpp callers never use it, but a cpp caller must pass it: when it is unset, the cpp audit command fails the conan gate, and so the audit. |
 
 ## Version matrix
 
