@@ -111,6 +111,7 @@ permissions:
 | Pull requests | Read & write | `upstream-refresh` (opens the refresh PR with auto-merge, updates its branch from `develop`, merges it, and closes an earlier run's open one); `github-config` (opens the sync PR, closes an earlier one and turns on auto-merge); `branch-sweep` and `epic-sweep` read them |
 | Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues); the `ops/report` action (opens and comments on ops issues, creates the `ops-report` label, links issues under the operations epic) |
 | Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); `github-config`, the automatic fleet sync, whose PRs can change files under `.github/workflows/`; `upstream-refresh`, only for the wait's branch update, which merges `develop` into the PR branch and is refused without it whenever `develop` has changed a workflow file (the path fence keeps every refresh patch out of `.github/**`) |
+| Actions | Read-only | `github-config`, which runs `vrg-github-repo-config update`: it reads the `automation` environment and its deployment branch policies, which [GitHub serves only with Actions read](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps#repository-permissions-for-actions) (creating or changing them needs Administration write) |
 | Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
 | Variables | Read-only | `trusted-authors-check`, in the org's `.github` repository only (`vrg-trusted-authors check` lists every repository's Actions variables, for a repository-level copy of `VRG_TRUSTED_AUTHORS` or `VRG_AUTOMATION_APP`) |
 | Variables (organization permission) | Read-only | `trusted-authors-check`, in the org's `.github` repository only (`vrg-trusted-authors check` reads the org variables `VRG_TRUSTED_AUTHORS` and `VRG_AUTOMATION_APP`) |
@@ -164,10 +165,13 @@ token is scoped, as [Token scoping](#token-scoping) describes.
     slug (`<org>-automation`), visible to all repositories. It names the
     automation App. The `github-config` job fails when it is empty, and
     otherwise passes it to vergil-tooling, which checks that the job's token
-    was minted by that App before it does any automation work.
+    was minted by that App before it does any automation work. It is
+    written with `VRG_TRUSTED_AUTHORS`, from the `automation_app` of the
+    org's `[orgs.<org>]` stanza in the host configuration, never set by hand
+    (see [VRG_TRUSTED_AUTHORS](#vrg_trusted_authors) for the order):
 
     ```bash
-    gh variable set VRG_AUTOMATION_APP --org <org> --visibility all --body "<org>-automation"
+    vrg-trusted-authors publish --org <org>
     ```
 
 **Changing a permission later:**
@@ -196,7 +200,7 @@ explicit `permission-*` inputs, and each job requests only what it needs:
 | Workflow | Job or step | Requested permissions |
 | -------- | ----------- | --------------------- |
 | `ops-github-config.yml` | `branch-sweep` | `contents: write`, `pull-requests: read` |
-| `ops-github-config.yml` | `github-config` (from `develop` only) | `administration: write`, `contents: write`, `pull-requests: write`, `workflows: write`, `metadata: read` (`update`; [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository) also returns the merge settings only with Contents read and write) |
+| `ops-github-config.yml` | `github-config` (from `develop` only) | `administration: write`, `contents: write`, `pull-requests: write`, `workflows: write`, `actions: read`, `metadata: read` (`update`; [Get a repository](https://docs.github.com/en/rest/repos/repos#get-a-repository) also returns the merge settings only with Contents read and write, and reading an environment and its deployment branch policies needs Actions read) |
 | `ops-github-config.yml` | `trusted-authors-check` (in `<org>/.github` only, skipped elsewhere; the org's whole installation, not the calling repository) | `organization-actions-variables: read`, `actions-variables: read`, `metadata: read` |
 | `ops-github-config.yml` | `dependabot-audit` | `vulnerability-alerts: read` |
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
@@ -252,6 +256,38 @@ judges GitHub content against: the `human` and `agents` logins and the
 automation App of every Vergil org, as compact JSON. It is derived from the
 human's host configuration and published by the human at org setup and
 whenever that configuration changes, never edited by hand.
+
+**Publishing it.** On the host, the human runs:
+
+```bash
+vrg-trusted-authors publish --org <org>
+```
+
+It writes two org Actions variables from the host configuration, both
+visible to all repositories: `VRG_TRUSTED_AUTHORS` and `VRG_AUTOMATION_APP`,
+the org's own automation App slug (see
+[step 10 of the App setup](#app_client_id-and-app_private_key)). Without
+`--org` it publishes for every org the configuration lists. It refuses an
+org where a repository-level variable of either name would shadow the org
+copy. `vrg-trusted-authors render --org <org>` prints the values the host
+configuration implies, with no GitHub call, to preview them first. The
+daily [`trusted-authors-check`](workflows/ops-github-config.md#trusted-authors-check)
+reads the published values back. For the host configuration itself, see
+vergil-tooling's
+[account setup guide](https://vergil-project.github.io/vergil-tooling/latest/guides/account-setup/#trusted-authors).
+
+**The order.** Every job that runs a vergil-tooling release carrying the
+trust layer reads the variable, the release's own
+[CI evidence gate](actions/cd-release-ci-evidence-gate.md) included.
+`publish` ships in that same release, so:
+
+1. Add the org's `[orgs.<org>]` stanza, beside `[trusted_authors]`, to the
+   host configuration.
+2. Install that vergil-tooling release on the host.
+3. Run `vrg-trusted-authors publish --org <org>` right away.
+
+A job that runs the release before the variable is published stops loudly
+on the missing variable; re-run it once the variable is published.
 
 Under GitHub Actions, with no configuration file on the runner,
 vergil-tooling reads it from the environment and stops when it is missing

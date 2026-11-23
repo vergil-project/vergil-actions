@@ -106,6 +106,25 @@ jobs:
     # Python publishes via OIDC trusted publishing — no secret to pass.
 ```
 
+### Org Actions variables
+
+Besides the App secrets, the reusable workflows read two org-level Actions
+variables, visible to all repositories, which the human publishes once per
+org from the host configuration:
+
+| Variable | Holds |
+| -------- | ----- |
+| `VRG_TRUSTED_AUTHORS` | The trusted-authors configuration, as compact JSON. Every step that runs a vergil-tooling command reading GitHub content gets it, and stops when it is missing or invalid |
+| `VRG_AUTOMATION_APP` | The slug of the org's automation App |
+
+Set them up in this order: add the org's `[orgs.<org>]` stanza to the host
+configuration, install a vergil-tooling release that carries the trust
+layer on the host, and run `vrg-trusted-authors publish --org <org>` right
+away. `vrg-trusted-authors render --org <org>` previews the values with no
+GitHub call. A job that runs that release before the variables are published
+stops loudly; re-run it once they are. See
+[VRG_TRUSTED_AUTHORS](configuration.md#vrg_trusted_authors) for details.
+
 ### Release publishing secrets
 
 Every release forwards the org automation App's `APP_CLIENT_ID` and

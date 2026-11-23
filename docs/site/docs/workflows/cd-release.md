@@ -100,3 +100,13 @@ Pass them by name, or with `secrets: inherit`:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 ```
+
+## Variables
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `VRG_TRUSTED_AUTHORS` | yes | Org-level Actions variable holding the trusted-authors configuration, published with `vrg-trusted-authors publish` (see [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). Passed to the `package-matrix` job's `Refuse re-publishing a released package version` step and to the `release` job's [CI evidence gate](../actions/cd-release-ci-evidence-gate.md), which stop when it is missing or invalid |
+
+A release run before the variable is published fails at one of those
+steps, before anything is published or tagged; re-run it once the variable
+is published.

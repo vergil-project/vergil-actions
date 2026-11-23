@@ -105,6 +105,39 @@ Rules:
   `actions/shared/setup/primary-suffix/tests/container-prefix.test.sh`
   checks it).
 
+## The `automation` environment
+
+Every job that reads a secret able to write or act declares
+`environment: automation`. Those secrets are the org automation App's
+`APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which mint an installation token, and
+the registry publishing tokens such as `CARGO_REGISTRY_TOKEN`. The job's steps
+are unchanged.
+
+Why: the secrets move from org and repository level into each repository's
+`automation` environment, whose deployment-branch policy admits only
+`develop` and `main` (epic
+[vergil-project/.github#1384](https://github.com/vergil-project/.github/issues/1384)).
+A job that does not declare the environment, or that runs from any other
+branch, then sees them unset, so a workflow pushed on a feature branch cannot
+mint the App token or publish. A job declaring the environment on another
+branch is refused before any step runs.
+
+- The package-signing keys keep their own single-branch environments
+  (`package-signing`, `index-signing`), so a signing job declares that
+  environment, never `automation`.
+- A job that reads a secret with no environment reads only a read-only
+  one: the run's own `GITHUB_TOKEN`, or
+  `CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER`, a read-only vulnerability
+  database key that PR-time CI reads for the C/C++ audit.
+- Environment secrets reach a reusable workflow in another repository only
+  when the caller passes `secrets: inherit`, and a calling job cannot declare
+  an environment. Callers of the App-key workflows therefore pass
+  `secrets: inherit` once the secrets have moved.
+
+`scripts/bin/check-secret-environments`, run by validation, fails on a job
+that reads such a secret outside its environment, and on any secret it does
+not classify.
+
 ## Dynamic version matrix and evidence gates
 
 The matrixed reusable workflows (`ci-audit`, `ci-quality`, `ci-test`) take
@@ -331,8 +364,8 @@ jobs:
       language: cpp
       container-suffix: cpp-clang
     # Explicit-secret chain (never `secrets: inherit`): forward the ConanCenter
-    # provider token so `conan audit` can authenticate. Optional — omit it and
-    # the cpp audit command skips the conan gate with a notice.
+    # provider token so `conan audit` can authenticate. A cpp caller must pass
+    # it: omit it and the cpp audit command fails the conan gate.
     secrets:
       CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER: ${{ secrets.CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER }}
 

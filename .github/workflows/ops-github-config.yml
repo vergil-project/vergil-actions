@@ -27,6 +27,7 @@ jobs:
   branch-sweep:
     name: branch-sweep
     runs-on: ubuntu-24.04
+    environment: automation
     # One run of this job per repository at a time, queued, never cancelled:
     # a scheduled run and a dispatch never overlap.
     concurrency:
@@ -71,6 +72,7 @@ jobs:
   github-config:
     name: github-config
     runs-on: ubuntu-24.04
+    environment: automation
     # The automation App token update runs with has a fixed one-hour life,
     # and update's wait for its sync PR to merge ends inside it. A run taking
     # longer could not use its token, so cap the job there rather than at
@@ -128,6 +130,11 @@ jobs:
           #   turn on auto-merge.
           # - Workflows write: a sync PR can change files under
           #   .github/workflows/.
+          # - Actions read: read the automation environment and its
+          #   deployment branch policies (GitHub serves GET
+          #   .../environments/{name} and .../deployment-branch-policies
+          #   only with Actions read; creating or changing them is covered
+          #   by Administration write).
           # - Metadata read: always included, stated so the token's whole
           #   permission set is explicit.
           # No Issues permission: the repo-config code makes no Issues call.
@@ -135,6 +142,7 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
           permission-workflows: write
+          permission-actions: read
           permission-metadata: read
 
       - name: Checkout code
@@ -194,6 +202,7 @@ jobs:
     name: trusted-authors-check
     if: github.repository == format('{0}/.github', github.repository_owner)
     runs-on: ubuntu-24.04
+    environment: automation
     concurrency:
       group: ${{ github.repository }}/trusted-authors-check
       cancel-in-progress: false
@@ -256,6 +265,7 @@ jobs:
   dependabot-audit:
     name: dependabot-audit
     runs-on: ubuntu-24.04
+    environment: automation
     concurrency:
       group: ${{ github.repository }}/dependabot-audit
       cancel-in-progress: false
@@ -303,6 +313,7 @@ jobs:
     needs: branch-sweep
     if: always()
     runs-on: ubuntu-24.04
+    environment: automation
     permissions:
       contents: read
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest

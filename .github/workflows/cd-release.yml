@@ -443,6 +443,7 @@ jobs:
           (needs.package-matrix.outputs.enabled != 'true' ||
            needs.package-sign.result == 'success') }}
     runs-on: ubuntu-24.04
+    environment: automation
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-${{ needs.setup.outputs.primary-container-suffix }}:${{ needs.setup.outputs.primary-container-tag }}
     defaults:
       run:

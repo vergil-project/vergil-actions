@@ -39,6 +39,12 @@ the workflow; if the fault repeats, raise it with GitHub Support. See
   a branch".
 - **An `index-signing` environment** (below).
 - **`secrets: inherit`** and the job permissions shown in the example.
+- **The org Actions variable `VRG_TRUSTED_AUTHORS`**, published with
+  `vrg-trusted-authors publish` (see
+  [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). The
+  workflow passes it to the `build-index` job's
+  `Build, verify and sign the index` step and to the `report` job's
+  `ops/report` step, which stop when it is missing or invalid.
 
 The workflow also declares `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, the org
 automation App's credentials, as optional secrets. Its last job, `report`,
