@@ -8048,9 +8048,13 @@ thin: they pass only <code>language:</code> and <code>container-suffix:</code>.<
 TypeScript. As for Python, <code>licenses.json</code> is the license report: TypeScript's
 is written by <code>vrg-npm-license-gate</code>. The names come
 from <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>. A leg whose
-audit passed but wrote no report fails. A language with no audit report
-contract yet (Go, C++) gets a warning and stages nothing, and the
-release-time evidence gate decides.</p>
+audit passed but wrote no report fails, unless the repository is not
+bootstrapped yet and <code>vrg-validate</code> skipped the gate: the leg then prints a
+notice and stages a skip record, <code>audit-not-bootstrapped-&lt;version&gt;.json</code>, in
+place of its reports (see
+<a href="../../actions/ci-evidence-reports/#not-bootstrapped-repositories">Not-bootstrapped repositories</a>).
+A language with no audit report contract yet (Go, C++) gets a warning and
+stages nothing, and the release-time evidence gate decides.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">audit</span><span class="p">:</span>

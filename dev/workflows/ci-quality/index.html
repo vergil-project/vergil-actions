@@ -8242,6 +8242,14 @@ of the language is there from at least one leg, and fails naming any that is
 not. The emitted artifact takes every <code>quality-*</code> file the jobs uploaded,
 and its tools are <code>vrg-validate-common</code>, <code>vrg-validate-custom</code>, then the
 language's lint and typecheck tools.</p>
+<p>On a repository not bootstrapped yet (none of the language's manifests and no
+sources), <code>vrg-validate</code> skips the <code>lint</code> and <code>typecheck</code> gates, loudly. Each
+leg's staging step then prints a notice and stages a skip record,
+<code>quality-&lt;leg&gt;-not-bootstrapped-&lt;version&gt;.json</code>, in place of its report, and
+the <code>evidence</code> job accepts the skip records instead of the reports. The step
+checks the skip strictly, and a leg that wrote no report without one fails as
+before: see
+<a href="../../actions/ci-evidence-reports/#not-bootstrapped-repositories">Not-bootstrapped repositories</a>.</p>
 <p>A fleet language with no lint or typecheck contract yet (<code>go</code>, <code>cpp</code>) gets
 a warning on its legs and in the <code>evidence</code> job, stages no report and lists
 no lint or typecheck tools. A repository with no fleet
