@@ -198,6 +198,7 @@ explicit `permission-*` inputs, and each job requests only what it needs:
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
 | `ops-epic-sweep.yml` | `epic-sweep` | `issues: write`, `pull-requests: read`, `contents: read` |
 | `ops-upstream-refresh.yml` | `publish` (minted in-process by `vrg-upstream-refresh`, from `develop` only) | `contents: write`, `pull-requests: write`, `workflows: write`, `metadata: read` |
+| `cd-release.yml` | `release`, its "Mint release tag token" step (pushes the release tags) | `contents: write` |
 | `cd-release.yml` | Package-index dispatch | `contents: write` |
 | `cd.yml` (vergil-actions only) | `release` | `contents: write`, `workflows: write` |
 
