@@ -883,6 +883,8 @@
       
         
       
+        
+      
     
     
     
@@ -935,6 +937,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.90/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.90
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7348,6 +7378,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#trusted-authors-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        trusted-authors-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dependabot-audit" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7981,6 +8022,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#trusted-authors-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        trusted-authors-check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#dependabot-audit" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8037,20 +8089,27 @@
 
 <h1 id="ops-github-config">ops-github-config<a class="headerlink" href="#ops-github-config" title="Permanent link">&para;</a></h1>
 <p>Nightly per-repository ops checks. Every managed repository's <code>ops.yml</code> calls
-this workflow on a schedule, and it runs three independent jobs against the
-calling repository:</p>
+this workflow on a schedule, and it runs four independent jobs:</p>
 <ul>
-<li><strong><code>branch-sweep</code></strong> deletes branches whose pull-request work is finished.</li>
-<li><strong><code>github-config</code></strong> keeps the repository in sync with its expected
+<li><strong><code>branch-sweep</code></strong> deletes the calling repository's branches whose
+  pull-request work is finished.</li>
+<li><strong><code>github-config</code></strong> keeps the calling repository in sync with its expected
   configuration with <code>vrg-github-repo-config update</code>, as the org automation
   App, and runs only from <code>develop</code>.</li>
-<li><strong><code>dependabot-audit</code></strong> fails when the repository has any open Dependabot
-  alert, at any severity.</li>
+<li><strong><code>trusted-authors-check</code></strong> checks the org's trusted-authors Actions
+  variables with <code>vrg-trusted-authors check</code>, as the org automation App, and
+  uploads the values it read as the <code>trusted-authors-values</code> artifact. It
+  runs only in the org's own <code>.github</code> repository (<code>&lt;org&gt;/.github</code>) and is
+  skipped in every other calling repository.</li>
+<li><strong><code>dependabot-audit</code></strong> fails when the calling repository has any open
+  Dependabot alert, at any severity.</li>
 </ul>
 <p>The jobs do not depend on each other, so one failing does not stop the
 others. Each one mints its own GitHub App token from the org's automation App
-(see <a href="../../configuration/#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>),
-scoped to the calling repository only.</p>
+(see <a href="../../configuration/#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>).
+Every token is scoped to the calling repository only, except
+<code>trusted-authors-check</code>'s, which reads every repository of the org and holds
+read-only permissions only.</p>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -8107,7 +8166,7 @@ scoped to the calling repository only.</p>
 <tr>
 <td><code>VRG_AUTOMATION_APP</code></td>
 <td>yes</td>
-<td>Org-level Actions variable holding the automation App's slug (<code>&lt;org&gt;-automation</code>), visible to the calling repository (see <a href="../../configuration/#app_client_id-and-app_private_key">step 10 of the App setup</a>). The <code>github-config</code> job fails when it is empty</td>
+<td>Org-level Actions variable holding the automation App's slug (<code>&lt;org&gt;-automation</code>), visible to the calling repository (see <a href="../../configuration/#app_client_id-and-app_private_key">step 10 of the App setup</a>). The <code>github-config</code> and <code>trusted-authors-check</code> jobs fail when it is empty</td>
 </tr>
 </tbody>
 </table>
@@ -8132,6 +8191,11 @@ scoped to the calling repository only.</p>
 <td>From <code>develop</code> only: runs <code>vrg-github-repo-config update --repo &lt;calling repo&gt;</code> as the automation App</td>
 </tr>
 <tr>
+<td><code>trusted-authors-check</code></td>
+<td><code>&lt;caller&gt; / trusted-authors-check</code></td>
+<td>In <code>&lt;org&gt;/.github</code> only (skipped elsewhere): runs <code>vrg-trusted-authors check --org &lt;calling repo's owner&gt;</code> as the automation App and uploads the <code>trusted-authors-values</code> artifact</td>
+</tr>
+<tr>
 <td><code>dependabot-audit</code></td>
 <td><code>&lt;caller&gt; / dependabot-audit</code></td>
 <td>Runs <code>vrg-dependabot-audit --repo &lt;calling repo&gt;</code></td>
@@ -8142,10 +8206,11 @@ scoped to the calling repository only.</p>
 <p>Every job runs in <code>ghcr.io/vergil-project/&lt;prefix&gt;-base:latest</code> and follows
 the same pattern:</p>
 <ol>
-<li>Mints an App token with <code>actions/create-github-app-token</code>. None of the
-   jobs passes an <code>owner</code> or <code>repositories</code> input, so each token is scoped to
-   the calling repository alone, and each passes explicit <code>permission-*</code>
-   inputs, so it carries only the permissions that job needs.</li>
+<li>Mints an App token with <code>actions/create-github-app-token</code>. Each job
+   passes explicit <code>permission-*</code> inputs, so its token carries only the
+   permissions that job needs. No job but <code>trusted-authors-check</code> passes an
+   <code>owner</code> or <code>repositories</code> input, so each other token is scoped to the
+   calling repository alone.</li>
 <li>Checks out the repository and installs vergil-tooling.</li>
 <li>Runs its command with the App token as <code>GH_TOKEN</code>.</li>
 </ol>
@@ -8172,6 +8237,11 @@ is set, and its checkout pins <code>ref: develop</code> (see
 <td><code>github-config</code></td>
 <td><code>administration: write</code>, <code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>metadata: read</code></td>
 <td><code>update</code> reads and converges repository settings, branch protection, rulesets (GitHub returns a ruleset's <code>bypass_actors</code> only to a caller that can edit it), Actions permissions and whether vulnerability alerts are enabled (Administration). It pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write (see <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a>) (Contents). It opens the sync PR, closes an earlier one and turns on auto-merge (Pull requests), and a sync PR can change files under <code>.github/workflows/</code> (Workflows). It makes no Issues call. Minted only after the job has checked that it runs from <code>develop</code> and that <code>VRG_AUTOMATION_APP</code> is set</td>
+</tr>
+<tr>
+<td><code>trusted-authors-check</code></td>
+<td><code>organization-actions-variables: read</code>, <code>actions-variables: read</code>, <code>metadata: read</code> (organization and repository <strong>Variables: Read</strong>), for the org's whole installation (<code>owner: ${{ github.repository_owner }}</code>)</td>
+<td>Read the org variables and every repository's variables. <code>actions/create-github-app-token</code> declares no input for either Variables permission, but it turns every <code>permission-*</code> input into a token permission; <code>.github/actionlint.yaml</code> ignores exactly these two inputs</td>
 </tr>
 <tr>
 <td><code>dependabot-audit</code></td>
@@ -8266,6 +8336,69 @@ token anyway. Without the cap GitHub's default of 360 minutes would apply,
 and a run hung outside the tool's own deadline would hold the job's
 concurrency group for up to six hours. A run that comes close to the limit is
 a cue to look at the job's performance.</p>
+<h3 id="trusted-authors-check">trusted-authors-check<a class="headerlink" href="#trusted-authors-check" title="Permanent link">&para;</a></h3>
+<p>The daily check of the trusted-authors Actions copies (epic
+<a href="https://github.com/vergil-project/.github/issues/1467">vergil-project/.github#1467</a>).
+The org variables <code>VRG_TRUSTED_AUTHORS</code> and <code>VRG_AUTOMATION_APP</code> are
+derived from the human's host configuration and published by the human with
+<code>vrg-trusted-authors publish</code> (see
+<a href="../../configuration/#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a>). The job runs
+<code>vrg-trusted-authors check --org "${{ github.repository_owner }}"
+--values-out trusted-authors-values.json</code>, which flags a missing or invalid
+org variable, one not visible to every repository, and any repository-level
+variable of either name, since that would override the org copy in its
+repository's jobs.</p>
+<p><strong>Automation identity.</strong> The check step sets <code>VRG_AUTOMATION_APP</code> next to
+the App token in <code>GH_TOKEN</code>, as <code>github-config</code>'s update step does, so
+vergil-tooling verifies that the token was minted by the automation App.
+<code>check</code> refuses the agent identity modes. With <code>--org</code> it reads no
+trusted-authors configuration, so the step needs no <code>VRG_TRUSTED_AUTHORS</code>.
+The <code>smoke-setup-vergil</code> workflow runs
+<code>actions/ops/github-config/tests/trusted-authors-check.test.sh</code>, which holds
+the job to where it runs, its identity, its token's scope and permissions,
+and the upload.</p>
+<p>The exit codes:</p>
+<table>
+<thead>
+<tr>
+<th>Exit</th>
+<th>Meaning</th>
+<th>Job result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>The variables are clean</td>
+<td>Pass</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>At least one finding, printed as a <code>FINDING:</code> line</td>
+<td>Fail</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>The check could not run, for example a failed read or an empty <code>VRG_AUTOMATION_APP</code></td>
+<td>Fail</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The values artifact.</strong> On success and on failure (<code>if: always()</code>), the job
+uploads the <code>--values-out</code> file as the artifact <code>trusted-authors-values</code>:
+<code>{"&lt;org&gt;": {"&lt;name&gt;": "&lt;value&gt;"}}</code>, the values the check read, logins and
+slugs only. <code>hoshin start</code> compares it with the values the host
+configuration implies, so drift between the source and the published copy
+is caught. When the check could not run it writes no file, and the upload
+step fails too.</p>
+<p><strong>Where it runs.</strong> The check covers the whole org, so one run a night is
+enough. The job runs only in the org's own <code>.github</code> repository: its condition
+is <code>if: github.repository == format('{0}/.github', github.repository_owner)</code>,
+which names that repository from the calling repository's owner, so it holds
+for any org. In every other repository whose <code>ops.yml</code> calls this workflow,
+the job is skipped. That one run's artifact is the org's single latest
+configuration-audit result, and a finding turns only the <code>.github</code>
+repository's nightly run red.</p>
 <h3 id="dependabot-audit">dependabot-audit<a class="headerlink" href="#dependabot-audit" title="Permanent link">&para;</a></h3>
 <p>The fleet runs Dependabot <strong>report-only</strong> (epic
 <a href="https://github.com/vergil-project/.github/issues/420">vergil-project/.github#420</a>):

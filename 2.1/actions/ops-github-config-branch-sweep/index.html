@@ -883,6 +883,8 @@
       
         
       
+        
+      
     
     
     
@@ -935,6 +937,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.90/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.90
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7885,10 +7915,15 @@ as its <code>github-config</code> job (<code>vrg-github-repo-config update</code
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ops/github-config/branch-sweep@v2.1</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">env</span><span class="p">:</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">GH_TOKEN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.app-token.outputs.token }}</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">VRG_TRUSTED_AUTHORS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ vars.VRG_TRUSTED_AUTHORS }}</span>
 </code></pre></div>
 <p>The action requires <code>vergil-tooling</code> on <code>PATH</code> (installed by a preceding
 <code>shared/setup/vergil</code> step) and a <code>GH_TOKEN</code> that can read the repo's pull
-requests and delete its branches.</p>
+requests and delete its branches.
+It also needs <code>VRG_TRUSTED_AUTHORS</code> set from <code>${{ vars.VRG_TRUSTED_AUTHORS }}</code>
+in the calling step's <code>env</code>: a composite action cannot read <code>vars</code>, and
+vergil-tooling stops when the variable is missing or invalid (see
+<a href="../../configuration/#variables">Variables</a>).</p>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
