@@ -10,7 +10,8 @@ description: >-
   default (enforce=true): any failure or timeout aborts the release before
   publish. Passing enforce=false demotes it to a non-fatal WARNING — a temporary
   opt-out, never a permanent soft gate. See epic vergil-project/.github#140
-  spec §9, §9.2, §10.
+  spec §9, §9.2, §10. The calling step sets VRG_TRUSTED_AUTHORS from the org
+  variable in its env: a composite action cannot read vars.
 
 inputs:
   version:

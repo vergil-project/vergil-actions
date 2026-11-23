@@ -18,11 +18,16 @@ as its `github-config` job (`vrg-github-repo-config update`). Consuming reposito
 - uses: vergil-project/vergil-actions/actions/ops/github-config/branch-sweep@v2.1
   env:
     GH_TOKEN: ${{ steps.app-token.outputs.token }}
+    VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
 ```
 
 The action requires `vergil-tooling` on `PATH` (installed by a preceding
 `shared/setup/vergil` step) and a `GH_TOKEN` that can read the repo's pull
 requests and delete its branches.
+It also needs `VRG_TRUSTED_AUTHORS` set from `${{ vars.VRG_TRUSTED_AUTHORS }}`
+in the calling step's `env`: a composite action cannot read `vars`, and
+vergil-tooling stops when the variable is missing or invalid (see
+[Variables](../configuration.md#variables)).
 
 ## Inputs
 

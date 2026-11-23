@@ -23,12 +23,18 @@ Consuming repositories do not add it themselves; they choose the mode with the
   id: evidence_gate
   continue-on-error: ${{ !inputs.evidence-enforce }}
   uses: vergil-project/vergil-actions/actions/cd/release/ci-evidence-gate@v2.1
+  env:
+    VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
   with:
     version: ${{ steps.version.outputs.version }}
     enforce: ${{ inputs.evidence-enforce }}
 ```
 
 The action needs `vergil-tooling` on `PATH`.
+It also needs `VRG_TRUSTED_AUTHORS` set from `${{ vars.VRG_TRUSTED_AUTHORS }}`
+in the calling step's `env`: a composite action cannot read `vars`, and
+vergil-tooling stops when the variable is missing or invalid (see
+[Variables](../configuration.md#variables)).
 
 ## Inputs
 

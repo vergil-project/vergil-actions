@@ -65,6 +65,8 @@ jobs:
       - name: Stage documentation sources
         if: steps.detect.outputs.present == 'true'
         uses: ./actions/shared/docs/stage
+        env:
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         with:
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
 

@@ -85,6 +85,7 @@ jobs:
       - name: Reconcile epic/task drift, drain archives, attach orphans
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
           # Authorizes the automated --close (the tool is otherwise human-only);
           # see vrg-epic-audit _SWEEP_ENV.
           VRG_EPIC_SWEEP: "1"

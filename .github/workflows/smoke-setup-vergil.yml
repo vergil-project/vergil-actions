@@ -62,6 +62,10 @@ name: Smoke - setup/vergil outputs
 #         warns; expect mode requires every lint and typecheck report in the
 #         quality evidence job; ci-test, ci-audit and ci-quality stage and
 #         take their tools through it (issues #1211, #1249);
+#       - shared/setup/vergil trusted-authors-env.test.sh: every step that
+#         runs a vrg-* command that calls GitHub, itself or through a local
+#         composite action, takes VRG_TRUSTED_AUTHORS from the org variable
+#         in its own env, and no workflow or job env sets it (issue #1351);
 #       - ops/github-config automation-env.test.sh: no workflow or job env
 #         sets VRG_AUTOMATION_APP, every step that does takes it from the org
 #         variable alongside either a GH_TOKEN minted by an earlier step or,
@@ -70,6 +74,13 @@ name: Smoke - setup/vergil outputs
 #         vergil-project/.github#1168), and ops-github-config's update step
 #         sets it, so a token-less step (the setup action's vrg-whoami check)
 #         never runs as the automation identity (issue #1192);
+#       - ops/github-config trusted-authors-check.test.sh: ops-github-config's
+#         trusted-authors-check job runs only in the org's .github
+#         repository, and runs `vrg-trusted-authors check --org` as the
+#         automation App, with a token scoped to the org's installation
+#         and read-only Variables and Metadata only, and uploads the
+#         --values-out file as trusted-authors-values with `if: always()`
+#         (issue #1353);
 #       - ops/upstream-refresh key-boundary.test.sh: ops-upstream-refresh's
 #         key boundary, the App's credentials only on publish's tool step,
 #         none on prepare, which has a read-only token, the develop guard
@@ -170,9 +181,15 @@ jobs:
       - name: Run ci/evidence/reports reports.sh harness
         shell: bash
         run: bash actions/ci/evidence/reports/tests/reports.test.sh
+      - name: Run shared/setup/vergil trusted-authors-env harness
+        shell: bash
+        run: bash actions/shared/setup/vergil/tests/trusted-authors-env.test.sh
       - name: Run ops/github-config automation-env harness
         shell: bash
         run: bash actions/ops/github-config/tests/automation-env.test.sh
+      - name: Run ops/github-config trusted-authors-check harness
+        shell: bash
+        run: bash actions/ops/github-config/tests/trusted-authors-check.test.sh
       - name: Run ops/upstream-refresh key-boundary harness
         shell: bash
         run: bash actions/ops/upstream-refresh/tests/key-boundary.test.sh

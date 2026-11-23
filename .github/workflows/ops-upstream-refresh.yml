@@ -106,6 +106,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-upstream-refresh prepare --out upstream-refresh-out --repo "$REPO"
 
       - name: Upload the prepared refresh
@@ -174,4 +175,5 @@ jobs:
           VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
           VRG_AUTOMATION_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
           VRG_AUTOMATION_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-upstream-refresh publish --from upstream-refresh-out --repo "$REPO"
