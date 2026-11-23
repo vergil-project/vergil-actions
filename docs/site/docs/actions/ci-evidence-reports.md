@@ -168,6 +168,8 @@ so the evidence job takes every file the legs uploaded.
 - When the gate step did not succeed, the leg has already failed. The reports
   that exist are staged for diagnosis and the missing ones are noted.
 - An empty or placeholder file is never staged.
+- A gate skipped because the repository is not bootstrapped yet is accepted,
+  as [Not-bootstrapped repositories](#not-bootstrapped-repositories) says.
 - For a language with no entry in the table, the step warns (or, for a
   `lint` or `typecheck` leg of a repository with no fleet primary language,
   notes) and stages nothing, whatever `gate-outcome` says.
@@ -179,5 +181,47 @@ with a warning or notice, for a language with no entry.
 `reports-dir` must hold at least one non-empty, version-suffixed copy
 (`<stem>-<version>.<ext>`, for example `quality-clippy-1.95.json`). A missing
 one fails the step with an `::error::` naming it. For a language with no
-lint or typecheck entry, the step warns or notes as above and passes. An
-empty `reports-dir`, or one that is not a directory, fails.
+lint or typecheck entry, the step warns or notes as above and passes. A gate
+whose legs were all skipped as not bootstrapped needs no report (see below).
+An empty `reports-dir`, or one that is not a directory, fails.
+
+## Not-bootstrapped repositories
+
+A freshly initialised repository has none of its language's manifests yet
+(no `pyproject.toml` or `uv.lock`, no `Cargo.toml` or `Cargo.lock`, no
+`package.json` or `package-lock.json`, or a `package.json` that declares no
+dependency and no `package-lock.json`) and no source of the language.
+`vrg-validate` skips its language stages for such a repository, loudly,
+recording each one `warn` in `.vergil/vrg-validate-last.json`
+([vergil-tooling#4384](https://github.com/vergil-project/vergil-tooling/issues/4384)),
+and the gate passes having written no report.
+
+In `stage` mode a leg whose gate passed and wrote none of its reports is
+accepted as skipped only when all of these hold:
+
+- the `vrg-validate` record is of the checked-out commit and the run exited 0;
+- every stage the run recorded is `warn`, the gate's own among them, so no
+  stage really ran;
+- every manifest of the language is missing, by the same strict test as
+  `vrg-validate`, repeated here; a partial bootstrap is not a skip;
+- the repository has no source of the language.
+
+The step then prints a `::notice::` naming the leg and the reason, stages no
+report, and writes the leg's **skip record** into `out-dir`:
+`<gate>-not-bootstrapped-<version>.json`, or
+`quality-<gate>-not-bootstrapped-<version>.json` for a `lint` or `typecheck`
+leg. It is a JSON object with `"skipped": true`, `"reason":
+"not-bootstrapped"`, the gate, language, version, the commit (`head`) and the
+missing manifests. When any condition fails, each failing one is an
+`::error::` and the leg fails on its missing reports, as any passing gate that
+wrote no report does.
+
+In `expect` mode a `lint` or `typecheck` gate with no report passes, with a
+`::notice::`, when `reports-dir` holds its legs' skip records. A skip record
+of another language or gate, or one found beside a report of the same gate,
+fails the step.
+
+The skip record is uploaded with the leg's reports and reaches the gate's
+evidence artifact, so the release-time evidence gate finds the skip recorded
+in the gate's payload rather than an empty one. A bootstrapped repository
+never gets a skip record, so a missing report there still fails the leg.
