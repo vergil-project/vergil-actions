@@ -27,9 +27,10 @@ on:
         type: string
         default: prod
     # The org automation App's credentials, for the ops-report action (epic
-    # vergil-project/.github#1494). Optional, and used by no job yet: every
-    # caller passes them before the release whose reporting job needs them,
-    # so no caller's run turns red (spec §5.6).
+    # vergil-project/.github#1494), used by the report job and forwarded to
+    # the nested cd-docs.yml call. Declared optional a release before that
+    # job, so every caller could pass them first and no caller's run turned
+    # red (spec §5.6).
     secrets:
       APP_CLIENT_ID:
         required: false
@@ -60,3 +61,37 @@ jobs:
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+
+  # Reports the refresh as docs-refresh to the org's operations queue (epic
+  # vergil-project/.github#1494, spec §5.3). The nested cd-docs.yml call
+  # passes report: false, so the run is reported once, under this name.
+  # The checkout comes first: setting up Vergil reads the workspace's
+  # vergil.toml, and the local ./actions/ ref resolves against it. The action
+  # mints its own issues-only App token, only on refs/heads/develop, so this
+  # job's GITHUB_TOKEN stays read-only. No concurrency group: GitHub keeps one
+  # pending run per group and cancels the older, which would drop a report.
+  # actions/ops/report/tests/reporting-jobs.test.sh guards this layout.
+  report:
+    name: report
+    needs: refresh
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Report docs-refresh
+        uses: ./actions/ops/report
+        env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
+        with:
+          job: docs-refresh
+          results: ${{ needs.refresh.result }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
