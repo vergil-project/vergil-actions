@@ -7,7 +7,9 @@
 #
 # Framework-free and developer-runnable: `bash reports.test.sh`. CI runs it
 # from .github/workflows/smoke-setup-vergil.yml. It needs only bash and
-# coreutils, plus jq for the tools-JSON cases.
+# coreutils, plus jq for the tools-JSON and skip-record cases and git for the
+# not-bootstrapped cases (#1294), which run in scratch git repositories with
+# a vrg-validate record written by hand.
 #
 # Each stage case runs reports.sh in a scratch workspace holding chosen report
 # files, then asserts the exit status, the staged file names and contents, and
@@ -764,6 +766,235 @@ if assert_error "$name" "unknown language 'shell'"; then
   pass_case "$name"
 fi
 
+# --- a gate skipped as not bootstrapped (#1294) --------------------------------
+
+# git_ws <name> — a fresh workspace that is a git repository with one commit
+# (a README only: no manifest, no source). Sets ws.
+git_ws() {
+  workspace "$1"
+  (
+    cd "$ws"
+    git init -q
+    printf 'readme\n' >README.md
+    git add README.md
+    git -c user.name=test -c user.email=test@example.invalid \
+      -c commit.gpgsign=false commit -q -m init
+  )
+}
+
+# record <exit-code> <stage>=<status>... — write $ws's vrg-validate record
+# for the workspace's HEAD, as vrg-validate writes it.
+record() {
+  local exit_code="$1" stage stages="" head
+  shift
+  for stage in "$@"; do
+    stages="${stages:+${stages}, }{\"name\": \"${stage%%=*}\", \"status\": \"${stage#*=}\"}"
+  done
+  head="$(git -C "$ws" rev-parse HEAD)"
+  mkdir -p "${ws}/.vergil"
+  printf '{"head": "%s", "exit_code": %s, "full": false, "clean_at_start": true, "stages": [%s]}\n' \
+    "$head" "$exit_code" "$stages" >"${ws}/.vergil/vrg-validate-last.json"
+}
+
+# skip_stages <language> <gate> — the stages a not-bootstrapped
+# `vrg-validate --check <gate>` records, each `warn`.
+skip_stages() {
+  if [ "$1" = typescript ]; then
+    printf '%s\n' install=warn typescript-tools=warn "$2=warn"
+  else
+    printf '%s\n' install=warn "$2=warn"
+  fi
+}
+
+# marker_of <gate> <version> — the skip record's basename.
+marker_of() {
+  case "$1" in
+    lint | typecheck) echo "quality-$1-not-bootstrapped-$2.json" ;;
+    *) echo "$1-not-bootstrapped-$2.json" ;;
+  esac
+}
+
+# has_notice <text> <substring>... — one ::notice line of <text> holds every
+# substring.
+has_notice() {
+  local text="$1" line needle ok
+  shift
+  while IFS= read -r line; do
+    [[ "$line" == *"::notice"* ]] || continue
+    ok=1
+    for needle in "$@"; do
+      [[ "$line" == *"$needle"* ]] || ok=0
+    done
+    [ "$ok" -eq 0 ] || return 0
+  done <<<"$text"
+  return 1
+}
+
+# assert_skipped <name> <language> <gate> <version> <manifests-json> — exit 0,
+# only the skip record staged, holding the leg, and a notice naming the leg
+# and the reason.
+assert_skipped() {
+  local name="$1" language="$2" gate="$3" version="$4" manifests="$5" marker
+  marker="$(marker_of "$gate" "$version")"
+  assert_staged "$name" "${marker} " || return 1
+  if ! jq -e --arg g "$gate" --arg l "$language" --arg v "$version" \
+    --argjson m "$manifests" \
+    '.skipped == true and .reason == "not-bootstrapped" and .gate == $g and
+      .language == $l and .version == $v and .missing_manifests == $m and
+      (.head | test("^[0-9a-f]{40}$"))' "${ws}/ci-reports/${marker}" >/dev/null; then
+    fail_case "$name" "unexpected skip record: $(cat "${ws}/ci-reports/${marker}")"
+    return 1
+  fi
+  if ! has_notice "$stdout" \
+    "the ${language} ${gate} leg ${version} wrote no reports" \
+    "not bootstrapped yet"; then
+    fail_case "$name" "expected a notice naming the leg and the reason, got '${stdout}'"
+    return 1
+  fi
+  if grep -qF "::error::" <<<"$stderr"; then
+    fail_case "$name" "unexpected error: ${stderr}"
+    return 1
+  fi
+  return 0
+}
+
+for language in python rust typescript; do
+  case "$language" in
+    python) manifests='["pyproject.toml","uv.lock"]' ;;
+    rust) manifests='["Cargo.toml","Cargo.lock"]' ;;
+    typescript) manifests='["package.json","package-lock.json"]' ;;
+  esac
+  for gate in test audit lint typecheck; do
+    name="not-bootstrapped-${language}-${gate}-skips-loudly"
+    git_ws "$name"
+    mapfile -t stages < <(skip_stages "$language" "$gate")
+    record 0 "${stages[@]}"
+    run_reports stage "$language" "$gate" 1.0 success
+    if assert_skipped "$name" "$language" "$gate" 1.0 "$manifests"; then
+      pass_case "$name"
+    fi
+  done
+done
+
+# vrg-github-repo-init writes a TypeScript repo's package.json with no
+# dependency and no lockfile; vergil-tooling counts it as not bootstrapped.
+name="not-bootstrapped-typescript-dependency-free-package-json-skips"
+git_ws "$name"
+printf '{"name": "x", "version": "0.1.0", "private": true}\n' >"${ws}/package.json"
+record 0 install=warn typescript-tools=warn test=warn
+run_reports stage typescript test node-24 success
+if assert_skipped "$name" typescript test node-24 '["package-lock.json"]'; then
+  pass_case "$name"
+fi
+
+# assert_not_skipped <name> <substring>... — the leg fails, stages no skip
+# record, and its errors hold each substring and the missing-report error.
+assert_not_skipped() {
+  local name="$1"
+  shift
+  assert_error "$name" "$@" "gate passed but wrote no" || return 1
+  case "$(staged)" in
+    *not-bootstrapped*)
+      fail_case "$name" "staged a skip record: $(staged)"
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+name="not-bootstrapped-typescript-package-json-with-dependencies-fails"
+git_ws "$name"
+printf '{"name": "x", "devDependencies": {"typescript": "^5"}}\n' >"${ws}/package.json"
+record 0 install=warn typescript-tools=warn test=warn
+run_reports stage typescript test node-24 success
+if assert_not_skipped "$name" "the typescript repo is bootstrapped"; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-partial-manifests-fails"
+git_ws "$name"
+printf '[project]\n' >"${ws}/pyproject.toml"
+record 0 install=warn test=warn
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" "the python repo is bootstrapped"; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-with-sources-fails-naming-them"
+git_ws "$name"
+mkdir -p "${ws}/src"
+printf 'fn main() {}\n' >"${ws}/src/main.rs"
+record 0 install=warn test=warn
+run_reports stage rust test 1.99 success
+if assert_not_skipped "$name" "the repo has rust sources (src/main.rs)"; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-record-of-another-commit-fails"
+git_ws "$name"
+record 0 install=warn test=warn
+(
+  cd "$ws"
+  git -c user.name=test -c user.email=test@example.invalid \
+    -c commit.gpgsign=false commit -q --allow-empty -m later
+)
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" "not the checked-out"; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-record-of-a-failed-run-fails"
+git_ws "$name"
+record 1 install=warn test=warn
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" "shows the run exited 1"; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-record-with-a-stage-that-ran-fails"
+git_ws "$name"
+record 0 install=ok test=warn
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" "shows stages that ran (install (ok))"; then
+  pass_case "$name"
+fi
+
+# A bootstrapped gate (its stage `ok`) that wrote no report fails exactly as
+# before, with no word about a skip.
+name="recorded-ok-gate-with-no-report-fails-as-before"
+git_ws "$name"
+record 0 install=ok test=ok
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" "wrote no coverage.xml" "wrote no junit.xml"; then
+  if grep -qF "bootstrap" <<<"$stderr"; then
+    fail_case "$name" "mentions a skip: ${stderr}"
+  else
+    pass_case "$name"
+  fi
+fi
+
+# A gate that wrote some of its reports was not skipped, whatever the record.
+name="recorded-warn-gate-with-some-reports-fails-as-before"
+git_ws "$name"
+printf 'coverage\n' >"${ws}/coverage.xml"
+record 0 install=warn test=warn
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" "wrote no junit.xml"; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-failed-gate-only-notes"
+git_ws "$name"
+record 1 install=warn test=warn
+run_reports stage python test 3.14 failure
+if [ "$rc" -ne 0 ]; then
+  fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
+elif [ -n "$(staged)" ]; then
+  fail_case "$name" "staged $(staged)"
+else
+  pass_case "$name"
+fi
+
 # --- expect mode --------------------------------------------------------------
 
 # run_expect <language> <dir> — run reports.sh in expect mode in $ws, with no
@@ -916,6 +1147,78 @@ name="expect-missing-reports-dir-fails"
 workspace "$name"
 run_expect python evidence-reports
 if assert_error "$name" "REPORTS_DIR 'evidence-reports' is not a directory"; then
+  pass_case "$name"
+fi
+
+# skip_record <language> <gate> <version> — $ws/evidence-reports holding the
+# leg's skip record, as stage mode writes it.
+skip_record() {
+  mkdir -p "${ws}/evidence-reports"
+  jq -n --arg g "$2" --arg l "$1" --arg v "$3" \
+    '{gate: $g, language: $l, version: $v, skipped: true,
+      reason: "not-bootstrapped", head: "0000000000000000000000000000000000000000",
+      missing_manifests: ["pyproject.toml", "uv.lock"]}' \
+    >"${ws}/evidence-reports/$(marker_of "$2" "$3")"
+}
+
+name="expect-not-bootstrapped-legs-pass-with-a-notice"
+workspace "$name"
+reports_dir quality-common.log quality-custom.log
+skip_record python lint 3.14
+skip_record python typecheck 3.13
+skip_record python typecheck 3.14
+run_expect python evidence-reports
+if [ "$rc" -ne 0 ]; then
+  fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
+elif ! has_notice "$stdout" "python lint legs were skipped" \
+  "quality-lint-not-bootstrapped-3.14.json"; then
+  fail_case "$name" "expected a lint skip notice, got '${stdout}'"
+elif ! has_notice "$stdout" "python typecheck legs were skipped"; then
+  fail_case "$name" "expected a typecheck skip notice, got '${stdout}'"
+else
+  pass_case "$name"
+fi
+
+# A skip record excuses only its own gate's reports.
+name="expect-skip-record-excuses-only-its-gate"
+workspace "$name"
+reports_dir quality-common.log
+skip_record rust lint 1.99
+run_expect rust evidence-reports
+if assert_error "$name" "its quality-cargo-check.json"; then
+  if grep -qF "quality-clippy.json" <<<"$(grep -F '::error::' <<<"$stderr")"; then
+    fail_case "$name" "named the skipped gate's report: ${stderr}"
+  else
+    pass_case "$name"
+  fi
+fi
+
+name="expect-skip-record-beside-a-report-fails"
+workspace "$name"
+reports_dir quality-ruff-3.13.json quality-mypy-3.13.xml quality-mypy-3.14.xml
+skip_record python lint 3.14
+run_expect python evidence-reports
+if assert_error "$name" "holds both a python lint skip record and the report"; then
+  pass_case "$name"
+fi
+
+name="expect-skip-record-of-another-language-fails"
+workspace "$name"
+reports_dir quality-clippy-1.99.json
+skip_record python typecheck 1.99
+mv "${ws}/evidence-reports/$(marker_of typecheck 1.99)" \
+  "${ws}/evidence-reports/quality-typecheck-not-bootstrapped-x.json"
+run_expect rust evidence-reports
+if assert_error "$name" "is not a rust typecheck skip record"; then
+  pass_case "$name"
+fi
+
+name="expect-malformed-skip-record-fails"
+workspace "$name"
+reports_dir quality-eslint-node-24.json
+printf 'not json\n' >"${ws}/evidence-reports/quality-typecheck-not-bootstrapped-node-24.json"
+run_expect typescript evidence-reports
+if assert_error "$name" "is not a typescript typecheck skip record"; then
   pass_case "$name"
 fi
 

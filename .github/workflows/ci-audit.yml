@@ -96,7 +96,7 @@ jobs:
 
       - name: Install dependencies
         if: inputs.language == 'python'
-        run: uv sync --group dev --frozen
+        uses: ./actions/ci/toolchain/install-python
 
       # Backstop for the pin above: fail the leg if the interpreter or
       # toolchain it actually runs is not the version CI resolved for it.

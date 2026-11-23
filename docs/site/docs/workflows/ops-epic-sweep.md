@@ -12,9 +12,8 @@ which makes three passes over the whole org:
   (ad-hoc, intake and planning) into per-quarter archive epics.
 - **Orphan pass.** Enforces "every issue belongs to an epic": it links
   body-only `Parent:` lines as native sub-issues, removes the retired `triage`,
-  `idea` and `research` labels, moves a now-public repository's self-homed
-  intake and planning items under the org `.github` queues, and attaches every
-  orphan to its home's intake epic.
+  `idea` and `research` labels, and attaches every orphan to its home's intake
+  epic.
 
 So the sweep changes labels and sub-issue links, not only issue state. Each
 pass acts only on provable drift, so a run with nothing new to fix changes
@@ -71,9 +70,7 @@ The `epic-sweep` job runs in `ghcr.io/vergil-project/<prefix>-base:latest`:
 2. Drains the ad-hoc epics, then the intake and planning epics, into
    per-quarter archives, and closes past archives.
 3. Runs the orphan pass: links body-only `Parent:` lines natively, strips the
-   retired labels, moves now-public repositories' queue items under `.github`
-   (closing each emptied self-homed queue epic), then attaches orphans to
-   intake.
+   retired labels, then attaches orphans to intake.
 
 The log prints a count line for each step, for example
 `Retired kind labels stripped: 41 issue(s).` and
@@ -106,7 +103,7 @@ name: Epic Sweep
 
 on:
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:

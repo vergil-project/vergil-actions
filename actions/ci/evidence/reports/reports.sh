@@ -78,7 +78,8 @@
 #            naming each missing one. When it did not succeed, the leg has
 #            already failed: the reports that exist are staged for diagnosis
 #            and the missing ones are only noted. An empty or placeholder file
-#            is never staged.
+#            is never staged. The one exception is a gate vrg-validate skipped
+#            because the repository is not bootstrapped yet (see below).
 #   tools  — write the gate's tools JSON array to $GITHUB_OUTPUT as `tools`,
 #            for the evidence.json the emit action writes.
 #   expect — check that REPORTS_DIR (the quality evidence job's downloaded
@@ -87,6 +88,28 @@
 #            naming each one missing. The emit action skips a file pattern that
 #            matches nothing, so this check is what makes the reports required
 #            in the quality artifact. GATE is not used.
+#
+# A repository not bootstrapped yet (a freshly initialised one, with none of
+# its language's manifests and no sources) has its language stages skipped by
+# vrg-validate, loudly, each recorded `warn` in .vergil/vrg-validate-last.json
+# (vergil-tooling#4384), and the gate exits 0 having written no report
+# (#1294). Stage mode accepts such a leg only when the gate wrote none of its
+# reports and all of these hold: the record is of the checked-out commit, the
+# run exited 0, every stage it ran is `warn` with the gate's among them, every
+# manifest of the language is missing (vergil-tooling's strict test, repeated
+# here) and the repository has no source of the language. It then prints a
+# ::notice:: naming the leg and the reason, stages no report, and writes the
+# leg's skip record, <gate>-not-bootstrapped-<version>.json (for a quality leg
+# quality-<gate>-not-bootstrapped-<version>.json): a JSON object with
+# skipped: true, reason "not-bootstrapped", the gate, language, version, head
+# and the missing manifests. When any condition fails, each failing one is an
+# ::error:: and the leg fails on its missing reports as before. The skip
+# record is the gate's evidence of the skip: it reaches the evidence artifact
+# with the leg's files, so the release-time harvester finds the skip recorded
+# rather than an empty payload. Expect mode accepts a quality gate with no
+# reports only when the legs' skip records for it are there, and fails on a
+# skip record of another language or gate, or one found beside a report of
+# the same gate.
 #
 # Inputs (env): MODE, LANGUAGE, GATE; for stage also VERSION, GATE_OUTCOME and
 # OUT_DIR (default ci-reports); for expect REPORTS_DIR, and no GATE. Sourced
@@ -239,10 +262,209 @@ report_tools() {
   esac
 }
 
+# --- the not-bootstrapped skip (#1294) ----------------------------------------
+
+# The record vrg-validate writes at the repository root after every run
+# (vergil-tooling's lib/validate_record.py).
+VALIDATE_RECORD=".vergil/vrg-validate-last.json"
+
+# The reason a skip record carries.
+SKIP_REASON="not-bootstrapped"
+
+# skip_marker_name <gate> <version> — the basename of a leg's skip record.
+# A quality leg's carries the quality- prefix, so the quality evidence job's
+# emit pattern (evidence-reports/quality-*) takes it with the reports.
+skip_marker_name() {
+  if is_quality_gate "$1"; then
+    printf 'quality-%s-%s-%s.json\n' "$1" "$SKIP_REASON" "$2"
+  else
+    printf '%s-%s-%s.json\n' "$1" "$SKIP_REASON" "$2"
+  fi
+}
+
+# need_jq — fails, with an ::error::, when jq is not on PATH.
+need_jq() {
+  if ! command -v jq >/dev/null 2>&1; then
+    error "jq is not on PATH; it is needed to read $1"
+    return 1
+  fi
+}
+
+# record_gate_status <gate> — print the status the vrg-validate record gives
+# the gate's stage, or nothing when the record is absent or has no such stage.
+# Fails, with an ::error::, on a record it cannot read.
+record_gate_status() {
+  [ -f "$VALIDATE_RECORD" ] || return 0
+  need_jq "the vrg-validate record ${VALIDATE_RECORD}" || return 1
+  if ! jq -r --arg gate "$1" \
+    '[.stages[] | select(.name == $gate) | .status] | join(",")' \
+    "$VALIDATE_RECORD"; then
+    error "cannot read the vrg-validate record ${VALIDATE_RECORD}"
+    return 1
+  fi
+}
+
+# unbootstrapped_manifests <language> — print the language's missing
+# manifests, comma-separated, and succeed when the repository is not
+# bootstrapped for it; fail, printing nothing, when it is. The test is
+# vergil-tooling's (lib/container_cache.py, unbootstrapped_manifests, issues
+# vergil-tooling#4384 and #4624), read strictly: every manifest is missing,
+# or for TypeScript a package.json that declares no dependency and no
+# package-lock.json. A partial bootstrap is bootstrapped. Keep it in step with
+# vergil-tooling's _WARMUP_REQUIRES.
+unbootstrapped_manifests() {
+  case "$1" in
+    python)
+      if [ ! -f pyproject.toml ] && [ ! -f uv.lock ]; then
+        echo "pyproject.toml, uv.lock"
+        return 0
+      fi
+      ;;
+    rust)
+      if [ ! -f Cargo.toml ] && [ ! -f Cargo.lock ]; then
+        echo "Cargo.toml, Cargo.lock"
+        return 0
+      fi
+      ;;
+    typescript)
+      [ ! -f package-lock.json ] || return 1
+      if [ ! -f package.json ]; then
+        echo "package.json, package-lock.json"
+        return 0
+      fi
+      # A package.json that is not an object, or does not parse, declares
+      # dependencies as far as this test goes: the repo counts as bootstrapped.
+      need_jq "package.json" || return 1
+      if jq -e '. as $m | type == "object" and
+          all("dependencies", "devDependencies", "optionalDependencies",
+            "peerDependencies";
+            . as $f | ($m | if has($f) then .[$f] else {} end) == {})' \
+        package.json >/dev/null 2>&1; then
+        echo "package-lock.json"
+        return 0
+      fi
+      ;;
+  esac
+  return 1
+}
+
+# language_sources <language> — print up to three of the repository's tracked
+# or untracked, not ignored, source files of the language, the same suffixes
+# vergil-tooling counts (lib/container_cache.py, _SOURCE_SUFFIXES). Fails,
+# with an ::error::, when git cannot list the files.
+language_sources() {
+  local list path shown=0 pattern
+  case "$1" in
+    python) pattern='\.pyi?$' ;;
+    rust) pattern='\.rs$' ;;
+    typescript) pattern='\.(ts|tsx|mts|cts)$' ;;
+    *) return 0 ;;
+  esac
+  list="$(mktemp)"
+  if ! git ls-files -z --cached --others --exclude-standard >"$list"; then
+    rm -f "$list"
+    error "git cannot list the repository's files, so the not-bootstrapped" \
+      "skip cannot be checked"
+    return 1
+  fi
+  while IFS= read -r -d '' path; do
+    if [ -f "$path" ] && [[ "$path" =~ $pattern ]]; then
+      echo "$path"
+      shown=$((shown + 1))
+      [ "$shown" -lt 3 ] || break
+    fi
+  done <"$list"
+  rm -f "$list"
+}
+
+# check_not_bootstrapped <language> <gate> — succeed, printing the missing
+# manifests, only when the gate's vrg-validate run really skipped it because
+# the repository is not bootstrapped yet. Every condition must hold, and each
+# one that does not fails with an ::error:: naming it:
+#
+#   - the record's head is the commit checked out (git rev-parse HEAD);
+#   - the run exited 0;
+#   - every stage of the run is `warn`, as vrg-validate records each stage it
+#     skips as not bootstrapped (no stage really ran);
+#   - every manifest of the language is missing, by the test above;
+#   - the repository has no source of the language.
+#
+# The caller has already found the gate's stage recorded `warn`.
+check_not_bootstrapped() {
+  local language="$1" gate_name="$2" head record_head exit_code ran manifests
+  local sources bad=0
+
+  if ! head="$(git rev-parse HEAD)"; then
+    error "git cannot resolve HEAD, so the not-bootstrapped skip cannot be checked"
+    return 1
+  fi
+  if ! record_head="$(jq -r '.head' "$VALIDATE_RECORD")" ||
+    ! exit_code="$(jq -r '.exit_code' "$VALIDATE_RECORD")" ||
+    ! ran="$(jq -r '[.stages[] | select(.status != "warn") |
+        "\(.name) (\(.status))"] | join(", ")' "$VALIDATE_RECORD")"; then
+    error "cannot read the vrg-validate record ${VALIDATE_RECORD}"
+    return 1
+  fi
+  if [ "$record_head" != "$head" ]; then
+    error "the vrg-validate record ${VALIDATE_RECORD} is of commit" \
+      "${record_head}, not the checked-out ${head}, so it does not show this" \
+      "${gate_name} gate skipped"
+    bad=1
+  fi
+  if [ "$exit_code" != "0" ]; then
+    error "the vrg-validate record ${VALIDATE_RECORD} shows the run exited" \
+      "${exit_code}, so it does not show the ${gate_name} gate skipped"
+    bad=1
+  fi
+  if [ -n "$ran" ]; then
+    error "the vrg-validate record ${VALIDATE_RECORD} shows stages that ran" \
+      "(${ran}), so the ${gate_name} gate was not skipped as not bootstrapped"
+    bad=1
+  fi
+  if ! manifests="$(unbootstrapped_manifests "$language")"; then
+    error "the ${language} repo is bootstrapped (it has its manifests), so a" \
+      "${gate_name} gate that wrote no report is not a not-bootstrapped skip"
+    bad=1
+  fi
+  if ! sources="$(language_sources "$language")"; then
+    return 1
+  fi
+  if [ -n "$sources" ]; then
+    error "the repo has ${language} sources (${sources//$'\n'/, }), so a" \
+      "${gate_name} gate that wrote no report is not a not-bootstrapped skip"
+    bad=1
+  fi
+  [ "$bad" -eq 0 ] || return 1
+  echo "$manifests"
+}
+
+# stage_skip <language> <gate> <version> <out-dir> <manifests> — the notice for
+# a leg skipped as not bootstrapped, and its skip record in out-dir, the only
+# file staged for it.
+stage_skip() {
+  local language="$1" gate_name="$2" version="$3" out_dir="$4" manifests="$5"
+  local marker head
+  marker="${out_dir}/$(skip_marker_name "$gate_name" "$version")"
+  head="$(git rev-parse HEAD)" || return 1
+  if ! jq -n --arg gate "$gate_name" --arg language "$language" \
+    --arg version "$version" --arg reason "$SKIP_REASON" --arg head "$head" \
+    --arg manifests "$manifests" \
+    '{gate: $gate, language: $language, version: $version, skipped: true,
+      reason: $reason, head: $head,
+      missing_manifests: ($manifests | split(", "))}' >"$marker"; then
+    error "cannot write the skip record ${marker}"
+    return 1
+  fi
+  echo "::notice title=ci/evidence/reports::the ${language} ${gate_name}" \
+    "leg ${version} wrote no reports: vrg-validate skipped the gate because" \
+    "the repo is not bootstrapped yet (no ${manifests}, and no ${language}" \
+    "sources). No report is staged; the skip is recorded in ${marker}"
+}
+
 # stage_reports <language> <gate> <version> <gate-outcome> <out-dir>
 stage_reports() {
   local language="$1" gate_name="$2" version="$3" outcome="$4" out_dir="$5"
-  local names name stem ext missing=() staged=0
+  local names name stem ext missing=() staged=0 status manifests
 
   check_inputs "$language" "$gate_name" || return 1
   if [ -z "$version" ]; then
@@ -280,6 +502,20 @@ stage_reports() {
     return 0
   fi
   if [ "$outcome" = "success" ]; then
+    # A gate that wrote none of its reports may have been skipped by
+    # vrg-validate as not bootstrapped (#1294): its stage is then recorded
+    # `warn`. The skip is accepted only when check_not_bootstrapped proves it;
+    # when it does not, its errors say why, and the gate fails below on its
+    # missing reports, as any gate that wrote no report does.
+    if [ "$staged" -eq 0 ]; then
+      status="$(record_gate_status "$gate_name")" || return 1
+      if [ "$status" = "warn" ] &&
+        manifests="$(check_not_bootstrapped "$language" "$gate_name")"; then
+        stage_skip "$language" "$gate_name" "$version" "$out_dir" \
+          "$manifests" || return 1
+        return 0
+      fi
+    fi
     for name in "${missing[@]}"; do
       error "the ${language} ${gate_name} gate passed but wrote no ${name}" \
         "(missing or empty at the workspace root); the release-time evidence" \
@@ -295,11 +531,56 @@ stage_reports() {
   echo "staged ${staged} of $(wc -l <<<"$names") ${gate_name} reports"
 }
 
+# expect_skip <language> <gate> <dir> <names> — print the skip records <dir>
+# holds for the gate's legs, comma-separated, or nothing when it holds none.
+# A stage step writes one only for a leg it proved was skipped as not
+# bootstrapped (#1294), so the gate's reports are then not expected. Fails,
+# with an ::error::, for a skip record that is not one of this language and
+# gate, or when <dir> also holds a report of the gate (<names>, one per line):
+# every leg of a gate sees the same checkout, so all skip or none do.
+expect_skip() {
+  local language="$1" gate_name="$2" dir="$3" names="$4" pattern marker
+  local markers=() name stem ext found bad=0
+
+  pattern="$(skip_marker_name "$gate_name" '*')"
+  while IFS= read -r -d '' marker; do
+    markers+=("$marker")
+  done < <(find "$dir" -maxdepth 1 -type f -name "$pattern" -print0 | sort -z)
+  [ "${#markers[@]}" -gt 0 ] || return 0
+
+  need_jq "the skip records in ${dir}" || return 1
+  for marker in "${markers[@]}"; do
+    if ! jq -e --arg gate "$gate_name" --arg language "$language" \
+      --arg reason "$SKIP_REASON" \
+      '.skipped == true and .reason == $reason and .gate == $gate and
+        .language == $language' "$marker" >/dev/null 2>&1; then
+      error "${marker} is not a ${language} ${gate_name} skip record" \
+        "(skipped: true, reason: ${SKIP_REASON})"
+      bad=1
+    fi
+  done
+  while IFS= read -r name; do
+    stem="${name%.*}"
+    ext="${name##*.}"
+    found="$(find "$dir" -maxdepth 1 -type f -name "${stem}-*.${ext}" -print -quit)"
+    if [ -n "$found" ]; then
+      error "${dir} holds both a ${language} ${gate_name} skip record and the" \
+        "report ${found}: a gate's legs are skipped as not bootstrapped all" \
+        "together or not at all"
+      bad=1
+    fi
+  done <<<"$names"
+  [ "$bad" -eq 0 ] || return 1
+  local IFS=,
+  echo "${markers[*]##*/}"
+}
+
 # expect_reports <language> <dir> — every lint and typecheck report of the
 # language's contract is in <dir> at least once, version-suffixed
-# (<stem>-<version>.<ext>) and non-empty. Fails naming each missing one.
+# (<stem>-<version>.<ext>) and non-empty, unless the gate's legs were all
+# skipped as not bootstrapped (expect_skip). Fails naming each missing one.
 expect_reports() {
-  local language="$1" dir="$2" gate_name names name stem ext found
+  local language="$1" dir="$2" gate_name names name stem ext found skipped
   local missing=()
 
   if [ -z "$dir" ]; then
@@ -317,6 +598,15 @@ expect_reports() {
     fi
     if ! names="$(report_files "$language" "$gate_name")"; then
       return 1
+    fi
+    if ! skipped="$(expect_skip "$language" "$gate_name" "$dir" "$names")"; then
+      return 1
+    fi
+    if [ -n "$skipped" ]; then
+      echo "::notice title=ci/evidence/reports::the ${language} ${gate_name}" \
+        "legs were skipped as not bootstrapped (${skipped}), so no" \
+        "${gate_name} report is expected"
+      continue
     fi
     while IFS= read -r name; do
       stem="${name%.*}"

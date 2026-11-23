@@ -252,7 +252,7 @@ jobs:
   # on, Dependabot never opens a PR, and this job turns any open alert, at any
   # severity, into a red nightly run. vrg-dependabot-audit exits 0 (no open
   # alerts), 1 (open alerts) or 2 (the alerts could not be read); both 1 and 2
-  # fail the job. A public repo's log carries counts only, never package names.
+  # fail the job. The log carries counts only, never package names.
   dependabot-audit:
     name: dependabot-audit
     runs-on: ubuntu-24.04

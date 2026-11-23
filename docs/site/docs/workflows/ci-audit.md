@@ -24,8 +24,11 @@ runs the shared setup action, which calls the resolver, and passes its
 versions, image tags and image suffixes to
 [`ci/matrix`](../actions/ci-matrix.md). Each leg pins uv to its version and to
 the image's interpreter (Python, with
-[`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and then
-asserts the running toolchain with
+[`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)), installs
+Python's dev dependencies with
+[`ci/toolchain/install-python`](../actions/ci-toolchain-install-python.md)
+(skipped with a notice on a repository with neither `pyproject.toml` nor
+`uv.lock`) and then asserts the running toolchain with
 [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md). Callers are
 thin: they pass only `language:` and `container-suffix:`.
 
@@ -44,9 +47,13 @@ Each `dependencies` leg stages the language's audit reports for the
 TypeScript. As for Python, `licenses.json` is the license report: TypeScript's
 is written by `vrg-npm-license-gate`. The names come
 from [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose
-audit passed but wrote no report fails. A language with no audit report
-contract yet (Go, C++) gets a warning and stages nothing, and the
-release-time evidence gate decides.
+audit passed but wrote no report fails, unless the repository is not
+bootstrapped yet and `vrg-validate` skipped the gate: the leg then prints a
+notice and stages a skip record, `audit-not-bootstrapped-<version>.json`, in
+place of its reports (see
+[Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories)).
+A language with no audit report contract yet (Go, C++) gets a warning and
+stages nothing, and the release-time evidence gate decides.
 
 ## Usage
 

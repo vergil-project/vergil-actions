@@ -1,0 +1,20 @@
+name: Install a Python leg's dev dependencies
+description: >-
+  Run `uv sync --group dev --frozen` in the checkout, or skip it with a
+  visible notice when the repo is not bootstrapped yet: neither
+  pyproject.toml nor uv.lock exists (issue #1206). The test is
+  vrg-validate's (vergil-tooling#4384), read strictly: only a repo with
+  every manifest missing is skipped, so a partial bootstrap still runs
+  uv sync and fails, and a failing uv sync fails the step. After a skip,
+  the leg's vrg-validate gives the same loud skip, or fails a repo that
+  has Python sources but no manifest. Pin uv first with
+  ci/toolchain/pin-python.
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: only-system
+      run: bash "${GITHUB_ACTION_PATH}/install.sh"

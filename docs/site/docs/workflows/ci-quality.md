@@ -17,8 +17,11 @@ workflow's `matrix` job runs the shared setup action, which calls the resolver,
 and passes its versions, image tags and image suffixes to
 [`ci/matrix`](../actions/ci-matrix.md). Each leg pins uv to its version and to
 the image's interpreter (Python, with
-[`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and then
-asserts the running toolchain with
+[`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)), installs
+Python's dev dependencies with
+[`ci/toolchain/install-python`](../actions/ci-toolchain-install-python.md)
+(skipped with a notice on a repository with neither `pyproject.toml` nor
+`uv.lock`) and then asserts the running toolchain with
 [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md). The
 single-container `common` and `custom` jobs run on the resolver's image for
 the primary version (see [Common checks](#common-checks) and
@@ -71,8 +74,10 @@ the custom stage. A repository with no custom validator gets one
 not an executable regular file fails the job. Like `common`, it runs once, on
 the same image. For Python it pins uv to the primary version's interpreter
 (with [`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and
-installs the dev dependency group first, so the validator sees the repo's dev
-dependencies; [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md) then
+installs the dev dependency group first (with
+[`ci/toolchain/install-python`](../actions/ci-toolchain-install-python.md),
+which skips it on a repository not bootstrapped yet), so the validator sees
+the repo's dev dependencies; [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md) then
 checks the running toolchain is the primary version.
 
 The job's transcript is uploaded as the `ci-evidence-quality-reports-custom`
@@ -148,6 +153,15 @@ of the language is there from at least one leg, and fails naming any that is
 not. The emitted artifact takes every `quality-*` file the jobs uploaded,
 and its tools are `vrg-validate-common`, `vrg-validate-custom`, then the
 language's lint and typecheck tools.
+
+On a repository not bootstrapped yet (none of the language's manifests and no
+sources), `vrg-validate` skips the `lint` and `typecheck` gates, loudly. Each
+leg's staging step then prints a notice and stages a skip record,
+`quality-<leg>-not-bootstrapped-<version>.json`, in place of its report, and
+the `evidence` job accepts the skip records instead of the reports. The step
+checks the skip strictly, and a leg that wrote no report without one fails as
+before: see
+[Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories).
 
 A fleet language with no lint or typecheck contract yet (`go`, `cpp`) gets
 a warning on its legs and in the `evidence` job, stages no report and lists

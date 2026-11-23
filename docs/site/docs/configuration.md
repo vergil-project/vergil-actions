@@ -94,6 +94,7 @@ only library repositories:
 | [`cd-release.yml`](workflows/cd-release.md#secrets) | `release` (pushes the release tags) | Calling repository only, Contents write |
 | [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
 | vergil-actions' own `cd.yml` | `release` | vergil-actions only |
+| The [`ops/report`](actions/ops-report.md) action | A workflow's reporting job (none uses it yet) | Calling repository and `<org>/.github`, Issues write only |
 
 **App permissions.** Every org's automation App is configured identically,
 and this table is that configuration. Each org's App must hold exactly these
@@ -105,7 +106,7 @@ permissions:
 | Administration | Read & write | `github-config`, which runs `vrg-github-repo-config update`: it reads and converges repository settings, branch protection, rulesets (whose bypass actors GitHub returns only to a caller that can edit them), Actions permissions and whether vulnerability alerts are enabled |
 | Contents | Read & write | `branch-sweep` (deletes branch refs); `upstream-refresh` (pushes the `automation/upstream-refresh/<run-id>` branch, and deletes an earlier run's branch when it closes that run's PR); `cd-release.yml` pushes the release tags and dispatches the package index to `<org>/packages`; `cd.yml` pushes the release tags; `github-config` pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; `epic-sweep` reads each repository's `vergil.toml` |
 | Pull requests | Read & write | `upstream-refresh` (opens the refresh PR with auto-merge, updates its branch from `develop`, merges it, and closes an earlier run's open one); `github-config` (opens the sync PR, closes an earlier one and turns on auto-merge); `branch-sweep` and `epic-sweep` read them |
-| Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues) |
+| Issues | Read & write | `ops-epic-rollup.yml` and `ops-epic-sweep.yml` (close, reopen, relabel and link issues); the `ops/report` action (opens and comments on ops issues, creates the `ops-report` label, links issues under the operations epic) |
 | Workflows | Read & write | `cd.yml` (the release tag points at the freeze-internal-refs commit, which changes workflow files: see [local/freeze-internal-refs](actions/local-freeze-internal-refs.md#permissions)); `github-config`, the automatic fleet sync, whose PRs can change files under `.github/workflows/`; `upstream-refresh`, only for the wait's branch update, which merges `develop` into the PR branch and is refused without it whenever `develop` has changed a workflow file (the path fence keeps every refresh patch out of `.github/**`) |
 | Dependabot alerts | Read-only | `dependabot-audit` (`vrg-dependabot-audit` lists open alerts) |
 | Variables | Read-only | `trusted-authors-check`, in the org's `.github` repository only (`vrg-trusted-authors check` lists every repository's Actions variables, for a repository-level copy of `VRG_TRUSTED_AUTHORS` or `VRG_AUTOMATION_APP`) |
@@ -198,6 +199,7 @@ explicit `permission-*` inputs, and each job requests only what it needs:
 | `ops-epic-rollup.yml` | `epic-rollup` | `issues: write` |
 | `ops-epic-sweep.yml` | `epic-sweep` | `issues: write`, `pull-requests: read`, `contents: read` |
 | `ops-upstream-refresh.yml` | `publish` (minted in-process by `vrg-upstream-refresh`, from `develop` only) | `contents: write`, `pull-requests: write`, `workflows: write`, `metadata: read` |
+| `cd-release.yml` | `release`, its "Mint release tag token" step (pushes the release tags) | `contents: write` |
 | `cd-release.yml` | Package-index dispatch | `contents: write` |
 | `cd.yml` (vergil-actions only) | `release` | `contents: write`, `workflows: write` |
 

@@ -26,6 +26,15 @@ on:
         description: Container image name prefix (prod or dev). Defaults to "prod".
         type: string
         default: prod
+    # The org automation App's credentials, for the ops-report action (epic
+    # vergil-project/.github#1494). Optional, and used by no job yet: every
+    # caller passes them before the release whose reporting job needs them,
+    # so no caller's run turns red (spec §5.6).
+    secrets:
+      APP_CLIENT_ID:
+        required: false
+      APP_PRIVATE_KEY:
+        required: false
 
 permissions:
   contents: write
@@ -38,7 +47,16 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@develop
     permissions:
       contents: write
+    # The nested call resolves to develop's cd-docs.yml (frozen to the release
+    # tag at release time), so these lines ship before cd-docs.yml gains its
+    # reporting job: report: false keeps that job off, since the refresh
+    # reports its run itself as docs-refresh, and the App secrets are
+    # forwarded for the deploy's later identity work.
     with:
       pre-deploy-command: ${{ inputs.pre-deploy-command }}
       mkdocs-config: ${{ inputs.mkdocs-config }}
       container-prefix: ${{ inputs.container-prefix }}
+      report: false
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}

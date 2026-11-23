@@ -72,6 +72,7 @@ nav:
           - ci/version-bump/version-divergence: actions/ci-version-bump-version-divergence.md
           - ci/matrix: actions/ci-matrix.md
           - ci/toolchain/pin-python: actions/ci-toolchain-pin-python.md
+          - ci/toolchain/install-python: actions/ci-toolchain-install-python.md
           - ci/toolchain/assert: actions/ci-toolchain-assert.md
           - ci/evidence/emit: actions/ci-evidence-emit.md
           - ci/evidence/reports: actions/ci-evidence-reports.md
@@ -85,6 +86,7 @@ nav:
           - cd/docs/deploy: actions/cd-docs-deploy.md
       - Ops:
           - ops/github-config/branch-sweep: actions/ops-github-config-branch-sweep.md
+          - ops/report: actions/ops-report.md
       - Shared:
           - shared/security/trivy: actions/shared-security-trivy.md
           - shared/setup/vergil: actions/shared-setup-vergil.md

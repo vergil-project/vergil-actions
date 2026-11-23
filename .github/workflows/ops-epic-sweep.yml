@@ -11,9 +11,8 @@ name: Ops — Epic Sweep
 #      (ad-hoc, intake, planning) into per-quarter archives.
 #   3. Orphan pass ("every issue belongs to an epic"): links body-only
 #      `Parent:` lines as native sub-issues, strips the retired
-#      triage/idea/research labels, moves a now-public repo's self-homed
-#      queue items under the org .github queues, and attaches every orphan to
-#      its home's intake epic.
+#      triage/idea/research labels, and attaches every orphan to its home's
+#      intake epic.
 # So the sweep edits labels and sub-issue links, not only issue state. Each
 # pass acts only on provable drift, so a re-run with nothing new changes
 # nothing. If an intake or planning epic is at its cap (95 open children), the
