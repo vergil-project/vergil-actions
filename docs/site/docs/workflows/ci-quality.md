@@ -154,6 +154,15 @@ not. The emitted artifact takes every `quality-*` file the jobs uploaded,
 and its tools are `vrg-validate-common`, `vrg-validate-custom`, then the
 language's lint and typecheck tools.
 
+On a repository not bootstrapped yet (none of the language's manifests and no
+sources), `vrg-validate` skips the `lint` and `typecheck` gates, loudly. Each
+leg's staging step then prints a notice and stages a skip record,
+`quality-<leg>-not-bootstrapped-<version>.json`, in place of its report, and
+the `evidence` job accepts the skip records instead of the reports. The step
+checks the skip strictly, and a leg that wrote no report without one fails as
+before: see
+[Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories).
+
 A fleet language with no lint or typecheck contract yet (`go`, `cpp`) gets
 a warning on its legs and in the `evidence` job, stages no report and lists
 no lint or typecheck tools. A repository with no fleet

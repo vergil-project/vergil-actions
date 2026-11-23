@@ -47,9 +47,13 @@ Each `dependencies` leg stages the language's audit reports for the
 TypeScript. As for Python, `licenses.json` is the license report: TypeScript's
 is written by `vrg-npm-license-gate`. The names come
 from [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose
-audit passed but wrote no report fails. A language with no audit report
-contract yet (Go, C++) gets a warning and stages nothing, and the
-release-time evidence gate decides.
+audit passed but wrote no report fails, unless the repository is not
+bootstrapped yet and `vrg-validate` skipped the gate: the leg then prints a
+notice and stages a skip record, `audit-not-bootstrapped-<version>.json`, in
+place of its reports (see
+[Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories)).
+A language with no audit report contract yet (Go, C++) gets a warning and
+stages nothing, and the release-time evidence gate decides.
 
 ## Usage
 

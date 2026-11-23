@@ -39,9 +39,13 @@ Each `unit` leg stages the language's test reports for the
 `ci-evidence-test` artifact: `coverage.xml` and `junit.xml`, for Python, Rust
 and TypeScript alike. The names come from
 [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose tests
-passed but wrote no report fails. A language with no test report contract
-yet (Go, C++) gets a warning and stages nothing, and the
-release-time evidence gate decides.
+passed but wrote no report fails, unless the repository is not bootstrapped
+yet and `vrg-validate` skipped the gate: the leg then prints a notice and
+stages a skip record, `test-not-bootstrapped-<version>.json`, in place of its
+reports (see
+[Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories)).
+A language with no test report contract yet (Go, C++) gets a warning and
+stages nothing, and the release-time evidence gate decides.
 
 ## Usage
 
