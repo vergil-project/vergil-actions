@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.93] - 2026-11-23
+
+### Bug fixes
+
+- grant the update token Actions read for the automation environment (#1392)
+
+### CI
+
+- read the automation App secrets from the automation environment (#1389)
+
+### Documentation
+
+- name the publish command, order and consumers (#1391)
+- say a cpp caller without the Conan token fails the audit (#1390)
+
 ## [2.1.92] - 2026-11-23
 
 ### Features
