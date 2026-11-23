@@ -38,7 +38,10 @@
 7. Run each test script from a workflow, as `bash <path>` in a step (most
    action harnesses run in `smoke-setup-vergil.yml`). Validation fails on
    any `*.test.sh` that no workflow and no part of validation runs; see
-   [Validation](validation.md#test-suite-wiring).
+   [Validation](validation.md#test-suite-wiring). A new `smoke-*.yml`
+   workflow also needs a `workflow_call` trigger and a job in
+   `nightly-harnesses.yml`; see
+   [Nightly harness run](validation.md#nightly-harness-run).
 
 ## Composite action design rules
 

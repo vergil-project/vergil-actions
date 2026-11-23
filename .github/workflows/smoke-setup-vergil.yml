@@ -130,6 +130,7 @@ name: Smoke - setup/vergil outputs
 #     are wired through action.yml, and feeds them to ci/matrix.
 
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     # The pin-python harness's uv source guard scans every workflow and every

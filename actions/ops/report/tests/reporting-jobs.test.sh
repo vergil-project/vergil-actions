@@ -5,7 +5,9 @@
 #
 # Each shared workflow that runs an unattended job ends with a job that
 # reports that job's result, under its stable name, to the org's operations
-# queue through the ops-report action. A reporting job that skipped a GitHub
+# queue through the ops-report action. So does this repo's own
+# nightly-harnesses.yml (issue #1399), which reports the smoke workflows it
+# calls as harness-nightly. A reporting job that skipped a GitHub
 # job of its name, passed the wrong result, persisted the checkout's
 # credentials or sat in a concurrency group (GitHub cancels an older pending
 # run, which drops its report) would lose or misfile reports without any run
@@ -65,6 +67,7 @@ reported=(
   "cd-docs.yml|report|docs-deploy-develop|deploy"
   "cd-docs-refresh.yml|report|docs-refresh|refresh"
   "publish-index.yml|report|publish-index|build-index,deploy"
+  "nightly-harnesses.yml|report|harness-nightly|branch-sweep,cd-docs,cd-release,ops-report,publish-index,registry-publish,setup-vergil"
 )
 
 tmp="$(mktemp -d)"

@@ -24,6 +24,7 @@ name: Smoke - ops/report
 # Each needs yq (preinstalled on GitHub's ubuntu runners) and no network.
 
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     paths:
@@ -31,6 +32,7 @@ on:
       - .github/workflows/cd-docs.yml
       - .github/workflows/cd-docs-refresh.yml
       - .github/workflows/publish-index.yml
+      - .github/workflows/nightly-harnesses.yml
       - .github/workflows/ops-github-config.yml
       - .github/workflows/ops-epic-sweep.yml
       - .github/workflows/ops-epic-rollup.yml
