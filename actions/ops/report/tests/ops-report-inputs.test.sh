@@ -251,6 +251,7 @@ case_fixtures() {
 
   write_action "${tmp}/vars.yml" "${creds}
         permission-issues: write"
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression
   yq -i '.runs.steps[2].env.VRG_AUTOMATION_APP = "${{ vars.VRG_AUTOMATION_APP }}"' "${tmp}/vars.yml"
   expect_caught "fixture-vars-expression-caught" "${tmp}/vars.yml" \
     "the metadata holds a vars. or secrets. expression"
@@ -279,6 +280,7 @@ case_fixtures() {
 
   write_action "${tmp}/github-token.yml" "${creds}
         permission-issues: write"
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression
   yq -i '.runs.steps[2].env.GH_TOKEN = "${{ github.token }}"' "${tmp}/github-token.yml"
   expect_caught "fixture-report-with-github-token-caught" "${tmp}/github-token.yml" \
     "the report step GH_TOKEN is not the App token"

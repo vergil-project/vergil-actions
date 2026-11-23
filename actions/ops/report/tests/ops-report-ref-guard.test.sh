@@ -77,10 +77,12 @@ violations() {
     *'[ "${REF}" != "refs/heads/develop" ]'*) ;;
     *) printf 'step 0 does not compare REF with refs/heads/develop\n' ;;
   esac
+  # shellcheck disable=SC2016 # the literal shell text the step must contain
   case "$run" in
     *'echo "report=false" >>"${GITHUB_OUTPUT}"'*) ;;
     *) printf 'step 0 does not write report=false\n' ;;
   esac
+  # shellcheck disable=SC2016 # the literal shell text the step must contain
   case "$run" in
     *'echo "report=true"'*) ;;
     *) printf 'step 0 does not write report=true\n' ;;

@@ -205,7 +205,7 @@ case_command_pattern() {
     'timeout 15m vrg-ci-evidence harvest --repo o/r' \
     'vrg-package check-unpublished --version 1.2.3' \
     'vrg-package index --config packages.toml' \
-    'vrg-ops-report "${args[@]}"' \
+    'vrg-ops-report --repo o/r --job docs-refresh' \
     'vrg-release'; do
     if runs_github_command "$line"; then
       pass_case "pattern-matches: ${line}"
@@ -354,6 +354,7 @@ YAML
   expect_caught "fixture-ops-report-action-without-it-caught" "${tmp}/ops-report-action.yml" \
     "report step 1 uses ./actions/ops/report, which runs a GitHub-touching vrg-* command but does not set VRG_TRUSTED_AUTHORS"
 
+  # shellcheck disable=SC2016 # a literal GitHub Actions expression
   yq -i '.jobs.report.steps[1].env.VRG_TRUSTED_AUTHORS = "${{ vars.VRG_TRUSTED_AUTHORS }}"' \
     "${tmp}/ops-report-action.yml"
   expect_clean "fixture-ops-report-action-delivered-is-clean" "${tmp}/ops-report-action.yml"
