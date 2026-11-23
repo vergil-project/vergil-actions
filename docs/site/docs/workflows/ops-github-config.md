@@ -50,6 +50,13 @@ read-only permissions only.
 | `github-config` | `<caller> / github-config` | From `develop` only: runs `vrg-github-repo-config update --repo <calling repo>` as the automation App |
 | `trusted-authors-check` | `<caller> / trusted-authors-check` | In `<org>/.github` only (skipped elsewhere): runs `vrg-trusted-authors check --org <calling repo's owner>` as the automation App and uploads the `trusted-authors-values` artifact |
 | `dependabot-audit` | `<caller> / dependabot-audit` | Runs `vrg-dependabot-audit --repo <calling repo>` |
+| `report-branch-sweep` | `<caller> / report-branch-sweep` | Always, after `branch-sweep`: reports its result as `branch-sweep` to the org's operations queue through [`ops/report`](../actions/ops-report.md) |
+
+`github-config`, `trusted-authors-check` and `dependabot-audit` get no
+reporting job: their failures are security signals, which never go to a
+public ops issue (epic
+[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494),
+spec §2.3).
 
 ## Behavior
 

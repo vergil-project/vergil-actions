@@ -41,10 +41,12 @@ the workflow; if the fault repeats, raise it with GitHub Support. See
 - **`secrets: inherit`** and the job permissions shown in the example.
 
 The workflow also declares `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, the org
-automation App's credentials, as optional secrets. No job uses them yet: they
-are declared ahead of the operations-queue reporting (epic
-[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494)).
-A caller passing `secrets: inherit` already passes them.
+automation App's credentials, as optional secrets. Its last job, `report`,
+runs always, after `build-index` and `deploy`, and reports their combined
+result as `publish-index` to the org's operations queue (epic
+[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494))
+through [`ops/report`](../actions/ops-report.md), which mints its token from
+them. A caller passing `secrets: inherit` already passes them.
 
 ## Signing environment and caller example
 

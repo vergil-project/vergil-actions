@@ -23,6 +23,10 @@ name: Ops — Upstream Refresh
 #     of develop, checks it against the repo's path fence, opens the PR and
 #     waits until it merges. It never runs the hook. The App's client ID and
 #     key are set on that one step only.
+# A third job, report, runs after both whatever their result and reports the
+# run to the org's operations queue (epic vergil-project/.github#1494). It
+# never runs the hook and downloads no artifact; it gets the App's
+# credentials only as the ops-report action's inputs.
 #
 # The tool mints its own repo-scoped App token in-process, renews it every 30
 # minutes so a wait longer than one token's hour keeps working, revokes each
@@ -177,3 +181,43 @@ jobs:
           VRG_AUTOMATION_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: vrg-upstream-refresh publish --from upstream-refresh-out --repo "$REPO"
+
+  # Reports upstream-refresh's result to the org's operations queue (epic
+  # vergil-project/.github#1494, spec §5.3): one result for both jobs, so a
+  # failed prepare that skips publish reports as an upstream-refresh failure.
+  # The key boundary allows this third job: it never runs the hook and
+  # downloads no artifact, and the App's credentials reach it only as the
+  # ops-report action's inputs, from which the action mints its token on
+  # this job's own runner. Its `if: always()` is the one `if:` the boundary
+  # permits (actions/ops/upstream-refresh/tests/key-boundary.test.sh).
+  # The checkout comes first: setting up Vergil reads the workspace's
+  # vergil.toml, and the local ./actions/ ref resolves against it. The action
+  # mints its own issues-only App token, only on refs/heads/develop, so this
+  # job's GITHUB_TOKEN stays read-only. No concurrency group: GitHub keeps one
+  # pending run per group and cancels the older, which would drop a report.
+  # actions/ops/report/tests/reporting-jobs.test.sh guards this layout.
+  report:
+    name: report
+    needs: [prepare, publish]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Report upstream-refresh
+        uses: ./actions/ops/report
+        env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
+        with:
+          job: upstream-refresh
+          results: ${{ needs.prepare.result }},${{ needs.publish.result }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}

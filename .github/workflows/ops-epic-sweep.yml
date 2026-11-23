@@ -93,3 +93,36 @@ jobs:
           # caller-controlled). Reference it double-quoted as "$WINDOW_DAYS".
           WINDOW_DAYS: ${{ inputs.window-days }}
         run: vrg-epic-audit --close --window-days "$WINDOW_DAYS"
+
+  # Reports epic-sweep's result to the org's operations queue (epic
+  # vergil-project/.github#1494, spec §5.3).
+  # The checkout comes first: setting up Vergil reads the workspace's
+  # vergil.toml, and the local ./actions/ ref resolves against it. The action
+  # mints its own issues-only App token, only on refs/heads/develop, so this
+  # job's GITHUB_TOKEN stays read-only. No concurrency group: GitHub keeps one
+  # pending run per group and cancels the older, which would drop a report.
+  # actions/ops/report/tests/reporting-jobs.test.sh guards this layout.
+  report:
+    name: report
+    needs: epic-sweep
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Report epic-sweep
+        uses: ./actions/ops/report
+        env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
+        with:
+          job: epic-sweep
+          results: ${{ needs.epic-sweep.result }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}

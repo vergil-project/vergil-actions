@@ -59,6 +59,7 @@ See [Token scoping](../configuration.md#token-scoping).
 | ----- | ------------ | ------------- |
 | `prepare` | `<caller> / prepare` | Runs the hook through `vrg-upstream-refresh prepare`, with no secrets, and uploads the patch |
 | `publish` | `<caller> / publish` | Runs `vrg-upstream-refresh publish` on that patch: fence, PR, and the wait until it merges |
+| `report` | `<caller> / report` | Always, after both: reports their combined result as `upstream-refresh` to the org's operations queue through [`ops/report`](../actions/ops-report.md), so a failed `prepare` that skips `publish` reports a failure |
 
 ## The key boundary
 
@@ -79,10 +80,17 @@ workflow runs as two jobs, each on a fresh runner:
   `develop`, on the exact commit `prepare` ran against, and reads the path
   fence's rules from that clone's `develop` tip, never from the artifact.
 
+A third job, **`report`**, reports the run to the org's operations queue. It
+never runs the hook and downloads no artifact; it gets the App's credentials
+only as the [`ops/report`](../actions/ops-report.md) action's inputs, from
+which the action mints an issues-only token on `report`'s own runner.
+
 `actions/ops/upstream-refresh/tests/key-boundary.test.sh`, run by the
 `smoke-setup-vergil` workflow, holds the workflow to this layout: the
-secrets only on `publish`'s last step, no secret and a read-only token on
-`prepare`, the guard first in each job, no `if:`, and both time limits.
+secrets only on `publish`'s last step and as the inputs of `report`'s
+ops-report step, no secret and a read-only token on `prepare`, the guard
+first in `prepare` and `publish`, no `if:` but `report`'s `if: always()`,
+and both time limits.
 
 ## Behavior
 

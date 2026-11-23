@@ -35,6 +35,7 @@ The App must be installed on the calling repository and on `epic-repo`, with
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
 | `epic-rollup` | `<caller> / epic-rollup` | Runs `vrg-epic-rollup` for the closed issue |
+| `report` | `<caller> / report` | Always, after `epic-rollup`: reports its result as `epic-rollup` to the org's operations queue through [`ops/report`](../actions/ops-report.md) |
 
 ## Behavior
 

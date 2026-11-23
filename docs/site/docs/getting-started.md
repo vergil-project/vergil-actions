@@ -92,6 +92,11 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
       contents: write
+    # For the reporting job, which reports develop's docs deploys to the
+    # org's operations queue as the automation App.
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   release:
     if: github.ref == 'refs/heads/main'

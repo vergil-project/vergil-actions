@@ -23,11 +23,13 @@ the caller runs it on a schedule and on demand.
 | `APP_CLIENT_ID` | no | Client ID of the org's automation App |
 | `APP_PRIVATE_KEY` | no | Private key of the org's automation App |
 
-Both are optional and used by no job yet. They are declared ahead of the
-operations-queue reporting (epic
+The `report` job uses them to report the run to the org's operations queue
+(epic
 [vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494)),
-so every caller can pass them before the release whose reporting job needs
-them. Pass them now:
+and the `refresh` job forwards them to `cd-docs.yml`. They are declared
+optional, a release ahead of the reporting job, so every caller could pass
+them first; a run from `develop` that does not pass them turns `report` red.
+Pass them:
 
 ```yaml
     secrets:
@@ -40,6 +42,7 @@ them. Pass them now:
 | Job | Check name | Description |
 | ----- | ------------ | ------------- |
 | `refresh` | `<caller> / refresh / docs` | Calls `cd-docs.yml`, whose `docs` job runs the command, stages the docs and deploys them |
+| `report` | `<caller> / report` | Always, after `refresh`: reports its result as `docs-refresh` to the org's operations queue through [`ops/report`](../actions/ops-report.md) |
 
 ## Behavior
 
