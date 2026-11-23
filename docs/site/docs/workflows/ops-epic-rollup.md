@@ -30,6 +30,12 @@ close this workflow misses.
 The App must be installed on the calling repository and on `epic-repo`, with
 `issues: write`.
 
+## Variables
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `VRG_TRUSTED_AUTHORS` | yes | Org-level Actions variable holding the trusted-authors configuration, published with `vrg-trusted-authors publish` (see [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). Passed to the `vrg-epic-rollup` step and to the `report` job's `ops/report` step, which stop when it is missing or invalid |
+
 ## Jobs and check names
 
 | Job | Check name | Description |

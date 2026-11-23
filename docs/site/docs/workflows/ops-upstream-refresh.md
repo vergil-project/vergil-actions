@@ -45,6 +45,7 @@ Each consumer calls it from its own `ops.yml` on its own schedule.
 | `APP_CLIENT_ID` | secret | yes | Client ID of the org's automation App |
 | `APP_PRIVATE_KEY` | secret | yes | Private key of the org's automation App |
 | `VRG_AUTOMATION_APP` | Actions variable | yes | Org-level variable holding the automation App's slug (`<org>-automation`), visible to the calling repository (see [step 10 of the App setup](../configuration.md#app_client_id-and-app_private_key)). Both jobs fail when it is empty |
+| `VRG_TRUSTED_AUTHORS` | Actions variable | yes | Org-level variable holding the trusted-authors configuration, published with `vrg-trusted-authors publish` (see [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). Passed to the `vrg-upstream-refresh prepare` and `vrg-upstream-refresh publish` steps and to the `report` job's `ops/report` step, which stop when it is missing or invalid |
 
 The secrets reach only the `publish` job's last step. `vrg-upstream-refresh
 publish` mints its own installation tokens from them, limited to the calling
@@ -110,7 +111,7 @@ with another run's.
    the tooling.
 3. Installs vergil-tooling at the caller's `[dependencies].vergil` ref.
 4. Runs `vrg-upstream-refresh prepare`, with the read-only `GITHUB_TOKEN`
-   as `GH_TOKEN`. It clones `develop`, runs the hook there, and writes the
+   as `GH_TOKEN` and `VRG_TRUSTED_AUTHORS` in its `env`. It clones `develop`, runs the hook there, and writes the
    hook's tracked changes as a binary patch, the `develop` commit it ran
    on, the changed paths and the hook's notes.
 5. Uploads that output as the `upstream-refresh-prepare` artifact.
@@ -124,8 +125,8 @@ with another run's.
    this job's own runner.
 3. Downloads the `upstream-refresh-prepare` artifact.
 4. Runs `vrg-upstream-refresh publish` on it, with `VRG_AUTOMATION_APP`,
-   `VRG_AUTOMATION_CLIENT_ID` and `VRG_AUTOMATION_PRIVATE_KEY` set on this
-   step only. The tool removes the credentials from its environment at
+   `VRG_AUTOMATION_CLIENT_ID`, `VRG_AUTOMATION_PRIVATE_KEY` and
+   `VRG_TRUSTED_AUTHORS` set on this step only. The tool removes the credentials from its environment at
    startup, so no `git` or `gh` it starts sees them. It checks every minted
    token against `VRG_AUTOMATION_APP`, applies and fences the patch, and
    opens the PR and waits until it merges.

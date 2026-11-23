@@ -37,6 +37,12 @@ Pass them:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 ```
 
+## Variables
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `VRG_TRUSTED_AUTHORS` | yes | Org-level Actions variable holding the trusted-authors configuration, published with `vrg-trusted-authors publish` (see [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). Passed to the `report` job's `ops/report` step and, in the `cd-docs.yml` run that `refresh` calls, to the pre-deploy command and the docs staging step, which stop when it is missing or invalid |
+
 ## Jobs and check names
 
 | Job | Check name | Description |

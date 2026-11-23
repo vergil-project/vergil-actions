@@ -41,6 +41,7 @@ read-only permissions only.
 | Variable | Required | Description |
 | -------- | -------- | ----------- |
 | `VRG_AUTOMATION_APP` | yes | Org-level Actions variable holding the automation App's slug (`<org>-automation`), visible to the calling repository (see [step 10 of the App setup](../configuration.md#app_client_id-and-app_private_key)). The `github-config` and `trusted-authors-check` jobs fail when it is empty |
+| `VRG_TRUSTED_AUTHORS` | yes | Org-level Actions variable holding the trusted-authors configuration, published with `vrg-trusted-authors publish` (see [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). Passed to the `branch-sweep` job's [`ops/github-config/branch-sweep`](../actions/ops-github-config-branch-sweep.md) step, the `github-config` job's update step, the `dependabot-audit` job's audit step and the `report-branch-sweep` job's `ops/report` step, which stop when it is missing or invalid. The `trusted-authors-check` step needs none (see [trusted-authors-check](#trusted-authors-check)) |
 
 ## Jobs and check names
 
@@ -203,7 +204,8 @@ repository's jobs.
 the App token in `GH_TOKEN`, as `github-config`'s update step does, so
 vergil-tooling verifies that the token was minted by the automation App.
 `check` refuses the agent identity modes. With `--org` it reads no
-trusted-authors configuration, so the step needs no `VRG_TRUSTED_AUTHORS`.
+trusted-authors configuration, so this step, unlike the workflow's other
+`vrg-*` steps (see [Variables](#variables)), needs no `VRG_TRUSTED_AUTHORS`.
 The `smoke-setup-vergil` workflow runs
 `actions/ops/github-config/tests/trusted-authors-check.test.sh`, which holds
 the job to where it runs, its identity, its token's scope and permissions,
