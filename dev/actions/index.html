@@ -6195,6 +6195,8 @@
       
         
       
+        
+      
     
     
     
@@ -6258,6 +6260,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -7930,6 +7960,10 @@ definition and optional supporting scripts.</p>
 <li><strong><a href="ops-github-config-branch-sweep/">ops/github-config/branch-sweep</a></strong> —
   Deletes branches whose PR is merged or closed and lists them in the job
   summary, flagging merged-PR leftovers (auto-wired into <code>ops-github-config</code>).</li>
+<li><strong><a href="ops-report/">ops/report</a></strong> — Reports a named unattended job's result
+  to the org's operations queue as the automation App, from <code>develop</code> only:
+  opens or comments on the job's ops issue on a failure, records the first
+  green run after one, and never closes an issue.</li>
 </ul>
 <h3 id="shared">Shared<a class="headerlink" href="#shared" title="Permanent link">&para;</a></h3>
 <ul>

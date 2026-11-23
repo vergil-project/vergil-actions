@@ -6519,6 +6519,8 @@
       
         
       
+        
+      
     
     
     
@@ -6579,6 +6581,34 @@
     
   
     ops/github-config/branch-sweep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/ops-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops/report
   
 
     
@@ -8527,6 +8557,11 @@ only library repositories:</p>
 <td><code>release</code></td>
 <td>vergil-actions only</td>
 </tr>
+<tr>
+<td>The <a href="../actions/ops-report/"><code>ops/report</code></a> action</td>
+<td>A workflow's reporting job (none uses it yet)</td>
+<td>Calling repository and <code>&lt;org&gt;/.github</code>, Issues write only</td>
+</tr>
 </tbody>
 </table>
 <p><strong>App permissions.</strong> Every org's automation App is configured identically,
@@ -8564,7 +8599,7 @@ permissions:</p>
 <tr>
 <td>Issues</td>
 <td>Read &amp; write</td>
-<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues)</td>
+<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues); the <code>ops/report</code> action (opens and comments on ops issues, creates the <code>ops-report</code> label, links issues under the operations epic)</td>
 </tr>
 <tr>
 <td>Workflows</td>
