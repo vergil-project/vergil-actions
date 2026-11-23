@@ -15,6 +15,23 @@ on:
         description: Container image name prefix (prod or dev). Defaults to "prod".
         type: string
         default: prod
+      report:
+        description: >-
+          Report this run's result to the org's operations queue (epic
+          vergil-project/.github#1494). Not used yet: the reporting job comes
+          in a later release. cd-docs-refresh.yml passes false, since it
+          reports the run itself under its own job name.
+        type: boolean
+        default: true
+    # The org automation App's credentials, for the ops-report action (epic
+    # vergil-project/.github#1494). Optional, and used by no job yet: every
+    # caller passes them before the release whose reporting job needs them,
+    # so no caller's run turns red (spec §5.6).
+    secrets:
+      APP_CLIENT_ID:
+        required: false
+      APP_PRIVATE_KEY:
+        required: false
 
 permissions:
   contents: write

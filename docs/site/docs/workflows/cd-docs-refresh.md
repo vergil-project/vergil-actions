@@ -16,6 +16,25 @@ the caller runs it on a schedule and on demand.
 | `mkdocs-config` | string | no | `docs/site/mkdocs.yml` | Path to the MkDocs configuration file |
 | `container-prefix` | string | no | `prod` | Container image name prefix (`prod` or `dev`) |
 
+## Secrets
+
+| Secret | Required | Description |
+| ------ | -------- | ----------- |
+| `APP_CLIENT_ID` | no | Client ID of the org's automation App |
+| `APP_PRIVATE_KEY` | no | Private key of the org's automation App |
+
+Both are optional and used by no job yet. They are declared ahead of the
+operations-queue reporting (epic
+[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494)),
+so every caller can pass them before the release whose reporting job needs
+them. Pass them now:
+
+```yaml
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+```
+
 ## Jobs and check names
 
 | Job | Check name | Description |
@@ -24,7 +43,9 @@ the caller runs it on a schedule and on demand.
 
 ## Behavior
 
-The `refresh` job calls `cd-docs.yml` with the three inputs. Its `docs` job:
+The `refresh` job calls `cd-docs.yml` with the three inputs, `report: false`
+(the refresh reports its run to the operations queue itself, so `cd-docs.yml`
+must not report it a second time) and both App secrets. Its `docs` job:
 
 1. Checks out the repository with full history and installs vergil-tooling.
 2. Runs `pre-deploy-command`. The default runs `vrg-roadmap` and
@@ -69,6 +90,9 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs-refresh.yml@v2.1
     permissions:
       contents: write
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 ```
 
 The **Run workflow** button (`workflow_dispatch`) is the manual "refresh now".

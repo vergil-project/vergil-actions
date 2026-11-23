@@ -1,0 +1,122 @@
+name: Report an unattended job to the operations queue
+description: >-
+  Report a named unattended job's result on its ops issue under the org's
+  operations epic (epic vergil-project/.github#1494): `vrg-ops-report` opens
+  the issue on a failure or cancel, comments on an open one, records the first
+  green run after one, and never closes an issue. Runs only on
+  refs/heads/develop: on any other ref it mints no token and reports nothing.
+  It mints an issues-only token of the org automation App for the repo and the
+  org's .github repository, then sets up vergil-tooling with that token, so the
+  setup's identity check runs as the App. A composite action cannot read
+  `vars`, so the calling `uses:` step sets VRG_TRUSTED_AUTHORS and
+  VRG_AUTOMATION_APP from the org Actions variables of the same names in its
+  own `env`, which reaches every step here. The job must check out the repo first (actions/checkout
+  with persist-credentials: false): setting up Vergil reads its vergil.toml.
+  tests/ops-report-ref-guard.test.sh and tests/ops-report-inputs.test.sh
+  guard this layout.
+
+inputs:
+  job:
+    description: >-
+      The job's stable name, the report key (epic spec §3), never the
+      workflow file: for example `docs-refresh` or `publish-index`.
+    required: true
+  results:
+    description: >-
+      Comma list of the GitHub job results that make up the named job, from
+      `needs.<job>.result` (success, failure, cancelled or skipped). Any
+      failure wins, then cancelled, then success; all skipped reports nothing.
+    required: true
+  step:
+    description: The failing step's name, when known. Leave empty otherwise.
+    required: false
+    default: ""
+  app-client-id:
+    description: The org automation App's client ID (the caller's APP_CLIENT_ID secret).
+    required: true
+  app-private-key:
+    description: The org automation App's private key (the caller's APP_PRIVATE_KEY secret).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Before any token is minted: a feature-branch dispatch would otherwise
+    # report as the App from that branch's code. Every later step runs only
+    # when this one says `report=true`. On develop the delivered trust inputs
+    # must be present, so a caller that forgot them fails here, by name,
+    # rather than inside the reporter. The step holds no token, and reads
+    # VRG_AUTOMATION_APP only as a value: it runs no vrg-* command.
+    - name: Require develop
+      id: ref-guard
+      shell: bash
+      env:
+        REF: ${{ github.ref }}
+        REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        if [ "${REF}" != "refs/heads/develop" ]; then
+          echo "::notice::ops-report reports only from refs/heads/develop, not ${REF}: nothing reported"
+          echo "report=false" >>"${GITHUB_OUTPUT}"
+          exit 0
+        fi
+        if [ -z "${VRG_AUTOMATION_APP:-}" ]; then
+          echo "::error::VRG_AUTOMATION_APP is empty or unset: set it from the org Actions variable in the env of the step that uses ops-report"
+          exit 1
+        fi
+        if [ -z "${VRG_TRUSTED_AUTHORS:-}" ]; then
+          echo "::error::VRG_TRUSTED_AUTHORS is empty or unset: set it from the org Actions variable in the env of the step that uses ops-report"
+          exit 1
+        fi
+        name="${REPO#*/}"
+        if [ "${name}" = ".github" ]; then
+          repositories=".github"
+        else
+          repositories="${name},.github"
+        fi
+        {
+          echo "report=true"
+          echo "repositories=${repositories}"
+        } >>"${GITHUB_OUTPUT}"
+
+    # Issues write on the repo (its ops issue and the ops-report label) and on
+    # the org's .github (the operations epic and the sub-issue link), and
+    # nothing else: Metadata read is always included.
+    - name: Generate app token
+      id: app-token
+      if: steps.ref-guard.outputs.report == 'true'
+      uses: actions/create-github-app-token@v3
+      with:
+        app-id: ${{ inputs.app-client-id }}
+        private-key: ${{ inputs.app-private-key }}
+        owner: ${{ github.repository_owner }}
+        repositories: ${{ steps.ref-guard.outputs.repositories }}
+        permission-issues: write
+
+    # VRG_AUTOMATION_APP, from the calling step, reaches this setup too, and
+    # its `vrg-whoami --mode` check verifies GH_TOKEN as that App's token: the
+    # token is minted first so the check passes (issue #1192 is the failure
+    # when it is missing).
+    - name: Install vergil-tooling
+      if: steps.ref-guard.outputs.report == 'true'
+      uses: ./actions/shared/setup/vergil
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+    - name: Report the job
+      if: steps.ref-guard.outputs.report == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        REPO: ${{ github.repository }}
+        JOB: ${{ inputs.job }}
+        RESULTS: ${{ inputs.results }}
+        STEP: ${{ inputs.step }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+      run: |
+        set -euo pipefail
+        args=(--repo "${REPO}" --job "${JOB}" --results "${RESULTS}" --run-url "${RUN_URL}")
+        if [ -n "${STEP}" ]; then
+          args+=(--step "${STEP}")
+        fi
+        vrg-ops-report "${args[@]}"

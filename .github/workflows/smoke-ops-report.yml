@@ -1,0 +1,47 @@
+name: Smoke - ops/report
+
+# Runs the framework-free harnesses of the ops-report action (issue #1361,
+# epic vergil-project/.github#1494):
+#   * ops-report-ref-guard.test.sh: the develop-only guard is the first step,
+#     every later step (the token step included) is conditioned on it, and a
+#     feature-branch run mints no token and reports nothing;
+#   * ops-report-inputs.test.sh: the inputs, an issues-only App token, no
+#     vars. or secrets. expression in the metadata, the setup step running
+#     with the App token, and the vrg-ops-report arguments;
+#   * optional-secrets.test.sh: cd-docs.yml, cd-docs-refresh.yml and
+#     publish-index.yml declare APP_CLIENT_ID and APP_PRIVATE_KEY as
+#     optional, cd-docs.yml declares the `report` input, and the refresh's
+#     nested cd-docs.yml call passes `report: false` and both secrets.
+# Each needs yq (preinstalled on GitHub's ubuntu runners) and no network.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - actions/ops/report/**
+      - .github/workflows/cd-docs.yml
+      - .github/workflows/cd-docs-refresh.yml
+      - .github/workflows/publish-index.yml
+      - .github/workflows/smoke-ops-report.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: ops/report harness fixtures
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Run ops-report ref-guard harness
+        shell: bash
+        run: bash actions/ops/report/tests/ops-report-ref-guard.test.sh
+      - name: Run ops-report inputs harness
+        shell: bash
+        run: bash actions/ops/report/tests/ops-report-inputs.test.sh
+      - name: Run optional App secrets harness
+        shell: bash
+        run: bash actions/ops/report/tests/optional-secrets.test.sh

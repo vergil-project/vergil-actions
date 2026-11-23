@@ -66,6 +66,10 @@ definition and optional supporting scripts.
 - **[ops/github-config/branch-sweep](ops-github-config-branch-sweep.md)** —
   Deletes branches whose PR is merged or closed and lists them in the job
   summary, flagging merged-PR leftovers (auto-wired into `ops-github-config`).
+- **[ops/report](ops-report.md)** — Reports a named unattended job's result
+  to the org's operations queue as the automation App, from `develop` only:
+  opens or comments on the job's ops issue on a failure, records the first
+  green run after one, and never closes an issue.
 
 ### Shared
 
