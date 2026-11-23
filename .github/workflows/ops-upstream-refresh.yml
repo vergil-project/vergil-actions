@@ -101,7 +101,7 @@ jobs:
           persist-credentials: false
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.92
 
       # The output directory is workspace-relative: in a container job the
       # runner.temp expression names the host path, which upload-artifact,
@@ -160,7 +160,7 @@ jobs:
           persist-credentials: false
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.92
 
       - name: Download the prepared refresh
         uses: actions/download-artifact@v7
@@ -212,7 +212,7 @@ jobs:
           persist-credentials: false
 
       - name: Report upstream-refresh
-        uses: ./actions/ops/report
+        uses: vergil-project/vergil-actions/actions/ops/report@v2.1.92
         env:
           VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
