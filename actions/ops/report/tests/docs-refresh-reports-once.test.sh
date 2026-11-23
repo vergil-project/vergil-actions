@@ -59,31 +59,8 @@ pass_case() {
   pass=$((pass + 1))
 }
 
-# conjuncts <expression> — print the top-level `&&` operands, one per line,
-# whitespace collapsed. Parentheses and single-quoted strings nest.
-conjuncts() {
-  local expr i c depth=0 quoted=0 cur=""
-  expr="$(tr -s '[:space:]' ' ' <<<"$1" | sed 's/^ //; s/ $//')"
-  for ((i = 0; i < ${#expr}; i++)); do
-    c="${expr:i:1}"
-    if [ "$quoted" -eq 1 ]; then
-      [ "$c" = "'" ] && quoted=0
-    elif [ "$c" = "'" ]; then
-      quoted=1
-    elif [ "$c" = "(" ]; then
-      depth=$((depth + 1))
-    elif [ "$c" = ")" ]; then
-      depth=$((depth - 1))
-    elif [ "$depth" -eq 0 ] && [ "${expr:i:2}" = "&&" ]; then
-      printf '%s\n' "$(sed 's/^ //; s/ $//' <<<"$cur")"
-      cur=""
-      i=$((i + 1))
-      continue
-    fi
-    cur+="$c"
-  done
-  printf '%s\n' "$(sed 's/^ //; s/ $//' <<<"$cur")"
-}
+# shellcheck source=actions/ops/report/tests/conjuncts.sh
+. "${here}/conjuncts.sh"
 
 # docs_violations <cd-docs.yml> — the reporting job is gated on the input.
 docs_violations() {

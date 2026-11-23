@@ -128,12 +128,14 @@ job_violations() {
   for n in app-client-id:APP_CLIENT_ID app-private-key:APP_PRIVATE_KEY; do
     value="$(yq -r "${step} | .with.\"${n%%:*}\" // \"<unset>\"" "$wf")"
     if [ "$value" != "\${{ secrets.${n#*:} }}" ]; then
+      # shellcheck disable=SC2016 # a literal GitHub Actions expression
       printf '%s: %s is not ${{ secrets.%s }}: %s\n' "$job" "${n%%:*}" "${n#*:}" "$value"
     fi
   done
   for n in VRG_AUTOMATION_APP VRG_TRUSTED_AUTHORS; do
     value="$(yq -r "${step} | (.env // {}).${n} // \"<unset>\"" "$wf")"
     if [ "$value" != "\${{ vars.${n} }}" ]; then
+      # shellcheck disable=SC2016 # a literal GitHub Actions expression
       printf '%s: the ops-report step %s is not ${{ vars.%s }}: %s\n' "$job" "$n" "$n" "$value"
     fi
   done

@@ -59,31 +59,8 @@ main_skip="github.ref != 'refs/heads/main'"
 # shellcheck disable=SC2016 # literal GitHub Actions expressions
 release_skip="!(startsWith(github.event.head_commit.message, 'Merge pull request #') && contains(github.event.head_commit.message, format(' from {0}/release/', github.repository_owner)))"
 
-# conjuncts <expression> — print the top-level `&&` operands, one per line,
-# whitespace collapsed. Parentheses and single-quoted strings nest.
-conjuncts() {
-  local expr i c depth=0 quoted=0 cur=""
-  expr="$(tr -s '[:space:]' ' ' <<<"$1" | sed 's/^ //; s/ $//')"
-  for ((i = 0; i < ${#expr}; i++)); do
-    c="${expr:i:1}"
-    if [ "$quoted" -eq 1 ]; then
-      [ "$c" = "'" ] && quoted=0
-    elif [ "$c" = "'" ]; then
-      quoted=1
-    elif [ "$c" = "(" ]; then
-      depth=$((depth + 1))
-    elif [ "$c" = ")" ]; then
-      depth=$((depth - 1))
-    elif [ "$depth" -eq 0 ] && [ "${expr:i:2}" = "&&" ]; then
-      printf '%s\n' "$(sed 's/^ //; s/ $//' <<<"$cur")"
-      cur=""
-      i=$((i + 1))
-      continue
-    fi
-    cur+="$c"
-  done
-  printf '%s\n' "$(sed 's/^ //; s/ $//' <<<"$cur")"
-}
+# shellcheck source=actions/ops/report/tests/conjuncts.sh
+. "${here}/conjuncts.sh"
 
 # violations <workflow file> — print one line per missing condition.
 violations() {
