@@ -364,8 +364,8 @@ jobs:
       language: cpp
       container-suffix: cpp-clang
     # Explicit-secret chain (never `secrets: inherit`): forward the ConanCenter
-    # provider token so `conan audit` can authenticate. Optional — omit it and
-    # the cpp audit command skips the conan gate with a notice.
+    # provider token so `conan audit` can authenticate. A cpp caller must pass
+    # it: omit it and the cpp audit command fails the conan gate.
     secrets:
       CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER: ${{ secrets.CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER }}
 
