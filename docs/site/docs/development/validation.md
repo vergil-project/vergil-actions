@@ -72,9 +72,44 @@ on its first match, the producer dies of SIGPIPE writing its next line,
 and the pipeline fails although it matched. Test the output with no pipe
 instead: `grep -q <pattern> <<<"$(<producer>)"`.
 
+### Secret environments
+
+The fourth check, `scripts/bin/check-secret-environments`, fails naming
+each workflow job that reads a secret able to write or act without
+declaring the environment that holds it. The automation App's keys and the
+registry publishing tokens live in each repository's `automation`
+environment, whose deployment-branch policy admits only `develop` and
+`main`, so a run from any other branch sees them unset. The package-signing
+keys live in their own single-branch environments.
+
+It reads every tracked workflow and, for each job that runs steps, collects
+each `secrets.<NAME>` read inside a `${{ }}` expression, in any case and
+skipping quoted strings. A job that calls a reusable workflow with `uses:`
+runs no steps, so the called workflow's jobs are the ones checked. Each
+secret is checked against the tables at the top of the script:
+
+| Table | Secrets | Required environment |
+| --- | --- | --- |
+| `AUTOMATION_SECRETS` | `APP_CLIENT_ID`, `APP_PRIVATE_KEY`, `CARGO_REGISTRY_TOKEN` | `automation` |
+| `SIGNING_SECRETS` | `PACKAGE_SIGNING_KEY`, `PACKAGE_SIGNING_PASSPHRASE` | `package-signing` or `index-signing` |
+| `UNSCOPED_SECRETS` | `GITHUB_TOKEN`, `CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER` | none, each with its reason |
+
+Nothing passes unclassified. The check also fails on:
+
+- a secret that no table lists;
+- a dynamic read of the secrets context (`secrets[...]`, `toJSON(secrets)`);
+- a secret read in the workflow-level `env`, which every job sees;
+- an environment named by an expression;
+- a workflow that does not parse.
+
+To fix a failure, declare the job's environment (`environment: automation`,
+or the signing environment). A new secret goes into the table for the
+environment that holds it. An unscoped entry needs a reason that says why
+any job may read it.
+
 ### Nightly harness wiring
 
-`scripts/bin/check-nightly-harnesses` fails unless
+The fifth check, `scripts/bin/check-nightly-harnesses`, fails unless
 `.github/workflows/nightly-harnesses.yml` calls every smoke workflow. Each
 tracked `smoke-<name>.yml` must declare a `workflow_call` trigger, and the
 nightly workflow must have a job `<name>` whose `uses:` is
