@@ -3,7 +3,8 @@ name: Smoke - setup/vergil outputs
 # Smoke test for the shared setup/vergil action's resolver outputs
 # (`versions`, `primary-version`, `primary-container-tag`, `container-tags`,
 # `container-suffixes`, `build-enabled`), the ci/matrix action built from
-# them, and the ci/toolchain/assert and ci/toolchain/pin-python actions (epics
+# them, and the ci/toolchain/assert, ci/toolchain/pin-python and
+# ci/toolchain/install-python actions (epics
 # vergil-project/.github#338 and #407).
 #
 #   * fixtures — installs vergil-tooling with the setup action itself (for the
@@ -97,6 +98,11 @@ name: Smoke - setup/vergil outputs
 #         interpreter source with UV_PYTHON_PREFERENCE=only-system (issue
 #         #1002; the exemptions are documented in
 #         docs/site/docs/actions/ci-toolchain-pin-python.md);
+#       - ci/toolchain/install-python install.sh: uv sync against a fake uv,
+#         skipped with a notice only when pyproject.toml and uv.lock are both
+#         missing, a partial bootstrap or a failing uv sync failing the step,
+#         and every Python leg of ci-quality, ci-audit and ci-test installing
+#         through it after its pin (issue #1206);
 #       - the package setup action's detect.sh (self-repo vs.
 #         [dependencies].vergil install spec, epic vergil-project/.github#356;
 #         a line pin resolved to its newest vX.Y.Z tag and one commit SHA,
@@ -199,6 +205,9 @@ jobs:
       - name: Run ci/toolchain/pin-python pin.sh harness
         shell: bash
         run: bash actions/ci/toolchain/pin-python/tests/pin.test.sh
+      - name: Run ci/toolchain/install-python install.sh harness
+        shell: bash
+        run: bash actions/ci/toolchain/install-python/tests/install.test.sh
       - name: Run package setup detect.sh harness
         shell: bash
         run: bash actions/package/setup/tests/detect.test.sh

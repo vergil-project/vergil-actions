@@ -24,8 +24,11 @@ runs the shared setup action, which calls the resolver, and passes its
 versions, image tags and image suffixes to
 [`ci/matrix`](../actions/ci-matrix.md). Each leg pins uv to its version and to
 the image's interpreter (Python, with
-[`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)) and then
-asserts the running toolchain with
+[`ci/toolchain/pin-python`](../actions/ci-toolchain-pin-python.md)), installs
+Python's dev dependencies with
+[`ci/toolchain/install-python`](../actions/ci-toolchain-install-python.md)
+(skipped with a notice on a repository with neither `pyproject.toml` nor
+`uv.lock`) and then asserts the running toolchain with
 [`ci/toolchain/assert`](../actions/ci-toolchain-assert.md). Callers are
 thin: they pass only `language:` and `container-suffix:`.
 

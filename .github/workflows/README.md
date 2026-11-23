@@ -116,7 +116,8 @@ builds one version (an app pin of more than one version is an error), a
 language whose window has more than one family (today only C++) must pin
 `[ci].versions`, and a pin must lie inside the window.
 Its versions, image tags and image suffixes feed `actions/ci/matrix`. Each
-leg then pins its toolchain (Python legs with `actions/ci/toolchain/pin-python`)
+leg then pins its toolchain (Python legs with `actions/ci/toolchain/pin-python`,
+then install their dev dependencies with `actions/ci/toolchain/install-python`)
 and asserts it with `actions/ci/toolchain/assert`. A consumer's `ci.yml` is
 therefore a **thin caller** that passes only `language:` and
 `container-suffix:`.
