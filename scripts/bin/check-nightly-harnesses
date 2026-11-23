@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# check-nightly-harnesses — fail unless the nightly harness run calls every
+# smoke workflow (issue #1399).
+#
+# .github/workflows/nightly-harnesses.yml runs each smoke-*.yml once a day,
+# so that a vergil-tooling release that breaks a harness is reported within
+# a day instead of waiting for a pull request that touches the harness's
+# paths. A smoke workflow it does not call is silently left out of that run,
+# so this check is the guard.
+#
+# Usage: check-nightly-harnesses <repo-root>
+#
+# Reads the tracked .github/workflows/smoke-*.yml and nightly-harnesses.yml.
+# The rules:
+#   * nightly-harnesses.yml is tracked, parses, and its `on:` has both
+#     `schedule` and `workflow_dispatch`;
+#   * every smoke-<name>.yml parses and its `on:` has `workflow_call`;
+#   * nightly-harnesses.yml has a job `<name>` whose `uses:` is exactly
+#     ./.github/workflows/smoke-<name>.yml;
+#   * every job of nightly-harnesses.yml that calls a workflow calls a
+#     tracked smoke-*.yml, by the job key its file name gives.
+# The report job's layout is guarded by
+# actions/ops/report/tests/reporting-jobs.test.sh, not here.
+set -euo pipefail
+
+if [[ "$#" -ne 1 ]]; then
+	echo "usage: check-nightly-harnesses <repo-root>" >&2
+	exit 2
+fi
+root="$1"
+nightly_rel=".github/workflows/nightly-harnesses.yml"
+
+if ! command -v yq >/dev/null 2>&1; then
+	echo "ERROR: check-nightly-harnesses needs yq (mikefarah v4) on PATH" >&2
+	exit 1
+fi
+if ! smokes="$(git -C "$root" -c core.quotePath=false ls-files -- \
+	'.github/workflows/smoke-*.yml')"; then
+	echo "ERROR: could not list the smoke workflows tracked in git" >&2
+	exit 1
+fi
+if [[ -z "$smokes" ]]; then
+	echo "ERROR: no .github/workflows/smoke-*.yml workflows are tracked in git" >&2
+	exit 1
+fi
+if ! tracked="$(git -C "$root" -c core.quotePath=false ls-files -- "$nightly_rel")"; then
+	echo "ERROR: could not list $nightly_rel in git" >&2
+	exit 1
+fi
+if [[ -z "$tracked" ]]; then
+	echo "ERROR: $nightly_rel: not tracked in git; it must call every smoke workflow" >&2
+	exit 1
+fi
+nightly="$root/$nightly_rel"
+if [[ ! -f "$nightly" ]] || ! yq -e 'tag == "!!map"' "$nightly" >/dev/null 2>&1; then
+	echo "ERROR: $nightly_rel: missing from the working tree or does not parse as a YAML mapping" >&2
+	exit 1
+fi
+
+rc=0
+for trigger in schedule workflow_dispatch; do
+	if [[ "$(T="$trigger" yq -r '(.on // {}) | select(tag == "!!map") | has(strenv(T))' "$nightly")" != "true" ]]; then
+		echo "ERROR: $nightly_rel: its on: has no $trigger trigger" >&2
+		rc=1
+	fi
+done
+
+declare -A wanted=()
+count=0
+while IFS= read -r wf; do
+	[[ -n "$wf" ]] || continue
+	file="${wf##*/}"
+	name="${file#smoke-}"
+	name="${name%.yml}"
+	wanted[$name]="$file"
+	count=$((count + 1))
+	path="$root/$wf"
+	if [[ ! -f "$path" ]] || ! yq -e 'tag == "!!map"' "$path" >/dev/null 2>&1; then
+		echo "ERROR: $wf: missing from the working tree or does not parse as a YAML mapping" >&2
+		rc=1
+		continue
+	fi
+	if [[ "$(yq -r '(.on // {}) | select(tag == "!!map") | has("workflow_call")' "$path")" != "true" ]]; then
+		echo "ERROR: $wf: its on: has no workflow_call trigger, so $nightly_rel cannot call it" >&2
+		rc=1
+	fi
+	uses="$(J="$name" yq -r '.jobs[strenv(J)].uses // "<none>"' "$nightly")"
+	if [[ "$uses" != "./.github/workflows/$file" ]]; then
+		echo "ERROR: $nightly_rel: no job $name calling ./.github/workflows/$file (found uses: $uses)" >&2
+		rc=1
+	fi
+done <<<"$smokes"
+
+if ! callers="$(yq -r '(.jobs // {}) | to_entries | .[] | select(.value | has("uses")) | .key' "$nightly")"; then
+	echo "ERROR: $nightly_rel: could not list its jobs" >&2
+	exit 1
+fi
+while IFS= read -r job; do
+	[[ -n "$job" ]] || continue
+	if [[ -z "${wanted[$job]:-}" ]]; then
+		uses="$(J="$job" yq -r '.jobs[strenv(J)].uses' "$nightly")"
+		echo "ERROR: $nightly_rel: job $job calls $uses, which is not a tracked smoke-$job.yml" >&2
+		rc=1
+	fi
+done <<<"$callers"
+
+if [[ "$rc" -eq 0 ]]; then
+	echo "Nightly harnesses: $count smoke workflows called"
+fi
+exit "$rc"

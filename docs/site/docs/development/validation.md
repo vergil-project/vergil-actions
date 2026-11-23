@@ -38,7 +38,7 @@ shellcheck, yamllint, and actionlint.
 
 After the common checks, `vrg-validate` runs the repository's own
 validator, `scripts/bin/validate-custom` (in CI, the `quality / custom`
-job). It runs the three checks below, then the action test suites, then the
+job). It runs the checks below, then the action test suites, then the
 checks' own tests in `scripts/tests/`.
 
 ### Test script modes
@@ -72,6 +72,16 @@ on its first match, the producer dies of SIGPIPE writing its next line,
 and the pipeline fails although it matched. Test the output with no pipe
 instead: `grep -q <pattern> <<<"$(<producer>)"`.
 
+### Nightly harness wiring
+
+`scripts/bin/check-nightly-harnesses` fails unless
+`.github/workflows/nightly-harnesses.yml` calls every smoke workflow. Each
+tracked `smoke-<name>.yml` must declare a `workflow_call` trigger, and the
+nightly workflow must have a job `<name>` whose `uses:` is
+`./.github/workflows/smoke-<name>.yml`. A job there that calls anything else
+fails too, and so does a nightly workflow without its `schedule` and
+`workflow_dispatch` triggers. See [Nightly harness run](#nightly-harness-run).
+
 ### Action test suites
 
 `validate-custom` then runs every `*.test.sh` tracked in git directly in an
@@ -83,6 +93,35 @@ the validation image lacks. Each entry must name a tracked suite, so a
 renamed or removed suite fails the run until its entry is updated. A new
 suite runs in validation by default. The workflow that runs it in CI is
 still needed for the wiring check above.
+
+## Nightly harness run
+
+On a pull request, each `smoke-*.yml` workflow runs only when its own paths
+change. Its harnesses, though, run against the released vergil-tooling that
+`vergil.toml`'s `[dependencies] vergil` pin installs: the newest `v2.1.Z`
+tag. So a vergil-tooling release can break a harness with no change here,
+and nothing would show it until an unrelated pull request ran that
+workflow.
+
+`.github/workflows/nightly-harnesses.yml` closes that gap. Once a day, and
+on a manual `workflow_dispatch`, it calls every smoke workflow on develop.
+Its `report` job then records the run in the org's operations queue under
+the stable name `harness-nightly`, through the `ops/report` action:
+
+- a failed or cancelled run opens the
+  `ops: vergil-actions / harness-nightly failing` issue, or comments on it
+  when it is already open;
+- the first green run after a failure adds a recovery comment;
+- nothing closes the issue: whoever works the queue closes it.
+
+The issue links the run. The run's log shows the vergil-tooling version
+installed and the harness case that failed.
+
+A new smoke workflow needs a `workflow_call` trigger and its own job in
+`nightly-harnesses.yml`, with that job added to the `report` job's `needs`
+and `results`. The [nightly harness wiring](#nightly-harness-wiring) check
+and `actions/ops/report/tests/reporting-jobs.test.sh` each fail until it
+has them.
 
 ## Tooling
 

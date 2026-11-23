@@ -10,6 +10,7 @@ name: Smoke - cd-docs
 # uses the same mike, mkdocs and python3.
 
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     paths:
