@@ -8121,6 +8121,12 @@ fails until it declares them.</p>
 <td>yes</td>
 <td>Org-level variable holding the automation App's slug (<code>&lt;org&gt;-automation</code>), visible to the calling repository (see <a href="../../configuration/#app_client_id-and-app_private_key">step 10 of the App setup</a>). Both jobs fail when it is empty</td>
 </tr>
+<tr>
+<td><code>VRG_TRUSTED_AUTHORS</code></td>
+<td>Actions variable</td>
+<td>yes</td>
+<td>Org-level variable holding the trusted-authors configuration, published with <code>vrg-trusted-authors publish</code> (see <a href="../../configuration/#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a>). Passed to the <code>vrg-upstream-refresh prepare</code> and <code>vrg-upstream-refresh publish</code> steps and to the <code>report</code> job's <code>ops/report</code> step, which stop when it is missing or invalid</td>
+</tr>
 </tbody>
 </table>
 <p>The secrets reach only the <code>publish</code> job's last step. <code>vrg-upstream-refresh
@@ -8200,7 +8206,7 @@ with another run's.</p>
    the tooling.</li>
 <li>Installs vergil-tooling at the caller's <code>[dependencies].vergil</code> ref.</li>
 <li>Runs <code>vrg-upstream-refresh prepare</code>, with the read-only <code>GITHUB_TOKEN</code>
-   as <code>GH_TOKEN</code>. It clones <code>develop</code>, runs the hook there, and writes the
+   as <code>GH_TOKEN</code> and <code>VRG_TRUSTED_AUTHORS</code> in its <code>env</code>. It clones <code>develop</code>, runs the hook there, and writes the
    hook's tracked changes as a binary patch, the <code>develop</code> commit it ran
    on, the changed paths and the hook's notes.</li>
 <li>Uploads that output as the <code>upstream-refresh-prepare</code> artifact.</li>
@@ -8214,8 +8220,8 @@ with another run's.</p>
    this job's own runner.</li>
 <li>Downloads the <code>upstream-refresh-prepare</code> artifact.</li>
 <li>Runs <code>vrg-upstream-refresh publish</code> on it, with <code>VRG_AUTOMATION_APP</code>,
-   <code>VRG_AUTOMATION_CLIENT_ID</code> and <code>VRG_AUTOMATION_PRIVATE_KEY</code> set on this
-   step only. The tool removes the credentials from its environment at
+   <code>VRG_AUTOMATION_CLIENT_ID</code>, <code>VRG_AUTOMATION_PRIVATE_KEY</code> and
+   <code>VRG_TRUSTED_AUTHORS</code> set on this step only. The tool removes the credentials from its environment at
    startup, so no <code>git</code> or <code>gh</code> it starts sees them. It checks every minted
    token against <code>VRG_AUTOMATION_APP</code>, applies and fences the patch, and
    opens the PR and waits until it merges.</li>

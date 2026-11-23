@@ -7381,6 +7381,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jobs-and-check-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7959,6 +7970,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#jobs-and-check-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8094,6 +8116,23 @@ Pass them:</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
 </code></pre></div>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VRG_TRUSTED_AUTHORS</code></td>
+<td>yes</td>
+<td>Org-level Actions variable holding the trusted-authors configuration, published with <code>vrg-trusted-authors publish</code> (see <a href="../../configuration/#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a>). Passed to the <code>report</code> job's <code>ops/report</code> step and, in the <code>cd-docs.yml</code> run that <code>refresh</code> calls, to the pre-deploy command and the docs staging step, which stop when it is missing or invalid</td>
+</tr>
+</tbody>
+</table>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

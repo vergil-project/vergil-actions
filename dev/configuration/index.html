@@ -8670,6 +8670,11 @@ permissions:</p>
 <td><code>cd.yml</code> (the release tag points at the freeze-internal-refs commit, which changes workflow files: see <a href="../actions/local-freeze-internal-refs/#permissions">local/freeze-internal-refs</a>); <code>github-config</code>, the automatic fleet sync, whose PRs can change files under <code>.github/workflows/</code>; <code>upstream-refresh</code>, only for the wait's branch update, which merges <code>develop</code> into the PR branch and is refused without it whenever <code>develop</code> has changed a workflow file (the path fence keeps every refresh patch out of <code>.github/**</code>)</td>
 </tr>
 <tr>
+<td>Actions</td>
+<td>Read-only</td>
+<td><code>github-config</code>, which runs <code>vrg-github-repo-config update</code>: it reads the <code>automation</code> environment and its deployment branch policies, which <a href="https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps#repository-permissions-for-actions">GitHub serves only with Actions read</a> (creating or changing them needs Administration write)</td>
+</tr>
+<tr>
 <td>Dependabot alerts</td>
 <td>Read-only</td>
 <td><code>dependabot-audit</code> (<code>vrg-dependabot-audit</code> lists open alerts)</td>
@@ -8732,8 +8737,11 @@ with <code>--repo &lt;org&gt;/&lt;repo&gt;</code> in place of <code>--org &lt;or
     slug (<code>&lt;org&gt;-automation</code>), visible to all repositories. It names the
     automation App. The <code>github-config</code> job fails when it is empty, and
     otherwise passes it to vergil-tooling, which checks that the job's token
-    was minted by that App before it does any automation work.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>VRG_AUTOMATION_APP<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;<span class="w"> </span>--visibility<span class="w"> </span>all<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;org&gt;-automation"</span>
+    was minted by that App before it does any automation work. It is
+    written with <code>VRG_TRUSTED_AUTHORS</code>, from the <code>automation_app</code> of the
+    org's <code>[orgs.&lt;org&gt;]</code> stanza in the host configuration, never set by hand
+    (see <a href="#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a> for the order):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>vrg-trusted-authors<span class="w"> </span>publish<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;
 </code></pre></div>
 </li>
 </ol>
@@ -8774,7 +8782,7 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 <tr>
 <td><code>ops-github-config.yml</code></td>
 <td><code>github-config</code> (from <code>develop</code> only)</td>
-<td><code>administration: write</code>, <code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>metadata: read</code> (<code>update</code>; <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a> also returns the merge settings only with Contents read and write)</td>
+<td><code>administration: write</code>, <code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>actions: read</code>, <code>metadata: read</code> (<code>update</code>; <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a> also returns the merge settings only with Contents read and write, and reading an environment and its deployment branch policies needs Actions read)</td>
 </tr>
 <tr>
 <td><code>ops-github-config.yml</code></td>
@@ -8858,6 +8866,33 @@ judges GitHub content against: the <code>human</code> and <code>agents</code> lo
 automation App of every Vergil org, as compact JSON. It is derived from the
 human's host configuration and published by the human at org setup and
 whenever that configuration changes, never edited by hand.</p>
+<p><strong>Publishing it.</strong> On the host, the human runs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>vrg-trusted-authors<span class="w"> </span>publish<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;
+</code></pre></div>
+<p>It writes two org Actions variables from the host configuration, both
+visible to all repositories: <code>VRG_TRUSTED_AUTHORS</code> and <code>VRG_AUTOMATION_APP</code>,
+the org's own automation App slug (see
+<a href="#app_client_id-and-app_private_key">step 10 of the App setup</a>). Without
+<code>--org</code> it publishes for every org the configuration lists. It refuses an
+org where a repository-level variable of either name would shadow the org
+copy. <code>vrg-trusted-authors render --org &lt;org&gt;</code> prints the values the host
+configuration implies, with no GitHub call, to preview them first. The
+daily <a href="../workflows/ops-github-config/#trusted-authors-check"><code>trusted-authors-check</code></a>
+reads the published values back. For the host configuration itself, see
+vergil-tooling's
+<a href="https://vergil-project.github.io/vergil-tooling/latest/guides/account-setup/#trusted-authors">account setup guide</a>.</p>
+<p><strong>The order.</strong> Every job that runs a vergil-tooling release carrying the
+trust layer reads the variable, the release's own
+<a href="../actions/cd-release-ci-evidence-gate/">CI evidence gate</a> included.
+<code>publish</code> ships in that same release, so:</p>
+<ol>
+<li>Add the org's <code>[orgs.&lt;org&gt;]</code> stanza, beside <code>[trusted_authors]</code>, to the
+   host configuration.</li>
+<li>Install that vergil-tooling release on the host.</li>
+<li>Run <code>vrg-trusted-authors publish --org &lt;org&gt;</code> right away.</li>
+</ol>
+<p>A job that runs the release before the variable is published stops loudly
+on the missing variable; re-run it once the variable is published.</p>
 <p>Under GitHub Actions, with no configuration file on the runner,
 vergil-tooling reads it from the environment and stops when it is missing
 or invalid. The reusable workflows pass it, as
@@ -8941,10 +8976,10 @@ semantics are documented on the vergil-tooling side:
 <p>The <code>add-to-project</code> workflow automatically adds new issues to a GitHub Project
 when they are opened. Each repository has an <code>add-to-project.yml</code> workflow that
 references a project URL and uses the <code>PROJECT_TOKEN</code> secret.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/add-to-project@v1.0.2</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">project-url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/users/&lt;owner&gt;/projects/&lt;number&gt;</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">github-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.PROJECT_TOKEN }}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/add-to-project@v1.0.2</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">project-url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/users/&lt;owner&gt;/projects/&lt;number&gt;</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">github-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.PROJECT_TOKEN }}</span>
 </code></pre></div>
 <p>The <code>project-url</code> value varies by repository — repositories may belong to
 different projects. This is configured directly in the workflow file, not as a
@@ -8972,8 +9007,8 @@ and API commands, see <a href="../ci-gates/repository-rulesets/">Repository Rule
 is automatically created per workflow run and scoped to the repository.</p>
 <h3 id="default-github_token-permissions">Default GITHUB_TOKEN permissions<a class="headerlink" href="#default-github_token-permissions" title="Permanent link">&para;</a></h3>
 <p>Each workflow declares its minimum required permissions at the top level:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">permissions</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 </code></pre></div>
 <table>
 <thead>
@@ -9051,8 +9086,8 @@ keeps them converged from then on.</p>
   org's automation App exist and are visible to all repositories. There is no
   per-repository step for them.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>gh<span class="w"> </span>secret<span class="w"> </span>list<span class="w"> </span>--org<span class="w"> </span>vergil-project
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>gh<span class="w"> </span>secret<span class="w"> </span>list<span class="w"> </span>--org<span class="w"> </span>vergil-project
 </code></pre></div>
 <p><code>gh secret list --org</code> must list both <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> as
 <code>Visible to all repositories</code>.</p>

@@ -8091,7 +8091,7 @@
 <tr>
 <td><code>CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER</code></td>
 <td>no</td>
-<td>ConanCenter provider token for <code>conan audit</code>. Only meaningful for cpp repos; other ecosystems ignore it. Pass it explicitly via the caller's <code>secrets:</code> block — never <code>secrets: inherit</code>. When unset, the cpp audit command skips the conan gate with a notice instead of failing auth.</td>
+<td>ConanCenter provider token for <code>conan audit</code>. Only meaningful for cpp repos; other ecosystems ignore it. Pass it explicitly via the caller's <code>secrets:</code> block — never <code>secrets: inherit</code>. It is not required because non-cpp callers never use it, but a cpp caller must pass it: when it is unset, the cpp audit command fails the conan gate, and so the audit.</td>
 </tr>
 </tbody>
 </table>

@@ -7329,6 +7329,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -7980,6 +7991,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -8187,6 +8209,26 @@ Pass them by name, or with <code>secrets: inherit</code>:</p>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
 </code></pre></div>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VRG_TRUSTED_AUTHORS</code></td>
+<td>yes</td>
+<td>Org-level Actions variable holding the trusted-authors configuration, published with <code>vrg-trusted-authors publish</code> (see <a href="../../configuration/#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a>). Passed to the <code>package-matrix</code> job's <code>Refuse re-publishing a released package version</code> step and to the <code>release</code> job's <a href="../../actions/cd-release-ci-evidence-gate/">CI evidence gate</a>, which stop when it is missing or invalid</td>
+</tr>
+</tbody>
+</table>
+<p>A release run before the variable is published fails at one of those
+steps, before anything is published or tagged; re-run it once the variable
+is published.</p>
 
 
 

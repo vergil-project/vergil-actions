@@ -8288,6 +8288,11 @@ read-only permissions only.</p>
 <td>yes</td>
 <td>Org-level Actions variable holding the automation App's slug (<code>&lt;org&gt;-automation</code>), visible to the calling repository (see <a href="../../configuration/#app_client_id-and-app_private_key">step 10 of the App setup</a>). The <code>github-config</code> and <code>trusted-authors-check</code> jobs fail when it is empty</td>
 </tr>
+<tr>
+<td><code>VRG_TRUSTED_AUTHORS</code></td>
+<td>yes</td>
+<td>Org-level Actions variable holding the trusted-authors configuration, published with <code>vrg-trusted-authors publish</code> (see <a href="../../configuration/#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a>). Passed to the <code>branch-sweep</code> job's <a href="../../actions/ops-github-config-branch-sweep/"><code>ops/github-config/branch-sweep</code></a> step, the <code>github-config</code> job's update step, the <code>dependabot-audit</code> job's audit step and the <code>report-branch-sweep</code> job's <code>ops/report</code> step, which stop when it is missing or invalid. The <code>trusted-authors-check</code> step needs none (see <a href="#trusted-authors-check">trusted-authors-check</a>)</td>
+</tr>
 </tbody>
 </table>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
@@ -8365,8 +8370,8 @@ is set, and its checkout pins <code>ref: develop</code> (see
 </tr>
 <tr>
 <td><code>github-config</code></td>
-<td><code>administration: write</code>, <code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>metadata: read</code></td>
-<td><code>update</code> reads and converges repository settings, branch protection, rulesets (GitHub returns a ruleset's <code>bypass_actors</code> only to a caller that can edit it), Actions permissions and whether vulnerability alerts are enabled (Administration). It pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write (see <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a>) (Contents). It opens the sync PR, closes an earlier one and turns on auto-merge (Pull requests), and a sync PR can change files under <code>.github/workflows/</code> (Workflows). It makes no Issues call. Minted only after the job has checked that it runs from <code>develop</code> and that <code>VRG_AUTOMATION_APP</code> is set</td>
+<td><code>administration: write</code>, <code>contents: write</code>, <code>pull-requests: write</code>, <code>workflows: write</code>, <code>actions: read</code>, <code>metadata: read</code></td>
+<td><code>update</code> reads and converges repository settings, branch protection, rulesets (GitHub returns a ruleset's <code>bypass_actors</code> only to a caller that can edit it), Actions permissions and whether vulnerability alerts are enabled (Administration). It pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write (see <a href="https://docs.github.com/en/rest/repos/repos#get-a-repository">Get a repository</a>) (Contents). It opens the sync PR, closes an earlier one and turns on auto-merge (Pull requests), and a sync PR can change files under <code>.github/workflows/</code> (Workflows). It reads the <code>automation</code> environment and its deployment branch policies, which GitHub serves only to a token with Actions read (Actions). It makes no Issues call. Minted only after the job has checked that it runs from <code>develop</code> and that <code>VRG_AUTOMATION_APP</code> is set</td>
 </tr>
 <tr>
 <td><code>trusted-authors-check</code></td>
@@ -8482,7 +8487,8 @@ repository's jobs.</p>
 the App token in <code>GH_TOKEN</code>, as <code>github-config</code>'s update step does, so
 vergil-tooling verifies that the token was minted by the automation App.
 <code>check</code> refuses the agent identity modes. With <code>--org</code> it reads no
-trusted-authors configuration, so the step needs no <code>VRG_TRUSTED_AUTHORS</code>.
+trusted-authors configuration, so this step, unlike the workflow's other
+<code>vrg-*</code> steps (see <a href="#variables">Variables</a>), needs no <code>VRG_TRUSTED_AUTHORS</code>.
 The <code>smoke-setup-vergil</code> workflow runs
 <code>actions/ops/github-config/tests/trusted-authors-check.test.sh</code>, which holds
 the job to where it runs, its identity, its token's scope and permissions,
