@@ -47,6 +47,12 @@ repository's `vergil.toml`).
 `vrg-epic-audit --close` makes no security-advisory call; the human or the
 user agent syncs advisory states with `vrg-security-record sync`.
 
+## Variables
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `VRG_TRUSTED_AUTHORS` | yes | Org-level Actions variable holding the trusted-authors configuration, published with `vrg-trusted-authors publish` (see [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). Passed to the `vrg-epic-audit --close` step and to the `report` job's `ops/report` step, which stop when it is missing or invalid |
+
 ## Jobs and check names
 
 | Job | Check name | Description |

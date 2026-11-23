@@ -164,10 +164,13 @@ token is scoped, as [Token scoping](#token-scoping) describes.
     slug (`<org>-automation`), visible to all repositories. It names the
     automation App. The `github-config` job fails when it is empty, and
     otherwise passes it to vergil-tooling, which checks that the job's token
-    was minted by that App before it does any automation work.
+    was minted by that App before it does any automation work. It is
+    written with `VRG_TRUSTED_AUTHORS`, from the `automation_app` of the
+    org's `[orgs.<org>]` stanza in the host configuration, never set by hand
+    (see [VRG_TRUSTED_AUTHORS](#vrg_trusted_authors) for the order):
 
     ```bash
-    gh variable set VRG_AUTOMATION_APP --org <org> --visibility all --body "<org>-automation"
+    vrg-trusted-authors publish --org <org>
     ```
 
 **Changing a permission later:**
@@ -252,6 +255,38 @@ judges GitHub content against: the `human` and `agents` logins and the
 automation App of every Vergil org, as compact JSON. It is derived from the
 human's host configuration and published by the human at org setup and
 whenever that configuration changes, never edited by hand.
+
+**Publishing it.** On the host, the human runs:
+
+```bash
+vrg-trusted-authors publish --org <org>
+```
+
+It writes two org Actions variables from the host configuration, both
+visible to all repositories: `VRG_TRUSTED_AUTHORS` and `VRG_AUTOMATION_APP`,
+the org's own automation App slug (see
+[step 10 of the App setup](#app_client_id-and-app_private_key)). Without
+`--org` it publishes for every org the configuration lists. It refuses an
+org where a repository-level variable of either name would shadow the org
+copy. `vrg-trusted-authors render --org <org>` prints the values the host
+configuration implies, with no GitHub call, to preview them first. The
+daily [`trusted-authors-check`](workflows/ops-github-config.md#trusted-authors-check)
+reads the published values back. For the host configuration itself, see
+vergil-tooling's
+[account setup guide](https://vergil-project.github.io/vergil-tooling/latest/guides/account-setup/#trusted-authors).
+
+**The order.** Every job that runs a vergil-tooling release carrying the
+trust layer reads the variable, the release's own
+[CI evidence gate](actions/cd-release-ci-evidence-gate.md) included.
+`publish` ships in that same release, so:
+
+1. Add the org's `[orgs.<org>]` stanza, beside `[trusted_authors]`, to the
+   host configuration.
+2. Install that vergil-tooling release on the host.
+3. Run `vrg-trusted-authors publish --org <org>` right away.
+
+A job that runs the release before the variable is published stops loudly
+on the missing variable; re-run it once the variable is published.
 
 Under GitHub Actions, with no configuration file on the runner,
 vergil-tooling reads it from the environment and stops when it is missing

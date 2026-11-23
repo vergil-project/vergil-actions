@@ -12,6 +12,12 @@ instead of post-merge in the CD `docs` deploy.
 | `mkdocs-config` | string | no | `docs/site/mkdocs.yml` | Path to the mkdocs configuration file |
 | `container-prefix` | string | no | `prod` | Container image name prefix (`prod` or `dev`) |
 
+## Variables
+
+| Variable | Required | Description |
+| -------- | -------- | ----------- |
+| `VRG_TRUSTED_AUTHORS` | yes | Org-level Actions variable holding the trusted-authors configuration, published with `vrg-trusted-authors publish` (see [VRG_TRUSTED_AUTHORS](../configuration.md#vrg_trusted_authors)). Passed to the `build` job's [`shared/docs/stage`](../actions/shared-docs-stage.md) step, which stops when it is missing or invalid |
+
 ## Jobs and check names
 
 | Job | Check name | Description |
