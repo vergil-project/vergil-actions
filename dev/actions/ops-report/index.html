@@ -6372,6 +6372,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#the-shared-workflows-reporting-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The shared workflows' reporting jobs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7908,6 +7919,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#the-shared-workflows-reporting-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The shared workflows' reporting jobs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7987,6 +8009,72 @@ The issue holds only the run link, the job name, the failing step, the
 conclusion and the date, never log text.</p>
 <p>A reporting job is the last job of its workflow, with <code>if: always()</code>, so it
 runs whatever the jobs it reports did.</p>
+<h2 id="the-shared-workflows-reporting-jobs">The shared workflows' reporting jobs<a class="headerlink" href="#the-shared-workflows-reporting-jobs" title="Permanent link">&para;</a></h2>
+<p>Each shared unattended workflow ends with one reporting job per stable job
+name:</p>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Reporting job</th>
+<th>Stable name</th>
+<th>Reports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../../workflows/ops-github-config/"><code>ops-github-config.yml</code></a></td>
+<td><code>report-branch-sweep</code></td>
+<td><code>branch-sweep</code></td>
+<td><code>branch-sweep</code></td>
+</tr>
+<tr>
+<td><a href="../../workflows/ops-epic-sweep/"><code>ops-epic-sweep.yml</code></a></td>
+<td><code>report</code></td>
+<td><code>epic-sweep</code></td>
+<td><code>epic-sweep</code></td>
+</tr>
+<tr>
+<td><a href="../../workflows/ops-epic-rollup/"><code>ops-epic-rollup.yml</code></a></td>
+<td><code>report</code></td>
+<td><code>epic-rollup</code></td>
+<td><code>epic-rollup</code></td>
+</tr>
+<tr>
+<td><a href="../../workflows/ops-upstream-refresh/"><code>ops-upstream-refresh.yml</code></a></td>
+<td><code>report</code></td>
+<td><code>upstream-refresh</code></td>
+<td><code>prepare</code>, <code>publish</code></td>
+</tr>
+<tr>
+<td><code>cd-docs.yml</code></td>
+<td><code>report</code></td>
+<td><code>docs-deploy-develop</code></td>
+<td><code>docs</code> (job <code>deploy</code>)</td>
+</tr>
+<tr>
+<td><a href="../../workflows/cd-docs-refresh/"><code>cd-docs-refresh.yml</code></a></td>
+<td><code>report</code></td>
+<td><code>docs-refresh</code></td>
+<td><code>refresh</code></td>
+</tr>
+<tr>
+<td><a href="../../workflows/publish-index/"><code>publish-index.yml</code></a></td>
+<td><code>report</code></td>
+<td><code>publish-index</code></td>
+<td><code>build-index</code>, <code>deploy</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>github-config</code>, <code>trusted-authors-check</code> and <code>dependabot-audit</code> get none:
+their failures are security signals, never a public ops issue.
+<code>cd-docs.yml</code>'s job also stays off when its caller passes <code>report: false</code>
+(<code>cd-docs-refresh.yml</code> does, and reports the run itself as <code>docs-refresh</code>)
+and for a release push: a push to <code>main</code>, or a <code>develop</code> push whose head
+commit merges a <code>release/*</code> branch, both of which the release records
+already track. <code>tests/reporting-jobs.test.sh</code>,
+<code>tests/ops-report-skipped.test.sh</code>, <code>tests/release-push-skip.test.sh</code> and
+<code>tests/docs-refresh-reports-once.test.sh</code> check these jobs.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">report</span><span class="p">:</span>

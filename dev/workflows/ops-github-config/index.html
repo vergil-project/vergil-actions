@@ -8290,8 +8290,18 @@ read-only permissions only.</p>
 <td><code>&lt;caller&gt; / dependabot-audit</code></td>
 <td>Runs <code>vrg-dependabot-audit --repo &lt;calling repo&gt;</code></td>
 </tr>
+<tr>
+<td><code>report-branch-sweep</code></td>
+<td><code>&lt;caller&gt; / report-branch-sweep</code></td>
+<td>Always, after <code>branch-sweep</code>: reports its result as <code>branch-sweep</code> to the org's operations queue through <a href="../../actions/ops-report/"><code>ops/report</code></a></td>
+</tr>
 </tbody>
 </table>
+<p><code>github-config</code>, <code>trusted-authors-check</code> and <code>dependabot-audit</code> get no
+reporting job: their failures are security signals, which never go to a
+public ops issue (epic
+<a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>,
+spec §2.3).</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <p>Every job runs in <code>ghcr.io/vergil-project/&lt;prefix&gt;-base:latest</code> and follows
 the same pattern:</p>

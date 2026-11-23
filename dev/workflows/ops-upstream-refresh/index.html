@@ -8119,6 +8119,11 @@ See <a href="../../configuration/#token-scoping">Token scoping</a>.</p>
 <td><code>&lt;caller&gt; / publish</code></td>
 <td>Runs <code>vrg-upstream-refresh publish</code> on that patch: fence, PR, and the wait until it merges</td>
 </tr>
+<tr>
+<td><code>report</code></td>
+<td><code>&lt;caller&gt; / report</code></td>
+<td>Always, after both: reports their combined result as <code>upstream-refresh</code> to the org's operations queue through <a href="../../actions/ops-report/"><code>ops/report</code></a>, so a failed <code>prepare</code> that skips <code>publish</code> reports a failure</td>
+</tr>
 </tbody>
 </table>
 <h2 id="the-key-boundary">The key boundary<a class="headerlink" href="#the-key-boundary" title="Permanent link">&para;</a></h2>
@@ -8139,10 +8144,16 @@ workflow runs as two jobs, each on a fresh runner:</p>
   <code>develop</code>, on the exact commit <code>prepare</code> ran against, and reads the path
   fence's rules from that clone's <code>develop</code> tip, never from the artifact.</li>
 </ul>
+<p>A third job, <strong><code>report</code></strong>, reports the run to the org's operations queue. It
+never runs the hook and downloads no artifact; it gets the App's credentials
+only as the <a href="../../actions/ops-report/"><code>ops/report</code></a> action's inputs, from
+which the action mints an issues-only token on <code>report</code>'s own runner.</p>
 <p><code>actions/ops/upstream-refresh/tests/key-boundary.test.sh</code>, run by the
 <code>smoke-setup-vergil</code> workflow, holds the workflow to this layout: the
-secrets only on <code>publish</code>'s last step, no secret and a read-only token on
-<code>prepare</code>, the guard first in each job, no <code>if:</code>, and both time limits.</p>
+secrets only on <code>publish</code>'s last step and as the inputs of <code>report</code>'s
+ops-report step, no secret and a read-only token on <code>prepare</code>, the guard
+first in <code>prepare</code> and <code>publish</code>, no <code>if:</code> but <code>report</code>'s <code>if: always()</code>,
+and both time limits.</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <p>Both jobs run in
 <code>ghcr.io/vergil-project/&lt;container-prefix&gt;-base:latest</code> (<code>prod-base</code> by
