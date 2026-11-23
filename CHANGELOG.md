@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.91] - 2026-11-23
+
+### Bug fixes
+
+- skip the Python dev install on a repo not bootstrapped yet (#1367)
+- accept a proved not-bootstrapped gate skip in evidence report staging (#1373)
+
+### Documentation
+
+- move the remaining cron examples to the fleet's current hours (#1281)
+- fix the markdownlint errors in the Scorecard snapshots (#1287)
+- drop the Dependabot itemized-report, self-homed sweep and GHAS-condition passages (#1372)
+- list the release tag token step in the Requested permissions table (#1374)
+
+### Features
+
+- add the ops-report action and optional App secrets (#1376)
+
 ## [2.1.90] - 2026-11-23
 
 ### CI
