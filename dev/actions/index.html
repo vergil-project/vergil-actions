@@ -5601,6 +5601,8 @@
       
         
       
+        
+      
     
     
     
@@ -5776,6 +5778,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -7856,6 +7886,11 @@ definition and optional supporting scripts.</p>
   Python leg's resolved version and to the image's interpreter
   (<code>UV_PYTHON</code>, <code>UV_PYTHON_PREFERENCE=only-system</code>); auto-wired into the
   Python matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and <code>ci-test</code>.</li>
+<li><strong><a href="ci-toolchain-install-python/">ci/toolchain/install-python</a></strong> — Installs
+  a Python leg's dev dependencies (<code>uv sync --group dev --frozen</code>), or skips
+  the install with a notice on a repository with neither <code>pyproject.toml</code> nor
+  <code>uv.lock</code>; auto-wired into the Python legs of <code>ci-quality</code>, <code>ci-audit</code> and
+  <code>ci-test</code>.</li>
 <li><strong><a href="ci-toolchain-assert/">ci/toolchain/assert</a></strong> — Fails a CI leg whose
   running Python, Go, Rust or Node (TypeScript) is not the version CI resolved
   for it; auto-wired into the matrix legs of <code>ci-quality</code>, <code>ci-audit</code> and

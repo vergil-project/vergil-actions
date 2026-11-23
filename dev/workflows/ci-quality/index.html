@@ -5596,6 +5596,8 @@
       
         
       
+        
+      
     
     
     
@@ -5768,6 +5770,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -8002,8 +8032,11 @@ workflow's <code>matrix</code> job runs the shared setup action, which calls the
 and passes its versions, image tags and image suffixes to
 <a href="../../actions/ci-matrix/"><code>ci/matrix</code></a>. Each leg pins uv to its version and to
 the image's interpreter (Python, with
-<a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and then
-asserts the running toolchain with
+<a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>), installs
+Python's dev dependencies with
+<a href="../../actions/ci-toolchain-install-python/"><code>ci/toolchain/install-python</code></a>
+(skipped with a notice on a repository with neither <code>pyproject.toml</code> nor
+<code>uv.lock</code>) and then asserts the running toolchain with
 <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>. The
 single-container <code>common</code> and <code>custom</code> jobs run on the resolver's image for
 the primary version (see <a href="#common-checks">Common checks</a> and
@@ -8104,8 +8137,10 @@ the custom stage. A repository with no custom validator gets one
 not an executable regular file fails the job. Like <code>common</code>, it runs once, on
 the same image. For Python it pins uv to the primary version's interpreter
 (with <a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and
-installs the dev dependency group first, so the validator sees the repo's dev
-dependencies; <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a> then
+installs the dev dependency group first (with
+<a href="../../actions/ci-toolchain-install-python/"><code>ci/toolchain/install-python</code></a>,
+which skips it on a repository not bootstrapped yet), so the validator sees
+the repo's dev dependencies; <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a> then
 checks the running toolchain is the primary version.</p>
 <p>The job's transcript is uploaded as the <code>ci-evidence-quality-reports-custom</code>
 partial and bundled into <code>ci-evidence-quality</code> as <code>quality-custom.log</code>. The

@@ -5596,6 +5596,8 @@
       
         
       
+        
+      
     
     
     
@@ -5768,6 +5770,34 @@
     
   
     ci/toolchain/pin-python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/ci-toolchain-install-python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ci/toolchain/install-python
   
 
     
@@ -7982,8 +8012,11 @@ runs the shared setup action, which calls the resolver, and passes its
 versions, image tags and image suffixes to
 <a href="../../actions/ci-matrix/"><code>ci/matrix</code></a>. Each leg pins uv to its version and to
 the image's interpreter (Python, with
-<a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>) and then
-asserts the running toolchain with
+<a href="../../actions/ci-toolchain-pin-python/"><code>ci/toolchain/pin-python</code></a>), installs
+Python's dev dependencies with
+<a href="../../actions/ci-toolchain-install-python/"><code>ci/toolchain/install-python</code></a>
+(skipped with a notice on a repository with neither <code>pyproject.toml</code> nor
+<code>uv.lock</code>) and then asserts the running toolchain with
 <a href="../../actions/ci-toolchain-assert/"><code>ci/toolchain/assert</code></a>. Callers are
 thin: they pass only <code>language:</code> and <code>container-suffix:</code>.</p>
 <h2 id="jobs-and-check-names">Jobs and check names<a class="headerlink" href="#jobs-and-check-names" title="Permanent link">&para;</a></h2>
