@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.92] - 2026-11-23
+
+### Features
+
+- report every shared unattended job to the operations queue (#1380)
+
 ## [2.1.91] - 2026-11-23
 
 ### Bug fixes
