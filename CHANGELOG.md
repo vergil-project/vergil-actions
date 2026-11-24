@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.96] - 2026-11-24
+
+### Bug fixes
+
+- declare upstream-refresh's App keys optional and check them in the jobs that read them (#1429)
+
+### Documentation
+
+- show secrets: inherit for same-org cd-docs callers and where ops-report files its issue (#1427)
+
 ## [2.1.95] - 2026-11-24
 
 ### CI
