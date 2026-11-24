@@ -7307,6 +7307,8 @@
       
         
       
+        
+      
     
     
     
@@ -7684,6 +7686,34 @@
     
   
     ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/ops-agent-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-agent-audit
   
 
     
@@ -8577,6 +8607,11 @@ not pass them turns its reporting job red):</p>
 <td>Every repository the App is installed on in the org, read-only</td>
 </tr>
 <tr>
+<td><a href="../workflows/ops-agent-audit/"><code>ops-agent-audit.yml</code></a></td>
+<td><code>agent-audit</code></td>
+<td>Calling repository only</td>
+</tr>
+<tr>
 <td><a href="../workflows/ops-epic-rollup/"><code>ops-epic-rollup.yml</code></a></td>
 <td><code>epic-rollup</code> (from the caller's <code>epic-rollup.yml</code>)</td>
 <td>Calling repository and the epic repository</td>
@@ -8638,17 +8673,17 @@ permissions:</p>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>automation/upstream-refresh/&lt;run-id&gt;</code> branch, and deletes an earlier run's branch when it closes that run's PR); <code>cd-release.yml</code> pushes the release tags and dispatches the package index to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>automation/upstream-refresh/&lt;run-id&gt;</code> branch, and deletes an earlier run's branch when it closes that run's PR); <code>cd-release.yml</code> pushes the release tags and dispatches the package index to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code>; <code>agent-audit</code> moves the <code>vergil/agent-audit/*</code> marker refs</td>
 </tr>
 <tr>
 <td>Pull requests</td>
 <td>Read &amp; write</td>
-<td><code>upstream-refresh</code> (opens the refresh PR with auto-merge, updates its branch from <code>develop</code>, merges it, and closes an earlier run's open one); <code>github-config</code> (opens the sync PR, closes an earlier one and turns on auto-merge); <code>branch-sweep</code> and <code>epic-sweep</code> read them</td>
+<td><code>upstream-refresh</code> (opens the refresh PR with auto-merge, updates its branch from <code>develop</code>, merges it, and closes an earlier run's open one); <code>github-config</code> (opens the sync PR, closes an earlier one and turns on auto-merge); <code>branch-sweep</code>, <code>epic-sweep</code> and <code>agent-audit</code> read them</td>
 </tr>
 <tr>
 <td>Issues</td>
 <td>Read &amp; write</td>
-<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues); the <code>ops/report</code> action (opens and comments on ops issues, creates the <code>ops-report</code> label, links issues under the operations epic)</td>
+<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues); the <code>ops/report</code> action (opens and comments on ops issues, creates the <code>ops-report</code> label, links issues under the operations epic); <code>agent-audit</code> reads PR timelines and task-issue comments</td>
 </tr>
 <tr>
 <td>Workflows</td>
@@ -8808,6 +8843,11 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 <td><code>ops-github-config.yml</code></td>
 <td><code>dependabot-audit</code></td>
 <td><code>vulnerability-alerts: read</code></td>
+</tr>
+<tr>
+<td><code>ops-agent-audit.yml</code></td>
+<td><code>agent-audit</code> (from <code>develop</code> only)</td>
+<td><code>contents: write</code>, <code>pull-requests: read</code>, <code>issues: read</code>, <code>metadata: read</code></td>
 </tr>
 <tr>
 <td><code>ops-epic-rollup.yml</code></td>

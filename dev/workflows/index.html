@@ -6985,6 +6985,8 @@
       
         
       
+        
+      
     
     
     
@@ -7365,6 +7367,34 @@
     
   
     ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ops-agent-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-agent-audit
   
 
     
@@ -8090,6 +8120,11 @@ rulesets.</p>
 <td><a href="ops-github-config/">Ops GitHub Config</a></td>
 <td><code>ops-github-config.yml</code></td>
 <td>Nightly <code>vrg-github-repo-config update</code> as the automation App, <a href="../actions/ops-github-config-branch-sweep/">branch sweep</a>, and <code>vrg-dependabot-audit</code> open-alert gate</td>
+</tr>
+<tr>
+<td><a href="ops-agent-audit/">Ops Agent Audit</a></td>
+<td><code>ops-agent-audit.yml</code></td>
+<td>Daily <code>vrg-agent-audit</code> as the automation App: every merge into <code>develop</code> and <code>main</code> since the audit markers, checked for its actors and merge-review coverage. A security signal, never reported</td>
 </tr>
 <tr>
 <td><a href="ops-epic-rollup/">Ops Epic Rollup</a></td>
