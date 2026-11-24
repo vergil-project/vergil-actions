@@ -67,7 +67,10 @@ The `epic-sweep` job runs in `ghcr.io/vergil-project/<prefix>-base:latest`:
 1. Mints an App token for the caller's org, with no repository restriction,
    scoped to `issues: write`, `pull-requests: read` and `contents: read`.
 2. Checks out the repository and installs vergil-tooling.
-3. Runs `vrg-epic-audit --close --window-days "$WINDOW_DAYS"` with the App
+3. Runs `vrg-whoami --mode` with the App token and `VRG_AUTOMATION_APP`, and
+   fails unless it prints `automation`: vergil-tooling verifies that the
+   token was minted by the App the variable names before any write.
+4. Runs `vrg-epic-audit --close --window-days "$WINDOW_DAYS"` with the App
    token as `GH_TOKEN` and `VRG_EPIC_SWEEP=1`.
 
 `vrg-epic-audit --close` runs its passes in this order:

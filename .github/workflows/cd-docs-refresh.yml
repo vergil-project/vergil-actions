@@ -26,19 +26,22 @@ on:
         description: Container image name prefix (prod or dev). Defaults to "prod".
         type: string
         default: prod
-    # The org automation App's credentials, for the ops-report action (epic
-    # vergil-project/.github#1494), used by the report job and forwarded to
-    # the nested cd-docs.yml call. Declared optional a release before that
-    # job, so every caller could pass them first and no caller's run turned
-    # red (spec §5.6).
+    # The org automation App's credentials (epic vergil-project/.github#1494),
+    # used by the report job and forwarded to the nested cd-docs.yml call,
+    # whose deploy pushes gh-pages with an App token (spec §5.4). Declared
+    # optional a release before the report job, so every caller could pass
+    # them first (spec §5.6).
     secrets:
       APP_CLIENT_ID:
         required: false
       APP_PRIVATE_KEY:
         required: false
 
+# Read-only: the nested deploy pushes gh-pages as the org automation App,
+# never with GITHUB_TOKEN (epic vergil-project/.github#1494, spec §5.4).
+# actions/ops/report/tests/app-identity.test.sh guards this.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   refresh:
@@ -47,12 +50,11 @@ jobs:
     # release tag by vrg-freeze-refs at release time.
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@develop
     permissions:
-      contents: write
+      contents: read
     # The nested call resolves to develop's cd-docs.yml (frozen to the release
-    # tag at release time), so these lines ship before cd-docs.yml gains its
-    # reporting job: report: false keeps that job off, since the refresh
-    # reports its run itself as docs-refresh, and the App secrets are
-    # forwarded for the deploy's later identity work.
+    # tag at release time). report: false keeps its reporting job off, since
+    # the refresh reports its run itself as docs-refresh, and the App secrets
+    # are forwarded for its deploy, which pushes gh-pages as the App.
     with:
       pre-deploy-command: ${{ inputs.pre-deploy-command }}
       mkdocs-config: ${{ inputs.mkdocs-config }}

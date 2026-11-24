@@ -24,6 +24,18 @@ inputs:
       explicitly to override.
     required: false
     default: ""
+  git-user-name:
+    description: >-
+      The git user.name of the deploy commit: the org automation App's
+      `<app-slug>[bot]` (epic vergil-project/.github#1494, spec §5.4).
+      Required, with no default: an empty value fails the deploy.
+    required: true
+  git-user-email:
+    description: >-
+      The git user.email of the deploy commit: the App bot user's noreply
+      address, `<user-id>+<app-slug>[bot]@users.noreply.github.com`.
+      Required, with no default: an empty value fails the deploy.
+    required: true
 runs:
   using: composite
   steps:
@@ -41,9 +53,22 @@ runs:
       # mechanism is intended to protect interactive users; on a CI
       # runner with a freshly checked-out workspace, suppressing it
       # is the right call. Issue #206.
+      #
+      # The identity is the caller's, from the required inputs (the org
+      # automation App's bot user in cd-docs.yml). A composite action does not
+      # enforce `required`, so an empty input fails here: there is no default
+      # identity to fall back to.
+      env:
+        GIT_USER_NAME: ${{ inputs.git-user-name }}
+        GIT_USER_EMAIL: ${{ inputs.git-user-email }}
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        set -euo pipefail
+        if [ -z "$GIT_USER_NAME" ] || [ -z "$GIT_USER_EMAIL" ]; then
+          echo "::error::cd/docs/deploy: the git-user-name and git-user-email inputs are required"
+          exit 1
+        fi
+        git config --global user.name "$GIT_USER_NAME"
+        git config --global user.email "$GIT_USER_EMAIL"
         git config --global --add safe.directory '*'
 
     - name: Resolve build commands and versioning scheme

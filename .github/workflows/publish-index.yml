@@ -90,7 +90,11 @@ jobs:
       - name: Build, verify and sign the index
         shell: bash
         env:
-          # Release download and `gh attestation verify`.
+          # Release download and `gh attestation verify`: reads only, with
+          # this job's read-only GITHUB_TOKEN. The job runs in the
+          # index-signing environment, so it cannot read the App keys, which
+          # live only in the automation environment (epic
+          # vergil-project/.github#1384); it writes nothing with a token.
           GH_TOKEN: ${{ github.token }}
           PACKAGE_SIGNING_KEY: ${{ secrets.PACKAGE_SIGNING_KEY }}
           PACKAGE_SIGNING_PASSPHRASE: ${{ secrets.PACKAGE_SIGNING_PASSPHRASE }}
@@ -111,6 +115,13 @@ jobs:
         with:
           path: _site
 
+  # Identity exception (epic vergil-project/.github#1494, spec §5.4): the
+  # Pages deployment keeps GITHUB_TOKEN (pages: write, with the run's OIDC
+  # token from id-token: write), the default token of actions/deploy-pages.
+  # The job runs in the github-pages environment its deployment is made to,
+  # and a job declares one environment, so it cannot read the App keys, which
+  # live only in the automation environment (epic vergil-project/.github#1384).
+  # actions/ops/report/tests/app-identity.test.sh lists it as the exception.
   deploy:
     name: deploy
     needs: build-index
