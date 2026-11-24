@@ -57,6 +57,29 @@ fails `setup` too, and `release` does not run.
 | `package-build / <cell>`, `package-sign` | Packaged repos only. Every cell builds on the runtime `package-matrix` recorded, and `package-sign` checks every package against it before signing. See [binary packages](cd-release-packages.md). |
 | `release` | Runs when `setup` and `package-matrix` succeeded, and `package-sign` too for a packaged repo. Validates the inputs, gates on the CI evidence, publishes, tags and releases, then attaches the evidence bundle. |
 
+## Re-running a published release
+
+A re-run of the `release` job after its tag exists never moves or
+recreates the tag and never publishes again: the secrets check, the token
+mint, the package and registry steps, `Tag and release` and the package
+index dispatch all run only for a new tag.
+
+The CI evidence bundle is checked instead. The `Check the release's CI
+evidence` step reads the existing GitHub Release's assets:
+
+- When it carries both `v<version>-ci-evidence.tar.gz` and
+  `v<version>-ci-evidence-manifest.json`, the evidence steps are skipped
+  and the job succeeds with a notice.
+- When either is missing (an earlier attempt failed after `Tag and
+  release`, for example at the bundle's provenance attestation), the
+  evidence gate, the attach with its attestation and both enforcement
+  guards run as on a new release, with a warning naming the missing
+  assets. With `evidence-enforce: true`, the job fails if the bundle
+  cannot be gated or attached. A configured SBOM is taken from the
+  Release's assets, since a re-run builds nothing; if it is not one, the
+  bundle is assembled without it, with a warning.
+- When the Release cannot be read, the job fails, naming the tag.
+
 ## Usage
 
 ```yaml
