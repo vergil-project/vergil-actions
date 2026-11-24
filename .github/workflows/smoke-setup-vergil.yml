@@ -87,6 +87,11 @@ name: Smoke - setup/vergil outputs
 #         none on prepare, which has a read-only token, the develop guard
 #         first in each job, no if:, both timeouts and the per-repo
 #         concurrency group (epic vergil-project/.github#1168);
+#       - ops/agent-audit agent-audit.test.sh: ops-agent-audit's layout,
+#         the develop guard first, one repo-scoped App token with exactly
+#         Contents write and Pull requests, Issues and Metadata read, the
+#         App keys only on that step, a full-history checkout of develop,
+#         one `vrg-agent-audit --repo` step and no ops-report (issue #1341);
 #       - ci/toolchain/assert assert.sh: Python, Go, Rust and TypeScript
 #         version checks against a fake uv, go, rustc and node, and the
 #         notice for other languages;
@@ -200,6 +205,9 @@ jobs:
       - name: Run ops/upstream-refresh key-boundary harness
         shell: bash
         run: bash actions/ops/upstream-refresh/tests/key-boundary.test.sh
+      - name: Run ops/agent-audit layout harness
+        shell: bash
+        run: bash actions/ops/agent-audit/tests/agent-audit.test.sh
       - name: Run ci/toolchain/assert assert.sh harness
         shell: bash
         run: bash actions/ci/toolchain/assert/tests/assert.test.sh

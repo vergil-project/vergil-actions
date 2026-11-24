@@ -47,7 +47,7 @@ fi
 # vrg-ci-evidence and vrg-package, of which only the named subcommands do
 # (vrg-ci-evidence assemble works offline; vrg-package matrix, build,
 # check-runtime and install-test read only local files).
-github_commands='vrg-(activity-log|branch-sweep|dependabot-audit|docs-stage|epic-audit|epic-rollup|github-repo-config|ops-report|promote|release|roadmap|upstream-refresh)([^a-z0-9-]|$)'
+github_commands='vrg-(activity-log|agent-audit|branch-sweep|dependabot-audit|docs-stage|epic-audit|epic-rollup|github-repo-config|ops-report|promote|release|roadmap|upstream-refresh)([^a-z0-9-]|$)'
 github_commands+='|vrg-ci-evidence[[:space:]]+(harvest|bundle)'
 github_commands+='|vrg-package[[:space:]]+(index|check-unpublished)'
 

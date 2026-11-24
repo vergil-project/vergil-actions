@@ -115,6 +115,7 @@ nav:
       - publish-index: workflows/publish-index.md
       - cd-docs-refresh: workflows/cd-docs-refresh.md
       - ops-github-config: workflows/ops-github-config.md
+      - ops-agent-audit: workflows/ops-agent-audit.md
       - ops-epic-rollup: workflows/ops-epic-rollup.md
       - ops-epic-sweep: workflows/ops-epic-sweep.md
       - ops-upstream-refresh: workflows/ops-upstream-refresh.md
