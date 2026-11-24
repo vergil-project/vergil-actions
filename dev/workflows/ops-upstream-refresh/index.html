@@ -8249,8 +8249,17 @@ fails until it declares them.</p>
 </tr>
 </tbody>
 </table>
-<p>The secrets reach only the <code>publish</code> job's last step. <code>vrg-upstream-refresh
-publish</code> mints its own installation tokens from them, limited to the calling
+<p>Keep both secrets in the calling repository's <code>automation</code> environment and
+pass them by name or with <code>secrets: inherit</code>. The workflow declares them
+optional, because <code>prepare</code> holds no keys and declares no environment:
+GitHub checks a required secret for every job of a called workflow, and one
+that exists only in an environment does not count for a job that declares
+none, so declaring them required makes GitHub refuse the whole call before
+<code>prepare</code> starts. Only <code>publish</code> and <code>report</code> declare
+<code>environment: automation</code> and read them, and each fails first, naming each
+missing secret, when either is empty. Nothing falls back to <code>GITHUB_TOKEN</code>.</p>
+<p>The secrets reach only the <code>publish</code> job's last step and the <code>report</code> job.
+<code>vrg-upstream-refresh publish</code> mints its own installation tokens from them, limited to the calling
 repository with <code>contents: write</code> (push the PR branch, delete an earlier
 run's), <code>pull-requests: write</code> (open, merge and close refresh PRs),
 <code>workflows: write</code> (the wait's branch update, below) and <code>metadata: read</code>.
@@ -8303,11 +8312,14 @@ workflow runs as two jobs, each on a fresh runner:</p>
 <p>A third job, <strong><code>report</code></strong>, reports the run to the org's operations queue. It
 never runs the hook and downloads no artifact; it gets the App's credentials
 only as the <a href="../../actions/ops-report/"><code>ops/report</code></a> action's inputs, from
-which the action mints an issues-only token on <code>report</code>'s own runner.</p>
+which the action mints an issues-only token on <code>report</code>'s own runner, and
+in the env of the shell-only step before it, <code>Require the automation App
+keys</code>, which fails when either is empty.</p>
 <p><code>actions/ops/upstream-refresh/tests/key-boundary.test.sh</code>, run by the
 <code>smoke-setup-vergil</code> workflow, holds the workflow to this layout: the
-secrets only on <code>publish</code>'s last step and as the inputs of <code>report</code>'s
-ops-report step, no secret and a read-only token on <code>prepare</code>, the guard
+secrets only on <code>publish</code>'s last step, as the inputs of <code>report</code>'s
+ops-report step and in the env of <code>report</code>'s require step, a check of both
+before each use, no secret and a read-only token on <code>prepare</code>, the guard
 first in <code>prepare</code> and <code>publish</code>, no <code>if:</code> but <code>report</code>'s <code>if: always()</code>,
 and both time limits.</p>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
@@ -8341,7 +8353,9 @@ with another run's.</p>
 <li>Downloads the <code>upstream-refresh-prepare</code> artifact.</li>
 <li>Runs <code>vrg-upstream-refresh publish</code> on it, with <code>VRG_AUTOMATION_APP</code>,
    <code>VRG_AUTOMATION_CLIENT_ID</code>, <code>VRG_AUTOMATION_PRIVATE_KEY</code> and
-   <code>VRG_TRUSTED_AUTHORS</code> set on this step only. The tool removes the credentials from its environment at
+   <code>VRG_TRUSTED_AUTHORS</code> set on this step only. The step first fails,
+   naming each missing secret, when either credential is empty, then runs
+   the tool in its place. The tool removes the credentials from its environment at
    startup, so no <code>git</code> or <code>gh</code> it starts sees them. It checks every minted
    token against <code>VRG_AUTOMATION_APP</code>, applies and fences the patch, and
    opens the PR and waits until it merges.</li>
