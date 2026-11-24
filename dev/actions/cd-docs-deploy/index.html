@@ -6410,10 +6410,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#operations-queue-inputs" class="md-nav__link">
+  <a href="#the-app-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations-queue inputs
+        The App identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operations-queue-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operations-queue reporting
       
     </span>
   </a>
@@ -8218,10 +8229,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#operations-queue-inputs" class="md-nav__link">
+  <a href="#the-app-identity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operations-queue inputs
+        The App identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#operations-queue-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operations-queue reporting
       
     </span>
   </a>
@@ -8331,6 +8353,8 @@ git configuration, version detection, and mike deploy/set-default.</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">version-command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cat VERSION | cut -d. -f1,2</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">mkdocs-config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">docs/site/mkdocs.yml</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">mike-command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mike</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">git-user-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.git-identity.outputs.name }}</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">git-user-email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.git-identity.outputs.email }}</span>
 </code></pre></div>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
@@ -8361,17 +8385,35 @@ git configuration, version detection, and mike deploy/set-default.</p>
 <td><code>mike</code></td>
 <td>Command to run mike. Set to <code>uv run mike</code> for Python repos that manage their own dependencies via their project's virtual environment.</td>
 </tr>
+<tr>
+<td><code>git-user-name</code></td>
+<td><strong>Yes</strong></td>
+<td>—</td>
+<td>The <code>user.name</code> of the deploy commit. <code>cd-docs.yml</code> passes the org automation App's <code>&lt;app-slug&gt;[bot]</code>.</td>
+</tr>
+<tr>
+<td><code>git-user-email</code></td>
+<td><strong>Yes</strong></td>
+<td>—</td>
+<td>The <code>user.email</code> of the deploy commit. <code>cd-docs.yml</code> passes the App bot user's noreply address, <code>&lt;user-id&gt;+&lt;app-slug&gt;[bot]@users.noreply.github.com</code>.</td>
+</tr>
 </tbody>
 </table>
+<p>A composite action does not enforce <code>required</code>, so the action checks both
+identity inputs itself: an empty one fails the deploy. There is no default
+identity.</p>
 <h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>contents: write</code> (required for pushing to the <code>gh-pages</code> branch)</li>
+<li>The checkout's persisted credentials must be able to push the <code>gh-pages</code>
+  branch (Contents write). <code>cd-docs.yml</code> checks out with a Contents-write
+  token of the org automation App, so its <code>GITHUB_TOKEN</code> stays read-only.</li>
 </ul>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Configure git identity</strong> — Sets the git user to <code>github-actions[bot]</code> for
-   the deploy commit. Marks the workspace as a safe directory to avoid
-   dubious-ownership errors in container jobs.</li>
+<li><strong>Configure git identity</strong> — Sets the git user of the deploy commit from
+   the <code>git-user-name</code> and <code>git-user-email</code> inputs, and fails when either is
+   empty. Marks the workspace as a safe directory to avoid dubious-ownership
+   errors in container jobs.</li>
 <li><strong>Determine version</strong> — On <code>main</code>, runs the <code>version-command</code> to extract the
    version and sets <code>alias=latest</code>. On all other branches, sets <code>version=dev</code>
    with no alias.</li>
@@ -8406,20 +8448,33 @@ rather than calling the composite action directly:</p>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">docs</span><span class="p">:</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
 </code></pre></div>
-<h3 id="operations-queue-inputs">Operations-queue inputs<a class="headerlink" href="#operations-queue-inputs" title="Permanent link">&para;</a></h3>
-<p><code>cd-docs.yml</code> declares the org automation App's <code>APP_CLIENT_ID</code> and
-<code>APP_PRIVATE_KEY</code> as optional secrets, and a boolean <code>report</code> input (default
-<code>true</code>). Neither is used yet: they are declared ahead of the operations-queue
-reporting (epic
-<a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>),
-so every caller can pass the secrets before the release whose reporting job
-needs them. <code>report: false</code> will keep that job off; <code>cd-docs-refresh.yml</code>
-passes it, because the refresh reports its own run.</p>
+<h3 id="the-app-identity">The App identity<a class="headerlink" href="#the-app-identity" title="Permanent link">&para;</a></h3>
+<p><code>cd-docs.yml</code>'s <code>docs</code> job deploys as the org automation App (epic
+<a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>,
+spec §5.4). It runs in the <code>automation</code> environment, which holds the App's
+<code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>, and:</p>
+<ol>
+<li>mints an App token scoped to the calling repository, with only Contents
+   write;</li>
+<li>checks out with that token, so the <code>gh-pages</code> push uses it;</li>
+<li>looks up the App's bot user and passes <code>&lt;app-slug&gt;[bot]</code> and its noreply
+   address to this action as the commit identity.</li>
+</ol>
+<p>The workflow's <code>GITHUB_TOKEN</code> is read-only. The secrets are declared
+optional, but a caller that passes none fails the <code>docs</code> job at its token
+step: there is no fallback to <code>GITHUB_TOKEN</code>.
+<code>actions/ops/report/tests/app-identity.test.sh</code> guards this.</p>
+<h3 id="operations-queue-reporting">Operations-queue reporting<a class="headerlink" href="#operations-queue-reporting" title="Permanent link">&para;</a></h3>
+<p><code>cd-docs.yml</code> also takes a boolean <code>report</code> input (default <code>true</code>). Its
+<code>report</code> job reports a develop deploy to the org's operations queue as
+<code>docs-deploy-develop</code>, through <a href="../ops-report/"><code>ops/report</code></a>.
+<code>report: false</code> keeps that job off; <code>cd-docs-refresh.yml</code> passes it, because
+the refresh reports its own run.</p>
 <h3 id="interpreter-source">Interpreter source<a class="headerlink" href="#interpreter-source" title="Permanent link">&para;</a></h3>
 <p>The action's "Deploy docs" step sets <code>UV_PYTHON_PREFERENCE=only-system</code>, and
 the <code>cd-docs.yml</code> <code>docs</code> job sets it in its job <code>env</code> too, so it also reaches
@@ -8445,12 +8500,16 @@ in their own docs dependencies. Added in v2.1.43 (#947, PR #948).</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/cd/docs/deploy@v2.1</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">version-command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cat VERSION | cut -d. -f1,2</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">git-user-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.git-identity.outputs.name }}</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">git-user-email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.git-identity.outputs.email }}</span>
 </code></pre></div>
 <h3 id="python-repo-with-uv-managed-dependencies">Python repo with uv-managed dependencies<a class="headerlink" href="#python-repo-with-uv-managed-dependencies" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/cd/docs/deploy@v2.1</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">version-command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cat VERSION | cut -d. -f1,2</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">mike-command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uv run mike</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">git-user-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.git-identity.outputs.name }}</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">git-user-email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.git-identity.outputs.email }}</span>
 </code></pre></div>
 <h2 id="github-configuration">GitHub configuration<a class="headerlink" href="#github-configuration" title="Permanent link">&para;</a></h2>
 <ul>

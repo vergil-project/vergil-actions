@@ -8198,10 +8198,12 @@ the caller runs it on a schedule and on demand.</p>
 <p>The <code>report</code> job uses them to report the run to the org's operations queue
 (epic
 <a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>),
-and the <code>refresh</code> job forwards them to <code>cd-docs.yml</code>. They are declared
+and the <code>refresh</code> job forwards them to <code>cd-docs.yml</code>, whose <code>docs</code> job
+deploys with an App token (see <a href="#behavior">Behavior</a>). They are declared
 optional, a release ahead of the reporting job, so every caller could pass
-them first; a run from <code>develop</code> that does not pass them turns <code>report</code> red.
-Pass them:</p>
+them first. A run that does not pass them fails the deploy, with no fallback
+to <code>GITHUB_TOKEN</code>, and a run from <code>develop</code> also turns <code>report</code> red. Pass
+them:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
@@ -8250,7 +8252,10 @@ Pass them:</p>
 (the refresh reports its run to the operations queue itself, so <code>cd-docs.yml</code>
 must not report it a second time) and both App secrets. Its <code>docs</code> job:</p>
 <ol>
-<li>Checks out the repository with full history and installs vergil-tooling.</li>
+<li>Runs in the <code>automation</code> environment, which holds the App secrets, and
+   mints an App token scoped to the repository with only Contents write.
+   It checks out the repository with that token and full history, and
+   installs vergil-tooling.</li>
 <li>Runs <code>pre-deploy-command</code>. The default runs <code>vrg-roadmap</code> and
    <code>vrg-activity-log</code>, which read the org's <code>.github</code> epics with <code>gh</code>; the step
    sets <code>GH_TOKEN</code> to the workflow's <code>github.token</code>, which is enough because
@@ -8259,7 +8264,9 @@ must not report it a second time) and both App secrets. Its <code>docs</code> jo
    <a href="../../actions/shared-docs-stage/"><code>shared/docs/stage</code></a>.</li>
 <li>Deploys with <a href="../../actions/cd-docs-deploy/"><code>cd/docs/deploy</code></a>: <code>mike</code> for
    a versioned site, or <code>mkdocs gh-deploy</code> to the <code>gh-pages</code> root for a
-   repository with <code>versioning-scheme = none</code>.</li>
+   repository with <code>versioning-scheme = none</code>. The <code>gh-pages</code> push uses the
+   App token, and the commit is made as the App's <code>&lt;app-slug&gt;[bot]</code> user
+   (see <a href="../../actions/cd-docs-deploy/#the-app-identity">The App identity</a>).</li>
 </ol>
 <p><code>cd-docs</code> runs in the <code>cd-docs</code> concurrency group without cancelling, so a
 refresh queues behind a deploy that is already running.</p>
@@ -8279,8 +8286,8 @@ that ref to the release tag (see
 <tbody>
 <tr>
 <td><code>contents</code></td>
-<td><code>write</code></td>
-<td>The deploy pushes the built site to the <code>gh-pages</code> branch</td>
+<td><code>read</code></td>
+<td>Checkout. The deploy pushes the built site to the <code>gh-pages</code> branch with the App token, not <code>GITHUB_TOKEN</code></td>
 </tr>
 </tbody>
 </table>
@@ -8293,13 +8300,13 @@ that ref to the release tag (see
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="nt">refresh</span><span class="p">:</span>
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/cd-docs-refresh.yml@v2.1</span>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
 <a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>

@@ -8439,6 +8439,14 @@ the same pattern:</p>
 <li>Checks out the repository and installs vergil-tooling.</li>
 <li>Runs its command with the App token as <code>GH_TOKEN</code>.</li>
 </ol>
+<p><code>branch-sweep</code> and <code>dependabot-audit</code> check the token before they use it:
+a step between the install and the command runs <code>vrg-whoami --mode</code> with the
+App token and <code>VRG_AUTOMATION_APP</code>, and fails unless it prints <code>automation</code>.
+vergil-tooling then verifies that the token was minted by the App the
+variable names, and an empty variable fails the step too. <code>github-config</code> and
+<code>trusted-authors-check</code> set <code>VRG_AUTOMATION_APP</code> on their command's step
+instead, whose command makes the same check (below).
+<code>actions/ops/report/tests/app-identity.test.sh</code> guards the order.</p>
 <p><code>github-config</code> is the exception: its first step, before any token is minted,
 fails the job unless the ref is <code>refs/heads/develop</code> and <code>VRG_AUTOMATION_APP</code>
 is set, and its checkout pins <code>ref: develop</code> (see
