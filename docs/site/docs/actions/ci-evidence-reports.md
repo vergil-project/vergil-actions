@@ -115,6 +115,7 @@ In the evidence job, `mode: tools` gives the tools JSON for
     mode: tools
     language: rust
     gate: test
+    reports-dir: evidence-reports
 
 - uses: vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1
   with:
@@ -145,7 +146,7 @@ before it emits, since the emit action skips a pattern that matches nothing:
 | `version` | Stage mode | `""` | The matrix leg's version label, appended to each staged file's stem. |
 | `gate-outcome` | Stage mode | `""` | The outcome of the step that ran the gate (`steps.<id>.outcome`). |
 | `out-dir` | No | `ci-reports` | Stage mode, the directory to stage the reports into. |
-| `reports-dir` | Expect mode | `""` | The directory holding every leg's staged reports, the evidence job's download directory. |
+| `reports-dir` | Expect mode; optional in tools mode | `""` | The directory holding every leg's staged reports, the evidence job's download directory. In tools mode, a gate whose legs left skip records there lists no tools. |
 
 ## Outputs
 
@@ -175,7 +176,8 @@ so the evidence job takes every file the legs uploaded.
   notes) and stages nothing, whatever `gate-outcome` says.
 
 **Tools.** Writes the gate's tools JSON array to the `tools` output: `[]`,
-with a warning or notice, for a language with no entry.
+with a warning or notice, for a language with no entry. Given `reports-dir`,
+a gate whose legs were skipped as not bootstrapped lists no tools (see below).
 
 **Expect.** For each of the language's `lint` and `typecheck` reports,
 `reports-dir` must hold at least one non-empty, version-suffixed copy
@@ -220,6 +222,12 @@ In `expect` mode a `lint` or `typecheck` gate with no report passes, with a
 `::notice::`, when `reports-dir` holds its legs' skip records. A skip record
 of another language or gate, or one found beside a report of the same gate,
 fails the step.
+
+In `tools` mode, given `reports-dir`, the step reads the same skip records
+the same way. A gate whose legs left them gives `[]`, with a `::notice::`
+naming them, so the gate's `evidence.json` names no tool that never ran; a
+skip record `expect` mode would refuse fails the step here too. `ci-test`,
+`ci-audit` and `ci-quality` pass their download directory.
 
 The skip record is uploaded with the leg's reports and reaches the gate's
 evidence artifact, so the release-time evidence gate finds the skip recorded

@@ -20,7 +20,9 @@ description: >-
   manifest, no source; recorded in .vergil/vrg-validate-last.json) is
   accepted in stage mode only when that is proved, with a notice and a skip
   record staged in place of the reports; expect mode accepts the skip records
-  in place of a gate's reports (issue #1294).
+  in place of a gate's reports (issue #1294). Tools mode, given
+  `reports-dir`, lists no tools for a gate whose legs left skip records there,
+  since none of its tools ran (issue #1406).
 
 inputs:
   mode:
@@ -60,8 +62,9 @@ inputs:
     default: ci-reports
   reports-dir:
     description: >-
-      Expect mode, the directory holding every leg's staged reports (the
-      evidence job's download directory).
+      Expect mode, and optionally tools mode, the directory holding every
+      leg's staged reports (the evidence job's download directory). In tools
+      mode, a gate whose legs left skip records there lists no tools.
     required: false
     default: ""
 

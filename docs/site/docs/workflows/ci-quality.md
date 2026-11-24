@@ -158,8 +158,10 @@ On a repository not bootstrapped yet (none of the language's manifests and no
 sources), `vrg-validate` skips the `lint` and `typecheck` gates, loudly. Each
 leg's staging step then prints a notice and stages a skip record,
 `quality-<leg>-not-bootstrapped-<version>.json`, in place of its report, and
-the `evidence` job accepts the skip records instead of the reports. The step
-checks the skip strictly, and a leg that wrote no report without one fails as
+the `evidence` job accepts the skip records instead of the reports and lists
+none of a skipped leg's tools, keeping only `vrg-validate-common` and
+`vrg-validate-custom` when both legs were skipped. The step checks the skip
+strictly, and a leg that wrote no report without one fails as
 before: see
 [Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories).
 

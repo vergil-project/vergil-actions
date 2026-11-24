@@ -482,7 +482,10 @@ jobs:
           reports-dir: evidence-reports
 
       # The tools are the common and custom checks', then the lint and
-      # typecheck legs' tools from the same per-language contract.
+      # typecheck legs' tools from the same per-language contract. A leg
+      # skipped as not bootstrapped left its skip records in evidence-reports
+      # and ran no tool, so its tools list is empty and the combined list
+      # names none of them (#1406).
       - name: Resolve lint evidence tools
         id: lint-tools
         uses: ./actions/ci/evidence/reports
@@ -490,6 +493,7 @@ jobs:
           mode: tools
           language: ${{ inputs.language }}
           gate: lint
+          reports-dir: evidence-reports
 
       - name: Resolve typecheck evidence tools
         id: typecheck-tools
@@ -498,6 +502,7 @@ jobs:
           mode: tools
           language: ${{ inputs.language }}
           gate: typecheck
+          reports-dir: evidence-reports
 
       - name: Combine quality evidence tools
         id: tools

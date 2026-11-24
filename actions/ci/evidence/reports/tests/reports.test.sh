@@ -18,7 +18,9 @@
 # list no tools, while every bad input still fails. TypeScript has a contract
 # for every gate (epic vergil-project/.github#1174) and warns on none. A repository
 # with no fleet primary language (shell, a Claude plugin, none) gets a notice
-# on its lint and typecheck legs instead. The final cases check that
+# on its lint and typecheck legs instead. Tools mode, given the downloaded
+# legs, lists no tools for a gate whose legs left skip records (#1406). The
+# final cases check that
 # ci-test.yml, ci-audit.yml and ci-quality.yml stage through this action, so a
 # workflow cannot drift back to a fixed list of names.
 set -euo pipefail
@@ -1222,6 +1224,131 @@ if assert_error "$name" "is not a typescript typecheck skip record"; then
   pass_case "$name"
 fi
 
+# --- tools mode with the downloaded legs (#1406) -----------------------------
+
+# run_tools_dir <language> <gate> <reports-dir> — tools mode in $ws with
+# REPORTS_DIR set.
+run_tools_dir() {
+  local err out
+  err="$(mktemp)"
+  out="$(mktemp)"
+  outputs="${ws}/github-output"
+  : >"$outputs"
+  rc=0
+  (
+    cd "$ws"
+    GITHUB_OUTPUT="$outputs" MODE=tools LANGUAGE="$1" GATE="$2" \
+      REPORTS_DIR="$3" bash "$reports_sh"
+  ) >"$out" 2>"$err" || rc=$?
+  stderr="$(cat "$err")"
+  stdout="$(cat "$out")"
+  rm -f "$err" "$out"
+}
+
+# assert_tools_output <name> <expected JSON> — exit 0 and exactly this tools
+# output.
+assert_tools_output() {
+  local actual
+  actual="$(sed -n 's/^tools=//p' "$outputs")"
+  if [ "$rc" -ne 0 ]; then
+    fail_case "$1" "expected exit 0, got ${rc}; stderr: ${stderr}"
+    return 1
+  fi
+  if [ "$actual" != "$2" ]; then
+    fail_case "$1" "expected tools '$2', got '${actual}'"
+    return 1
+  fi
+  return 0
+}
+
+for gate in test audit; do
+  name="tools-not-bootstrapped-${gate}-legs-list-no-tools"
+  workspace "$name"
+  skip_record python "$gate" 3.13
+  skip_record python "$gate" 3.14
+  run_tools_dir python "$gate" evidence-reports
+  if assert_tools_output "$name" '[]'; then
+    if has_notice "$stderr" "python ${gate} legs were skipped" \
+      "$(marker_of "$gate" 3.13)" "lists none of their tools"; then
+      pass_case "$name"
+    else
+      fail_case "$name" "expected a skip notice, got '${stderr}'"
+    fi
+  fi
+done
+
+# Only the skipped quality leg loses its tools; the other leg keeps its own.
+name="tools-not-bootstrapped-quality-leg-lists-no-tools"
+workspace "$name"
+reports_dir quality-common.log quality-custom.log quality-mypy-3.14.xml
+skip_record python lint 3.14
+run_tools_dir python lint evidence-reports
+if assert_tools_output "$name" '[]'; then
+  run_tools_dir python typecheck evidence-reports
+  if assert_tools_output "$name" '[{"name":"mypy"}]'; then
+    pass_case "$name"
+  fi
+fi
+
+name="tools-with-reports-lists-the-gate-tools"
+workspace "$name"
+reports_dir cargo-deny-1.99.json
+run_tools_dir rust audit evidence-reports
+if assert_tools_output "$name" '[{"name":"cargo-deny"}]'; then
+  if grep -qF -- "::notice" <<<"$stderr"; then
+    fail_case "$name" "unexpected notice: ${stderr}"
+  else
+    pass_case "$name"
+  fi
+fi
+
+name="tools-skip-record-beside-a-report-fails"
+workspace "$name"
+reports_dir coverage-3.13.xml junit-3.13.xml
+skip_record python test 3.14
+run_tools_dir python test evidence-reports
+if assert_error "$name" "holds both a python test skip record and the report"; then
+  if [ -s "$outputs" ]; then
+    fail_case "$name" "wrote an output: $(cat "$outputs")"
+  else
+    pass_case "$name"
+  fi
+fi
+
+name="tools-skip-record-of-another-language-fails"
+workspace "$name"
+skip_record python test 1.99
+run_tools_dir rust test evidence-reports
+if assert_error "$name" "is not a rust test skip record"; then
+  pass_case "$name"
+fi
+
+name="tools-missing-reports-dir-fails"
+workspace "$name"
+run_tools_dir python test evidence-reports
+if assert_error "$name" "REPORTS_DIR 'evidence-reports' is not a directory"; then
+  pass_case "$name"
+fi
+
+# A language with no contract stages nothing, so its legs may upload no
+# partial and the download directory may not exist: tools mode still gives
+# the empty list with the warning.
+name="tools-no-contract-without-reports-dir-is-empty-with-a-warning"
+workspace "$name"
+run_tools_dir go test evidence-reports
+if assert_tools_output "$name" '[]' &&
+  assert_no_contract_warning "$name" go test; then
+  pass_case "$name"
+fi
+
+name="tools-unknown-gate-with-reports-dir-fails"
+workspace "$name"
+reports_dir quality-common.log
+run_tools_dir rust quality evidence-reports
+if assert_error "$name" "unknown gate 'quality'"; then
+  pass_case "$name"
+fi
+
 # --- the workflows stage through this action ---------------------------------
 
 # case_workflow <workflow> <gate> — the gate's leg stages through the action in
@@ -1249,6 +1376,12 @@ case_workflow() {
   fi
   if ! grep -qE '^ +tools: \$\{\{ steps\.reports\.outputs\.tools \}\}$' "$wf"; then
     fail_case "$name" "the emit step does not take its tools from the action"
+    return 0
+  fi
+  # The tools step reads the downloaded legs, so skipped legs list no tools
+  # (#1406).
+  if ! grep -qE '^ +reports-dir: evidence-reports$' "$wf"; then
+    fail_case "$name" "the tools step does not read the downloaded legs (reports-dir)"
     return 0
   fi
   if grep -qE '(pip-audit|licenses|cargo-deny|npm-audit|coverage|junit)[-.*]' <<<"$(sed -E 's/(^|[[:space:]])#.*//' "$wf")"; then
@@ -1279,6 +1412,8 @@ elif [ "$(grep -cE '^ +gate: lint$' <<<"$code")" -ne 2 ] ||
 elif ! grep -qE '^ +mode: expect$' <<<"$code" ||
   ! grep -qE '^ +reports-dir: evidence-reports$' <<<"$code"; then
   fail_case "$name" "the evidence job does not require the reports"
+elif [ "$(grep -cE '^ +reports-dir: evidence-reports$' <<<"$code")" -ne 3 ]; then
+  fail_case "$name" "the expect step and both tools steps do not all read the downloaded legs (#1406)"
 elif ! grep -qE '^ +files: evidence-reports/quality-\*$' <<<"$code"; then
   fail_case "$name" "the emit step does not take evidence-reports/quality-*"
 elif ! grep -qE '^ +tools: \$\{\{ steps\.tools\.outputs\.tools \}\}$' <<<"$code"; then
