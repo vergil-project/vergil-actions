@@ -5,6 +5,7 @@ name: Smoke - ops/github-config/branch-sweep
 # fail-closed paths (sweep failure, unparseable output).
 
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     paths:

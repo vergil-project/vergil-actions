@@ -81,7 +81,11 @@
 #            is never staged. The one exception is a gate vrg-validate skipped
 #            because the repository is not bootstrapped yet (see below).
 #   tools  — write the gate's tools JSON array to $GITHUB_OUTPUT as `tools`,
-#            for the evidence.json the emit action writes.
+#            for the evidence.json the emit action writes. With REPORTS_DIR
+#            (the evidence job's downloaded legs), a gate whose legs were all
+#            skipped as not bootstrapped lists no tools, since none ran
+#            (#1406): the skip records decide it, checked as expect mode
+#            checks them.
 #   expect — check that REPORTS_DIR (the quality evidence job's downloaded
 #            legs) holds at least one non-empty, version-suffixed copy of every
 #            lint and typecheck report the language's contract names, and fail
@@ -109,10 +113,14 @@
 # rather than an empty payload. Expect mode accepts a quality gate with no
 # reports only when the legs' skip records for it are there, and fails on a
 # skip record of another language or gate, or one found beside a report of
-# the same gate.
+# the same gate. Tools mode, given REPORTS_DIR, reads the same skip records
+# the same way and lists no tools for a gate whose legs were skipped, with a
+# ::notice:: naming them, so the gate's evidence.json names no tool that never
+# ran (#1406).
 #
 # Inputs (env): MODE, LANGUAGE, GATE; for stage also VERSION, GATE_OUTCOME and
-# OUT_DIR (default ci-reports); for expect REPORTS_DIR, and no GATE. Sourced
+# OUT_DIR (default ci-reports); for tools, optionally REPORTS_DIR; for expect
+# REPORTS_DIR, and no GATE. Sourced
 # (by tests/reports.test.sh), it defines the functions and runs nothing.
 set -euo pipefail
 
@@ -575,6 +583,37 @@ expect_skip() {
   echo "${markers[*]##*/}"
 }
 
+# skipped_tools <language> <gate> <dir> — the gate's tools JSON array for the
+# evidence job whose downloaded legs are in <dir>: `[]`, with a ::notice::,
+# when the legs were skipped as not bootstrapped (expect_skip), and
+# report_tools' array otherwise. An input with no contract is report_tools'
+# (its legs stage nothing, so <dir> may not exist). Fails for a bad input, a
+# <dir> that is not a directory, or a skip record expect_skip refuses.
+skipped_tools() {
+  local language="$1" gate_name="$2" dir="$3" names skipped
+  check_inputs "$language" "$gate_name" || return 1
+  if ! has_contract "$language" "$gate_name"; then
+    report_tools "$language" "$gate_name"
+    return
+  fi
+  # Every passing leg of a gate with a contract uploads its reports or its
+  # skip record, so the evidence job's download directory exists.
+  if [ ! -d "$dir" ]; then
+    error "REPORTS_DIR '${dir}' is not a directory"
+    return 1
+  fi
+  names="$(report_files "$language" "$gate_name")" || return 1
+  skipped="$(expect_skip "$language" "$gate_name" "$dir" "$names")" || return 1
+  if [ -n "$skipped" ]; then
+    echo "::notice title=ci/evidence/reports::the ${language} ${gate_name}" \
+      "legs were skipped as not bootstrapped (${skipped}), so the" \
+      "${gate_name} evidence lists none of their tools" >&2
+    printf '%s\n' '[]'
+    return 0
+  fi
+  report_tools "$language" "$gate_name"
+}
+
 # expect_reports <language> <dir> — every lint and typecheck report of the
 # language's contract is in <dir> at least once, version-suffixed
 # (<stem>-<version>.<ext>) and non-empty, unless the gate's legs were all
@@ -663,7 +702,13 @@ case "$MODE" in
       error "GITHUB_OUTPUT is not set"
       exit 1
     fi
-    if ! tools="$(report_tools "${LANGUAGE:-}" "$GATE")"; then
+    # With the evidence job's downloaded legs, a gate whose legs were
+    # skipped as not bootstrapped lists no tools (#1406).
+    if [ -n "${REPORTS_DIR:-}" ]; then
+      if ! tools="$(skipped_tools "${LANGUAGE:-}" "$GATE" "$REPORTS_DIR")"; then
+        exit 1
+      fi
+    elif ! tools="$(report_tools "${LANGUAGE:-}" "$GATE")"; then
       exit 1
     fi
     echo "tools=${tools}" >>"$GITHUB_OUTPUT"

@@ -1,0 +1,84 @@
+name: Nightly harnesses
+
+# Runs every smoke workflow's harnesses once a day, whatever paths changed
+# (issue #1399). On pull requests each smoke workflow runs only when its own
+# paths change, but its harnesses run against the released vergil-tooling
+# that this repo's [dependencies].vergil pin installs (the newest v2.1.Z tag).
+# So a vergil-tooling release that breaks a harness would otherwise go unseen
+# until an unrelated pull request trips over it.
+#
+# Each job calls one smoke-*.yml through workflow_call, so the harnesses are
+# never duplicated here. The report job records the run under the stable name
+# harness-nightly in the operations queue (epic vergil-project/.github#1494):
+# a failure opens or comments on the one ops issue, the first green run after
+# one adds a recovery comment, and nothing closes the issue. It reports only
+# from develop, which is where scheduled runs start.
+#
+# scripts/bin/check-nightly-harnesses fails validation unless every
+# smoke-*.yml declares workflow_call and has its job here, and
+# actions/ops/report/tests/reporting-jobs.test.sh guards the report job.
+
+on:
+  schedule:
+    - cron: '15 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  branch-sweep:
+    uses: ./.github/workflows/smoke-branch-sweep.yml
+
+  cd-docs:
+    uses: ./.github/workflows/smoke-cd-docs.yml
+
+  cd-release:
+    uses: ./.github/workflows/smoke-cd-release.yml
+
+  ops-report:
+    uses: ./.github/workflows/smoke-ops-report.yml
+
+  publish-index:
+    uses: ./.github/workflows/smoke-publish-index.yml
+
+  registry-publish:
+    uses: ./.github/workflows/smoke-registry-publish.yml
+
+  # No concurrency group: GitHub keeps one pending run per group and cancels
+  # the older, which would drop a report.
+  report:
+    name: report
+    needs:
+      - branch-sweep
+      - cd-docs
+      - cd-release
+      - ops-report
+      - publish-index
+      - registry-publish
+      - setup-vergil
+    if: always()
+    runs-on: ubuntu-24.04
+    environment: automation
+    permissions:
+      contents: read
+    container: ghcr.io/vergil-project/prod-base:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Report harness-nightly
+        uses: ./actions/ops/report
+        env:
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
+        with:
+          job: harness-nightly
+          results: ${{ needs.branch-sweep.result }},${{ needs.cd-docs.result }},${{ needs.cd-release.result }},${{ needs.ops-report.result }},${{ needs.publish-index.result }},${{ needs.registry-publish.result }},${{ needs.setup-vergil.result }}
+          app-client-id: ${{ secrets.APP_CLIENT_ID }}
+          app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+  setup-vergil:
+    uses: ./.github/workflows/smoke-setup-vergil.yml

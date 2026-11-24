@@ -2,7 +2,9 @@
 # validate-custom — repo-local validation hook discovered by
 # vrg-validate. Checks the git mode of every *.test.sh script and that
 # every *.test.sh suite is run by a workflow or by validation, checks that
-# no pipeline feeds an early-exit consumer (grep -q, head), runs the
+# no pipeline feeds an early-exit consumer (grep -q, head), that every
+# write-capable secret is read in its environment, and that the nightly
+# harness run calls every smoke workflow, runs the
 # action test suites under actions/**/tests/, then runs the tests of
 # these checks under scripts/tests/.
 set -euo pipefail
@@ -111,6 +113,8 @@ echo "Running: early-exit pipe check"
 
 echo "Running: secret environment check"
 "$ROOT/scripts/bin/check-secret-environments" "$ROOT" || status=1
+echo "Running: nightly harness check"
+"$ROOT/scripts/bin/check-nightly-harnesses" "$ROOT" || status=1
 
 echo "Running: action test suites"
 run_action_suites "$ROOT" || status=1

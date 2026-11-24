@@ -191,7 +191,9 @@ jobs:
 
       # Every file the legs uploaded is one of the language's declared test
       # reports (the stage step copies nothing else), so the bundle takes them
-      # all; the tools come from the same per-language contract.
+      # all; the tools come from the same per-language contract. Legs skipped
+      # as not bootstrapped left skip records in evidence-reports, and then
+      # no test tool ran, so none is listed (#1406).
       - name: Resolve test evidence tools
         id: reports
         uses: ./actions/ci/evidence/reports
@@ -199,6 +201,7 @@ jobs:
           mode: tools
           language: ${{ inputs.language }}
           gate: test
+          reports-dir: evidence-reports
 
       - name: Emit ci-evidence-test artifact
         uses: ./actions/ci/evidence/emit

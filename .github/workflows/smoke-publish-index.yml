@@ -8,6 +8,7 @@ name: Smoke - publish/index/live-check
 # manifest or an empty page_url), plus the wiring in publish-index.yml.
 
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     paths:

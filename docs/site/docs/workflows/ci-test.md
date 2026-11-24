@@ -42,7 +42,7 @@ and TypeScript alike. The names come from
 passed but wrote no report fails, unless the repository is not bootstrapped
 yet and `vrg-validate` skipped the gate: the leg then prints a notice and
 stages a skip record, `test-not-bootstrapped-<version>.json`, in place of its
-reports (see
+reports, and the evidence lists no test tools, since none ran (see
 [Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories)).
 A language with no test report contract yet (Go, C++) gets a warning and
 stages nothing, and the release-time evidence gate decides.
