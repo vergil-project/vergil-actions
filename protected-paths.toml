@@ -1,0 +1,11 @@
+# Repository protected-path registry (epic vergil-project/.github#1384).
+#
+# A change to a path matching one of these globs needs the human's
+# protected-change approval before an agent's PR may merge, on top of the
+# fleet-wide protected core (.github/workflows/**, vergil.toml and this
+# file). `**` crosses directories. The registry is always read from develop,
+# never from the PR that changes it.
+#
+# actions/** holds the composite actions every managed repository runs
+# through the reusable workflows, so a change there reaches the whole fleet.
+paths = ["actions/**"]
