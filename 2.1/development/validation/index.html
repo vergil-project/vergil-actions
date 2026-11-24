@@ -895,6 +895,8 @@
       
         
       
+        
+      
     
     
     
@@ -947,6 +949,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.96/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.96
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8390,6 +8420,19 @@ automation or signing secret must name its environment literally. A job
 that reads no such secret may use one. A new secret goes into the table for the
 environment that holds it. An unscoped entry needs a reason that says why
 any job may read it.</p>
+<p>The check also fails a reusable workflow that declares a secret
+<code>required: true</code> under <code>on.workflow_call.secrets</code> while one of its jobs
+names no environment literally: no <code>environment:</code>, one without a <code>name</code>,
+one named by an expression, or a job that calls another reusable workflow,
+which cannot declare one. GitHub checks a called workflow's required
+secrets for each of its jobs, and a secret that exists only in an
+environment is not provided to a job that declares none, even through
+<code>secrets: inherit</code>, so GitHub refuses the whole call before any job starts
+(vergil-project/vergil-actions#1428). To fix it, declare the secret
+<code>required: false</code> and, in each job that reads it, fail loudly before using
+it when it is empty, naming the secret, as <code>cd-release.yml</code>'s
+<code>Require the automation App secrets</code> step does. Never fall back to
+<code>GITHUB_TOKEN</code>.</p>
 <h3 id="nightly-harness-wiring">Nightly harness wiring<a class="headerlink" href="#nightly-harness-wiring" title="Permanent link">&para;</a></h3>
 <p>The fifth check, <code>scripts/bin/check-nightly-harnesses</code>, fails unless
 <code>.github/workflows/nightly-harnesses.yml</code> calls every smoke workflow. Each
