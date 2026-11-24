@@ -8147,7 +8147,8 @@ It runs
 <a href="https://github.com/vergil-project/vergil-tooling/blob/develop/docs/site/docs/reference/cli-tools-overview.md"><code>vrg-ops-report</code></a>
 from vergil-tooling as the org's automation App. The reporter keeps one open
 ops issue per job, titled <code>ops: &lt;repo&gt; / &lt;job&gt; failing</code> and labelled
-<code>ops-report</code>, under the org's operations epic in <code>&lt;org&gt;/.github</code>:</p>
+<code>ops-report</code>, filed in the calling repository and linked as a sub-issue
+under the org's operations epic in <code>&lt;org&gt;/.github</code>:</p>
 <ul>
 <li>a failure or a cancel opens that issue, or comments on it when it is open;</li>
 <li>the first green run after one records the recovery on it;</li>
