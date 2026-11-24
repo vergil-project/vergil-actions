@@ -1,0 +1,110 @@
+name: Ops — Agent Audit
+
+# The daily audit of agent merges (epic vergil-project/.github#1384, spec
+# §4.8). Reusable workflow: each repository's ops.yml calls it after its
+# config job, as a job named agent-audit, the name hoshin reads it by. It runs
+# `vrg-agent-audit --repo <calling repo>`, which audits every merge into
+# develop and main since the repository's markers, the branches
+# vergil/agent-audit/develop and vergil/agent-audit/main, and moves each
+# marker to where its audit reached.
+#
+# It runs as the org automation App: the "Agent audit markers" ruleset lets
+# only the admin role and that App create, move or delete the markers. The
+# audit never creates a missing marker; it reports one (exit 1).
+#
+# It is a security-signal job: it files no issue, posts nothing and has no
+# reporting job, since a security signal never goes to a public ops issue
+# (epic vergil-project/.github#1494, spec §2.3). Its findings are its exit
+# status and its run log, which hoshin reads. vrg-agent-audit exits 0 when
+# clean and 1 on any finding or read failure; both 1 and 2 (a usage error)
+# fail the job.
+#
+# actions/ops/agent-audit/tests/agent-audit.test.sh guards this layout.
+
+on:
+  workflow_call:
+    inputs:
+      container-prefix:
+        type: string
+        required: false
+        default: prod
+        description: >-
+          Container image name prefix (prod or dev). Defaults to "prod".
+    secrets:
+      APP_CLIENT_ID:
+        required: true
+      APP_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  agent-audit:
+    name: agent-audit
+    runs-on: ubuntu-24.04
+    environment: automation
+    # The App token has a fixed one-hour life and the audit moves the markers
+    # with it at the end of its run, so cap the job there rather than at
+    # GitHub's 360-minute default.
+    timeout-minutes: 60
+    # One run per repository at a time, queued, never cancelled: two runs
+    # would audit from the same marker and race to move it.
+    concurrency:
+      group: ${{ github.repository }}/agent-audit
+      cancel-in-progress: false
+    container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
+    steps:
+      # Before any token is minted: the token can move the audit markers, so
+      # it is only ever minted for a run of develop's code.
+      - name: Require develop
+        shell: bash
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "${REF}" != "refs/heads/develop" ]; then
+            echo "::error::agent-audit runs only from refs/heads/develop, not ${REF}"
+            exit 1
+          fi
+
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          # Scoped to the calling repo only (no owner/repositories input),
+          # with what vrg-agent-audit calls:
+          # - Contents write: create and move the vergil/agent-audit/* marker
+          #   refs, and read the PRs of a commit.
+          # - Pull requests read: each merged PR, its reviews and timeline.
+          # - Issues read: the PR timeline, and the task issue's comments that
+          #   hold its merge-review record and protected-change approvals.
+          # - Metadata read: always included, stated so the token's whole
+          #   permission set is explicit.
+          permission-contents: write
+          permission-pull-requests: read
+          permission-issues: read
+          permission-metadata: read
+
+      # The audit runs in a full-history clone of the calling repository,
+      # whose origin must name it: fetch-depth 0, the default repository, and
+      # develop. Its own fetches (the PR heads under refs/pull/ and the
+      # markers) use the checkout's read-only GITHUB_TOKEN; only the API
+      # calls, the marker moves among them, use the App token.
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Install vergil-tooling
+        uses: ./actions/shared/setup/vergil
+
+      - name: Audit agent merges
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
+          REPO: ${{ github.repository }}
+        run: vrg-agent-audit --repo "$REPO"
