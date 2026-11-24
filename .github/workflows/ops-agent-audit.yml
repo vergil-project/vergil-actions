@@ -80,7 +80,7 @@ jobs:
           #   refs, and read the PRs of a commit.
           # - Pull requests read: each merged PR, its reviews and timeline.
           # - Issues read: the PR timeline, and the task issue's comments that
-          #   hold its merge-review record and protected-change approvals.
+          #   hold its merge-review record.
           # - Metadata read: always included, stated so the token's whole
           #   permission set is explicit.
           permission-contents: write

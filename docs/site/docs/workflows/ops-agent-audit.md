@@ -14,13 +14,9 @@ merge it checks:
 
 - that the merge or auto-merge actor is one it expects: the human, the user
   agent, or the automation App on PRs the App authored;
-- on a PR an agent opened or acted on, that every protected file it changed
-  has the human's protected-change approval, and that a merge-review
-  record, exemption or human override covers the merged head's change;
+- on a PR an agent opened or acted on, that a merge-review record,
+  exemption or human override covers the merged head's change;
 - that nobody but the human merged into `main`.
-
-A merged file whose blob differs from the approved head blob is reported as
-its own finding.
 
 It is a **security-signal job**. It files no issue, posts nothing and has
 no reporting job, since a security signal never goes to a public ops issue
@@ -97,7 +93,7 @@ pass.
 | ------------------------ | --- |
 | `contents: write` | Move the `vergil/agent-audit/*` marker refs (the "Agent audit markers" ruleset lets only the admin role and the automation App do so), and list the PRs of a commit |
 | `pull-requests: read` | Read each merged PR, its reviews and its timeline |
-| `issues: read` | Read the PR's timeline, and the task issue's comments that hold its merge-review record and protected-change approvals |
+| `issues: read` | Read the PR's timeline, and the task issue's comments that hold its merge-review record |
 | `metadata: read` | Always included, stated so the token's whole permission set is explicit |
 
 ### Concurrency and timeout
