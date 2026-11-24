@@ -141,7 +141,7 @@ violations() {
   fi
 
   # The require step: report's one step named "Require the automation App
-  # secrets", run-only, before the ops-report step, failing on either
+  # keys", run-only, before the ops-report step, failing on either
   # secret empty. Its env is the third place the credentials may appear.
   req_count="$(yq -r '[.jobs.report.steps[] | select((.name // "") == "Require the automation App keys")] | length' "$wf")"
   req_idx="$(yq -r '[.jobs.report.steps | to_entries | .[]
