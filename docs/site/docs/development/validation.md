@@ -109,6 +109,20 @@ that reads no such secret may use one. A new secret goes into the table for the
 environment that holds it. An unscoped entry needs a reason that says why
 any job may read it.
 
+The check also fails a reusable workflow that declares a secret
+`required: true` under `on.workflow_call.secrets` while one of its jobs
+names no environment literally: no `environment:`, one without a `name`,
+one named by an expression, or a job that calls another reusable workflow,
+which cannot declare one. GitHub checks a called workflow's required
+secrets for each of its jobs, and a secret that exists only in an
+environment is not provided to a job that declares none, even through
+`secrets: inherit`, so GitHub refuses the whole call before any job starts
+(vergil-project/vergil-actions#1428). To fix it, declare the secret
+`required: false` and, in each job that reads it, fail loudly before using
+it when it is empty, naming the secret, as `cd-release.yml`'s
+`Require the automation App secrets` step does. Never fall back to
+`GITHUB_TOKEN`.
+
 ### Nightly harness wiring
 
 The fifth check, `scripts/bin/check-nightly-harnesses`, fails unless

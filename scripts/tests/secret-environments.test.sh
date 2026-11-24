@@ -198,6 +198,60 @@ mkdir -p "$repo/.github/workflows"
 printf 'jobs:\n  x:\n    steps:\n      - env:\n          %s\n' "$app_key" >"$repo/.github/workflows/untracked.yml"
 run_case "an untracked workflow is not read" "$repo" 0
 
+# called <repo> <name> <secrets text> <jobs text> — a staged reusable
+# workflow .github/workflows/<name> declaring <secrets text> under
+# on.workflow_call.secrets and holding <jobs text> under `jobs:`.
+called() {
+	put "$1" ".github/workflows/$2" "name: test
+on:
+  workflow_call:
+    secrets:
+$3
+jobs:
+$4"
+}
+
+required_keys="      APP_CLIENT_ID:
+        required: true
+      APP_PRIVATE_KEY:
+        required: true"
+
+# vergil-project/vergil-actions#1428: GitHub checks a called workflow's
+# required secrets for each of its jobs, and a secret that exists only in an
+# environment is not provided to a job that declares none, so the call fails
+# before any job starts.
+repo=$(new_repo required-keyless)
+called "$repo" l.yml "$required_keys" "$(job prepare "" "X: y")
+$(job publish "environment: automation" "$app_key")"
+run_case "a required secret with a job that declares no environment is named" "$repo" 1 \
+	".github/workflows/l.yml: prepare"
+
+repo=$(new_repo required-all-env)
+called "$repo" m.yml "$required_keys" "$(job audit "environment: automation" "$app_key")
+$(job report "environment:
+      name: automation" "$app_id")"
+run_case "a required secret passes when every job declares an environment" "$repo" 0
+
+repo=$(new_repo optional-keyless)
+called "$repo" n.yml "      APP_CLIENT_ID:
+        required: false
+      APP_PRIVATE_KEY:
+      OTHER:
+        description: none" "$(job prepare "" "X: y")
+$(job publish "environment: automation" "$app_key")"
+run_case "an optional secret allows a job with no environment" "$repo" 0
+
+repo=$(new_repo required-other-jobs)
+called "$repo" o.yml "$required_keys" "$(job dynamic "environment: $O inputs.environment }}" "X: y")
+$(job no-name "environment:
+      url: https://example.invalid" "X: y")
+  nested:
+    uses: org/repo/.github/workflows/x.yml@v1
+    secrets: inherit"
+run_case "a required secret names an expression environment, an unnamed one and a nested call" \
+	"$repo" 1 ".github/workflows/o.yml: dynamic" ".github/workflows/o.yml: no-name" \
+	".github/workflows/o.yml: nested"
+
 repo=$(new_repo empty)
 run_case "a repo with no workflow fails" "$repo" 1
 
