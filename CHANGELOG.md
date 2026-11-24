@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.94] - 2026-11-24
+
+### Bug fixes
+
+- leave a not-bootstrapped leg's tools out of its gate's evidence.json (#1407)
+
+### CI
+
+- read the automation App secrets from the automation environment (#1398)
+- run the smoke harnesses nightly and report failures to the operations queue (#1401)
+
+### Chores
+
+- sync the managed files with the released templates (#1397)
+
+### Documentation
+
+- document the secret environments check (#1402)
+- place the App keys in the automation environment (#1404)
+
+### Features
+
+- add the reusable daily agent audit workflow (#1409)
+
 ## [2.1.93] - 2026-11-23
 
 ### Bug fixes
