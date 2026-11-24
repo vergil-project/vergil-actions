@@ -82,9 +82,11 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
       contents: read
-    secrets:
-      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+    # `inherit` within the org: it carries the App keys from the `automation`
+    # environment. A caller in another org passes APP_CLIENT_ID and
+    # APP_PRIVATE_KEY by name, since `inherit` reaches only a reusable
+    # workflow in the caller's own organization or enterprise.
+    secrets: inherit
 ```
 
 ### The App identity
