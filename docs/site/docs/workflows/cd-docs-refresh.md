@@ -34,6 +34,19 @@ to `GITHUB_TOKEN`, and a run from `develop` also turns `report` red. Pass
 them:
 
 ```yaml
+    secrets: inherit
+```
+
+The App keys live only in the caller's `automation` environment (epic
+[vergil-project/.github#1384](https://github.com/vergil-project/.github/issues/1384)),
+and `secrets: inherit` carries them to this workflow from a caller in the
+same organization. `inherit` reaches only a reusable workflow in the caller's
+own organization or enterprise, so a caller in another organization passes
+the keys by name instead, as
+[logical-minds-foundry/docs#44](https://github.com/logical-minds-foundry/docs/pull/44)
+does:
+
+```yaml
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -106,9 +119,10 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs-refresh.yml@v2.1
     permissions:
       contents: read
-    secrets:
-      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+    secrets: inherit
 ```
+
+A caller in another organization passes the two keys by name, as
+[Secrets](#secrets) shows.
 
 The **Run workflow** button (`workflow_dispatch`) is the manual "refresh now".

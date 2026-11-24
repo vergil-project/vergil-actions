@@ -34,7 +34,7 @@ across all managed repositories.
 | Workflow | Purpose |
 |---|---|
 | `cd-release.yml` | Full release pipeline (tag, build, publish, version bump). Repos with `[package]` also build their `.deb`/`.rpm` packages, sign the `.rpm`s in the main-only `package-signing` environment, attest them, attach them (plus `packages-manifest.json`) to the Release, and dispatch `package-released` to `<owner>/packages`; such callers must pass `secrets: inherit`. `container-prefix` input: `prod` (default) or `dev`, picks the release job's image and runs the `package-build` cells on the `<prefix>-pkg-*` images |
-| `cd-docs.yml` | MkDocs documentation deployment |
+| `cd-docs.yml` | MkDocs documentation deployment. Its `docs` job, in the `automation` environment, pushes `gh-pages` with a Contents-write App token, so the caller grants only `contents: read`. Its `report` job, in the `automation` environment, reports a develop deploy to the org's operations queue as `docs-deploy-develop` with the App keys `APP_CLIENT_ID` and `APP_PRIVATE_KEY` (`report: false` turns it off); a caller in the same org passes `secrets: inherit`, one in another org passes the two keys by name |
 | `publish-index.yml` | Rebuild, verify and sign the apt/dnf package-repository site from the releases in `packages.toml` and deploy it to GitHub Pages, then fail within minutes unless Pages serves the index just built (called only from an `<org>/packages` repo; `index-signing` environment, develop only; caller passes `secrets: inherit`) |
 
 ## Formatting Rules
@@ -417,7 +417,13 @@ jobs:
   docs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
-      contents: write
+      contents: read
+    # The docs job deploys gh-pages, and the report job reports develop's
+    # deploys, as the automation App. `inherit` within the org: it carries the
+    # App keys from the `automation` environment. A caller in another org passes APP_CLIENT_ID and
+    # APP_PRIVATE_KEY by name, since `inherit` reaches only a reusable
+    # workflow in the caller's own organization or enterprise.
+    secrets: inherit
 
   release:
     if: github.ref == 'refs/heads/main'
