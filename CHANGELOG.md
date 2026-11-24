@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.95] - 2026-11-24
+
+### CI
+
+- run the shared unattended jobs as the App (#1417)
+
+### Features
+
+- the daily agent audit (#1416)
+
 ## [2.1.94] - 2026-11-24
 
 ### Bug fixes
