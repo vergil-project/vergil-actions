@@ -28,22 +28,22 @@ permissions:
 
 jobs:
   branch-sweep:
-    uses: ./.github/workflows/smoke-branch-sweep.yml
+    uses: vergil-project/vergil-actions/.github/workflows/smoke-branch-sweep.yml@v2.1.94
 
   cd-docs:
-    uses: ./.github/workflows/smoke-cd-docs.yml
+    uses: vergil-project/vergil-actions/.github/workflows/smoke-cd-docs.yml@v2.1.94
 
   cd-release:
-    uses: ./.github/workflows/smoke-cd-release.yml
+    uses: vergil-project/vergil-actions/.github/workflows/smoke-cd-release.yml@v2.1.94
 
   ops-report:
-    uses: ./.github/workflows/smoke-ops-report.yml
+    uses: vergil-project/vergil-actions/.github/workflows/smoke-ops-report.yml@v2.1.94
 
   publish-index:
-    uses: ./.github/workflows/smoke-publish-index.yml
+    uses: vergil-project/vergil-actions/.github/workflows/smoke-publish-index.yml@v2.1.94
 
   registry-publish:
-    uses: ./.github/workflows/smoke-registry-publish.yml
+    uses: vergil-project/vergil-actions/.github/workflows/smoke-registry-publish.yml@v2.1.94
 
   # No concurrency group: GitHub keeps one pending run per group and cancels
   # the older, which would drop a report.
@@ -70,7 +70,7 @@ jobs:
           persist-credentials: false
 
       - name: Report harness-nightly
-        uses: ./actions/ops/report
+        uses: vergil-project/vergil-actions/actions/ops/report@v2.1.94
         env:
           VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
@@ -81,4 +81,4 @@ jobs:
           app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
   setup-vergil:
-    uses: ./.github/workflows/smoke-setup-vergil.yml
+    uses: vergil-project/vergil-actions/.github/workflows/smoke-setup-vergil.yml@v2.1.94
