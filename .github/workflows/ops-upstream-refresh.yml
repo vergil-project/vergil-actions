@@ -26,7 +26,8 @@ name: Ops — Upstream Refresh
 # A third job, report, runs after both whatever their result and reports the
 # run to the org's operations queue (epic vergil-project/.github#1494). It
 # never runs the hook and downloads no artifact; it gets the App's
-# credentials only as the ops-report action's inputs.
+# credentials only as the ops-report action's inputs and in the env of the
+# step before it that fails when either is empty.
 #
 # The tool mints its own repo-scoped App token in-process, renews it every 30
 # minutes so a wait longer than one token's hour keeps working, revokes each
@@ -45,11 +46,22 @@ on:
         default: prod
         description: >-
           Container image name prefix (prod or dev). Defaults to "prod".
+    # The org automation App's credentials, which a caller keeps in its
+    # `automation` environment (epic vergil-project/.github#1384). Declared
+    # optional because prepare holds no keys and declares no environment:
+    # GitHub checks a required secret for every job of the called workflow,
+    # and one that exists only in an environment does not count for a job
+    # that declares none, so `required: true` refuses the whole call before
+    # prepare starts (vergil-project/vergil-actions#1428). Only publish and
+    # report, which declare `environment: automation`, read the keys, and
+    # each fails loudly, naming the missing secret, before it uses them.
+    # There is no fallback to GITHUB_TOKEN.
+    # scripts/bin/check-secret-environments refuses a required secret here.
     secrets:
       APP_CLIENT_ID:
-        required: true
+        required: false
       APP_PRIVATE_KEY:
-        required: true
+        required: false
 
 permissions:
   contents: read
@@ -173,15 +185,29 @@ jobs:
       # them from its environment at startup, so no git or gh it starts sees
       # them. VRG_AUTOMATION_APP names the App every minted token is checked
       # against. actions/ops/github-config/tests/automation-env.test.sh
-      # accepts this credential form only with no GH_TOKEN.
+      # accepts this credential form only with no GH_TOKEN. The secrets are
+      # declared optional, so the step first fails, naming each one, when
+      # either is empty; the check sits in this step, not one of its own, so
+      # the credentials stay on this one step. `exec` leaves the tool as the
+      # step's process, to take SIGINT and SIGTERM itself.
       - name: Publish the refresh
+        shell: bash
         env:
           REPO: ${{ github.repository }}
           VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
           VRG_AUTOMATION_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
           VRG_AUTOMATION_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
-        run: vrg-upstream-refresh publish --from upstream-refresh-out --repo "$REPO"
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -n "${VRG_AUTOMATION_CLIENT_ID:-}" ] || missing+=(APP_CLIENT_ID)
+          [ -n "${VRG_AUTOMATION_PRIVATE_KEY:-}" ] || missing+=(APP_PRIVATE_KEY)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::upstream-refresh publishes as the automation App, and the publish job got no ${missing[*]}. Set APP_CLIENT_ID and APP_PRIVATE_KEY in the calling repository's automation environment and pass them to ops-upstream-refresh.yml from its ops.yml, by name or by inheriting them. Nothing has been published."
+            exit 1
+          fi
+          exec vrg-upstream-refresh publish --from upstream-refresh-out --repo "$REPO"
 
   # Reports upstream-refresh's result to the org's operations queue (epic
   # vergil-project/.github#1494, spec §5.3): one result for both jobs, so a
@@ -189,7 +215,8 @@ jobs:
   # The key boundary allows this third job: it never runs the hook and
   # downloads no artifact, and the App's credentials reach it only as the
   # ops-report action's inputs, from which the action mints its token on
-  # this job's own runner. Its `if: always()` is the one `if:` the boundary
+  # this job's own runner, and in the env of the shell-only step before it
+  # that checks they are set. Its `if: always()` is the one `if:` the boundary
   # permits (actions/ops/upstream-refresh/tests/key-boundary.test.sh).
   # The checkout comes first: setting up Vergil reads the workspace's
   # vergil.toml, and the local ./actions/ ref resolves against it. The action
@@ -212,6 +239,24 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+
+      # The secrets are declared optional, so this job fails here, naming
+      # each empty one, before the ops-report action would try to mint a
+      # token from it.
+      - name: Require the automation App keys
+        shell: bash
+        env:
+          APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -n "${APP_CLIENT_ID:-}" ] || missing+=(APP_CLIENT_ID)
+          [ -n "${APP_PRIVATE_KEY:-}" ] || missing+=(APP_PRIVATE_KEY)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::upstream-refresh reports as the automation App, and the report job got no ${missing[*]}. Set APP_CLIENT_ID and APP_PRIVATE_KEY in the calling repository's automation environment and pass them to ops-upstream-refresh.yml from its ops.yml, by name or by inheriting them. Nothing has been reported."
+            exit 1
+          fi
 
       - name: Report upstream-refresh
         uses: ./actions/ops/report
