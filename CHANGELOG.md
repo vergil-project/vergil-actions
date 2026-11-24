@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.97] - 2026-11-24
+
+### Bug fixes
+
+- refuse an empty App key input by name before the token mint (#1434)
+
 ## [2.1.96] - 2026-11-24
 
 ### Bug fixes
