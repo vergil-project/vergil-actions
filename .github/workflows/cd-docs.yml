@@ -97,8 +97,10 @@ jobs:
           # which shell out to `gh` to read the org `.github` epics. In an
           # Actions runner `gh` refuses to run without a token, so a token must
           # be in the env. The org `.github` epic home is public, so the
-          # repo-scoped default token suffices. It is read-only here, and the
-          # step only reads: the App token is kept from the caller's command.
+          # repo-scoped default token suffices, and GH_TOKEN is that read-only
+          # default token. The checkout above has persisted the App token in
+          # the workspace git config, so the caller's command can reach it
+          # through git, as it could the write-capable GITHUB_TOKEN before.
           GH_TOKEN: ${{ github.token }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: eval "$PRE_DEPLOY_COMMAND"
