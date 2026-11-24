@@ -27,9 +27,16 @@
 #     artifact;
 #   * secrets.APP_CLIENT_ID and secrets.APP_PRIVATE_KEY appear only as
 #     VRG_AUTOMATION_CLIENT_ID and VRG_AUTOMATION_PRIVATE_KEY in the `env` of
-#     publish's step that runs `vrg-upstream-refresh publish`, and as the
+#     publish's step that runs `vrg-upstream-refresh publish`, as the
 #     `app-client-id` and `app-private-key` inputs of report's ops-report
-#     step; no other value names `secrets` and no job passes `secrets:` on;
+#     step, and as APP_CLIENT_ID and APP_PRIVATE_KEY in the `env` of report's
+#     `Require the automation App keys` step; no other value names
+#     `secrets` and no job passes `secrets:` on;
+#   * the secrets are declared optional (vergil-project/vergil-actions#1428),
+#     so each job that reads them fails loudly when either is empty, before
+#     it uses them: publish's tool step tests both variables before it runs
+#     `vrg-upstream-refresh publish`, and report's require step, a run-only
+#     step before the ops-report step, tests both;
 #   * all three jobs have `permissions: contents: read`, and prepare sets no
 #     VRG_AUTOMATION_* variable anywhere;
 #   * no workflow-level or job-level `env` sets VRG_AUTOMATION_APP;
@@ -102,7 +109,7 @@ check_guard() {
 # nothing when it keeps them all.
 violations() {
   local wf="$1" jobs needs pub_idx rep_idx path value expected job var
-  local timeout perms persist count rep_count cond
+  local timeout perms persist count rep_count cond req_count req_idx run
 
   jobs="$(yq -r '(.jobs // {}) | keys | join(",")' "$wf")"
   if [ "$jobs" != "prepare,publish,report" ]; then
@@ -133,6 +140,30 @@ violations() {
     printf 'report downloads an artifact\n'
   fi
 
+  # The require step: report's one step named "Require the automation App
+  # secrets", run-only, before the ops-report step, failing on either
+  # secret empty. Its env is the third place the credentials may appear.
+  req_count="$(yq -r '[.jobs.report.steps[] | select((.name // "") == "Require the automation App keys")] | length' "$wf")"
+  req_idx="$(yq -r '[.jobs.report.steps | to_entries | .[]
+    | select((.value.name // "") == "Require the automation App keys") | .key] | .[0] // ""' "$wf")"
+  if [ "$req_count" != "1" ]; then
+    printf 'report has %s steps named Require the automation App keys, not 1\n' "$req_count"
+  else
+    if [ -n "$(yq -r ".jobs.report.steps[${req_idx}].uses // \"\"" "$wf")" ]; then
+      printf 'the report require step uses an action\n'
+    fi
+    if [ -n "$rep_idx" ] && [ "$req_idx" -ge "$rep_idx" ]; then
+      printf 'the report require step does not come before the ops-report step\n'
+    fi
+    run="$(yq -r ".jobs.report.steps[${req_idx}].run // \"\"" "$wf")"
+    # shellcheck disable=SC2016 # literal shell tests
+    if [[ "$run" != *'[ -n "${APP_CLIENT_ID:-}" ]'* ]] ||
+      [[ "$run" != *'[ -n "${APP_PRIVATE_KEY:-}" ]'* ]] ||
+      [[ "$run" != *'exit 1'* ]]; then
+      printf 'the report require step does not fail on an empty APP_CLIENT_ID or APP_PRIVATE_KEY\n'
+    fi
+  fi
+
   # The publish step: the one step of publish that runs the tool's publish
   # mode. Its env is the only place the App's credentials may appear.
   count="$(yq -r '[.jobs.publish.steps[] | select((.run // "") | test("vrg-upstream-refresh publish"))] | length' "$wf")"
@@ -143,6 +174,18 @@ violations() {
   fi
   if [ "$count" = "1" ] && [ -n "$(yq -r ".jobs.publish.steps[${pub_idx}].uses // \"\"" "$wf")" ]; then
     printf 'publish step %s runs the tool and also uses an action\n' "$pub_idx"
+  fi
+  if [ "$count" = "1" ]; then
+    run="$(yq -r ".jobs.publish.steps[${pub_idx}].run" "$wf")"
+    # The text before the tool's command line must hold both tests and the
+    # exit, so the check runs before the tool.
+    run="${run%%vrg-upstream-refresh publish*}"
+    # shellcheck disable=SC2016 # literal shell tests
+    if [[ "$run" != *'[ -n "${VRG_AUTOMATION_CLIENT_ID:-}" ]'* ]] ||
+      [[ "$run" != *'[ -n "${VRG_AUTOMATION_PRIVATE_KEY:-}" ]'* ]] ||
+      [[ "$run" != *'exit 1'* ]]; then
+      printf 'the publish step does not fail on an empty VRG_AUTOMATION_CLIENT_ID or VRG_AUTOMATION_PRIVATE_KEY before the tool\n'
+    fi
   fi
 
   # Every string value that names secrets, wherever it is (comments are not
@@ -166,8 +209,16 @@ violations() {
         # shellcheck disable=SC2016 # a literal GitHub Actions expression
         expected='${{ secrets.APP_PRIVATE_KEY }}'
         ;;
+      "jobs.report.steps.${req_idx:-x}.env.APP_CLIENT_ID")
+        # shellcheck disable=SC2016 # a literal GitHub Actions expression
+        expected='${{ secrets.APP_CLIENT_ID }}'
+        ;;
+      "jobs.report.steps.${req_idx:-x}.env.APP_PRIVATE_KEY")
+        # shellcheck disable=SC2016 # a literal GitHub Actions expression
+        expected='${{ secrets.APP_PRIVATE_KEY }}'
+        ;;
       *)
-        printf 'secrets referenced outside the publish step env and the report step inputs: %s: %s\n' "$path" "$value"
+        printf 'secrets referenced outside the publish step env, the report step inputs and the report require step env: %s: %s\n' "$path" "$value"
         continue
         ;;
     esac
@@ -291,16 +342,16 @@ case_real_workflow() {
 case_fixtures() {
   expect_caught "fixture-key-on-prepare-caught" \
     '.jobs.prepare.steps[-1].env.KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
-    "secrets referenced outside the publish step env and the report step inputs: jobs.prepare.steps"
+    "secrets referenced outside the publish step env, the report step inputs and the report require step env: jobs.prepare.steps"
   expect_caught "fixture-key-on-publish-job-env-caught" \
     '.jobs.publish.env.VRG_AUTOMATION_PRIVATE_KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
-    "secrets referenced outside the publish step env and the report step inputs: jobs.publish.env.VRG_AUTOMATION_PRIVATE_KEY"
+    "secrets referenced outside the publish step env, the report step inputs and the report require step env: jobs.publish.env.VRG_AUTOMATION_PRIVATE_KEY"
   expect_caught "fixture-client-id-on-install-step-caught" \
     '(.jobs.publish.steps[] | select(.uses == "./actions/shared/setup/vergil")).env.X = "${{ secrets.APP_CLIENT_ID }}"' \
-    "secrets referenced outside the publish step env and the report step inputs: jobs.publish.steps"
+    "secrets referenced outside the publish step env, the report step inputs and the report require step env: jobs.publish.steps"
   expect_caught "fixture-workflow-env-secret-caught" \
     '.env.K = "${{ toJSON(secrets) }}"' \
-    "secrets referenced outside the publish step env and the report step inputs: env.K"
+    "secrets referenced outside the publish step env, the report step inputs and the report require step env: env.K"
   expect_caught "fixture-swapped-credentials-caught" \
     '(.jobs.publish.steps[] | select((.run // "") | test("vrg-upstream-refresh publish"))).env.VRG_AUTOMATION_CLIENT_ID = "${{ secrets.APP_PRIVATE_KEY }}"' \
     "VRG_AUTOMATION_CLIENT_ID is not \${{ secrets.APP_CLIENT_ID }}"
@@ -362,13 +413,13 @@ case_fixtures() {
   # step's inputs, no hook and no artifact, and the one `if:`.
   expect_caught "fixture-key-on-report-checkout-caught" \
     '(.jobs.report.steps[] | select(.uses == "actions/checkout@v6")).env.KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
-    "secrets referenced outside the publish step env and the report step inputs: jobs.report.steps.0.env.KEY"
+    "secrets referenced outside the publish step env, the report step inputs and the report require step env: jobs.report.steps.0.env.KEY"
   expect_caught "fixture-key-on-report-step-env-caught" \
     '(.jobs.report.steps[] | select(.uses == "./actions/ops/report")).env.VRG_AUTOMATION_PRIVATE_KEY = "${{ secrets.APP_PRIVATE_KEY }}"' \
-    "secrets referenced outside the publish step env and the report step inputs: jobs.report.steps.1.env.VRG_AUTOMATION_PRIVATE_KEY"
+    "secrets referenced outside the publish step env, the report step inputs and the report require step env: jobs.report.steps.2.env.VRG_AUTOMATION_PRIVATE_KEY"
   expect_caught "fixture-report-swapped-inputs-caught" \
     '(.jobs.report.steps[] | select(.uses == "./actions/ops/report")).with."app-client-id" = "${{ secrets.APP_PRIVATE_KEY }}"' \
-    "jobs.report.steps.1.with.app-client-id is not \${{ secrets.APP_CLIENT_ID }}"
+    "jobs.report.steps.2.with.app-client-id is not \${{ secrets.APP_CLIENT_ID }}"
   expect_caught "fixture-report-runs-hook-caught" \
     '.jobs.report.steps += [{"run": "vrg-upstream-refresh prepare --out x"}]' \
     "report runs vrg-upstream-refresh"
@@ -386,13 +437,32 @@ case_fixtures() {
     "report: the if: is not always(): success()"
   expect_caught "fixture-report-step-if-caught" \
     '.jobs.report.steps[-1].if = "always()"' \
-    "jobs.report.steps.1 has an if:"
+    "jobs.report.steps.2 has an if:"
   expect_caught "fixture-report-write-permission-caught" \
     '.jobs.report.permissions.issues = "write"' \
     "report: permissions are not exactly contents: read"
   expect_caught "fixture-report-persisted-credentials-caught" \
     'del((.jobs.report.steps[] | select(.uses == "actions/checkout@v6")).with."persist-credentials")' \
     "report: a checkout does not set persist-credentials: false"
+  # The loud checks of the optional secrets (vergil-project/vergil-actions#1428).
+  expect_caught "fixture-publish-without-key-check-caught" \
+    '(.jobs.publish.steps[] | select((.run // "") | test("vrg-upstream-refresh publish"))).run = "vrg-upstream-refresh publish --from upstream-refresh-out --repo \"$REPO\""' \
+    "the publish step does not fail on an empty VRG_AUTOMATION_CLIENT_ID or VRG_AUTOMATION_PRIVATE_KEY before the tool"
+  expect_caught "fixture-publish-key-check-after-tool-caught" \
+    '(.jobs.publish.steps[] | select((.run // "") | test("vrg-upstream-refresh publish"))).run |= sub("(?s)^(.*)(exec vrg-upstream-refresh publish[^\n]*\n?)$"; "${2}${1}")' \
+    "the publish step does not fail on an empty VRG_AUTOMATION_CLIENT_ID or VRG_AUTOMATION_PRIVATE_KEY before the tool"
+  expect_caught "fixture-report-without-require-step-caught" \
+    'del(.jobs.report.steps[] | select(.name == "Require the automation App keys"))' \
+    "report has 0 steps named Require the automation App keys, not 1"
+  expect_caught "fixture-report-require-step-after-report-caught" \
+    '.jobs.report.steps = [.jobs.report.steps[0], .jobs.report.steps[2], .jobs.report.steps[1]]' \
+    "the report require step does not come before the ops-report step"
+  expect_caught "fixture-report-require-step-skips-key-caught" \
+    '(.jobs.report.steps[] | select(.name == "Require the automation App keys")).run |= sub("APP_PRIVATE_KEY:-"; "OTHER:-")' \
+    "the report require step does not fail on an empty APP_CLIENT_ID or APP_PRIVATE_KEY"
+  expect_caught "fixture-report-require-step-other-secret-caught" \
+    '(.jobs.report.steps[] | select(.name == "Require the automation App keys")).env.X = "${{ secrets.APP_PRIVATE_KEY }}"' \
+    "secrets referenced outside the publish step env, the report step inputs and the report require step env: jobs.report.steps.1.env.X"
 }
 
 case_real_workflow
