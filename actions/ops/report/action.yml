@@ -5,7 +5,8 @@ description: >-
   the issue on a failure or cancel, comments on an open one, records the first
   green run after one, and never closes an issue. Runs only on
   refs/heads/develop: on any other ref it mints no token and reports nothing.
-  It mints an issues-only token of the org automation App for the repo and the
+  On develop it fails, naming the input, when app-client-id or
+  app-private-key is empty, before any token is minted. It mints an issues-only token of the org automation App for the repo and the
   org's .github repository, then sets up vergil-tooling with that token, so the
   setup's identity check runs as the App. A composite action cannot read
   `vars`, so the calling `uses:` step sets VRG_TRUSTED_AUTHORS and
@@ -78,6 +79,32 @@ runs:
           echo "report=true"
           echo "repositories=${repositories}"
         } >>"${GITHUB_OUTPUT}"
+
+    # Before the token mint: a composite action's `required: true` does not
+    # reject an empty string, and a caller that declares the App keys
+    # optional (cd-docs.yml, cd-docs-refresh.yml, publish-index.yml,
+    # ops-upstream-refresh.yml) passes an empty one when its job cannot read
+    # the automation environment. The mint would then fail with an error that
+    # names neither the input nor the environment, so this step fails first,
+    # naming each empty input. There is no fallback to GITHUB_TOKEN. The keys
+    # reach the script only through env, never interpolated into it
+    # (vergil-project/vergil-actions#1432).
+    - name: Require the automation App keys
+      id: app-keys
+      if: steps.ref-guard.outputs.report == 'true'
+      shell: bash
+      env:
+        APP_CLIENT_ID: ${{ inputs.app-client-id }}
+        APP_PRIVATE_KEY: ${{ inputs.app-private-key }}
+      run: |
+        set -euo pipefail
+        missing=()
+        [ -n "${APP_CLIENT_ID:-}" ] || missing+=(app-client-id)
+        [ -n "${APP_PRIVATE_KEY:-}" ] || missing+=(app-private-key)
+        if [ "${#missing[@]}" -gt 0 ]; then
+          echo "::error::ops-report mints its token as the automation App, and these inputs are empty: ${missing[*]}. They take the APP_CLIENT_ID and APP_PRIVATE_KEY secrets of the automation environment, which the calling job reads only when it declares environment: automation. Nothing has been reported."
+          exit 1
+        fi
 
     # Issues write on the repo (its ops issue and the ops-report label) and on
     # the org's .github (the operations epic and the sub-issue link), and

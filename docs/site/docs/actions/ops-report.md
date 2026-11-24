@@ -54,6 +54,7 @@ jobs:
     needs: [build-index, deploy]
     if: always()
     runs-on: ubuntu-24.04
+    environment: automation
     steps:
       - uses: actions/checkout@v6
         with:
@@ -69,7 +70,8 @@ jobs:
           app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
 ```
 
-The job checks out the repository first: setting up vergil-tooling reads its
+The job declares `environment: automation`, where the App keys are kept, and
+checks out the repository first: setting up vergil-tooling reads its
 `vergil.toml`. The `uses:` step sets `VRG_TRUSTED_AUTHORS` and
 `VRG_AUTOMATION_APP` from the org Actions variables in its own `env`: a
 composite action cannot read `vars`, and the step's `env` reaches every step
@@ -97,13 +99,20 @@ The results combine into one: any `failure` makes a failure; else any
    prints a notice and stops, with no token minted and nothing reported, so a
    feature-branch `workflow_dispatch` files nothing. On develop it fails when
    `VRG_AUTOMATION_APP` or `VRG_TRUSTED_AUTHORS` is empty or unset.
-2. **Mint the App token**, with `permission-issues: write` only, for the
+2. **Require the App keys.** The action fails, naming each empty input,
+   when `app-client-id` or `app-private-key` is empty, before any token is
+   minted: an input's `required: true` does not reject an empty string. The
+   keys are the `automation` environment's `APP_CLIENT_ID` and
+   `APP_PRIVATE_KEY` secrets, so the calling job must declare
+   `environment: automation` to read them. There is no fallback to
+   `GITHUB_TOKEN`.
+3. **Mint the App token**, with `permission-issues: write` only, for the
    calling repository and the org's `.github` repository (the operations
    epic lives there).
-3. **Set up vergil-tooling** with that token as `GH_TOKEN`. The setup's
+4. **Set up vergil-tooling** with that token as `GH_TOKEN`. The setup's
    identity check sees `VRG_AUTOMATION_APP` and verifies the token as that
    App's, so the token is minted before the setup.
-4. **Report** with `vrg-ops-report --repo <owner/repo> --job <job> --results
+5. **Report** with `vrg-ops-report --repo <owner/repo> --job <job> --results
    <results> --run-url <run attempt URL>`, adding `--step` when it is set. A
    reporter that cannot read or write fails the job.
 
