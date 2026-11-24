@@ -891,6 +891,8 @@
       
         
       
+        
+      
     
     
     
@@ -943,6 +945,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.94/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.94
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7113,6 +7143,8 @@
       
         
       
+        
+      
     
     
     
@@ -7490,6 +7522,34 @@
     
   
     ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/ops-agent-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-agent-audit
   
 
     
@@ -8219,12 +8279,13 @@ or an unknown <code>mode</code> fails the step.</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tools</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rust</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">gate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">gate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">files</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">evidence-reports/*</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">tools</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.reports.outputs.tools }}</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">reports-dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">evidence-reports</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">gate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">files</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">evidence-reports/*</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="nt">tools</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.reports.outputs.tools }}</span>
 </code></pre></div>
 <p>The <code>quality</code> evidence job checks the downloaded legs with <code>mode: expect</code>
 before it emits, since the emit action skips a pattern that matches nothing:</p>
@@ -8284,9 +8345,9 @@ before it emits, since the emit action skips a pattern that matches nothing:</p>
 </tr>
 <tr>
 <td><code>reports-dir</code></td>
-<td>Expect mode</td>
+<td>Expect mode; optional in tools mode</td>
 <td><code>""</code></td>
-<td>The directory holding every leg's staged reports, the evidence job's download directory.</td>
+<td>The directory holding every leg's staged reports, the evidence job's download directory. In tools mode, a gate whose legs left skip records there lists no tools.</td>
 </tr>
 </tbody>
 </table>
@@ -8326,7 +8387,8 @@ so the evidence job takes every file the legs uploaded.</p>
   notes) and stages nothing, whatever <code>gate-outcome</code> says.</li>
 </ul>
 <p><strong>Tools.</strong> Writes the gate's tools JSON array to the <code>tools</code> output: <code>[]</code>,
-with a warning or notice, for a language with no entry.</p>
+with a warning or notice, for a language with no entry. Given <code>reports-dir</code>,
+a gate whose legs were skipped as not bootstrapped lists no tools (see below).</p>
 <p><strong>Expect.</strong> For each of the language's <code>lint</code> and <code>typecheck</code> reports,
 <code>reports-dir</code> must hold at least one non-empty, version-suffixed copy
 (<code>&lt;stem&gt;-&lt;version&gt;.&lt;ext&gt;</code>, for example <code>quality-clippy-1.95.json</code>). A missing
@@ -8366,6 +8428,11 @@ wrote no report does.</p>
 <code>::notice::</code>, when <code>reports-dir</code> holds its legs' skip records. A skip record
 of another language or gate, or one found beside a report of the same gate,
 fails the step.</p>
+<p>In <code>tools</code> mode, given <code>reports-dir</code>, the step reads the same skip records
+the same way. A gate whose legs left them gives <code>[]</code>, with a <code>::notice::</code>
+naming them, so the gate's <code>evidence.json</code> names no tool that never ran; a
+skip record <code>expect</code> mode would refuse fails the step here too. <code>ci-test</code>,
+<code>ci-audit</code> and <code>ci-quality</code> pass their download directory.</p>
 <p>The skip record is uploaded with the leg's reports and reaches the gate's
 evidence artifact, so the release-time evidence gate finds the skip recorded
 in the gate's payload rather than an empty one. A bootstrapped repository

@@ -891,6 +891,8 @@
       
         
       
+        
+      
     
     
     
@@ -943,6 +945,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.94/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.94
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6983,6 +7013,8 @@
       
         
       
+        
+      
     
     
     
@@ -7360,6 +7392,34 @@
     
   
     ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../workflows/ops-agent-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-agent-audit
   
 
     
@@ -7909,6 +7969,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#secret-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret environments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nightly-harness-wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nightly harness wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#action-test-suites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7921,6 +8003,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nightly-harness-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nightly harness run
+      
+    </span>
+  </a>
   
 </li>
       
@@ -8084,6 +8177,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#secret-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret environments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nightly-harness-wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nightly harness wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#action-test-suites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8096,6 +8211,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nightly-harness-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nightly harness run
+      
+    </span>
+  </a>
   
 </li>
       
@@ -8154,7 +8280,7 @@ shellcheck, yamllint, and actionlint.</p>
 <h2 id="custom-checks">Custom checks<a class="headerlink" href="#custom-checks" title="Permanent link">&para;</a></h2>
 <p>After the common checks, <code>vrg-validate</code> runs the repository's own
 validator, <code>scripts/bin/validate-custom</code> (in CI, the <code>quality / custom</code>
-job). It runs the three checks below, then the action test suites, then the
+job). It runs the checks below, then the action test suites, then the
 checks' own tests in <code>scripts/tests/</code>.</p>
 <h3 id="test-script-modes">Test script modes<a class="headerlink" href="#test-script-modes" title="Permanent link">&para;</a></h3>
 <p>The first check fails naming each <code>*.test.sh</code> tracked in git whose mode is
@@ -8181,6 +8307,67 @@ suite here and GitHub's default <code>bash</code> shell set, such a consumer exi
 on its first match, the producer dies of SIGPIPE writing its next line,
 and the pipeline fails although it matched. Test the output with no pipe
 instead: <code>grep -q &lt;pattern&gt; &lt;&lt;&lt;"$(&lt;producer&gt;)"</code>.</p>
+<h3 id="secret-environments">Secret environments<a class="headerlink" href="#secret-environments" title="Permanent link">&para;</a></h3>
+<p>The fourth check, <code>scripts/bin/check-secret-environments</code>, fails naming
+each workflow job that reads a secret able to write or act without
+declaring the environment that holds it. The automation App's keys and the
+registry publishing tokens live in each repository's <code>automation</code>
+environment, whose deployment-branch policy admits only <code>develop</code> and
+<code>main</code>, so a run from any other branch sees them unset. The package-signing
+keys live in their own single-branch environments.</p>
+<p>It reads every tracked workflow and, for each job that runs steps, collects
+each <code>secrets.&lt;NAME&gt;</code> read inside a <code>${{ }}</code> expression, in any case and
+skipping quoted strings. A job that calls a reusable workflow with <code>uses:</code>
+runs no steps, so the called workflow's jobs are the ones checked. Each
+secret is checked against the tables at the top of the script:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Secrets</th>
+<th>Required environment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AUTOMATION_SECRETS</code></td>
+<td><code>APP_CLIENT_ID</code>, <code>APP_PRIVATE_KEY</code>, <code>CARGO_REGISTRY_TOKEN</code></td>
+<td><code>automation</code></td>
+</tr>
+<tr>
+<td><code>SIGNING_SECRETS</code></td>
+<td><code>PACKAGE_SIGNING_KEY</code>, <code>PACKAGE_SIGNING_PASSPHRASE</code></td>
+<td><code>package-signing</code> or <code>index-signing</code></td>
+</tr>
+<tr>
+<td><code>UNSCOPED_SECRETS</code></td>
+<td><code>GITHUB_TOKEN</code>, <code>CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER</code></td>
+<td>none, each with its reason</td>
+</tr>
+</tbody>
+</table>
+<p>Nothing passes unclassified. The check also fails on:</p>
+<ul>
+<li>a secret that no table lists;</li>
+<li>a dynamic read of the secrets context (<code>secrets[...]</code>, <code>toJSON(secrets)</code>);</li>
+<li>a secret read in the workflow-level <code>env</code>, which every job sees;</li>
+<li>a workflow that does not parse.</li>
+</ul>
+<p>To fix a failure, declare the job's environment (<code>environment: automation</code>,
+or the signing environment). An environment named by an expression, such as
+<code>${{ inputs.environment }}</code>, never counts as either, so a job that reads an
+automation or signing secret must name its environment literally. A job
+that reads no such secret may use one. A new secret goes into the table for the
+environment that holds it. An unscoped entry needs a reason that says why
+any job may read it.</p>
+<h3 id="nightly-harness-wiring">Nightly harness wiring<a class="headerlink" href="#nightly-harness-wiring" title="Permanent link">&para;</a></h3>
+<p>The fifth check, <code>scripts/bin/check-nightly-harnesses</code>, fails unless
+<code>.github/workflows/nightly-harnesses.yml</code> calls every smoke workflow. Each
+tracked <code>smoke-&lt;name&gt;.yml</code> must declare a <code>workflow_call</code> trigger, and the
+nightly workflow must have a job <code>&lt;name&gt;</code> whose <code>uses:</code> is
+<code>./.github/workflows/smoke-&lt;name&gt;.yml</code>. A job there that calls anything else
+fails too, and so does a nightly workflow without its <code>schedule</code> and
+<code>workflow_dispatch</code> triggers. See <a href="#nightly-harness-run">Nightly harness run</a>.</p>
 <h3 id="action-test-suites">Action test suites<a class="headerlink" href="#action-test-suites" title="Permanent link">&para;</a></h3>
 <p><code>validate-custom</code> then runs every <code>*.test.sh</code> tracked in git directly in an
 <code>actions/**/tests/</code> directory, from the repo root as CI does, and fails
@@ -8191,6 +8378,31 @@ the validation image lacks. Each entry must name a tracked suite, so a
 renamed or removed suite fails the run until its entry is updated. A new
 suite runs in validation by default. The workflow that runs it in CI is
 still needed for the wiring check above.</p>
+<h2 id="nightly-harness-run">Nightly harness run<a class="headerlink" href="#nightly-harness-run" title="Permanent link">&para;</a></h2>
+<p>On a pull request, each <code>smoke-*.yml</code> workflow runs only when its own paths
+change. Its harnesses, though, run against the released vergil-tooling that
+<code>vergil.toml</code>'s <code>[dependencies] vergil</code> pin installs: the newest <code>v2.1.Z</code>
+tag. So a vergil-tooling release can break a harness with no change here,
+and nothing would show it until an unrelated pull request ran that
+workflow.</p>
+<p><code>.github/workflows/nightly-harnesses.yml</code> closes that gap. Once a day, and
+on a manual <code>workflow_dispatch</code>, it calls every smoke workflow on develop.
+Its <code>report</code> job then records the run in the org's operations queue under
+the stable name <code>harness-nightly</code>, through the <code>ops/report</code> action:</p>
+<ul>
+<li>a failed or cancelled run opens the
+  <code>ops: vergil-actions / harness-nightly failing</code> issue, or comments on it
+  when it is already open;</li>
+<li>the first green run after a failure adds a recovery comment;</li>
+<li>nothing closes the issue: whoever works the queue closes it.</li>
+</ul>
+<p>The issue links the run. The run's log shows the vergil-tooling version
+installed and the harness case that failed.</p>
+<p>A new smoke workflow needs a <code>workflow_call</code> trigger and its own job in
+<code>nightly-harnesses.yml</code>, with that job added to the <code>report</code> job's <code>needs</code>
+and <code>results</code>. The <a href="#nightly-harness-wiring">nightly harness wiring</a> check
+and <code>actions/ops/report/tests/reporting-jobs.test.sh</code> each fail until it
+has them.</p>
 <h2 id="tooling">Tooling<a class="headerlink" href="#tooling" title="Permanent link">&para;</a></h2>
 <p>The static validation tools are baked into the prod-base container image:</p>
 <table>

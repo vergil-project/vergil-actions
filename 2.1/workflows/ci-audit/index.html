@@ -891,6 +891,8 @@
       
         
       
+        
+      
     
     
     
@@ -943,6 +945,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.94/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.94
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6985,6 +7015,8 @@
       
         
       
+        
+      
     
     
     
@@ -7489,6 +7521,34 @@
     
   
     ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ops-agent-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-agent-audit
   
 
     
@@ -8171,7 +8231,8 @@ from <a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</cod
 audit passed but wrote no report fails, unless the repository is not
 bootstrapped yet and <code>vrg-validate</code> skipped the gate: the leg then prints a
 notice and stages a skip record, <code>audit-not-bootstrapped-&lt;version&gt;.json</code>, in
-place of its reports (see
+place of its reports, and the evidence lists no audit tools, since none ran
+(see
 <a href="../../actions/ci-evidence-reports/#not-bootstrapped-repositories">Not-bootstrapped repositories</a>).
 A language with no audit report contract yet (Go, C++) gets a warning and
 stages nothing, and the release-time evidence gate decides.</p>

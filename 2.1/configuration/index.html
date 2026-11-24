@@ -891,6 +891,8 @@
       
         
       
+        
+      
     
     
     
@@ -943,6 +945,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../releases/v2.1.94/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.94
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5630,10 +5660,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#project_token" class="md-nav__link">
+  <a href="#app_client_id-and-app_private_key" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PROJECT_TOKEN
+        APP_CLIENT_ID and APP_PRIVATE_KEY
       
     </span>
   </a>
@@ -5641,10 +5671,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#app_client_id-and-app_private_key" class="md-nav__link">
+  <a href="#the-automation-environment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        APP_CLIENT_ID and APP_PRIVATE_KEY
+        The automation environment
       
     </span>
   </a>
@@ -5722,17 +5752,6 @@
     <span class="md-ellipsis">
       
         Container build command
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#github-project-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GitHub Project integration
       
     </span>
   </a>
@@ -7318,6 +7337,8 @@
       
         
       
+        
+      
     
     
     
@@ -7695,6 +7716,34 @@
     
   
     ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/ops-agent-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-agent-audit
   
 
     
@@ -8196,10 +8245,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#project_token" class="md-nav__link">
+  <a href="#app_client_id-and-app_private_key" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PROJECT_TOKEN
+        APP_CLIENT_ID and APP_PRIVATE_KEY
       
     </span>
   </a>
@@ -8207,10 +8256,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#app_client_id-and-app_private_key" class="md-nav__link">
+  <a href="#the-automation-environment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        APP_CLIENT_ID and APP_PRIVATE_KEY
+        The automation environment
       
     </span>
   </a>
@@ -8288,17 +8337,6 @@
     <span class="md-ellipsis">
       
         Container build command
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#github-project-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GitHub Project integration
       
     </span>
   </a>
@@ -8490,65 +8528,43 @@
 
 <h1 id="repository-configuration">Repository Configuration<a class="headerlink" href="#repository-configuration" title="Permanent link">&para;</a></h1>
 <p>This page documents the GitHub configuration prerequisites that each managed
-repository needs before CI workflows, automation, and project integration work
-correctly. For action-specific configuration (inputs, outputs, behavior), see the
+repository needs before CI workflows and automation work correctly. For action-specific configuration (inputs, outputs, behavior), see the
 <a href="../actions/">Action Reference</a>.</p>
 <h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
 <p>Each repository requires specific secrets depending on its workflow set.
-<code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> are <strong>org-level</strong> Actions secrets, visible
-to all repositories, so a new repository needs no secret step for them. They
-are configured in the org's <strong>Settings &gt; Secrets and variables &gt; Actions</strong>.
-<code>PROJECT_TOKEN</code> is a repository secret, configured in each repository's
-<strong>Settings &gt; Secrets and variables &gt; Actions</strong>.</p>
+<code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> live in each repository's <strong><code>automation</code>
+environment</strong> (<strong>Settings &gt; Environments &gt; automation</strong>), and are set per
+repository. There is no org-level or repository-level copy of either: a copy
+at either level would reach a job on any branch, which the environment exists
+to prevent (see <a href="#the-automation-environment">The automation environment</a>).</p>
 <table>
 <thead>
 <tr>
 <th>Secret</th>
+<th>Where it is set</th>
 <th>Required by</th>
 <th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>PROJECT_TOKEN</code></td>
-<td>All repositories</td>
-<td>Adds new issues to the GitHub Project via the <code>add-to-project</code> workflow</td>
-</tr>
-<tr>
 <td><code>APP_CLIENT_ID</code></td>
+<td>The repository's <code>automation</code> environment</td>
 <td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and every repository that releases through <code>cd-release.yml</code></td>
 <td>Client ID of the org's automation GitHub App (<code>&lt;org&gt;-automation</code>)</td>
 </tr>
 <tr>
 <td><code>APP_PRIVATE_KEY</code></td>
+<td>The repository's <code>automation</code> environment</td>
 <td>Every repository with an <code>ops.yml</code> or <code>epic-rollup.yml</code>, and every repository that releases through <code>cd-release.yml</code></td>
 <td>Private key of the org's automation GitHub App</td>
 </tr>
 </tbody>
 </table>
-<h3 id="project_token">PROJECT_TOKEN<a class="headerlink" href="#project_token" title="Permanent link">&para;</a></h3>
-<p>A classic personal access token (PAT) that grants the <code>add-to-project</code> workflow
-permission to add issues to a user-owned GitHub Project.</p>
-<p><strong>Required scopes:</strong> <code>project</code>, <code>repo</code></p>
-<p><strong>Why a classic PAT?</strong> Fine-grained personal access tokens do not support
-user-owned Projects v2. The GitHub Projects v2 GraphQL API requires a classic
-token with the <code>project</code> scope.</p>
-<p><strong>Creation steps:</strong></p>
-<ol>
-<li>Go to <strong>Settings &gt; Developer settings &gt; Personal access tokens &gt; Tokens
-   (classic)</strong>.</li>
-<li>Click <strong>Generate new token (classic)</strong>.</li>
-<li>Set a descriptive name (e.g., <code>add-to-project automation</code>).</li>
-<li>Select scopes: <code>project</code> (full control) and <code>repo</code> (full control).</li>
-<li>Generate the token and copy it immediately.</li>
-<li>Set the secret in each repository:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
-</code></pre></div>
 <div class="admonition warning">
-<p class="admonition-title">Do not pipe tokens via stdin</p>
+<p class="admonition-title">Do not pipe secret values via stdin</p>
 <p>Always use the <code>--body</code> flag when setting secrets with <code>gh secret set</code>.
-Piping the token via stdin (<code>printf '%s' 'TOKEN' | gh secret set ...</code>)
+Piping the value via stdin (<code>printf '%s' 'VALUE' | gh secret set ...</code>)
 can corrupt the secret value during encryption, causing "Bad credentials"
 errors at runtime that are difficult to diagnose.</p>
 </div>
@@ -8621,6 +8637,11 @@ not pass them turns its reporting job red):</p>
 <td>Every repository the App is installed on in the org, read-only</td>
 </tr>
 <tr>
+<td><a href="../workflows/ops-agent-audit/"><code>ops-agent-audit.yml</code></a></td>
+<td><code>agent-audit</code></td>
+<td>Calling repository only</td>
+</tr>
+<tr>
 <td><a href="../workflows/ops-epic-rollup/"><code>ops-epic-rollup.yml</code></a></td>
 <td><code>epic-rollup</code> (from the caller's <code>epic-rollup.yml</code>)</td>
 <td>Calling repository and the epic repository</td>
@@ -8682,17 +8703,17 @@ permissions:</p>
 <tr>
 <td>Contents</td>
 <td>Read &amp; write</td>
-<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>automation/upstream-refresh/&lt;run-id&gt;</code> branch, and deletes an earlier run's branch when it closes that run's PR); <code>cd-release.yml</code> pushes the release tags and dispatches the package index to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code></td>
+<td><code>branch-sweep</code> (deletes branch refs); <code>upstream-refresh</code> (pushes the <code>automation/upstream-refresh/&lt;run-id&gt;</code> branch, and deletes an earlier run's branch when it closes that run's PR); <code>cd-release.yml</code> pushes the release tags and dispatches the package index to <code>&lt;org&gt;/packages</code>; <code>cd.yml</code> pushes the release tags; <code>github-config</code> pushes the sync branch, and GitHub returns a repository's merge settings only to a token with Contents read and write; <code>epic-sweep</code> reads each repository's <code>vergil.toml</code>; <code>agent-audit</code> moves the <code>vergil/agent-audit/*</code> marker refs</td>
 </tr>
 <tr>
 <td>Pull requests</td>
 <td>Read &amp; write</td>
-<td><code>upstream-refresh</code> (opens the refresh PR with auto-merge, updates its branch from <code>develop</code>, merges it, and closes an earlier run's open one); <code>github-config</code> (opens the sync PR, closes an earlier one and turns on auto-merge); <code>branch-sweep</code> and <code>epic-sweep</code> read them</td>
+<td><code>upstream-refresh</code> (opens the refresh PR with auto-merge, updates its branch from <code>develop</code>, merges it, and closes an earlier run's open one); <code>github-config</code> (opens the sync PR, closes an earlier one and turns on auto-merge); <code>branch-sweep</code>, <code>epic-sweep</code> and <code>agent-audit</code> read them</td>
 </tr>
 <tr>
 <td>Issues</td>
 <td>Read &amp; write</td>
-<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues); the <code>ops/report</code> action (opens and comments on ops issues, creates the <code>ops-report</code> label, links issues under the operations epic)</td>
+<td><code>ops-epic-rollup.yml</code> and <code>ops-epic-sweep.yml</code> (close, reopen, relabel and link issues); the <code>ops/report</code> action (opens and comments on ops issues, creates the <code>ops-report</code> label, links issues under the operations epic); <code>agent-audit</code> reads PR timelines and task-issue comments</td>
 </tr>
 <tr>
 <td>Workflows</td>
@@ -8753,14 +8774,16 @@ token is scoped, as <a href="#token-scoping">Token scoping</a> describes.</p>
 <li>Under <strong>Install App</strong>, install it on the org and choose <strong>All
    repositories</strong>.</li>
 <li>
-<p>Set <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> once, as org-level Actions
-   secrets visible to all repositories, so every repository that calls the
-   workflows above can read them:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;<span class="w"> </span>--visibility<span class="w"> </span>all<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;<span class="w"> </span>--visibility<span class="w"> </span>all<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;path-to-private-key&gt;.pem<span class="k">)</span><span class="s2">"</span>
+<p>In each repository that calls the workflows above, set <code>APP_CLIENT_ID</code>
+   and <code>APP_PRIVATE_KEY</code> in its <code>automation</code> environment. The environment
+   must already exist with its deployment branch policy: run
+   <code>vrg-github-repo-config update --repo &lt;org&gt;/&lt;repo&gt;</code> first if it does not
+   (see <a href="#the-automation-environment">The automation environment</a>). Then:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_CLIENT_ID<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--env<span class="w"> </span>automation<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;client-id&gt;"</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APP_PRIVATE_KEY<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--env<span class="w"> </span>automation<span class="w"> </span>--body<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>&lt;path-to-private-key&gt;.pem<span class="k">)</span><span class="s2">"</span>
 </code></pre></div>
-<p>Only an org without these org secrets sets them per repository instead,
-with <code>--repo &lt;org&gt;/&lt;repo&gt;</code> in place of <code>--org &lt;org&gt; --visibility all</code>.</p>
+<p>Never set them at org level (<code>--org</code>) or as repository secrets (<code>--repo</code>
+without <code>--env</code>).</p>
 </li>
 <li>
 <p>Set the org-level Actions variable <code>VRG_AUTOMATION_APP</code> to the App's
@@ -8771,7 +8794,7 @@ with <code>--repo &lt;org&gt;/&lt;repo&gt;</code> in place of <code>--org &lt;or
     written with <code>VRG_TRUSTED_AUTHORS</code>, from the <code>automation_app</code> of the
     org's <code>[orgs.&lt;org&gt;]</code> stanza in the host configuration, never set by hand
     (see <a href="#vrg_trusted_authors">VRG_TRUSTED_AUTHORS</a> for the order):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>vrg-trusted-authors<span class="w"> </span>publish<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>vrg-trusted-authors<span class="w"> </span>publish<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;
 </code></pre></div>
 </li>
 </ol>
@@ -8786,9 +8809,36 @@ with <code>--repo &lt;org&gt;/&lt;repo&gt;</code> in place of <code>--org &lt;or
    For Dependabot alerts, the <code>dependabot-audit</code> job exits 2 ("could not
    check") on every repository and the ops run fails.</li>
 </ol>
-<p><strong>Key rotation:</strong> Generate a new private key from the app's settings page, update
-the <code>APP_PRIVATE_KEY</code> secret wherever it is stored for that org, then revoke the
-old key. Each org has its own App and key, so rotate per org.</p>
+<p><strong>Key rotation:</strong> Generate a new private key from the app's settings page,
+update <code>APP_PRIVATE_KEY</code> in the <code>automation</code> environment of <strong>every
+repository</strong> in that org (step 9's command, once per repository), then revoke
+the old key. A repository still holding the old key fails to mint its token
+once the old key is revoked. Each org has its own App and key, so rotate per
+org.</p>
+<h3 id="the-automation-environment">The automation environment<a class="headerlink" href="#the-automation-environment" title="Permanent link">&para;</a></h3>
+<p>Each repository has a GitHub deployment environment named <code>automation</code>. Its
+deployment branch policy admits only the custom branches <code>develop</code> and
+<code>main</code> (releases run on <code>main</code>), with no required reviewers and no wait
+timer, since the jobs that use it run unattended. A job running on any other
+branch, an agent's feature branch included, cannot use the environment, so it
+never sees the App's credentials.</p>
+<p><strong>How it is created.</strong> Do not create it by hand. <code>vrg-github-repo-config
+update</code> creates the <code>automation</code> environment and its branch policy in every
+managed repository, <code>audit</code> reports drift from it, and the nightly
+<code>github-config</code> job keeps it converged. The environment must exist with its
+policy <strong>before</strong> its secrets are set: a workflow job that names an
+environment the repository does not have creates it with no branch policy.</p>
+<p><strong>Who declares it.</strong> Every job in vergil-actions that reads <code>APP_CLIENT_ID</code>
+or <code>APP_PRIVATE_KEY</code> declares <code>environment: automation</code>, as must any
+repository-local job that mints an automation App token. A calling job cannot
+declare an environment, and environment secrets reach a reusable workflow in
+another repository only when the caller passes <code>secrets: inherit</code>, so the
+callers of these workflows pass <code>secrets: inherit</code> (vrg-validate's
+secrets-inherit check allows it only for the App-key workflows).</p>
+<p><strong>Checking it.</strong> List a repository's environment secrets with
+<code>gh secret list --repo &lt;org&gt;/&lt;repo&gt; --env automation</code>: it must list both
+<code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>. <code>gh secret list --repo &lt;org&gt;/&lt;repo&gt;</code>
+and <code>gh secret list --org &lt;org&gt;</code> must list neither.</p>
 <h3 id="token-scoping">Token scoping<a class="headerlink" href="#token-scoping" title="Permanent link">&para;</a></h3>
 <p>GitHub gives a token minted from an App <strong>every</strong> permission the App's
 installation holds, unless the token asks for less. Once the App holds
@@ -8823,6 +8873,11 @@ explicit <code>permission-*</code> inputs, and each job requests only what it ne
 <td><code>ops-github-config.yml</code></td>
 <td><code>dependabot-audit</code></td>
 <td><code>vulnerability-alerts: read</code></td>
+</tr>
+<tr>
+<td><code>ops-agent-audit.yml</code></td>
+<td><code>agent-audit</code> (from <code>develop</code> only)</td>
+<td><code>contents: write</code>, <code>pull-requests: read</code>, <code>issues: read</code>, <code>metadata: read</code></td>
 </tr>
 <tr>
 <td><code>ops-epic-rollup.yml</code></td>
@@ -8897,7 +8952,7 @@ automation App of every Vergil org, as compact JSON. It is derived from the
 human's host configuration and published by the human at org setup and
 whenever that configuration changes, never edited by hand.</p>
 <p><strong>Publishing it.</strong> On the host, the human runs:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>vrg-trusted-authors<span class="w"> </span>publish<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>vrg-trusted-authors<span class="w"> </span>publish<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;
 </code></pre></div>
 <p>It writes two org Actions variables from the host configuration, both
 visible to all repositories: <code>VRG_TRUSTED_AUTHORS</code> and <code>VRG_AUTOMATION_APP</code>,
@@ -9002,18 +9057,6 @@ the build baked out-of-workspace resolves; note that <code>NODE_PATH</code> is h
 CommonJS <code>require</code> only and ignored by ESM <code>import</code>. The key's schema and
 semantics are documented on the vergil-tooling side:
 <a href="https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/"><code>container-config</code> reference</a>.</p>
-<h2 id="github-project-integration">GitHub Project integration<a class="headerlink" href="#github-project-integration" title="Permanent link">&para;</a></h2>
-<p>The <code>add-to-project</code> workflow automatically adds new issues to a GitHub Project
-when they are opened. Each repository has an <code>add-to-project.yml</code> workflow that
-references a project URL and uses the <code>PROJECT_TOKEN</code> secret.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/add-to-project@v1.0.2</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">project-url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/users/&lt;owner&gt;/projects/&lt;number&gt;</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">github-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.PROJECT_TOKEN }}</span>
-</code></pre></div>
-<p>The <code>project-url</code> value varies by repository — repositories may belong to
-different projects. This is configured directly in the workflow file, not as a
-secret.</p>
 <h2 id="repository-rulesets">Repository rulesets<a class="headerlink" href="#repository-rulesets" title="Permanent link">&para;</a></h2>
 <p>Every managed repository uses six rulesets to enforce merge requirements (a
 <code>docs-single-branch</code> repository, which has no <code>main</code>, has no <code>CI gates (main)</code>):</p>
@@ -9037,8 +9080,8 @@ and API commands, see <a href="../ci-gates/repository-rulesets/">Repository Rule
 is automatically created per workflow run and scoped to the repository.</p>
 <h3 id="default-github_token-permissions">Default GITHUB_TOKEN permissions<a class="headerlink" href="#default-github_token-permissions" title="Permanent link">&para;</a></h3>
 <p>Each workflow declares its minimum required permissions at the top level:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">permissions</span><span class="p">:</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">permissions</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 </code></pre></div>
 <table>
 <thead>
@@ -9075,19 +9118,15 @@ is automatically created per workflow run and scoped to the repository.</p>
 </tbody>
 </table>
 <h3 id="when-external-tokens-are-needed">When external tokens are needed<a class="headerlink" href="#when-external-tokens-are-needed" title="Permanent link">&para;</a></h3>
-<p>The <code>GITHUB_TOKEN</code> is insufficient in two cases:</p>
-<ol>
-<li><strong>GitHub Project access</strong> — The <code>GITHUB_TOKEN</code> cannot interact with
-   user-owned Projects v2. The <code>PROJECT_TOKEN</code> (classic PAT) is required.</li>
-<li><strong>Scopes and repositories beyond the caller's grant</strong> — a reusable
-   workflow's <code>GITHUB_TOKEN</code> carries only what the caller grants and reaches
-   only its own repository. The org's automation App token
-   (<code>APP_CLIENT_ID</code> + <code>APP_PRIVATE_KEY</code>) is required for the nightly ops jobs
-   (config update (<code>vrg-github-repo-config update</code>), branch sweep, Dependabot
-   alert audit), the epic roll-up and
-   sweep, the release tag pushes and the package-index dispatch. See
-   <a href="#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>.</li>
-</ol>
+<p>The <code>GITHUB_TOKEN</code> is insufficient when a job needs scopes or repositories
+beyond the caller's grant: a reusable workflow's <code>GITHUB_TOKEN</code> carries only
+what the caller grants and reaches only its own repository. The org's
+automation App token (<code>APP_CLIENT_ID</code> + <code>APP_PRIVATE_KEY</code>, from the
+<code>automation</code> environment) is required for the nightly ops jobs (config
+update (<code>vrg-github-repo-config update</code>), branch sweep, Dependabot alert
+audit), the epic roll-up and sweep, the release tag pushes and the
+package-index dispatch. See
+<a href="#app_client_id-and-app_private_key">APP_CLIENT_ID and APP_PRIVATE_KEY</a>.</p>
 <h2 id="auto-merge">Auto-merge<a class="headerlink" href="#auto-merge" title="Permanent link">&para;</a></h2>
 <p>All managed repositories have <strong>auto-merge enabled</strong> in repository settings.
 This allows PRs to merge automatically once all required status checks pass.</p>
@@ -9104,23 +9143,26 @@ This allows PRs to merge automatically once all required status checks pass.</p>
 <p>Do not create the rulesets by hand. <code>vrg-github-repo-config update</code> creates
 every ruleset of the <a href="../ci-gates/repository-rulesets/">standard configuration</a>:
 Branch protection, CI gates (develop), CI gates (main), Tag protection, Rolling
-tag branch names and Automation branches. The nightly <code>github-config</code> job runs the same command and
+tag branch names and Automation branches. It also creates the
+<a href="#the-automation-environment"><code>automation</code> environment</a> and its deployment
+branch policy. The nightly <code>github-config</code> job runs the same command and
 keeps them converged from then on.</p>
 <ul>
 <li>[ ] Run <code>vrg-github-repo-config update --repo &lt;org&gt;/&lt;repo&gt;</code></li>
 </ul>
 <h3 id="3-secrets">3. Secrets<a class="headerlink" href="#3-secrets" title="Permanent link">&para;</a></h3>
 <ul>
-<li>[ ] Set <code>PROJECT_TOKEN</code> (all repositories)</li>
-<li>[ ] Confirm the org secrets <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> for the
-  org's automation App exist and are visible to all repositories. There is no
-  per-repository step for them.</li>
+<li>[ ] After step 2 has created the <code>automation</code> environment, set
+  <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> in it, as
+  <a href="#app_client_id-and-app_private_key">step 9 of the App setup</a> shows</li>
+<li>[ ] Confirm that neither secret is set at org or repository level</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PROJECT_TOKEN<span class="w"> </span>--repo<span class="w"> </span>vergil-project/&lt;repo&gt;<span class="w"> </span>--body<span class="w"> </span><span class="s2">"&lt;token&gt;"</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>gh<span class="w"> </span>secret<span class="w"> </span>list<span class="w"> </span>--org<span class="w"> </span>vergil-project
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>gh<span class="w"> </span>secret<span class="w"> </span>list<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;<span class="w"> </span>--env<span class="w"> </span>automation
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>gh<span class="w"> </span>secret<span class="w"> </span>list<span class="w"> </span>--repo<span class="w"> </span>&lt;org&gt;/&lt;repo&gt;
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>gh<span class="w"> </span>secret<span class="w"> </span>list<span class="w"> </span>--org<span class="w"> </span>&lt;org&gt;
 </code></pre></div>
-<p><code>gh secret list --org</code> must list both <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> as
-<code>Visible to all repositories</code>.</p>
+<p>The first command must list both <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>; the
+other two must list neither.</p>
 <h3 id="4-github-app-installation">4. GitHub App installation<a class="headerlink" href="#4-github-app-installation" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] Confirm the org's <code>&lt;org&gt;-automation</code> App installation has <strong>All
@@ -9154,7 +9196,6 @@ keeps them converged from then on.</p>
 </ul>
 <h3 id="5-workflow-files">5. Workflow files<a class="headerlink" href="#5-workflow-files" title="Permanent link">&para;</a></h3>
 <ul>
-<li>[ ] Add <code>add-to-project.yml</code> with the correct project URL</li>
 <li>[ ] Add <code>ci.yml</code> with standard checks for the repository type</li>
 <li>[ ] Add <code>cd.yml</code> with docs and/or release jobs as needed</li>
 </ul>
@@ -9168,7 +9209,6 @@ keeps them converged from then on.</p>
 </ul>
 <h3 id="7-verification">7. Verification<a class="headerlink" href="#7-verification" title="Permanent link">&para;</a></h3>
 <ul>
-<li>[ ] Open a test issue and confirm it appears in the GitHub Project</li>
 <li>[ ] Open a test PR and confirm all required checks run</li>
 <li>[ ] Confirm auto-merge works after checks pass</li>
 </ul>

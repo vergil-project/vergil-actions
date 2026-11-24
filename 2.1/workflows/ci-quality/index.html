@@ -891,6 +891,8 @@
       
         
       
+        
+      
     
     
     
@@ -943,6 +945,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.94/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.94
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -6985,6 +7015,8 @@
       
         
       
+        
+      
     
     
     
@@ -7511,6 +7543,34 @@
     
   
     ops-github-config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ops-agent-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ops-agent-audit
   
 
     
@@ -8366,8 +8426,10 @@ language's lint and typecheck tools.</p>
 sources), <code>vrg-validate</code> skips the <code>lint</code> and <code>typecheck</code> gates, loudly. Each
 leg's staging step then prints a notice and stages a skip record,
 <code>quality-&lt;leg&gt;-not-bootstrapped-&lt;version&gt;.json</code>, in place of its report, and
-the <code>evidence</code> job accepts the skip records instead of the reports. The step
-checks the skip strictly, and a leg that wrote no report without one fails as
+the <code>evidence</code> job accepts the skip records instead of the reports and lists
+none of a skipped leg's tools, keeping only <code>vrg-validate-common</code> and
+<code>vrg-validate-custom</code> when both legs were skipped. The step checks the skip
+strictly, and a leg that wrote no report without one fails as
 before: see
 <a href="../../actions/ci-evidence-reports/#not-bootstrapped-repositories">Not-bootstrapped repositories</a>.</p>
 <p>A fleet language with no lint or typecheck contract yet (<code>go</code>, <code>cpp</code>) gets
