@@ -91,12 +91,14 @@ jobs:
   docs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
-      contents: write
-    # For the reporting job, which reports develop's docs deploys to the
-    # org's operations queue as the automation App.
-    secrets:
-      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      contents: read
+    # The docs job deploys gh-pages, and the report job reports develop's
+    # deploys to the org's operations queue, as the automation App. `inherit`
+    # within the org: it carries the App keys from the `automation`
+    # environment. A caller in another org passes APP_CLIENT_ID and
+    # APP_PRIVATE_KEY by name, since `inherit` reaches only a reusable
+    # workflow in the caller's own organization or enterprise.
+    secrets: inherit
 
   release:
     if: github.ref == 'refs/heads/main'
