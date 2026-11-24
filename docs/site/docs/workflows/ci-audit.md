@@ -50,7 +50,8 @@ from [`ci/evidence/reports`](../actions/ci-evidence-reports.md). A leg whose
 audit passed but wrote no report fails, unless the repository is not
 bootstrapped yet and `vrg-validate` skipped the gate: the leg then prints a
 notice and stages a skip record, `audit-not-bootstrapped-<version>.json`, in
-place of its reports (see
+place of its reports, and the evidence lists no audit tools, since none ran
+(see
 [Not-bootstrapped repositories](../actions/ci-evidence-reports.md#not-bootstrapped-repositories)).
 A language with no audit report contract yet (Go, C++) gets a warning and
 stages nothing, and the release-time evidence gate decides.
