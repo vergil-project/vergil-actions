@@ -11,6 +11,8 @@ git configuration, version detection, and mike deploy/set-default.
     version-command: cat VERSION | cut -d. -f1,2
     mkdocs-config: docs/site/mkdocs.yml
     mike-command: mike
+    git-user-name: ${{ steps.git-identity.outputs.name }}
+    git-user-email: ${{ steps.git-identity.outputs.email }}
 ```
 
 ## Inputs
@@ -20,16 +22,25 @@ git configuration, version detection, and mike deploy/set-default.
 | `version-command` | **Yes** | — | Shell command to extract the version string on main (e.g. `cat VERSION`, `grep -oP ... version.go`). |
 | `mkdocs-config` | No | `docs/site/mkdocs.yml` | Path to mkdocs.yml configuration file. |
 | `mike-command` | No | `mike` | Command to run mike. Set to `uv run mike` for Python repos that manage their own dependencies via their project's virtual environment. |
+| `git-user-name` | **Yes** | — | The `user.name` of the deploy commit. `cd-docs.yml` passes the org automation App's `<app-slug>[bot]`. |
+| `git-user-email` | **Yes** | — | The `user.email` of the deploy commit. `cd-docs.yml` passes the App bot user's noreply address, `<user-id>+<app-slug>[bot]@users.noreply.github.com`. |
+
+A composite action does not enforce `required`, so the action checks both
+identity inputs itself: an empty one fails the deploy. There is no default
+identity.
 
 ## Permissions
 
-- `contents: write` (required for pushing to the `gh-pages` branch)
+- The checkout's persisted credentials must be able to push the `gh-pages`
+  branch (Contents write). `cd-docs.yml` checks out with a Contents-write
+  token of the org automation App, so its `GITHUB_TOKEN` stays read-only.
 
 ## Behavior
 
-1. **Configure git identity** — Sets the git user to `github-actions[bot]` for
-   the deploy commit. Marks the workspace as a safe directory to avoid
-   dubious-ownership errors in container jobs.
+1. **Configure git identity** — Sets the git user of the deploy commit from
+   the `git-user-name` and `git-user-email` inputs, and fails when either is
+   empty. Marks the workspace as a safe directory to avoid dubious-ownership
+   errors in container jobs.
 2. **Determine version** — On `main`, runs the `version-command` to extract the
    version and sets `alias=latest`. On all other branches, sets `version=dev`
    with no alias.
@@ -70,22 +81,37 @@ jobs:
   docs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1
     permissions:
-      contents: write
+      contents: read
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 ```
 
-### Operations-queue inputs
+### The App identity
 
-`cd-docs.yml` declares the org automation App's `APP_CLIENT_ID` and
-`APP_PRIVATE_KEY` as optional secrets, and a boolean `report` input (default
-`true`). Neither is used yet: they are declared ahead of the operations-queue
-reporting (epic
-[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494)),
-so every caller can pass the secrets before the release whose reporting job
-needs them. `report: false` will keep that job off; `cd-docs-refresh.yml`
-passes it, because the refresh reports its own run.
+`cd-docs.yml`'s `docs` job deploys as the org automation App (epic
+[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494),
+spec §5.4). It runs in the `automation` environment, which holds the App's
+`APP_CLIENT_ID` and `APP_PRIVATE_KEY`, and:
+
+1. mints an App token scoped to the calling repository, with only Contents
+   write;
+2. checks out with that token, so the `gh-pages` push uses it;
+3. looks up the App's bot user and passes `<app-slug>[bot]` and its noreply
+   address to this action as the commit identity.
+
+The workflow's `GITHUB_TOKEN` is read-only. The secrets are declared
+optional, but a caller that passes none fails the `docs` job at its token
+step: there is no fallback to `GITHUB_TOKEN`.
+`actions/ops/report/tests/app-identity.test.sh` guards this.
+
+### Operations-queue reporting
+
+`cd-docs.yml` also takes a boolean `report` input (default `true`). Its
+`report` job reports a develop deploy to the org's operations queue as
+`docs-deploy-develop`, through [`ops/report`](ops-report.md).
+`report: false` keeps that job off; `cd-docs-refresh.yml` passes it, because
+the refresh reports its own run.
 
 ### Interpreter source
 
@@ -119,6 +145,8 @@ in their own docs dependencies. Added in v2.1.43 (#947, PR #948).
 - uses: vergil-project/vergil-actions/actions/cd/docs/deploy@v2.1
   with:
     version-command: cat VERSION | cut -d. -f1,2
+    git-user-name: ${{ steps.git-identity.outputs.name }}
+    git-user-email: ${{ steps.git-identity.outputs.email }}
 ```
 
 ### Python repo with uv-managed dependencies
@@ -128,6 +156,8 @@ in their own docs dependencies. Added in v2.1.43 (#947, PR #948).
   with:
     version-command: cat VERSION | cut -d. -f1,2
     mike-command: uv run mike
+    git-user-name: ${{ steps.git-identity.outputs.name }}
+    git-user-email: ${{ steps.git-identity.outputs.email }}
 ```
 
 ## GitHub configuration

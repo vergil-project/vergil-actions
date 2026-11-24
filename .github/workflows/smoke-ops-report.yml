@@ -20,7 +20,11 @@ name: Smoke - ops/report
 #     and publish's results, unfiltered, so all-skipped reports nothing;
 #   * release-push-skip.test.sh: cd-docs.yml reports no release push;
 #   * docs-refresh-reports-once.test.sh: a docs refresh is reported once, as
-#     docs-refresh.
+#     docs-refresh;
+#   * app-identity.test.sh (issue #1363): the shared unattended jobs write as
+#     the org automation App, bar the recorded exception, the docs deploy
+#     commits as the App's bot user, and the App jobs verify their token
+#     against VRG_AUTOMATION_APP before their first write.
 # Each needs yq (preinstalled on GitHub's ubuntu runners) and no network.
 
 on:
@@ -29,6 +33,7 @@ on:
   pull_request:
     paths:
       - actions/ops/report/**
+      - actions/cd/docs/deploy/**
       - .github/workflows/cd-docs.yml
       - .github/workflows/cd-docs-refresh.yml
       - .github/workflows/publish-index.yml
@@ -73,3 +78,6 @@ jobs:
       - name: Run docs-refresh reports-once harness
         shell: bash
         run: bash actions/ops/report/tests/docs-refresh-reports-once.test.sh
+      - name: Run App identity harness
+        shell: bash
+        run: bash actions/ops/report/tests/app-identity.test.sh

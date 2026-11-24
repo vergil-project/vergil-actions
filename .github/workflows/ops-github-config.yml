@@ -55,6 +55,24 @@ jobs:
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
 
+      # Before the first write: VRG_AUTOMATION_APP makes vrg-whoami verify
+      # that GH_TOKEN was minted by the automation App it names (GraphQL
+      # viewer is <slug>[bot]), and an empty variable fails it too (epic
+      # vergil-project/.github#1494, spec §5.4). The step holds the token, so
+      # it may carry VRG_AUTOMATION_APP (automation-env.test.sh).
+      - name: Verify the token is the automation App
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+        run: |
+          set -euo pipefail
+          mode="$(vrg-whoami --mode)"
+          if [ "${mode}" != "automation" ]; then
+            echo "::error::the App token did not verify as the automation App: vrg-whoami --mode printed ${mode}"
+            exit 1
+          fi
+
       - name: Sweep finished branches
         uses: ./actions/ops/github-config/branch-sweep
         env:
@@ -289,6 +307,24 @@ jobs:
 
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
+
+      # Before the first token use: VRG_AUTOMATION_APP makes vrg-whoami verify
+      # that GH_TOKEN was minted by the automation App it names (GraphQL
+      # viewer is <slug>[bot]), and an empty variable fails it too (epic
+      # vergil-project/.github#1494, spec §5.4). The step holds the token, so
+      # it may carry VRG_AUTOMATION_APP (automation-env.test.sh).
+      - name: Verify the token is the automation App
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
+        run: |
+          set -euo pipefail
+          mode="$(vrg-whoami --mode)"
+          if [ "${mode}" != "automation" ]; then
+            echo "::error::the App token did not verify as the automation App: vrg-whoami --mode printed ${mode}"
+            exit 1
+          fi
 
       - name: Audit open Dependabot alerts
         env:

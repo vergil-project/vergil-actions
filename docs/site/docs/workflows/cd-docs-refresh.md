@@ -26,10 +26,12 @@ the caller runs it on a schedule and on demand.
 The `report` job uses them to report the run to the org's operations queue
 (epic
 [vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494)),
-and the `refresh` job forwards them to `cd-docs.yml`. They are declared
+and the `refresh` job forwards them to `cd-docs.yml`, whose `docs` job
+deploys with an App token (see [Behavior](#behavior)). They are declared
 optional, a release ahead of the reporting job, so every caller could pass
-them first; a run from `develop` that does not pass them turns `report` red.
-Pass them:
+them first. A run that does not pass them fails the deploy, with no fallback
+to `GITHUB_TOKEN`, and a run from `develop` also turns `report` red. Pass
+them:
 
 ```yaml
     secrets:
@@ -56,7 +58,10 @@ The `refresh` job calls `cd-docs.yml` with the three inputs, `report: false`
 (the refresh reports its run to the operations queue itself, so `cd-docs.yml`
 must not report it a second time) and both App secrets. Its `docs` job:
 
-1. Checks out the repository with full history and installs vergil-tooling.
+1. Runs in the `automation` environment, which holds the App secrets, and
+   mints an App token scoped to the repository with only Contents write.
+   It checks out the repository with that token and full history, and
+   installs vergil-tooling.
 2. Runs `pre-deploy-command`. The default runs `vrg-roadmap` and
    `vrg-activity-log`, which read the org's `.github` epics with `gh`; the step
    sets `GH_TOKEN` to the workflow's `github.token`, which is enough because
@@ -65,7 +70,9 @@ must not report it a second time) and both App secrets. Its `docs` job:
    [`shared/docs/stage`](../actions/shared-docs-stage.md).
 4. Deploys with [`cd/docs/deploy`](../actions/cd-docs-deploy.md): `mike` for
    a versioned site, or `mkdocs gh-deploy` to the `gh-pages` root for a
-   repository with `versioning-scheme = none`.
+   repository with `versioning-scheme = none`. The `gh-pages` push uses the
+   App token, and the commit is made as the App's `<app-slug>[bot]` user
+   (see [The App identity](../actions/cd-docs-deploy.md#the-app-identity)).
 
 `cd-docs` runs in the `cd-docs` concurrency group without cancelling, so a
 refresh queues behind a deploy that is already running.
@@ -79,7 +86,7 @@ that ref to the release tag (see
 
 | Scope | Level | Reason |
 | ----- | ----- | ------ |
-| `contents` | `write` | The deploy pushes the built site to the `gh-pages` branch |
+| `contents` | `read` | Checkout. The deploy pushes the built site to the `gh-pages` branch with the App token, not `GITHUB_TOKEN` |
 
 ## Usage
 
@@ -92,13 +99,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   refresh:
     uses: vergil-project/vergil-actions/.github/workflows/cd-docs-refresh.yml@v2.1
     permissions:
-      contents: write
+      contents: read
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
