@@ -48,7 +48,7 @@ jobs:
     # Fully-qualified so this nested reusable resolves when cd-docs-refresh is
     # called cross-repo (a relative ./ ref does not); @develop is frozen to the
     # release tag by vrg-freeze-refs at release time.
-    uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@develop
+    uses: vergil-project/vergil-actions/.github/workflows/cd-docs.yml@v2.1.96
     permissions:
       contents: read
     # The nested call resolves to develop's cd-docs.yml (frozen to the release
@@ -89,7 +89,7 @@ jobs:
           persist-credentials: false
 
       - name: Report docs-refresh
-        uses: ./actions/ops/report
+        uses: vergil-project/vergil-actions/actions/ops/report@v2.1.96
         env:
           VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}

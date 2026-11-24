@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
-        uses: ./actions/shared/setup/vergil
+        uses: vergil-project/vergil-actions/actions/shared/setup/vergil@v2.1.96
 
       # Before the first write: VRG_AUTOMATION_APP makes vrg-whoami verify
       # that GH_TOKEN was minted by the automation App it names (GraphQL
@@ -101,7 +101,7 @@ jobs:
           persist-credentials: false
 
       - name: Report epic-rollup
-        uses: ./actions/ops/report
+        uses: vergil-project/vergil-actions/actions/ops/report@v2.1.96
         env:
           VRG_AUTOMATION_APP: ${{ vars.VRG_AUTOMATION_APP }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
