@@ -50,7 +50,10 @@ The `epic-rollup` job runs in `ghcr.io/vergil-project/<prefix>-base:latest`:
 1. Mints an App token scoped to the calling repository and `epic-repo`,
    requesting only `issues: write`.
 2. Checks out the repository and installs vergil-tooling.
-3. Runs `vrg-epic-rollup --task "<owner>/<repo>#<issue number>"` with the
+3. Runs `vrg-whoami --mode` with the App token and `VRG_AUTOMATION_APP`, and
+   fails unless it prints `automation`: vergil-tooling verifies that the
+   token was minted by the App the variable names before any write.
+4. Runs `vrg-epic-rollup --task "<owner>/<repo>#<issue number>"` with the
    App token as `GH_TOKEN`.
 
 The issue number comes from `github.event.issue.number`, so the caller must be

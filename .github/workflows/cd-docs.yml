@@ -23,18 +23,23 @@ on:
           itself under its own job name.
         type: boolean
         default: true
-    # The org automation App's credentials, for the ops-report action (epic
-    # vergil-project/.github#1494), used only by the report job. Declared
-    # optional a release before that job, so every caller could pass them
-    # first and no caller's run turned red (spec §5.6).
+    # The org automation App's credentials (epic vergil-project/.github#1494):
+    # the deploy job pushes gh-pages with an App token (spec §5.4), and the
+    # report job's ops-report action mints its own. Declared optional a
+    # release before the report job, so every caller could pass them first
+    # (spec §5.6); a caller that passes none now fails the deploy job's token
+    # step, with no fallback to GITHUB_TOKEN.
     secrets:
       APP_CLIENT_ID:
         required: false
       APP_PRIVATE_KEY:
         required: false
 
+# Read-only: the deploy pushes gh-pages as the org automation App, never with
+# GITHUB_TOKEN (epic vergil-project/.github#1494, spec §5.4).
+# actions/ops/report/tests/app-identity.test.sh guards this.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: cd-docs
@@ -44,6 +49,9 @@ jobs:
   deploy:
     name: docs
     runs-on: ubuntu-24.04
+    # The App keys live only in the automation environment, whose branch
+    # policy admits develop and main (epic vergil-project/.github#1384).
+    environment: automation
     container: ghcr.io/vergil-project/${{ inputs.container-prefix || 'prod' }}-base:latest
     # Pin uv's interpreter source to the image (spec §6.5 of epic
     # vergil-project/.github#407): every uv command in this job, including the
@@ -56,10 +64,26 @@ jobs:
     env:
       UV_PYTHON_PREFERENCE: only-system
     steps:
+      # The deploy pushes gh-pages as the org automation App (epic
+      # vergil-project/.github#1494, spec §5.4). Scoped to the calling repo
+      # only (no owner/repositories input), with Contents write for the push.
+      # A missing secret or a failed mint fails the job: there is no fallback
+      # to GITHUB_TOKEN.
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      # The checkout persists the App token, which the `git push` of mike and
+      # mkdocs gh-deploy to gh-pages then uses.
       - name: Checkout code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Install vergil-tooling
         uses: ./actions/shared/setup/vergil
@@ -73,7 +97,8 @@ jobs:
           # which shell out to `gh` to read the org `.github` epics. In an
           # Actions runner `gh` refuses to run without a token, so a token must
           # be in the env. The org `.github` epic home is public, so the
-          # repo-scoped default token suffices — no App-token minting needed.
+          # repo-scoped default token suffices. It is read-only here, and the
+          # step only reads: the App token is kept from the caller's command.
           GH_TOKEN: ${{ github.token }}
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         run: eval "$PRE_DEPLOY_COMMAND"
@@ -84,6 +109,26 @@ jobs:
           VRG_TRUSTED_AUTHORS: ${{ vars.VRG_TRUSTED_AUTHORS }}
         with:
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
+
+      # The deploy commit is authored and committed by <app-slug>[bot], with
+      # the bot user's ID in the noreply address, so it shows as the App: the
+      # pattern in actions/create-github-app-token's README, which
+      # ops-github-config.yml's github-config job also uses.
+      - name: Resolve the App's git identity
+        id: git-identity
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          user_id="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
+          if ! [[ "${user_id}" =~ ^[0-9]+$ ]]; then
+            echo "::error::could not read the user ID of ${APP_SLUG}[bot]: ${user_id}"
+            exit 1
+          fi
+          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
+          echo "email=${user_id}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
 
       - name: Deploy docs
         uses: ./actions/cd/docs/deploy
@@ -98,6 +143,8 @@ jobs:
         with:
           version-command: vrg-version show --major-minor
           mkdocs-config: ${{ inputs.mkdocs-config || 'docs/site/mkdocs.yml' }}
+          git-user-name: ${{ steps.git-identity.outputs.name }}
+          git-user-email: ${{ steps.git-identity.outputs.email }}
 
   # Reports the docs deploy as docs-deploy-develop to the org's operations
   # queue (epic vergil-project/.github#1494, spec §5.3, §4.1). Off when the

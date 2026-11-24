@@ -54,6 +54,24 @@ result as `publish-index` to the org's operations queue (epic
 through [`ops/report`](../actions/ops-report.md), which mints its token from
 them. A caller passing `secrets: inherit` already passes them.
 
+### Token identity
+
+Unlike the other unattended jobs (epic
+[vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494),
+spec §5.4), `build-index` and `deploy` do not use the App token:
+
+- `deploy` publishes with `actions/deploy-pages`, which uses the
+  workflow's `GITHUB_TOKEN` (`pages: write`) and the run's OIDC token
+  (`id-token: write`). The job runs in the `github-pages` environment its
+  deployment is made to, and a job declares only one environment, so it
+  cannot read the App's keys, which live only in the `automation`
+  environment. This is a recorded identity exception.
+- `build-index` uses its read-only `GITHUB_TOKEN` to download releases and
+  verify their attestations. It writes nothing with a token, and it runs in
+  the `index-signing` environment, so it cannot read the App's keys either.
+
+`actions/ops/report/tests/app-identity.test.sh` holds both to this.
+
 ## Signing environment and caller example
 
 The signing key comes from the caller repository's `index-signing`

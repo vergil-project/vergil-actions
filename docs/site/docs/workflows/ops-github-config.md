@@ -72,6 +72,15 @@ the same pattern:
 2. Checks out the repository and installs vergil-tooling.
 3. Runs its command with the App token as `GH_TOKEN`.
 
+`branch-sweep` and `dependabot-audit` check the token before they use it:
+a step between the install and the command runs `vrg-whoami --mode` with the
+App token and `VRG_AUTOMATION_APP`, and fails unless it prints `automation`.
+vergil-tooling then verifies that the token was minted by the App the
+variable names, and an empty variable fails the step too. `github-config` and
+`trusted-authors-check` set `VRG_AUTOMATION_APP` on their command's step
+instead, whose command makes the same check (below).
+`actions/ops/report/tests/app-identity.test.sh` guards the order.
+
 `github-config` is the exception: its first step, before any token is minted,
 fails the job unless the ref is `refs/heads/develop` and `VRG_AUTOMATION_APP`
 is set, and its checkout pins `ref: develop` (see
