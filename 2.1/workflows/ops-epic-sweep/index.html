@@ -893,6 +893,8 @@
       
         
       
+        
+      
     
     
     
@@ -945,6 +947,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.95/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.95
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -8291,6 +8321,9 @@ user agent syncs advisory states with <code>vrg-security-record sync</code>.</p>
 <li>Mints an App token for the caller's org, with no repository restriction,
    scoped to <code>issues: write</code>, <code>pull-requests: read</code> and <code>contents: read</code>.</li>
 <li>Checks out the repository and installs vergil-tooling.</li>
+<li>Runs <code>vrg-whoami --mode</code> with the App token and <code>VRG_AUTOMATION_APP</code>, and
+   fails unless it prints <code>automation</code>: vergil-tooling verifies that the
+   token was minted by the App the variable names before any write.</li>
 <li>Runs <code>vrg-epic-audit --close --window-days "$WINDOW_DAYS"</code> with the App
    token as <code>GH_TOKEN</code> and <code>VRG_EPIC_SWEEP=1</code>.</li>
 </ol>

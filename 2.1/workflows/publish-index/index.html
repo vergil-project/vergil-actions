@@ -893,6 +893,8 @@
       
         
       
+        
+      
     
     
     
@@ -945,6 +947,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/v2.1.95/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2.1.95
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -7423,6 +7453,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Caller requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -8035,6 +8082,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Caller requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -8114,6 +8178,22 @@ result as <code>publish-index</code> to the org's operations queue (epic
 <a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>)
 through <a href="../../actions/ops-report/"><code>ops/report</code></a>, which mints its token from
 them. A caller passing <code>secrets: inherit</code> already passes them.</p>
+<h3 id="token-identity">Token identity<a class="headerlink" href="#token-identity" title="Permanent link">&para;</a></h3>
+<p>Unlike the other unattended jobs (epic
+<a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>,
+spec §5.4), <code>build-index</code> and <code>deploy</code> do not use the App token:</p>
+<ul>
+<li><code>deploy</code> publishes with <code>actions/deploy-pages</code>, which uses the
+  workflow's <code>GITHUB_TOKEN</code> (<code>pages: write</code>) and the run's OIDC token
+  (<code>id-token: write</code>). The job runs in the <code>github-pages</code> environment its
+  deployment is made to, and a job declares only one environment, so it
+  cannot read the App's keys, which live only in the <code>automation</code>
+  environment. This is a recorded identity exception.</li>
+<li><code>build-index</code> uses its read-only <code>GITHUB_TOKEN</code> to download releases and
+  verify their attestations. It writes nothing with a token, and it runs in
+  the <code>index-signing</code> environment, so it cannot read the App's keys either.</li>
+</ul>
+<p><code>actions/ops/report/tests/app-identity.test.sh</code> holds both to this.</p>
 <h2 id="signing-environment-and-caller-example">Signing environment and caller example<a class="headerlink" href="#signing-environment-and-caller-example" title="Permanent link">&para;</a></h2>
 <p>The signing key comes from the caller repository's <code>index-signing</code>
 environment, which must admit only <code>develop</code> and hold <code>PACKAGE_SIGNING_KEY</code>
