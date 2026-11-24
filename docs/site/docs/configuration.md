@@ -1,53 +1,26 @@
 # Repository Configuration
 
 This page documents the GitHub configuration prerequisites that each managed
-repository needs before CI workflows, automation, and project integration work
-correctly. For action-specific configuration (inputs, outputs, behavior), see the
+repository needs before CI workflows and automation work correctly. For action-specific configuration (inputs, outputs, behavior), see the
 [Action Reference](actions/index.md).
 
 ## Secrets
 
 Each repository requires specific secrets depending on its workflow set.
-`APP_CLIENT_ID` and `APP_PRIVATE_KEY` are **org-level** Actions secrets, visible
-to all repositories, so a new repository needs no secret step for them. They
-are configured in the org's **Settings > Secrets and variables > Actions**.
-`PROJECT_TOKEN` is a repository secret, configured in each repository's
-**Settings > Secrets and variables > Actions**.
+`APP_CLIENT_ID` and `APP_PRIVATE_KEY` live in each repository's **`automation`
+environment** (**Settings > Environments > automation**), and are set per
+repository. There is no org-level or repository-level copy of either: a copy
+at either level would reach a job on any branch, which the environment exists
+to prevent (see [The automation environment](#the-automation-environment)).
 
-| Secret | Required by | Purpose |
-| ------ | ----------- | ------- |
-| `PROJECT_TOKEN` | All repositories | Adds new issues to the GitHub Project via the `add-to-project` workflow |
-| `APP_CLIENT_ID` | Every repository with an `ops.yml` or `epic-rollup.yml`, and every repository that releases through `cd-release.yml` | Client ID of the org's automation GitHub App (`<org>-automation`) |
-| `APP_PRIVATE_KEY` | Every repository with an `ops.yml` or `epic-rollup.yml`, and every repository that releases through `cd-release.yml` | Private key of the org's automation GitHub App |
+| Secret | Where it is set | Required by | Purpose |
+| ------ | --------------- | ----------- | ------- |
+| `APP_CLIENT_ID` | The repository's `automation` environment | Every repository with an `ops.yml` or `epic-rollup.yml`, and every repository that releases through `cd-release.yml` | Client ID of the org's automation GitHub App (`<org>-automation`) |
+| `APP_PRIVATE_KEY` | The repository's `automation` environment | Every repository with an `ops.yml` or `epic-rollup.yml`, and every repository that releases through `cd-release.yml` | Private key of the org's automation GitHub App |
 
-### PROJECT_TOKEN
-
-A classic personal access token (PAT) that grants the `add-to-project` workflow
-permission to add issues to a user-owned GitHub Project.
-
-**Required scopes:** `project`, `repo`
-
-**Why a classic PAT?** Fine-grained personal access tokens do not support
-user-owned Projects v2. The GitHub Projects v2 GraphQL API requires a classic
-token with the `project` scope.
-
-**Creation steps:**
-
-1. Go to **Settings > Developer settings > Personal access tokens > Tokens
-   (classic)**.
-2. Click **Generate new token (classic)**.
-3. Set a descriptive name (e.g., `add-to-project automation`).
-4. Select scopes: `project` (full control) and `repo` (full control).
-5. Generate the token and copy it immediately.
-6. Set the secret in each repository:
-
-```bash
-gh secret set PROJECT_TOKEN --repo vergil-project/<repo> --body "<token>"
-```
-
-!!! warning "Do not pipe tokens via stdin"
+!!! warning "Do not pipe secret values via stdin"
     Always use the `--body` flag when setting secrets with `gh secret set`.
-    Piping the token via stdin (`printf '%s' 'TOKEN' | gh secret set ...`)
+    Piping the value via stdin (`printf '%s' 'VALUE' | gh secret set ...`)
     can corrupt the secret value during encryption, causing "Bad credentials"
     errors at runtime that are difficult to diagnose.
 
@@ -149,17 +122,19 @@ token is scoped, as [Token scoping](#token-scoping) describes.
    `.pem` file.
 8. Under **Install App**, install it on the org and choose **All
    repositories**.
-9. Set `APP_CLIENT_ID` and `APP_PRIVATE_KEY` once, as org-level Actions
-   secrets visible to all repositories, so every repository that calls the
-   workflows above can read them:
+9. In each repository that calls the workflows above, set `APP_CLIENT_ID`
+   and `APP_PRIVATE_KEY` in its `automation` environment. The environment
+   must already exist with its deployment branch policy: run
+   `vrg-github-repo-config update --repo <org>/<repo>` first if it does not
+   (see [The automation environment](#the-automation-environment)). Then:
 
     ```bash
-    gh secret set APP_CLIENT_ID --org <org> --visibility all --body "<client-id>"
-    gh secret set APP_PRIVATE_KEY --org <org> --visibility all --body "$(cat <path-to-private-key>.pem)"
+    gh secret set APP_CLIENT_ID --repo <org>/<repo> --env automation --body "<client-id>"
+    gh secret set APP_PRIVATE_KEY --repo <org>/<repo> --env automation --body "$(cat <path-to-private-key>.pem)"
     ```
 
-    Only an org without these org secrets sets them per repository instead,
-    with `--repo <org>/<repo>` in place of `--org <org> --visibility all`.
+    Never set them at org level (`--org`) or as repository secrets (`--repo`
+    without `--env`).
 
 10. Set the org-level Actions variable `VRG_AUTOMATION_APP` to the App's
     slug (`<org>-automation`), visible to all repositories. It names the
@@ -185,9 +160,41 @@ token is scoped, as [Token scoping](#token-scoping) describes.
    For Dependabot alerts, the `dependabot-audit` job exits 2 ("could not
    check") on every repository and the ops run fails.
 
-**Key rotation:** Generate a new private key from the app's settings page, update
-the `APP_PRIVATE_KEY` secret wherever it is stored for that org, then revoke the
-old key. Each org has its own App and key, so rotate per org.
+**Key rotation:** Generate a new private key from the app's settings page,
+update `APP_PRIVATE_KEY` in the `automation` environment of **every
+repository** in that org (step 9's command, once per repository), then revoke
+the old key. A repository still holding the old key fails to mint its token
+once the old key is revoked. Each org has its own App and key, so rotate per
+org.
+
+### The automation environment
+
+Each repository has a GitHub deployment environment named `automation`. Its
+deployment branch policy admits only the custom branches `develop` and
+`main` (releases run on `main`), with no required reviewers and no wait
+timer, since the jobs that use it run unattended. A job running on any other
+branch, an agent's feature branch included, cannot use the environment, so it
+never sees the App's credentials.
+
+**How it is created.** Do not create it by hand. `vrg-github-repo-config
+update` creates the `automation` environment and its branch policy in every
+managed repository, `audit` reports drift from it, and the nightly
+`github-config` job keeps it converged. The environment must exist with its
+policy **before** its secrets are set: a workflow job that names an
+environment the repository does not have creates it with no branch policy.
+
+**Who declares it.** Every job in vergil-actions that reads `APP_CLIENT_ID`
+or `APP_PRIVATE_KEY` declares `environment: automation`, as must any
+repository-local job that mints an automation App token. A calling job cannot
+declare an environment, and environment secrets reach a reusable workflow in
+another repository only when the caller passes `secrets: inherit`, so the
+callers of these workflows pass `secrets: inherit` (vrg-validate's
+secrets-inherit check allows it only for the App-key workflows).
+
+**Checking it.** List a repository's environment secrets with
+`gh secret list --repo <org>/<repo> --env automation`: it must list both
+`APP_CLIENT_ID` and `APP_PRIVATE_KEY`. `gh secret list --repo <org>/<repo>`
+and `gh secret list --org <org>` must list neither.
 
 ### Token scoping
 
@@ -356,23 +363,6 @@ CommonJS `require` only and ignored by ESM `import`. The key's schema and
 semantics are documented on the vergil-tooling side:
 [`container-config` reference](https://vergil-project.github.io/vergil-tooling/latest/reference/container-config/).
 
-## GitHub Project integration
-
-The `add-to-project` workflow automatically adds new issues to a GitHub Project
-when they are opened. Each repository has an `add-to-project.yml` workflow that
-references a project URL and uses the `PROJECT_TOKEN` secret.
-
-```yaml
-- uses: actions/add-to-project@v1.0.2
-  with:
-    project-url: https://github.com/users/<owner>/projects/<number>
-    github-token: ${{ secrets.PROJECT_TOKEN }}
-```
-
-The `project-url` value varies by repository — repositories may belong to
-different projects. This is configured directly in the workflow file, not as a
-secret.
-
 ## Repository rulesets
 
 Every managed repository uses six rulesets to enforce merge requirements (a
@@ -418,18 +408,15 @@ permissions:
 
 ### When external tokens are needed
 
-The `GITHUB_TOKEN` is insufficient in two cases:
-
-1. **GitHub Project access** — The `GITHUB_TOKEN` cannot interact with
-   user-owned Projects v2. The `PROJECT_TOKEN` (classic PAT) is required.
-2. **Scopes and repositories beyond the caller's grant** — a reusable
-   workflow's `GITHUB_TOKEN` carries only what the caller grants and reaches
-   only its own repository. The org's automation App token
-   (`APP_CLIENT_ID` + `APP_PRIVATE_KEY`) is required for the nightly ops jobs
-   (config update (`vrg-github-repo-config update`), branch sweep, Dependabot
-   alert audit), the epic roll-up and
-   sweep, the release tag pushes and the package-index dispatch. See
-   [APP_CLIENT_ID and APP_PRIVATE_KEY](#app_client_id-and-app_private_key).
+The `GITHUB_TOKEN` is insufficient when a job needs scopes or repositories
+beyond the caller's grant: a reusable workflow's `GITHUB_TOKEN` carries only
+what the caller grants and reaches only its own repository. The org's
+automation App token (`APP_CLIENT_ID` + `APP_PRIVATE_KEY`, from the
+`automation` environment) is required for the nightly ops jobs (config
+update (`vrg-github-repo-config update`), branch sweep, Dependabot alert
+audit), the epic roll-up and sweep, the release tag pushes and the
+package-index dispatch. See
+[APP_CLIENT_ID and APP_PRIVATE_KEY](#app_client_id-and-app_private_key).
 
 ## Auto-merge
 
@@ -453,25 +440,28 @@ Use this checklist when adding a new repository to the managed environment.
 Do not create the rulesets by hand. `vrg-github-repo-config update` creates
 every ruleset of the [standard configuration](ci-gates/repository-rulesets.md):
 Branch protection, CI gates (develop), CI gates (main), Tag protection, Rolling
-tag branch names and Automation branches. The nightly `github-config` job runs the same command and
+tag branch names and Automation branches. It also creates the
+[`automation` environment](#the-automation-environment) and its deployment
+branch policy. The nightly `github-config` job runs the same command and
 keeps them converged from then on.
 
 - [ ] Run `vrg-github-repo-config update --repo <org>/<repo>`
 
 ### 3. Secrets
 
-- [ ] Set `PROJECT_TOKEN` (all repositories)
-- [ ] Confirm the org secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY` for the
-  org's automation App exist and are visible to all repositories. There is no
-  per-repository step for them.
+- [ ] After step 2 has created the `automation` environment, set
+  `APP_CLIENT_ID` and `APP_PRIVATE_KEY` in it, as
+  [step 9 of the App setup](#app_client_id-and-app_private_key) shows
+- [ ] Confirm that neither secret is set at org or repository level
 
 ```bash
-gh secret set PROJECT_TOKEN --repo vergil-project/<repo> --body "<token>"
-gh secret list --org vergil-project
+gh secret list --repo <org>/<repo> --env automation
+gh secret list --repo <org>/<repo>
+gh secret list --org <org>
 ```
 
-`gh secret list --org` must list both `APP_CLIENT_ID` and `APP_PRIVATE_KEY` as
-`Visible to all repositories`.
+The first command must list both `APP_CLIENT_ID` and `APP_PRIVATE_KEY`; the
+other two must list neither.
 
 ### 4. GitHub App installation
 
@@ -507,7 +497,6 @@ For the `<org>/packages` index repository itself:
 
 ### 5. Workflow files
 
-- [ ] Add `add-to-project.yml` with the correct project URL
 - [ ] Add `ci.yml` with standard checks for the repository type
 - [ ] Add `cd.yml` with docs and/or release jobs as needed
 
@@ -521,6 +510,5 @@ For the `<org>/packages` index repository itself:
 
 ### 7. Verification
 
-- [ ] Open a test issue and confirm it appears in the GitHub Project
 - [ ] Open a test PR and confirm all required checks run
 - [ ] Confirm auto-merge works after checks pass
