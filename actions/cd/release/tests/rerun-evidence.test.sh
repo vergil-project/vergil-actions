@@ -28,7 +28,9 @@
 #   * the check, run as written: a new tag needs evidence without reading
 #     the release; a published release with both evidence assets needs
 #     none; one missing either asset needs it, naming what is missing; one
-#     whose release cannot be read fails, naming the tag;
+#     whose release cannot be read fails, naming the tag; a tag on another
+#     commit than the run's (a push with no version bump) needs none and
+#     reads no release; a tag that does not resolve fails;
 #   * the attach guard, run as written, fails naming the tag;
 #   * the SBOM path step, run as written on a re-run, downloads the SBOM
 #     from the release when it is an asset there, warns when it is not,
@@ -138,17 +140,33 @@ esac
 STUB
 chmod +x "$tmp/bin/gh"
 
+# The checkout a step runs in: a repository with two commits, the
+# release commit tagged v0.1.10 ($release_sha) and a later one
+# ($later_sha) at HEAD.
+repo="$tmp/repo"
+mkdir -p "$repo"
+git_q() {
+  git -C "$repo" -c user.name=test -c user.email=test@example.invalid \
+    -c commit.gpgsign=false -c tag.gpgsign=false "$@" >/dev/null
+}
+git_q init -q
+git_q commit -q --allow-empty -m release
+git_q tag -a v0.1.10 -m v0.1.10
+git_q commit -q --allow-empty -m later
+release_sha="$(git -C "$repo" rev-parse 'v0.1.10^{commit}')"
+later_sha="$(git -C "$repo" rev-parse HEAD)"
+
 # run_step <step name> <VAR=value>... — run the named step's script as
-# GitHub runs a bash step, in a scratch workspace, with the gh stub on
-# PATH. Sets rc, out (stdout and stderr), outputs (the GITHUB_OUTPUT file)
-# and gh_calls (the stub's log).
+# GitHub runs a bash step, in a scratch copy of the checkout, with the gh
+# stub on PATH. Sets rc, out (stdout and stderr), outputs (the
+# GITHUB_OUTPUT file) and gh_calls (the stub's log).
 run_step() {
   local step="$1" run ws
   shift
   run="$(q "$step" .run)"
   ws="$tmp/ws"
   rm -rf "$ws"
-  mkdir -p "$ws"
+  cp -a "$repo" "$ws"
   : >"$tmp/github_output"
   : >"$tmp/gh_log"
   set +e
@@ -192,6 +210,8 @@ case_check_wiring() {
       '${{ steps.tag_check.outputs.exists }}' || return 0
     expect "$name" "TAG" "$(q "$check_step" .env.TAG)" \
       '${{ steps.version.outputs.tag }}' || return 0
+    expect "$name" "MERGE_SHA" "$(q "$check_step" .env.MERGE_SHA)" \
+      '${{ github.sha }}' || return 0
     expect "$name" "GH_TOKEN" "$(q "$check_step" .env.GH_TOKEN)" \
       '${{ github.token }}' || return 0
     expect "$name" "GH_REPO" "$(q "$check_step" .env.GH_REPO)" \
@@ -255,7 +275,7 @@ case_check_new_tag() {
 
 case_check_evidence_present() {
   local name="evidence-check-published-release-with-evidence-is-unchanged"
-  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 \
+  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 MERGE_SHA="$release_sha" \
     GH_ASSETS="$(printf '%s\n' pkg.tgz "$manifest" "$tarball")"
   expect "$name" "exit" "$rc" "0" || return 0
   expect "$name" "outputs" "$outputs" "needed=false" || return 0
@@ -274,7 +294,7 @@ case_check_evidence_present() {
 case_check_evidence_missing() {
   local name="evidence-check-published-release-without-evidence-needs-it"
   # The real case: v0.1.10 of vergil-fixture-ts-lib had no assets at all.
-  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 GH_ASSETS=""
+  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 MERGE_SHA="$release_sha" GH_ASSETS=""
   expect "$name" "exit" "$rc" "0" || return 0
   expect "$name" "outputs" "$outputs" "needed=true" || return 0
   case "$out" in
@@ -286,7 +306,7 @@ case_check_evidence_missing() {
   esac
   # A half-attached bundle (the tarball uploaded, the manifest not) is
   # still missing its evidence.
-  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 GH_ASSETS="$tarball"
+  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 MERGE_SHA="$release_sha" GH_ASSETS="$tarball"
   expect "$name" "half-attached exit" "$rc" "0" || return 0
   expect "$name" "half-attached outputs" "$outputs" "needed=true" || return 0
   case "$out" in
@@ -301,7 +321,7 @@ case_check_evidence_missing() {
 
 case_check_unreadable_release() {
   local name="evidence-check-unreadable-release-fails"
-  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 GH_FAIL=1
+  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 MERGE_SHA="$release_sha" GH_FAIL=1
   if [ "$rc" -eq 0 ]; then
     fail_case "$name" "the check passed when the release could not be read"
     return 0
@@ -311,6 +331,39 @@ case_check_unreadable_release() {
     *"::error::"*"v0.1.10"*"CI evidence"*) ;;
     *)
       fail_case "$name" "the error does not name the tag and its evidence: ${out}"
+      return 0
+      ;;
+  esac
+  pass_case "$name"
+}
+
+case_check_tag_on_another_commit() {
+  local name="evidence-check-tag-on-another-commit-attaches-nothing"
+  # A push to main with no version bump: the tag is an older release's,
+  # which this commit's evidence does not belong to, even when that release
+  # has no bundle.
+  run_step "$check_step" TAG_EXISTS=true TAG=v0.1.10 MERGE_SHA="$later_sha" GH_ASSETS=""
+  expect "$name" "exit" "$rc" "0" || return 0
+  expect "$name" "outputs" "$outputs" "needed=false" || return 0
+  expect "$name" "gh calls" "$gh_calls" "" || return 0
+  case "$out" in
+    *"::notice::"*"v0.1.10"*"$release_sha"*"$later_sha"*"not a re-run"*) ;;
+    *)
+      fail_case "$name" "no notice naming the tag's and the run's commits: ${out}"
+      return 0
+      ;;
+  esac
+  # A tag that does not resolve to a commit fails the check.
+  run_step "$check_step" TAG_EXISTS=true TAG=v9.9.9 MERGE_SHA="$release_sha" GH_ASSETS=""
+  if [ "$rc" -eq 0 ]; then
+    fail_case "$name" "the check passed on a tag that does not resolve"
+    return 0
+  fi
+  expect "$name" "unresolved outputs" "$outputs" "" || return 0
+  case "$out" in
+    *"::error::"*"v9.9.9"*) ;;
+    *)
+      fail_case "$name" "the error does not name the unresolved tag: ${out}"
       return 0
       ;;
   esac
@@ -403,6 +456,7 @@ case_check_new_tag
 case_check_evidence_present
 case_check_evidence_missing
 case_check_unreadable_release
+case_check_tag_on_another_commit
 case_attach_guard_fails
 case_sbom_new_release
 case_sbom_rerun_downloads

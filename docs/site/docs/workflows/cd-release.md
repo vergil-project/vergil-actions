@@ -80,6 +80,11 @@ evidence` step reads the existing GitHub Release's assets:
   bundle is assembled without it, with a warning.
 - When the Release cannot be read, the job fails, naming the tag.
 
+Only a run on the tagged commit counts as a re-run. When the tag is on
+another commit (a push to `main` with no version bump), the job attaches
+nothing to that older release, since this commit's evidence is not its
+own, and succeeds with a notice.
+
 ## Usage
 
 ```yaml
