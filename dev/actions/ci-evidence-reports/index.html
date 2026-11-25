@@ -8523,25 +8523,31 @@ An empty <code>reports-dir</code>, or one that is not a directory, fails.</p>
 dependency and no <code>package-lock.json</code>) and no source of the language.
 <code>vrg-validate</code> skips its language stages for such a repository, loudly,
 recording each one <code>warn</code> in <code>.vergil/vrg-validate-last.json</code>
-(<a href="https://github.com/vergil-project/vergil-tooling/issues/4384">vergil-tooling#4384</a>),
-and the gate passes having written no report.</p>
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/4384">vergil-tooling#4384</a>)
+with a <code>skip</code> that gives the reason (<code>not-bootstrapped</code>), the language and
+the missing manifests
+(<a href="https://github.com/vergil-project/vergil-tooling/issues/5034">vergil-tooling#5034</a>,
+released in vergil-tooling v2.1.342), and the gate passes having written no
+report.</p>
 <p>In <code>stage</code> mode a leg whose gate passed and wrote none of its reports is
 accepted as skipped only when all of these hold:</p>
 <ul>
 <li>the <code>vrg-validate</code> record is of the checked-out commit and the run exited 0;</li>
 <li>every stage the run recorded is <code>warn</code>, the gate's own among them, so no
   stage really ran;</li>
-<li>every manifest of the language is missing, by the same strict test as
-  <code>vrg-validate</code>, repeated here; a partial bootstrap is not a skip;</li>
-<li>the repository has no source of the language.</li>
+<li>every stage carries a <code>skip</code> with the reason <code>not-bootstrapped</code>, the leg's
+  language and at least one missing manifest.</li>
 </ul>
+<p>The record alone decides: <code>vrg-validate</code> applies the manifest and source
+tests, and this action does not repeat them. A <code>warn</code> stage with no <code>skip</code>,
+as a vergil-tooling release before v2.1.342 records one, is not a skip.</p>
 <p>The step then prints a <code>::notice::</code> naming the leg and the reason, stages no
 report, and writes the leg's <strong>skip record</strong> into <code>out-dir</code>:
 <code>&lt;gate&gt;-not-bootstrapped-&lt;version&gt;.json</code>, or
 <code>quality-&lt;gate&gt;-not-bootstrapped-&lt;version&gt;.json</code> for a <code>lint</code> or <code>typecheck</code>
 leg. It is a JSON object with <code>"skipped": true</code>, <code>"reason":
 "not-bootstrapped"</code>, the gate, language, version, the commit (<code>head</code>) and the
-missing manifests. When any condition fails, each failing one is an
+missing manifests the record gives the gate's stage. When any condition fails, each failing one is an
 <code>::error::</code> and the leg fails on its missing reports, as any passing gate that
 wrote no report does.</p>
 <p>In <code>expect</code> mode a <code>lint</code> or <code>typecheck</code> gate with no report passes, with a
