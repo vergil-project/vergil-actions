@@ -189,8 +189,8 @@ security_violations() {
 }
 
 # cd_violations <workflow file> — cd.yml's local cd-docs.yml call passes
-# secrets: inherit, the one way the App secrets in the automation
-# environment reach it (epic vergil-project/.github#1384).
+# secrets: inherit, which carries the App secrets from the automation
+# environment (epic vergil-project/.github#1384).
 cd_violations() {
   local wf="$1" job value
   job="$(yq -r '(.jobs // {}) | to_entries | .[]

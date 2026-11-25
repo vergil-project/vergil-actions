@@ -112,9 +112,8 @@ at 60 minutes, the life of the App token it moves the markers with.
 ## Usage
 
 The job in a repository's `ops.yml`, after its `github-config` job. A
-caller in vergil-project passes `secrets: inherit`, the one way the
-`automation` environment's secrets reach a reusable workflow in another
-repository:
+caller in vergil-project passes `secrets: inherit`, which carries the App
+keys from its `automation` environment:
 
 ```yaml
 jobs:

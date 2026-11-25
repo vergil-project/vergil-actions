@@ -105,7 +105,12 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
-    # Python publishes via OIDC trusted publishing — no secret to pass.
+    # Every release pushes its tags as the automation App. `inherit` within
+    # the org: it carries the App keys from the `automation` environment.
+    # Python publishes via OIDC trusted publishing, so no publishing secret is
+    # needed. A caller in another org passes APP_CLIENT_ID and APP_PRIVATE_KEY
+    # by name (see Release publishing secrets below).
+    secrets: inherit
 ```
 
 ### Org Actions variables

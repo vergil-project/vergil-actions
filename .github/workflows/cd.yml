@@ -91,8 +91,8 @@ jobs:
       contents: write
     # The App secrets reach cd-docs.yml's report job, which reports this
     # repo's develop docs deploys as docs-deploy-develop (epic
-    # vergil-project/.github#1494). `inherit` is required: the App keys live
-    # in the `automation` environment, and environment secrets reach a
-    # reusable workflow only under `secrets: inherit`. Allowed only for the
-    # App-key workflows (vrg-validate's secrets-inherit check).
+    # vergil-project/.github#1494), and cd-docs.yml's docs job, which pushes
+    # gh-pages as the App. `inherit` carries the App keys from the
+    # `automation` environment. Allowed only for the App-key workflows
+    # (vrg-validate's secrets-inherit check).
     secrets: inherit
