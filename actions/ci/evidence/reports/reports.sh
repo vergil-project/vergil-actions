@@ -287,7 +287,9 @@ SKIP_REASON="not-bootstrapped"
 # SKIP_DEF — a jq definition, `is_skip`: a record stage (the input) carries
 # the skip vrg-validate gives a stage it skipped as not bootstrapped, with
 # reason $reason, language $language and a non-empty list of missing
-# manifests (vergil-tooling#5034).
+# manifests (vergil-tooling#5034). $reason and $language are jq variables,
+# bound by each jq call's --arg, never shell expansions.
+# shellcheck disable=SC2016
 SKIP_DEF='def is_skip: (.skip | type) == "object" and .skip.reason == $reason
   and .skip.language == $language
   and (.skip.missing_manifests | type) == "array"
