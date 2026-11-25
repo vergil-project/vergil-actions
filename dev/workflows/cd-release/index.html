@@ -7460,6 +7460,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#re-running-a-published-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Re-running a published release
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8150,6 +8161,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#re-running-a-published-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Re-running a published release
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8334,6 +8356,31 @@ fails <code>setup</code> too, and <code>release</code> does not run.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="re-running-a-published-release">Re-running a published release<a class="headerlink" href="#re-running-a-published-release" title="Permanent link">&para;</a></h2>
+<p>A re-run of the <code>release</code> job after its tag exists never moves or
+recreates the tag and never publishes again: the secrets check, the token
+mint, the package and registry steps, <code>Tag and release</code> and the package
+index dispatch all run only for a new tag.</p>
+<p>The CI evidence bundle is checked instead. The <code>Check the release's CI
+evidence</code> step reads the existing GitHub Release's assets:</p>
+<ul>
+<li>When it carries both <code>v&lt;version&gt;-ci-evidence.tar.gz</code> and
+  <code>v&lt;version&gt;-ci-evidence-manifest.json</code>, the evidence steps are skipped
+  and the job succeeds with a notice.</li>
+<li>When either is missing (an earlier attempt failed after <code>Tag and
+  release</code>, for example at the bundle's provenance attestation), the
+  evidence gate, the attach with its attestation and both enforcement
+  guards run as on a new release, with a warning naming the missing
+  assets. With <code>evidence-enforce: true</code>, the job fails if the bundle
+  cannot be gated or attached. A configured SBOM is taken from the
+  Release's assets, since a re-run builds nothing; if it is not one, the
+  bundle is assembled without it, with a warning.</li>
+<li>When the Release cannot be read, the job fails, naming the tag.</li>
+</ul>
+<p>Only a run on the tagged commit counts as a re-run. When the tag is on
+another commit (a push to <code>main</code> with no version bump), the job attaches
+nothing to that older release, since this commit's evidence is not its
+own, and succeeds with a notice.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">release</span><span class="p">:</span>
