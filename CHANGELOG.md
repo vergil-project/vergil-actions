@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.98] - 2026-11-25
+
+### Bug fixes
+
+- attach a missing CI evidence bundle on a re-run of a published release (#1440)
+
+### Chores
+
+- sync the managed files with the released templates (#1438)
+
 ## [2.1.97] - 2026-11-24
 
 ### Bug fixes
