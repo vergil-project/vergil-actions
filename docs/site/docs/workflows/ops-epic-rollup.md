@@ -30,6 +30,10 @@ close this workflow misses.
 The App must be installed on the calling repository and on `epic-repo`, with
 `issues: write`.
 
+Both live in the calling repository's `automation` environment. The
+`epic-rollup` and `report` jobs declare `environment: automation` and read
+them.
+
 ## Variables
 
 | Variable | Required | Description |
@@ -67,6 +71,8 @@ triggered by an `issues` event.
 
 ## Usage
 
+A caller in vergil-project passes `secrets: inherit`:
+
 ```yaml
 name: Epic Rollup
 
@@ -82,6 +88,13 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ops-epic-rollup.yml@v2.1
     permissions:
       contents: read
+    secrets: inherit
+```
+
+GitHub's `secrets: inherit` passes secrets only within one organization. A
+caller in another org passes the two keys by name instead:
+
+```yaml
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -89,8 +102,8 @@ jobs:
 
 ## This repository's caller: epic-rollup
 
-`.github/workflows/epic-rollup.yml` in this repository is exactly the caller
-above: it runs on `issues: closed` and passes the App secrets to
+`.github/workflows/epic-rollup.yml` in this repository is the vergil-project
+caller above: it runs on `issues: closed` and passes the App secrets to
 `ops-epic-rollup.yml@v2.1`. It is not a reusable workflow. Each managed
 repository carries the same thin caller, and all the logic (token, checkout,
 install, run) stays in `ops-epic-rollup`.

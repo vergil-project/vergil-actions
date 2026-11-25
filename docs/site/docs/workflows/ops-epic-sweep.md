@@ -37,6 +37,10 @@ same caller's `workflow_dispatch` trigger is how the one-time migration for
 | `APP_CLIENT_ID` | yes | Client ID of the org's GitHub App |
 | `APP_PRIVATE_KEY` | yes | Private key of the org's GitHub App |
 
+Both live in the calling repository's `automation` environment. The
+`epic-sweep` and `report` jobs declare `environment: automation` and read
+them.
+
 The token is minted for every repository the App is installed on in the org,
 because the sweep closes, relabels, links and moves issues in the code
 repositories, and closes, drains and attaches under epics in `.github`. The
@@ -108,6 +112,8 @@ it.
 
 ## Usage
 
+A caller in vergil-project passes `secrets: inherit`:
+
 ```yaml
 name: Epic Sweep
 
@@ -124,6 +130,13 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ops-epic-sweep.yml@v2.1
     permissions:
       contents: read
+    secrets: inherit
+```
+
+GitHub's `secrets: inherit` passes secrets only within one organization. A
+caller in another org passes the two keys by name instead:
+
+```yaml
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}

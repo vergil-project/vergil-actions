@@ -52,7 +52,9 @@ runs always, after `build-index` and `deploy`, and reports their combined
 result as `publish-index` to the org's operations queue (epic
 [vergil-project/.github#1494](https://github.com/vergil-project/.github/issues/1494))
 through [`ops/report`](../actions/ops-report.md), which mints its token from
-them. A caller passing `secrets: inherit` already passes them.
+them. A caller passing `secrets: inherit` already passes them. The `report`
+job declares `environment: automation` and reads them; `build-index` and
+`deploy` declare other environments (below).
 
 ### Token identity
 
@@ -76,10 +78,13 @@ spec §5.4), `build-index` and `deploy` do not use the App token:
 
 The signing key comes from the caller repository's `index-signing`
 environment, which must admit only `develop` and hold `PACKAGE_SIGNING_KEY`
-and `PACKAGE_SIGNING_PASSPHRASE`. As with `cd-release`, those environment
-secrets reach the reusable workflow only when the caller passes
-`secrets: inherit` (see [cd-release: binary packages](cd-release-packages.md)).
-The caller must also grant the scopes the two jobs request:
+and `PACKAGE_SIGNING_PASSPHRASE`. The `<org>/packages` caller in
+vergil-project passes `secrets: inherit`, which carries them, and the App
+keys, to the reusable workflow (see
+[cd-release: binary packages](cd-release-packages.md)). Signed packages
+outside vergil-project are tracked by
+[vergil-project/.github#1592](https://github.com/vergil-project/.github/issues/1592).
+The caller must also grant the scopes the jobs request:
 
 ```yaml
 jobs:
@@ -90,6 +95,5 @@ jobs:
       attestations: read
       pages: write
       id-token: write
-    # Required: environment secrets only reach the reusable workflow with inherit.
-    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
+    secrets: inherit
 ```

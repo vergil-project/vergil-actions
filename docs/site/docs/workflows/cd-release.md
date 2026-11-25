@@ -110,6 +110,11 @@ downloads the release PR's CI evidence artifacts), `contents: write`,
 | `APP_PRIVATE_KEY` | yes | Private key of the same App |
 | `CARGO_REGISTRY_TOKEN` | Rust registry publish only | crates.io token for `registry-publish` |
 
+Both App secrets live in the calling repository's `automation` environment.
+Only the `release` job declares `environment: automation` and reads them; a
+packaged release's `package-sign` job declares `package-signing` instead
+(see [binary packages](cd-release-packages.md)).
+
 Every release needs the two App secrets. The `release` job pushes the
 `v<version>` tag with the App's installation token, never its
 `GITHUB_TOKEN`, so that the Tag protection ruleset can let only the

@@ -129,27 +129,45 @@ stops loudly; re-run it once they are. See
 
 ### Release publishing secrets
 
-Every release forwards the org automation App's `APP_CLIENT_ID` and
+Every release needs the org automation App's `APP_CLIENT_ID` and
 `APP_PRIVATE_KEY`: the release tags are pushed with the App's installation
 token, and a release without them fails before anything is published or
-tagged ([CD Release: secrets](workflows/cd-release.md#secrets)).
+tagged ([CD Release: secrets](workflows/cd-release.md#secrets)). The keys
+live in the repo's `automation` environment, and the release job passes them
+on by one of two routes, as `vrg-github-repo-init` generates it.
 
-A repo **without** a `[package]` section in `vergil.toml` must forward only
-those and the publishing credentials the target ecosystem needs, never a
-blanket `secrets: inherit`, in an explicit `secrets:` block:
+**Within vergil-project**, the release job passes `secrets: inherit`. It
+carries the App keys and every other secret the release reads: the
+publishing credential the ecosystem needs and, for a repo with a `[package]`
+section (one that publishes `.deb`/`.rpm` binary packages), the
+`PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE` that its
+`package-sign` job reads from the repo's main-only `package-signing`
+environment. vrg-validate's secrets-inherit check allows `inherit` only to
+the vergil-actions workflows that read such secrets, `cd-release.yml` among
+them:
 
-| Ecosystem | Publishing secrets to forward |
-| --------- | ----------------------------- |
+```yaml
+  release:
+    if: github.ref == 'refs/heads/main' && !github.event.created
+    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
+    with:
+      language: rust
+    secrets: inherit
+```
+
+**Across organizations**, `secrets: inherit` passes nothing, so the release
+job passes the App keys by name, with the publishing credential the
+ecosystem needs:
+
+| Ecosystem | Publishing secrets to pass |
+| --------- | -------------------------- |
 | `python` | None — OIDC trusted publishing (requires `id-token: write`) |
 | `go` | None |
 | `rust` | `CARGO_REGISTRY_TOKEN` |
 
-For example, a Rust release job forwards the App secrets and one
-least-privilege publishing secret:
-
 ```yaml
   release:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && !github.event.created
     uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: rust
@@ -159,33 +177,9 @@ least-privilege publishing secret:
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 ```
 
-A repo **with** a `[package]` section (one that publishes `.deb`/`.rpm`
-binary packages) is the exception: it **must** pass `secrets: inherit`. Its
-`package-sign` job reads `PACKAGE_SIGNING_KEY` and
-`PACKAGE_SIGNING_PASSPHRASE` from the repo's main-only `package-signing`
-environment, and environment secrets reach a cross-repo reusable workflow
-only through `secrets: inherit`. An explicit `secrets:` map does not deliver
-them, so the signing key arrives empty and `package-sign` fails (verified by
-a controlled probe, vergil-project/packages#6). `inherit` also forwards
-`APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which the release uses to push the
-tags and dispatch the package index. Semgrep's `secrets-inherit` rule flags the line, so
-suppress it there with the rule ID:
-
-```yaml
-  release:
-    if: github.ref == 'refs/heads/main'
-    uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-      actions: read
-    with:
-      language: rust
-    # Required for [package] repos: environment secrets (package-signing)
-    # only reach the reusable workflow with inherit.
-    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
-```
+A `[package]` repo outside vergil-project cannot sign its packages yet: the
+generated release job does not pass the signing secrets
+([vergil-project/.github#1592](https://github.com/vergil-project/.github/issues/1592)).
 
 See [CD Release: binary packages](workflows/cd-release-packages.md)
 for the `package-signing` environment and the GitHub App setup.
