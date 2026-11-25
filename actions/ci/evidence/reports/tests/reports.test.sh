@@ -784,13 +784,20 @@ git_ws() {
   )
 }
 
-# record <exit-code> <stage>=<status>... — write $ws's vrg-validate record
-# for the workspace's HEAD, as vrg-validate writes it.
+# record <exit-code> <stage>=<status>[=<skip-json>]... — write $ws's
+# vrg-validate record for the workspace's HEAD, as vrg-validate writes it,
+# each stage with its `skip` when one is given (vergil-tooling#5034).
 record() {
-  local exit_code="$1" stage stages="" head
+  local exit_code="$1" stage name rest entry stages="" head
   shift
   for stage in "$@"; do
-    stages="${stages:+${stages}, }{\"name\": \"${stage%%=*}\", \"status\": \"${stage#*=}\"}"
+    name="${stage%%=*}"
+    rest="${stage#*=}"
+    entry="{\"name\": \"${name}\", \"status\": \"${rest%%=*}\""
+    if [[ "$rest" == *=* ]]; then
+      entry="${entry}, \"skip\": ${rest#*=}"
+    fi
+    stages="${stages:+${stages}, }${entry}}"
   done
   head="$(git -C "$ws" rev-parse HEAD)"
   mkdir -p "${ws}/.vergil"
@@ -798,13 +805,33 @@ record() {
     "$head" "$exit_code" "$stages" >"${ws}/.vergil/vrg-validate-last.json"
 }
 
+# manifests_of <language> — the manifests vrg-validate names missing for a
+# repository of the language with none of them, as a JSON array.
+manifests_of() {
+  case "$1" in
+    python) echo '["pyproject.toml","uv.lock"]' ;;
+    rust) echo '["Cargo.toml","Cargo.lock"]' ;;
+    typescript) echo '["package.json","package-lock.json"]' ;;
+  esac
+}
+
+# nb <language> [manifests-json] — the not-bootstrapped `skip` vrg-validate
+# records on each stage it skipped, as JSON.
+nb() {
+  printf '{"reason": "not-bootstrapped", "language": "%s", "missing_manifests": %s}' \
+    "$1" "${2:-$(manifests_of "$1")}"
+}
+
 # skip_stages <language> <gate> — the stages a not-bootstrapped
-# `vrg-validate --check <gate>` records, each `warn`.
+# `vrg-validate --check <gate>` records, each `warn` with its skip.
 skip_stages() {
+  local skip
+  skip="$(nb "$1")"
   if [ "$1" = typescript ]; then
-    printf '%s\n' install=warn typescript-tools=warn "$2=warn"
+    printf '%s\n' "install=warn=${skip}" "typescript-tools=warn=${skip}" \
+      "$2=warn=${skip}"
   else
-    printf '%s\n' install=warn "$2=warn"
+    printf '%s\n' "install=warn=${skip}" "$2=warn=${skip}"
   fi
 }
 
@@ -861,11 +888,7 @@ assert_skipped() {
 }
 
 for language in python rust typescript; do
-  case "$language" in
-    python) manifests='["pyproject.toml","uv.lock"]' ;;
-    rust) manifests='["Cargo.toml","Cargo.lock"]' ;;
-    typescript) manifests='["package.json","package-lock.json"]' ;;
-  esac
+  manifests="$(manifests_of "$language")"
   for gate in test audit lint typecheck; do
     name="not-bootstrapped-${language}-${gate}-skips-loudly"
     git_ws "$name"
@@ -879,11 +902,14 @@ for language in python rust typescript; do
 done
 
 # vrg-github-repo-init writes a TypeScript repo's package.json with no
-# dependency and no lockfile; vergil-tooling counts it as not bootstrapped.
+# dependency and no lockfile; vergil-tooling counts it as not bootstrapped and
+# names only the lockfile missing. The skip record carries the manifests the
+# vrg-validate record gives.
 name="not-bootstrapped-typescript-dependency-free-package-json-skips"
 git_ws "$name"
 printf '{"name": "x", "version": "0.1.0", "private": true}\n' >"${ws}/package.json"
-record 0 install=warn typescript-tools=warn test=warn
+skip="$(nb typescript '["package-lock.json"]')"
+record 0 "install=warn=${skip}" "typescript-tools=warn=${skip}" "test=warn=${skip}"
 run_reports stage typescript test node-24 success
 if assert_skipped "$name" typescript test node-24 '["package-lock.json"]'; then
   pass_case "$name"
@@ -904,37 +930,75 @@ assert_not_skipped() {
   return 0
 }
 
-name="not-bootstrapped-typescript-package-json-with-dependencies-fails"
+# A record of a vergil-tooling release before vergil-tooling#5034 gives the
+# skipped stages `warn` with no skip; a warning is never taken for a skip.
+name="not-bootstrapped-warn-stages-with-no-skip-fail"
 git_ws "$name"
-printf '{"name": "x", "devDependencies": {"typescript": "^5"}}\n' >"${ws}/package.json"
-record 0 install=warn typescript-tools=warn test=warn
-run_reports stage typescript test node-24 success
-if assert_not_skipped "$name" "the typescript repo is bootstrapped"; then
-  pass_case "$name"
-fi
-
-name="not-bootstrapped-partial-manifests-fails"
-git_ws "$name"
-printf '[project]\n' >"${ws}/pyproject.toml"
 record 0 install=warn test=warn
 run_reports stage python test 3.14 success
-if assert_not_skipped "$name" "the python repo is bootstrapped"; then
+if assert_not_skipped "$name" "records stages warn with no skip (install, test)" \
+  "vergil-tooling#5034"; then
   pass_case "$name"
 fi
 
-name="not-bootstrapped-with-sources-fails-naming-them"
+# Only the gate's stage carrying its skip is not enough: every stage must.
+name="not-bootstrapped-one-stage-with-no-skip-fails"
 git_ws "$name"
-mkdir -p "${ws}/src"
-printf 'fn main() {}\n' >"${ws}/src/main.rs"
-record 0 install=warn test=warn
+record 0 install=warn "test=warn=$(nb python)"
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" "records stages warn with no skip (install)"; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-skip-of-another-language-fails"
+git_ws "$name"
+record 0 "install=warn=$(nb python)" "test=warn=$(nb python)"
 run_reports stage rust test 1.99 success
-if assert_not_skipped "$name" "the repo has rust sources (src/main.rs)"; then
+if assert_not_skipped "$name" \
+  "records stages skipped other than as a rust repo not bootstrapped" \
+  'test ({"reason":"not-bootstrapped","language":"python"'; then
+  pass_case "$name"
+fi
+
+name="not-bootstrapped-skip-of-another-reason-fails"
+git_ws "$name"
+skip='{"reason": "something-else", "language": "python", "missing_manifests": ["uv.lock"]}'
+record 0 "install=warn=${skip}" "test=warn=${skip}"
+run_reports stage python test 3.14 success
+if assert_not_skipped "$name" \
+  "records stages skipped other than as a python repo not bootstrapped" \
+  '"reason":"something-else"'; then
+  pass_case "$name"
+fi
+
+for skip in '"not-bootstrapped"' \
+  '{"reason": "not-bootstrapped", "language": "python", "missing_manifests": []}' \
+  '{"reason": "not-bootstrapped", "language": "python", "missing_manifests": [""]}' \
+  '{"reason": "not-bootstrapped", "language": "python", "missing_manifests": "uv.lock"}' \
+  '{"reason": "not-bootstrapped", "language": "python"}'; do
+  name="not-bootstrapped-malformed-skip-fails ($skip)"
+  git_ws "not-bootstrapped-malformed-skip-$((pass + fail))"
+  record 0 "install=warn=$(nb python)" "test=warn=${skip}"
+  run_reports stage python test 3.14 success
+  if assert_not_skipped "$name" \
+    "records stages skipped other than as a python repo not bootstrapped (test ("; then
+    pass_case "$name"
+  fi
+done
+
+name="not-bootstrapped-unreadable-record-fails"
+git_ws "$name"
+record 0 "install=warn=$(nb python)" "test=warn=$(nb python)"
+printf 'not json\n' >"${ws}/.vergil/vrg-validate-last.json"
+run_reports stage python test 3.14 success
+if assert_error "$name" "cannot read the vrg-validate record"; then
   pass_case "$name"
 fi
 
 name="not-bootstrapped-record-of-another-commit-fails"
 git_ws "$name"
-record 0 install=warn test=warn
+mapfile -t stages < <(skip_stages python test)
+record 0 "${stages[@]}"
 (
   cd "$ws"
   git -c user.name=test -c user.email=test@example.invalid \
@@ -947,7 +1011,8 @@ fi
 
 name="not-bootstrapped-record-of-a-failed-run-fails"
 git_ws "$name"
-record 1 install=warn test=warn
+mapfile -t stages < <(skip_stages python test)
+record 1 "${stages[@]}"
 run_reports stage python test 3.14 success
 if assert_not_skipped "$name" "shows the run exited 1"; then
   pass_case "$name"
@@ -955,7 +1020,7 @@ fi
 
 name="not-bootstrapped-record-with-a-stage-that-ran-fails"
 git_ws "$name"
-record 0 install=ok test=warn
+record 0 install=ok "test=warn=$(nb python)"
 run_reports stage python test 3.14 success
 if assert_not_skipped "$name" "shows stages that ran (install (ok))"; then
   pass_case "$name"
@@ -979,7 +1044,7 @@ fi
 name="recorded-warn-gate-with-some-reports-fails-as-before"
 git_ws "$name"
 printf 'coverage\n' >"${ws}/coverage.xml"
-record 0 install=warn test=warn
+record 0 "install=warn=$(nb python)" "test=warn=$(nb python)"
 run_reports stage python test 3.14 success
 if assert_not_skipped "$name" "wrote no junit.xml"; then
   pass_case "$name"
@@ -987,7 +1052,7 @@ fi
 
 name="not-bootstrapped-failed-gate-only-notes"
 git_ws "$name"
-record 1 install=warn test=warn
+record 1 "install=warn=$(nb python)" "test=warn=$(nb python)"
 run_reports stage python test 3.14 failure
 if [ "$rc" -ne 0 ]; then
   fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"

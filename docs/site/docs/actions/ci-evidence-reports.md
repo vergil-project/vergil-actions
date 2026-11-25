@@ -195,8 +195,12 @@ A freshly initialised repository has none of its language's manifests yet
 dependency and no `package-lock.json`) and no source of the language.
 `vrg-validate` skips its language stages for such a repository, loudly,
 recording each one `warn` in `.vergil/vrg-validate-last.json`
-([vergil-tooling#4384](https://github.com/vergil-project/vergil-tooling/issues/4384)),
-and the gate passes having written no report.
+([vergil-tooling#4384](https://github.com/vergil-project/vergil-tooling/issues/4384))
+with a `skip` that gives the reason (`not-bootstrapped`), the language and
+the missing manifests
+([vergil-tooling#5034](https://github.com/vergil-project/vergil-tooling/issues/5034),
+released in vergil-tooling v2.1.342), and the gate passes having written no
+report.
 
 In `stage` mode a leg whose gate passed and wrote none of its reports is
 accepted as skipped only when all of these hold:
@@ -204,9 +208,12 @@ accepted as skipped only when all of these hold:
 - the `vrg-validate` record is of the checked-out commit and the run exited 0;
 - every stage the run recorded is `warn`, the gate's own among them, so no
   stage really ran;
-- every manifest of the language is missing, by the same strict test as
-  `vrg-validate`, repeated here; a partial bootstrap is not a skip;
-- the repository has no source of the language.
+- every stage carries a `skip` with the reason `not-bootstrapped`, the leg's
+  language and at least one missing manifest.
+
+The record alone decides: `vrg-validate` applies the manifest and source
+tests, and this action does not repeat them. A `warn` stage with no `skip`,
+as a vergil-tooling release before v2.1.342 records one, is not a skip.
 
 The step then prints a `::notice::` naming the leg and the reason, stages no
 report, and writes the leg's **skip record** into `out-dir`:
@@ -214,7 +221,7 @@ report, and writes the leg's **skip record** into `out-dir`:
 `quality-<gate>-not-bootstrapped-<version>.json` for a `lint` or `typecheck`
 leg. It is a JSON object with `"skipped": true`, `"reason":
 "not-bootstrapped"`, the gate, language, version, the commit (`head`) and the
-missing manifests. When any condition fails, each failing one is an
+missing manifests the record gives the gate's stage. When any condition fails, each failing one is an
 `::error::` and the leg fails on its missing reports, as any passing gate that
 wrote no report does.
 

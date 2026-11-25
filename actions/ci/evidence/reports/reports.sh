@@ -96,17 +96,21 @@
 # A repository not bootstrapped yet (a freshly initialised one, with none of
 # its language's manifests and no sources) has its language stages skipped by
 # vrg-validate, loudly, each recorded `warn` in .vergil/vrg-validate-last.json
-# (vergil-tooling#4384), and the gate exits 0 having written no report
-# (#1294). Stage mode accepts such a leg only when the gate wrote none of its
-# reports and all of these hold: the record is of the checked-out commit, the
-# run exited 0, every stage it ran is `warn` with the gate's among them, every
-# manifest of the language is missing (vergil-tooling's strict test, repeated
-# here) and the repository has no source of the language. It then prints a
+# (vergil-tooling#4384) with a `skip` giving the reason, the language and the
+# missing manifests (vergil-tooling#5034, released in v2.1.342), and the gate
+# exits 0 having written no report (#1294). Stage mode accepts such a leg only
+# when the gate wrote none of its reports and all of these hold: the record is
+# of the checked-out commit, the run exited 0, and every stage it ran is
+# `warn`, the gate's among them, and carries a not-bootstrapped `skip` of the
+# leg's language. The record decides: vergil-tooling's manifest and source
+# tests are not repeated here, and a `warn` stage with no `skip` (a record of
+# an earlier vergil-tooling release among them) is not a skip. It then prints a
 # ::notice:: naming the leg and the reason, stages no report, and writes the
 # leg's skip record, <gate>-not-bootstrapped-<version>.json (for a quality leg
 # quality-<gate>-not-bootstrapped-<version>.json): a JSON object with
 # skipped: true, reason "not-bootstrapped", the gate, language, version, head
-# and the missing manifests. When any condition fails, each failing one is an
+# and the missing manifests, as the record gives them for the gate's stage.
+# When any condition fails, each failing one is an
 # ::error:: and the leg fails on its missing reports as before. The skip
 # record is the gate's evidence of the skip: it reaches the evidence artifact
 # with the leg's files, so the release-time harvester finds the skip recorded
@@ -276,8 +280,19 @@ report_tools() {
 # (vergil-tooling's lib/validate_record.py).
 VALIDATE_RECORD=".vergil/vrg-validate-last.json"
 
-# The reason a skip record carries.
+# The reason a skip record carries, and the reason vrg-validate's record gives
+# a stage it skipped because the repository is not bootstrapped yet.
 SKIP_REASON="not-bootstrapped"
+
+# SKIP_DEF — a jq definition, `is_skip`: a record stage (the input) carries
+# the skip vrg-validate gives a stage it skipped as not bootstrapped, with
+# reason $reason, language $language and a non-empty list of missing
+# manifests (vergil-tooling#5034).
+SKIP_DEF='def is_skip: (.skip | type) == "object" and .skip.reason == $reason
+  and .skip.language == $language
+  and (.skip.missing_manifests | type) == "array"
+  and (.skip.missing_manifests | length) > 0
+  and all(.skip.missing_manifests[]; type == "string" and length > 0);'
 
 # skip_marker_name <gate> <version> — the basename of a leg's skip record.
 # A quality leg's carries the quality- prefix, so the quality evidence job's
@@ -312,95 +327,28 @@ record_gate_status() {
   fi
 }
 
-# unbootstrapped_manifests <language> — print the language's missing
-# manifests, comma-separated, and succeed when the repository is not
-# bootstrapped for it; fail, printing nothing, when it is. The test is
-# vergil-tooling's (lib/container_cache.py, unbootstrapped_manifests, issues
-# vergil-tooling#4384 and #4624), read strictly: every manifest is missing,
-# or for TypeScript a package.json that declares no dependency and no
-# package-lock.json. A partial bootstrap is bootstrapped. Keep it in step with
-# vergil-tooling's _WARMUP_REQUIRES.
-unbootstrapped_manifests() {
-  case "$1" in
-    python)
-      if [ ! -f pyproject.toml ] && [ ! -f uv.lock ]; then
-        echo "pyproject.toml, uv.lock"
-        return 0
-      fi
-      ;;
-    rust)
-      if [ ! -f Cargo.toml ] && [ ! -f Cargo.lock ]; then
-        echo "Cargo.toml, Cargo.lock"
-        return 0
-      fi
-      ;;
-    typescript)
-      [ ! -f package-lock.json ] || return 1
-      if [ ! -f package.json ]; then
-        echo "package.json, package-lock.json"
-        return 0
-      fi
-      # A package.json that is not an object, or does not parse, declares
-      # dependencies as far as this test goes: the repo counts as bootstrapped.
-      need_jq "package.json" || return 1
-      if jq -e '. as $m | type == "object" and
-          all("dependencies", "devDependencies", "optionalDependencies",
-            "peerDependencies";
-            . as $f | ($m | if has($f) then .[$f] else {} end) == {})' \
-        package.json >/dev/null 2>&1; then
-        echo "package-lock.json"
-        return 0
-      fi
-      ;;
-  esac
-  return 1
-}
-
-# language_sources <language> — print up to three of the repository's tracked
-# or untracked, not ignored, source files of the language, the same suffixes
-# vergil-tooling counts (lib/container_cache.py, _SOURCE_SUFFIXES). Fails,
-# with an ::error::, when git cannot list the files.
-language_sources() {
-  local list path shown=0 pattern
-  case "$1" in
-    python) pattern='\.pyi?$' ;;
-    rust) pattern='\.rs$' ;;
-    typescript) pattern='\.(ts|tsx|mts|cts)$' ;;
-    *) return 0 ;;
-  esac
-  list="$(mktemp)"
-  if ! git ls-files -z --cached --others --exclude-standard >"$list"; then
-    rm -f "$list"
-    error "git cannot list the repository's files, so the not-bootstrapped" \
-      "skip cannot be checked"
-    return 1
-  fi
-  while IFS= read -r -d '' path; do
-    if [ -f "$path" ] && [[ "$path" =~ $pattern ]]; then
-      echo "$path"
-      shown=$((shown + 1))
-      [ "$shown" -lt 3 ] || break
-    fi
-  done <"$list"
-  rm -f "$list"
-}
-
 # check_not_bootstrapped <language> <gate> — succeed, printing the missing
 # manifests, only when the gate's vrg-validate run really skipped it because
-# the repository is not bootstrapped yet. Every condition must hold, and each
-# one that does not fails with an ::error:: naming it:
+# the repository is not bootstrapped yet. vrg-validate records why it skipped
+# each such stage as the stage's `skip` (vergil-tooling#5034, released in
+# v2.1.342), so the record alone decides: the manifest and source tests are
+# vergil-tooling's and are not repeated here. Every condition must hold, and
+# each one that does not fails with an ::error:: naming it:
 #
 #   - the record's head is the commit checked out (git rev-parse HEAD);
 #   - the run exited 0;
-#   - every stage of the run is `warn`, as vrg-validate records each stage it
-#     skips as not bootstrapped (no stage really ran);
-#   - every manifest of the language is missing, by the test above;
-#   - the repository has no source of the language.
+#   - every stage of the run is `warn` (no stage really ran);
+#   - every stage carries a `skip` with reason "not-bootstrapped", the leg's
+#     language and a non-empty list of missing manifests, as vrg-validate
+#     gives each stage of a run on a repository not bootstrapped yet. A
+#     `warn` stage with no `skip` is some other warning, or a record written
+#     by a vergil-tooling release before #5034, and is never taken for one.
 #
-# The caller has already found the gate's stage recorded `warn`.
+# The caller has already found the gate's stage recorded `warn`. The missing
+# manifests printed, comma-separated, are the gate's stage's.
 check_not_bootstrapped() {
-  local language="$1" gate_name="$2" head record_head exit_code ran manifests
-  local sources bad=0
+  local language="$1" gate_name="$2" head record_head exit_code ran unexplained
+  local foreign manifests bad=0
 
   if ! head="$(git rev-parse HEAD)"; then
     error "git cannot resolve HEAD, so the not-bootstrapped skip cannot be checked"
@@ -409,7 +357,17 @@ check_not_bootstrapped() {
   if ! record_head="$(jq -r '.head' "$VALIDATE_RECORD")" ||
     ! exit_code="$(jq -r '.exit_code' "$VALIDATE_RECORD")" ||
     ! ran="$(jq -r '[.stages[] | select(.status != "warn") |
-        "\(.name) (\(.status))"] | join(", ")' "$VALIDATE_RECORD")"; then
+        "\(.name) (\(.status))"] | join(", ")' "$VALIDATE_RECORD")" ||
+    ! unexplained="$(jq -r '[.stages[] | select(.status == "warn" and
+        (has("skip") | not)) | .name] | join(", ")' "$VALIDATE_RECORD")" ||
+    ! foreign="$(jq -r --arg reason "$SKIP_REASON" --arg language "$language" \
+      "${SKIP_DEF}"' [.stages[] | select(.status == "warn" and has("skip")) |
+        select(is_skip | not) | "\(.name) (\(.skip | tojson))"] |
+        join(", ")' "$VALIDATE_RECORD")" ||
+    ! manifests="$(jq -r --arg reason "$SKIP_REASON" --arg language "$language" \
+      --arg gate "$gate_name" "${SKIP_DEF}"' [.stages[] |
+        select(.name == $gate and is_skip) | .skip.missing_manifests |
+        join(", ")] | first // ""' "$VALIDATE_RECORD")"; then
     error "cannot read the vrg-validate record ${VALIDATE_RECORD}"
     return 1
   fi
@@ -429,20 +387,25 @@ check_not_bootstrapped() {
       "(${ran}), so the ${gate_name} gate was not skipped as not bootstrapped"
     bad=1
   fi
-  if ! manifests="$(unbootstrapped_manifests "$language")"; then
-    error "the ${language} repo is bootstrapped (it has its manifests), so a" \
-      "${gate_name} gate that wrote no report is not a not-bootstrapped skip"
+  if [ -n "$unexplained" ]; then
+    error "the vrg-validate record ${VALIDATE_RECORD} records stages warn with" \
+      "no skip (${unexplained}), so it does not show the ${gate_name} gate" \
+      "skipped as not bootstrapped; vergil-tooling records the skip from" \
+      "v2.1.342 on (vergil-tooling#5034)"
     bad=1
   fi
-  if ! sources="$(language_sources "$language")"; then
-    return 1
-  fi
-  if [ -n "$sources" ]; then
-    error "the repo has ${language} sources (${sources//$'\n'/, }), so a" \
-      "${gate_name} gate that wrote no report is not a not-bootstrapped skip"
+  if [ -n "$foreign" ]; then
+    error "the vrg-validate record ${VALIDATE_RECORD} records stages skipped" \
+      "other than as a ${language} repo not bootstrapped (${foreign}), so it" \
+      "does not show the ${gate_name} gate skipped as not bootstrapped"
     bad=1
   fi
   [ "$bad" -eq 0 ] || return 1
+  if [ -z "$manifests" ]; then
+    error "internal: the vrg-validate record ${VALIDATE_RECORD} gives the" \
+      "${gate_name} stage no missing manifests"
+    return 1
+  fi
   echo "$manifests"
 }
 
