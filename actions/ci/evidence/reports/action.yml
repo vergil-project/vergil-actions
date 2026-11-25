@@ -17,8 +17,9 @@ description: >-
   Claude plugin, none) gets a notice and the same empty result; an unknown
   language for the test or audit gate, or an unknown gate, fails. A gate
   vrg-validate skipped because the repository is not bootstrapped yet (no
-  manifest, no source; recorded in .vergil/vrg-validate-last.json) is
-  accepted in stage mode only when that is proved, with a notice and a skip
+  manifest, no source; each stage recorded with a not-bootstrapped `skip` in
+  .vergil/vrg-validate-last.json, vergil-tooling#5034) is
+  accepted in stage mode only when the record proves it, with a notice and a skip
   record staged in place of the reports; expect mode accepts the skip records
   in place of a gate's reports (issue #1294). Tools mode, given
   `reports-dir`, lists no tools for a gate whose legs left skip records there,
