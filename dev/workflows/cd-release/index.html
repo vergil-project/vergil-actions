@@ -8451,6 +8451,10 @@ downloads the release PR's CI evidence artifacts), <code>contents: write</code>,
 </tr>
 </tbody>
 </table>
+<p>Both App secrets live in the calling repository's <code>automation</code> environment.
+Only the <code>release</code> job declares <code>environment: automation</code> and reads them; a
+packaged release's <code>package-sign</code> job declares <code>package-signing</code> instead
+(see <a href="../cd-release-packages/">binary packages</a>).</p>
 <p>Every release needs the two App secrets. The <code>release</code> job pushes the
 <code>v&lt;version&gt;</code> tag with the App's installation token, never its
 <code>GITHUB_TOKEN</code>, so that the Tag protection ruleset can let only the

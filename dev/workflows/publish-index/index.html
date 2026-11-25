@@ -8267,7 +8267,9 @@ runs always, after <code>build-index</code> and <code>deploy</code>, and reports
 result as <code>publish-index</code> to the org's operations queue (epic
 <a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>)
 through <a href="../../actions/ops-report/"><code>ops/report</code></a>, which mints its token from
-them. A caller passing <code>secrets: inherit</code> already passes them.</p>
+them. A caller passing <code>secrets: inherit</code> already passes them. The <code>report</code>
+job declares <code>environment: automation</code> and reads them; <code>build-index</code> and
+<code>deploy</code> declare other environments (below).</p>
 <h3 id="token-identity">Token identity<a class="headerlink" href="#token-identity" title="Permanent link">&para;</a></h3>
 <p>Unlike the other unattended jobs (epic
 <a href="https://github.com/vergil-project/.github/issues/1494">vergil-project/.github#1494</a>,
@@ -8287,10 +8289,13 @@ spec §5.4), <code>build-index</code> and <code>deploy</code> do not use the App
 <h2 id="signing-environment-and-caller-example">Signing environment and caller example<a class="headerlink" href="#signing-environment-and-caller-example" title="Permanent link">&para;</a></h2>
 <p>The signing key comes from the caller repository's <code>index-signing</code>
 environment, which must admit only <code>develop</code> and hold <code>PACKAGE_SIGNING_KEY</code>
-and <code>PACKAGE_SIGNING_PASSPHRASE</code>. As with <code>cd-release</code>, those environment
-secrets reach the reusable workflow only when the caller passes
-<code>secrets: inherit</code> (see <a href="../cd-release-packages/">cd-release: binary packages</a>).
-The caller must also grant the scopes the two jobs request:</p>
+and <code>PACKAGE_SIGNING_PASSPHRASE</code>. The <code>&lt;org&gt;/packages</code> caller in
+vergil-project passes <code>secrets: inherit</code>, which carries them, and the App
+keys, to the reusable workflow (see
+<a href="../cd-release-packages/">cd-release: binary packages</a>). Signed packages
+outside vergil-project are tracked by
+<a href="https://github.com/vergil-project/.github/issues/1592">vergil-project/.github#1592</a>.
+The caller must also grant the scopes the jobs request:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">publish-index</span><span class="p">:</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/publish-index.yml@v2.1</span>
@@ -8299,8 +8304,7 @@ The caller must also grant the scopes the two jobs request:</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">attestations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">pages</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">id-token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="c1"># Required: environment secrets only reach the reusable workflow with inherit.</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span><span class="w">  </span><span class="c1"># nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span>
 </code></pre></div>
 
 

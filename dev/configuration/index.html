@@ -8951,10 +8951,17 @@ environment the repository does not have creates it with no branch policy.</p>
 <p><strong>Who declares it.</strong> Every job in vergil-actions that reads <code>APP_CLIENT_ID</code>
 or <code>APP_PRIVATE_KEY</code> declares <code>environment: automation</code>, as must any
 repository-local job that mints an automation App token. A calling job cannot
-declare an environment, and environment secrets reach a reusable workflow in
-another repository only when the caller passes <code>secrets: inherit</code>, so the
-callers of these workflows pass <code>secrets: inherit</code> (vrg-validate's
-secrets-inherit check allows it only for the App-key workflows).</p>
+declare an environment, so the caller passes the keys on, and they reach the
+called workflow's jobs that declare <code>environment: automation</code> by either of
+two routes:</p>
+<ul>
+<li><strong>Within vergil-project</strong>, the caller passes <code>secrets: inherit</code>.
+  vrg-validate's secrets-inherit check allows it only to the vergil-actions
+  workflows that read these keys.</li>
+<li><strong>Across organizations</strong>, where <code>secrets: inherit</code> passes nothing, the
+  caller passes <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code> by name. A call job
+  also passes them by name to its own repository's local reusable workflow.</li>
+</ul>
 <p><strong>Checking it.</strong> List a repository's environment secrets with
 <code>gh secret list --repo &lt;org&gt;/&lt;repo&gt; --env automation</code>: it must list both
 <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>. <code>gh secret list --repo &lt;org&gt;/&lt;repo&gt;</code>
@@ -9299,8 +9306,9 @@ other two must list neither.</p>
 <li>[ ] Create a <code>package-signing</code> environment whose deployment-branch policy
   admits only <code>main</code></li>
 <li>[ ] Add <code>PACKAGE_SIGNING_KEY</code> and <code>PACKAGE_SIGNING_PASSPHRASE</code> to it</li>
-<li>[ ] Call <code>cd-release.yml</code> with
-  <code>secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</code></li>
+<li>[ ] Call <code>cd-release.yml</code> with <code>secrets: inherit</code>. A repository outside
+  vergil-project cannot sign its packages yet: see
+  <a href="https://github.com/vergil-project/.github/issues/1592">vergil-project/.github#1592</a></li>
 <li>[ ] Call <code>ci-package.yml</code> under a job keyed <code>package</code>. Do not add
   <code>package / evidence</code> to the <strong>CI gates</strong> rulesets by hand:
   <code>vrg-github-repo-config</code> requires it for a repository with a <code>[package]</code>
@@ -9311,8 +9319,7 @@ other two must list neither.</p>
 <li>[ ] Create an <code>index-signing</code> environment that admits only <code>develop</code>,
   holding <code>PACKAGE_SIGNING_KEY</code> and <code>PACKAGE_SIGNING_PASSPHRASE</code></li>
 <li>[ ] Set <strong>Settings &gt; Pages &gt; Source</strong> to <strong>GitHub Actions</strong></li>
-<li>[ ] Call <code>publish-index.yml</code> with <code>secrets: inherit</code> (same <code>nosemgrep</code>
-  comment)</li>
+<li>[ ] Call <code>publish-index.yml</code> with <code>secrets: inherit</code></li>
 </ul>
 <h3 id="5-workflow-files">5. Workflow files<a class="headerlink" href="#5-workflow-files" title="Permanent link">&para;</a></h3>
 <ul>
