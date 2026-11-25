@@ -129,10 +129,14 @@ branch is refused before any step runs.
   one: the run's own `GITHUB_TOKEN`, or
   `CONAN_AUDIT_PROVIDER_TOKEN_CONANCENTER`, a read-only vulnerability
   database key that PR-time CI reads for the C/C++ audit.
-- Environment secrets reach a reusable workflow in another repository only
-  when the caller passes `secrets: inherit`, and a calling job cannot declare
-  an environment. Callers of the App-key workflows therefore pass
-  `secrets: inherit` once the secrets have moved.
+- A calling job cannot declare an environment, so a caller of an App-key
+  workflow passes the keys on, and they reach the called workflow's jobs
+  that declare `environment: automation`. Within vergil-project the caller
+  passes `secrets: inherit`, which vrg-validate's secrets-inherit check
+  allows only to the App-key workflows. GitHub passes `inherit` only to a
+  reusable workflow in the caller's own organization or enterprise, so a
+  caller in another org passes `APP_CLIENT_ID` and `APP_PRIVATE_KEY` by
+  name, as `vrg-github-repo-init` generates it.
 
 `scripts/bin/check-secret-environments`, run by validation, fails on a job
 that reads such a secret outside its environment, and on any secret it does
@@ -420,9 +424,10 @@ jobs:
       contents: read
     # The docs job deploys gh-pages, and the report job reports develop's
     # deploys, as the automation App. `inherit` within the org: it carries the
-    # App keys from the `automation` environment. A caller in another org passes APP_CLIENT_ID and
-    # APP_PRIVATE_KEY by name, since `inherit` reaches only a reusable
-    # workflow in the caller's own organization or enterprise.
+    # App keys from the `automation` environment. A caller in another org
+    # passes APP_CLIENT_ID and APP_PRIVATE_KEY by name, since `inherit`
+    # reaches only a reusable workflow in the caller's own organization or
+    # enterprise.
     secrets: inherit
 
   release:
@@ -430,16 +435,32 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
-    # No [package]: forward only the ecosystem's publishing secrets, never a
-    # blanket inherit. Python publishes via OIDC, so there is none to pass.
+    # Every release pushes its tags as the automation App. `inherit` within
+    # the org: it carries the App keys from the `automation` environment and
+    # any publishing secret the ecosystem needs (Python publishes via OIDC,
+    # so it needs none).
+    secrets: inherit
+```
+
+A release job in another org passes the App keys by name, with
+`CARGO_REGISTRY_TOKEN` for a Rust registry publish
+([Release publishing secrets](../../docs/site/docs/getting-started.md#release-publishing-secrets)):
+
+```yaml
+    # By name, not inherit: GitHub passes `secrets: inherit` only to a
+    # reusable workflow in the caller's own organization or enterprise.
+    secrets:
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 ```
 
 ### cd.yml — Release only (no docs), packaged repo
 
-A repo with a `[package]` section must pass `secrets: inherit`: the
-`package-signing` environment secrets reach a cross-repo reusable workflow
-only through `inherit`, never through an explicit `secrets:` map
-(vergil-project/packages#6).
+A repo with a `[package]` section passes `secrets: inherit`. It carries the
+App keys and the `package-signing` environment's `PACKAGE_SIGNING_KEY` and
+`PACKAGE_SIGNING_PASSPHRASE`, which `cd-release.yml` does not declare. A
+`[package]` repo outside vergil-project cannot sign its packages yet
+([vergil-project/.github#1592](https://github.com/vergil-project/.github/issues/1592)).
 
 ```yaml
 # https://github.com/vergil-project/vergil-actions/blob/develop/.github/workflows/README.md
@@ -461,7 +482,8 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1
     with:
       language: python
-    # Required for [package] repos: environment secrets only reach the
-    # reusable workflow with inherit.
-    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
+    # `inherit` within vergil-project: it carries the App keys and the
+    # package-signing secrets. Allowed only for the App-key workflows
+    # (vrg-validate's secrets-inherit check).
+    secrets: inherit
 ```

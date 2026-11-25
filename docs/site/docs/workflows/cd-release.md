@@ -95,9 +95,11 @@ jobs:
     with:
       language: python
       registry-publish: true
+    secrets: inherit
 ```
 
-The caller's `permissions:` must include `actions: read` (the evidence gate
+A caller in vergil-project passes `secrets: inherit`; a caller in another
+org passes the secrets by name (see [Secrets](#secrets)). The caller's `permissions:` must include `actions: read` (the evidence gate
 downloads the release PR's CI evidence artifacts), `contents: write`,
 `id-token: write` and `attestations: write`. A packaged repo must pass
 `secrets: inherit`; see [binary packages](cd-release-packages.md).
@@ -126,13 +128,33 @@ The workflow declares both App secrets optional, so a caller that does not
 pass them still runs. Its `release` job then fails at its first release
 step, `Require the automation App secrets`, with an error naming each
 missing secret, before the evidence gate, the registry publish or any tag.
-Pass them by name, or with `secrets: inherit`:
+
+A calling job cannot declare an environment, so the caller passes the
+secrets on by one of two routes, as `vrg-github-repo-init` generates it.
+Within vergil-project it passes `secrets: inherit`, which carries the App
+keys, `CARGO_REGISTRY_TOKEN` and a packaged repo's signing secrets.
+vrg-validate's secrets-inherit check allows it only to the App-key
+workflows:
 
 ```yaml
+    secrets: inherit
+```
+
+GitHub passes `secrets: inherit` only to a reusable workflow in the
+caller's own organization or enterprise, so a caller in another org passes
+the keys by name, adding `CARGO_REGISTRY_TOKEN` for a Rust registry
+publish:
+
+```yaml
+    # By name, not inherit: GitHub passes `secrets: inherit` only to a
+    # reusable workflow in the caller's own organization or enterprise.
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 ```
+
+A packaged repo outside vergil-project cannot sign its packages yet
+([vergil-project/.github#1592](https://github.com/vergil-project/.github/issues/1592)).
 
 ## Variables
 

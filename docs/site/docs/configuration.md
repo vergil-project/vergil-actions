@@ -55,10 +55,16 @@ deletion) and the cross-repository reach (the org's `.github` epics, the
 org's `packages` index) these workflows need.
 
 **Who uses it.** Every repository with an `ops.yml` needs these secrets, not
-only library repositories, and so does every caller of `cd-docs.yml`,
-`cd-docs-refresh.yml` or `publish-index.yml`, whose reporting jobs mint the
-App token on `develop` (the secrets are optional there, but a run that does
-not pass them turns its reporting job red):
+only library repositories. So does every caller of `cd-docs.yml` or
+`cd-docs-refresh.yml`: the docs deploy pushes `gh-pages` with the App token
+on every run, on `main` as well as `develop`, and fails without the
+secrets, and the reporting job mints the App token on `develop`. A caller of `publish-index.yml` needs them for
+its reporting job on `develop`. These workflows declare the secrets
+optional, but a run that does not pass them turns the deploy or the
+reporting job red. Pass them as on the other App-key workflows:
+`secrets: inherit` from a caller in vergil-project, by name from a caller in
+another org (see [The automation environment](#the-automation-environment)
+below):
 
 | Workflow | Job or step | Token scope |
 | -------- | ----------- | ----------- |
@@ -68,6 +74,7 @@ not pass them turns its reporting job red):
 | [`ops-epic-rollup.yml`](workflows/ops-epic-rollup.md) | `epic-rollup` (from the caller's `epic-rollup.yml`) | Calling repository and the epic repository |
 | [`ops-epic-sweep.yml`](workflows/ops-epic-sweep.md) | `epic-sweep` | Every repository the App is installed on in the org |
 | [`ops-upstream-refresh.yml`](workflows/ops-upstream-refresh.md) | `publish` (`vrg-upstream-refresh publish` mints the token itself) | Calling repository only |
+| [`cd-docs.yml`](actions/cd-docs-deploy.md) | `docs` (pushes `gh-pages`, also when nested in `cd-docs-refresh.yml`) | Calling repository only, Contents write |
 | [`cd-release.yml`](workflows/cd-release.md#secrets) | `release` (pushes the release tags) | Calling repository only, Contents write |
 | [`cd-release.yml`](workflows/cd-release-packages.md) | Package-index dispatch | `<org>/packages` only |
 | vergil-actions' own `cd.yml` | `release` | vergil-actions only |
@@ -332,10 +339,11 @@ branch.
 subkey. `index-signing` admits `develop` because `repository_dispatch` and
 `schedule` runs always use the default branch.
 
-Environment secrets reach these cross-repo reusable workflows **only** when
-the caller passes `secrets: inherit`. An explicit `secrets:` map leaves them
-empty (vergil-project/packages#6). See
-[Release publishing secrets](getting-started.md#release-publishing-secrets).
+Neither workflow declares the signing secrets. Within vergil-project the
+caller passes `secrets: inherit`, which carries them. A `[package]`
+repository outside vergil-project cannot sign its packages yet
+([vergil-project/.github#1592](https://github.com/vergil-project/.github/issues/1592)).
+See [Release publishing secrets](getting-started.md#release-publishing-secrets).
 
 The GitHub App behind `APP_CLIENT_ID` / `APP_PRIVATE_KEY` must also be
 installed on `<org>/packages` with **Contents: Read & write**, so that

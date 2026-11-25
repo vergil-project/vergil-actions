@@ -33,17 +33,18 @@ A packaged repo needs:
   only `main`. It holds the `PACKAGE_SIGNING_KEY` secret (the ASCII-armored
   export of the signing subkey) and `PACKAGE_SIGNING_PASSPHRASE`. If the key
   is missing or empty, `package-sign` fails.
-- **`secrets: inherit` on the caller (required).** Environment secrets reach
-  a job in a cross-repo reusable workflow **only** when the caller passes
-  `secrets: inherit`. An explicit `secrets:` map, or passing nothing, delivers
-  an empty value; declaring the secret in the callee makes no difference
-  (verified by a controlled probe, vergil-project/packages#6). Semgrep's
-  `secrets-inherit` rule flags this, so suppress it on that line with a
-  justification (`# nosemgrep: …`; honored by the SARIF gate since
-  vergil-project/vergil-tooling#3107). `inherit` also forwards the org App
-  secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY`, which every release needs
-  to push its tags and the index dispatch needs too. The App must be
-  installed on
+- **`secrets: inherit` on the caller.** Within vergil-project the caller
+  passes `secrets: inherit`, as `vrg-github-repo-init` generates it. It
+  carries the `package-signing` secrets, which `cd-release.yml` does not
+  declare, and the org App secrets `APP_CLIENT_ID` and `APP_PRIVATE_KEY`,
+  which every release needs to push its tags and the index dispatch needs
+  too. vrg-validate's secrets-inherit check allows `inherit` to
+  `cd-release.yml`, so the line needs no `nosemgrep`. GitHub passes
+  `inherit` only to a reusable workflow in the caller's own organization or
+  enterprise, and a packaged repo outside vergil-project cannot sign its
+  packages yet
+  ([vergil-project/.github#1592](https://github.com/vergil-project/.github/issues/1592)).
+  The App must be installed on
   `<owner>/packages` with permission to create repository dispatches
   (`contents: write`).
 - **The same permissions the release job already needs.** The package jobs
@@ -61,8 +62,9 @@ jobs:
       actions: read
     with:
       language: python
-    # Required: environment secrets only reach the reusable workflow with inherit.
-    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
+    # `inherit` within vergil-project: it carries the App keys and the
+    # package-signing secrets.
+    secrets: inherit
 ```
 
 ## Container prefix
@@ -90,5 +92,5 @@ jobs:
     with:
       language: python
       container-prefix: dev  # optional; omit for prod
-    secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit
+    secrets: inherit
 ```
