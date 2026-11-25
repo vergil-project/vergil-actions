@@ -187,10 +187,16 @@ environment the repository does not have creates it with no branch policy.
 **Who declares it.** Every job in vergil-actions that reads `APP_CLIENT_ID`
 or `APP_PRIVATE_KEY` declares `environment: automation`, as must any
 repository-local job that mints an automation App token. A calling job cannot
-declare an environment, and environment secrets reach a reusable workflow in
-another repository only when the caller passes `secrets: inherit`, so the
-callers of these workflows pass `secrets: inherit` (vrg-validate's
-secrets-inherit check allows it only for the App-key workflows).
+declare an environment, so the caller passes the keys on, and they reach the
+called workflow's jobs that declare `environment: automation` by either of
+two routes:
+
+- **Within vergil-project**, the caller passes `secrets: inherit`.
+  vrg-validate's secrets-inherit check allows it only to the vergil-actions
+  workflows that read these keys.
+- **Across organizations**, where `secrets: inherit` passes nothing, the
+  caller passes `APP_CLIENT_ID` and `APP_PRIVATE_KEY` by name. A call job
+  also passes them by name to its own repository's local reusable workflow.
 
 **Checking it.** List a repository's environment secrets with
 `gh secret list --repo <org>/<repo> --env automation`: it must list both
@@ -482,8 +488,9 @@ See [Binary package environments](#binary-package-environments).
 - [ ] Create a `package-signing` environment whose deployment-branch policy
   admits only `main`
 - [ ] Add `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE` to it
-- [ ] Call `cd-release.yml` with
-  `secrets: inherit  # nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit`
+- [ ] Call `cd-release.yml` with `secrets: inherit`. A repository outside
+  vergil-project cannot sign its packages yet: see
+  [vergil-project/.github#1592](https://github.com/vergil-project/.github/issues/1592)
 - [ ] Call `ci-package.yml` under a job keyed `package`. Do not add
   `package / evidence` to the **CI gates** rulesets by hand:
   `vrg-github-repo-config` requires it for a repository with a `[package]`
@@ -494,8 +501,7 @@ For the `<org>/packages` index repository itself:
 - [ ] Create an `index-signing` environment that admits only `develop`,
   holding `PACKAGE_SIGNING_KEY` and `PACKAGE_SIGNING_PASSPHRASE`
 - [ ] Set **Settings > Pages > Source** to **GitHub Actions**
-- [ ] Call `publish-index.yml` with `secrets: inherit` (same `nosemgrep`
-  comment)
+- [ ] Call `publish-index.yml` with `secrets: inherit`
 
 ### 5. Workflow files
 

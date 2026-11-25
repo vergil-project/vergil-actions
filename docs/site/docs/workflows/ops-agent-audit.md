@@ -14,8 +14,8 @@ merge it checks:
 
 - that the merge or auto-merge actor is one it expects: the human, the user
   agent, or the automation App on PRs the App authored;
-- on a PR an agent opened or acted on, that a merge-review record,
-  exemption or human override covers the merged head's change;
+- on a PR an agent opened or acted on, that a merge-review record or an
+  approved exemption covers the merged head's change;
 - that nobody but the human merged into `main`.
 
 It is a **security-signal job**. It files no issue, posts nothing and has

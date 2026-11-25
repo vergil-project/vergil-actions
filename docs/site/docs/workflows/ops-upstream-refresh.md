@@ -197,6 +197,8 @@ the run, which needs no `GITHUB_TOKEN` permission.
 
 ## Usage
 
+A caller in vergil-project passes `secrets: inherit`:
+
 ```yaml
 name: Ops
 
@@ -213,6 +215,13 @@ jobs:
     uses: vergil-project/vergil-actions/.github/workflows/ops-upstream-refresh.yml@v2.1
     permissions:
       contents: read
+    secrets: inherit
+```
+
+GitHub's `secrets: inherit` passes secrets only within one organization. A
+caller in another org passes the two keys by name instead:
+
+```yaml
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
