@@ -491,6 +491,59 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Whether this run gates and attaches the CI evidence bundle
+      # (vergil-project/vergil-actions#1439). A new tag always does. A tag
+      # that already exists on this run's commit is a re-run of a release that
+      # was tagged and published: it is never re-tagged or re-published, but if its GitHub
+      # Release lacks either evidence asset (an attempt that failed after
+      # Tag and release, as vergil-fixture-ts-lib's v0.1.10 did at the
+      # bundle's provenance attestation), the evidence steps below run again
+      # and attach the bundle with its attestation, enforced as on a fresh
+      # release. Before this check those steps ran only on a new tag, so such
+      # a re-run skipped them all and succeeded with no bundle. A release
+      # that cannot be read fails the job here. A tag on another commit (a
+      # push to main with no version bump) is not this run's release: the
+      # run attaches nothing to it, as before, since this commit's evidence
+      # is not that release's. The asset names are vergil-tooling's
+      # evidence_asset_name and evidence_manifest_name.
+      - name: Check the release's CI evidence
+        id: evidence_check
+        env:
+          TAG_EXISTS: ${{ steps.tag_check.outputs.exists }}
+          TAG: ${{ steps.version.outputs.tag }}
+          MERGE_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ "$TAG_EXISTS" != "true" ]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! tag_sha="$(git rev-parse --verify "${TAG}^{commit}")"; then
+            echo "::error::Tag ${TAG} exists but its commit could not be resolved, so whether this run is a re-run of release ${TAG} and its CI evidence cannot be checked."
+            exit 1
+          fi
+          if [ "$tag_sha" != "$MERGE_SHA" ]; then
+            echo "::notice::Tag ${TAG} already exists on ${tag_sha}, not on this run's commit ${MERGE_SHA}: this run is not a re-run of release ${TAG}, so it tags, publishes and attaches nothing."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! assets="$(gh release view "$TAG" --json assets --jq '.assets[].name')"; then
+            echo "::error::Tag ${TAG} already exists, but its GitHub Release could not be read, so whether it carries its CI evidence bundle cannot be checked. Nothing is re-tagged or re-published; the release needs operator attention."
+            exit 1
+          fi
+          missing=()
+          for asset in "${TAG}-ci-evidence.tar.gz" "${TAG}-ci-evidence-manifest.json"; do
+            grep -qxF -- "$asset" <<<"$assets" || missing+=("$asset")
+          done
+          if [ "${#missing[@]}" -eq 0 ]; then
+            echo "::notice::Release ${TAG} is already tagged and published and already carries its CI evidence bundle; nothing to do."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::warning::Release ${TAG} is already tagged and published without ${missing[*]}: gating, attesting and attaching its CI evidence bundle now. It is not re-tagged or re-published."
+          echo "needed=true" >> "$GITHUB_OUTPUT"
+
       # Release tags are pushed with the automation App's installation token,
       # never this job's GITHUB_TOKEN (vergil-project/vergil-actions#1315,
       # epic vergil-project/.github#1350), so that the Tag protection ruleset
@@ -551,17 +604,39 @@ jobs:
       - name: Resolve SBOM path for evidence
         id: evidence_sbom
         if: >-
-          steps.tag_check.outputs.exists == 'false' &&
+          steps.evidence_check.outputs.needed == 'true' &&
           inputs.sbom-output-file != ''
         env:
           VERSION: ${{ steps.version.outputs.version }}
           SBOM_OUTPUT_FILE: ${{ inputs.sbom-output-file }}
+          TAG_EXISTS: ${{ steps.tag_check.outputs.exists }}
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          echo "path=${SBOM_OUTPUT_FILE//\$VERSION/$VERSION}" >> "$GITHUB_OUTPUT"
+          sbom="${SBOM_OUTPUT_FILE//\$VERSION/$VERSION}"
+          echo "path=${sbom}" >> "$GITHUB_OUTPUT"
+          # A re-run builds nothing, so the SBOM registry-publish built for
+          # the release is taken from the release's assets when it is one.
+          if [ "$TAG_EXISTS" != "true" ] || [ -f "$sbom" ]; then
+            exit 0
+          fi
+          name="$(basename "$sbom")"
+          if ! assets="$(gh release view "$TAG" --json assets --jq '.assets[].name')"; then
+            echo "::error::The GitHub Release of ${TAG} could not be read to fetch its SBOM ${name} for the CI evidence bundle."
+            exit 1
+          fi
+          if ! grep -qxF -- "$name" <<<"$assets"; then
+            echo "::warning::SBOM ${name} is not an asset of release ${TAG}; its CI evidence bundle is assembled without it."
+            exit 0
+          fi
+          dir="$(dirname "$sbom")"
+          mkdir -p "$dir"
+          gh release download "$TAG" --pattern "$name" --dir "$dir"
 
       - name: CI evidence gate (pre-publish)
         id: evidence_gate
-        if: steps.tag_check.outputs.exists == 'false'
+        if: steps.evidence_check.outputs.needed == 'true'
         continue-on-error: ${{ !inputs.evidence-enforce }}
         uses: ./actions/cd/release/ci-evidence-gate
         env:
@@ -585,7 +660,7 @@ jobs:
         if: >-
           ${{ always() &&
               inputs.evidence-enforce &&
-              steps.tag_check.outputs.exists == 'false' &&
+              steps.evidence_check.outputs.needed == 'true' &&
               (steps.evidence_gate.outcome == 'failure' ||
                (steps.evidence_gate.outcome == 'success' &&
                 steps.evidence_gate.outputs.passed != 'true')) }}
@@ -686,7 +761,7 @@ jobs:
       # (honors the evidence-enforce flag; enforcing by default).
       - name: Attach CI evidence bundle (post-release)
         id: evidence_attach
-        if: steps.tag_check.outputs.exists == 'false'
+        if: steps.evidence_check.outputs.needed == 'true'
         continue-on-error: ${{ !inputs.evidence-enforce }}
         uses: ./actions/cd/release/ci-evidence-attach
         with:
@@ -706,7 +781,7 @@ jobs:
         if: >-
           ${{ always() &&
               inputs.evidence-enforce &&
-              steps.tag_check.outputs.exists == 'false' &&
+              steps.evidence_check.outputs.needed == 'true' &&
               (steps.evidence_attach.outcome == 'failure' ||
                (steps.evidence_attach.outcome == 'success' &&
                 steps.evidence_attach.outputs.attached != 'true')) }}

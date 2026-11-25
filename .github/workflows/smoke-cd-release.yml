@@ -40,6 +40,13 @@ name: Smoke - cd-release
 # naming any secret the caller did not pass; vergil-actions' own cd.yml
 # passes its App token. push-tag.sh is run against a local HTTP server to
 # show it sends the App token's Authorization header and not the checkout's.
+#
+# rerun-evidence.test.sh (issue #1439, epic vergil-project/.github#1384): a
+# re-run of the release job on a release already tagged and published checks
+# the Release for its CI evidence bundle, gates, attests and attaches a missing
+# one as a new release would, and fails when it cannot; it never re-tags or
+# re-publishes. It checks the release job's wiring and runs its evidence check,
+# SBOM path and attach guard steps as written, with a stub gh.
 
 on:
   workflow_call:
@@ -121,3 +128,13 @@ jobs:
       - name: Run push-tag harness
         shell: bash
         run: bash actions/cd/release/tag-and-release/tests/push-tag.test.sh
+
+  rerun-evidence:
+    name: rerun-evidence fixtures
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run rerun-evidence harness
+        shell: bash
+        run: bash actions/cd/release/tests/rerun-evidence.test.sh
