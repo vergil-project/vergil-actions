@@ -8419,8 +8419,10 @@ own, and succeeds with a notice.</p>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">registry-publish</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span>
 </code></pre></div>
-<p>The caller's <code>permissions:</code> must include <code>actions: read</code> (the evidence gate
+<p>A caller in vergil-project passes <code>secrets: inherit</code>; a caller in another
+org passes the secrets by name (see <a href="#secrets">Secrets</a>). The caller's <code>permissions:</code> must include <code>actions: read</code> (the evidence gate
 downloads the release PR's CI evidence artifacts), <code>contents: write</code>,
 <code>id-token: write</code> and <code>attestations: write</code>. A packaged repo must pass
 <code>secrets: inherit</code>; see <a href="../cd-release-packages/">binary packages</a>.</p>
@@ -8464,12 +8466,27 @@ release also uses the App to dispatch the package index.</p>
 <p>The workflow declares both App secrets optional, so a caller that does not
 pass them still runs. Its <code>release</code> job then fails at its first release
 step, <code>Require the automation App secrets</code>, with an error naming each
-missing secret, before the evidence gate, the registry publish or any tag.
-Pass them by name, or with <code>secrets: inherit</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
+missing secret, before the evidence gate, the registry publish or any tag.</p>
+<p>A calling job cannot declare an environment, so the caller passes the
+secrets on by one of two routes, as <code>vrg-github-repo-init</code> generates it.
+Within vergil-project it passes <code>secrets: inherit</code>, which carries the App
+keys, <code>CARGO_REGISTRY_TOKEN</code> and a packaged repo's signing secrets.
+vrg-validate's secrets-inherit check allows it only to the App-key
+workflows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span>
 </code></pre></div>
+<p>GitHub passes <code>secrets: inherit</code> only to a reusable workflow in the
+caller's own organization or enterprise, so a caller in another org passes
+the keys by name, adding <code>CARGO_REGISTRY_TOKEN</code> for a Rust registry
+publish:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w">    </span><span class="c1"># By name, not inherit: GitHub passes `secrets: inherit` only to a</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="c1"># reusable workflow in the caller's own organization or enterprise.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="nt">APP_CLIENT_ID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_CLIENT_ID }}</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">APP_PRIVATE_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.APP_PRIVATE_KEY }}</span>
+</code></pre></div>
+<p>A packaged repo outside vergil-project cannot sign its packages yet
+(<a href="https://github.com/vergil-project/.github/issues/1592">vergil-project/.github#1592</a>).</p>
 <h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

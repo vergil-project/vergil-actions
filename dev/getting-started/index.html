@@ -8393,7 +8393,12 @@ Reference workflows using the full path to the workflow file:</p>
 <a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/.github/workflows/cd-release.yml@v2.1</span>
 <a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
-<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">    </span><span class="c1"># Python publishes via OIDC trusted publishing — no secret to pass.</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">    </span><span class="c1"># Every release pushes its tags as the automation App. `inherit` within</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">    </span><span class="c1"># the org: it carries the App keys from the `automation` environment.</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">    </span><span class="c1"># Python publishes via OIDC trusted publishing, so no publishing secret is</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">    </span><span class="c1"># needed. A caller in another org passes APP_CLIENT_ID and APP_PRIVATE_KEY</span>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">    </span><span class="c1"># by name (see Release publishing secrets below).</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span>
 </code></pre></div>
 <h3 id="org-actions-variables">Org Actions variables<a class="headerlink" href="#org-actions-variables" title="Permanent link">&para;</a></h3>
 <p>Besides the App secrets, the reusable workflows read two org-level Actions

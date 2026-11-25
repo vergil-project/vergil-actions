@@ -8733,10 +8733,16 @@ App token supplies the extra scopes (for example Dependabot alerts or branch
 deletion) and the cross-repository reach (the org's <code>.github</code> epics, the
 org's <code>packages</code> index) these workflows need.</p>
 <p><strong>Who uses it.</strong> Every repository with an <code>ops.yml</code> needs these secrets, not
-only library repositories, and so does every caller of <code>cd-docs.yml</code>,
-<code>cd-docs-refresh.yml</code> or <code>publish-index.yml</code>, whose reporting jobs mint the
-App token on <code>develop</code> (the secrets are optional there, but a run that does
-not pass them turns its reporting job red):</p>
+only library repositories. So does every caller of <code>cd-docs.yml</code> or
+<code>cd-docs-refresh.yml</code>: the docs deploy pushes <code>gh-pages</code> with the App token
+on every run, on <code>main</code> as well as <code>develop</code>, and fails without the
+secrets, and the reporting job mints the App token on <code>develop</code>. A caller of <code>publish-index.yml</code> needs them for
+its reporting job on <code>develop</code>. These workflows declare the secrets
+optional, but a run that does not pass them turns the deploy or the
+reporting job red. Pass them as on the other App-key workflows:
+<code>secrets: inherit</code> from a caller in vergil-project, by name from a caller in
+another org (see <a href="#the-automation-environment">The automation environment</a>
+below):</p>
 <table>
 <thead>
 <tr>
@@ -8775,6 +8781,11 @@ not pass them turns its reporting job red):</p>
 <td><a href="../workflows/ops-upstream-refresh/"><code>ops-upstream-refresh.yml</code></a></td>
 <td><code>publish</code> (<code>vrg-upstream-refresh publish</code> mints the token itself)</td>
 <td>Calling repository only</td>
+</tr>
+<tr>
+<td><a href="../actions/cd-docs-deploy/"><code>cd-docs.yml</code></a></td>
+<td><code>docs</code> (pushes <code>gh-pages</code>, also when nested in <code>cd-docs-refresh.yml</code>)</td>
+<td>Calling repository only, Contents write</td>
 </tr>
 <tr>
 <td><a href="../workflows/cd-release/#secrets"><code>cd-release.yml</code></a></td>
@@ -9151,10 +9162,11 @@ branch.</p>
 <p><code>PACKAGE_SIGNING_KEY</code> holds the ASCII-armored export of the org signing
 subkey. <code>index-signing</code> admits <code>develop</code> because <code>repository_dispatch</code> and
 <code>schedule</code> runs always use the default branch.</p>
-<p>Environment secrets reach these cross-repo reusable workflows <strong>only</strong> when
-the caller passes <code>secrets: inherit</code>. An explicit <code>secrets:</code> map leaves them
-empty (vergil-project/packages#6). See
-<a href="../getting-started/#release-publishing-secrets">Release publishing secrets</a>.</p>
+<p>Neither workflow declares the signing secrets. Within vergil-project the
+caller passes <code>secrets: inherit</code>, which carries them. A <code>[package]</code>
+repository outside vergil-project cannot sign its packages yet
+(<a href="https://github.com/vergil-project/.github/issues/1592">vergil-project/.github#1592</a>).
+See <a href="../getting-started/#release-publishing-secrets">Release publishing secrets</a>.</p>
 <p>The GitHub App behind <code>APP_CLIENT_ID</code> / <code>APP_PRIVATE_KEY</code> must also be
 installed on <code>&lt;org&gt;/packages</code> with <strong>Contents: Read &amp; write</strong>, so that
 <code>cd-release.yml</code> can dispatch <code>package-released</code> to it after a packaged

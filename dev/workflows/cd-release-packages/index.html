@@ -8170,17 +8170,18 @@ never reference the <code>package-signing</code> environment.</p>
   only <code>main</code>. It holds the <code>PACKAGE_SIGNING_KEY</code> secret (the ASCII-armored
   export of the signing subkey) and <code>PACKAGE_SIGNING_PASSPHRASE</code>. If the key
   is missing or empty, <code>package-sign</code> fails.</li>
-<li><strong><code>secrets: inherit</code> on the caller (required).</strong> Environment secrets reach
-  a job in a cross-repo reusable workflow <strong>only</strong> when the caller passes
-  <code>secrets: inherit</code>. An explicit <code>secrets:</code> map, or passing nothing, delivers
-  an empty value; declaring the secret in the callee makes no difference
-  (verified by a controlled probe, vergil-project/packages#6). Semgrep's
-  <code>secrets-inherit</code> rule flags this, so suppress it on that line with a
-  justification (<code># nosemgrep: …</code>; honored by the SARIF gate since
-  vergil-project/vergil-tooling#3107). <code>inherit</code> also forwards the org App
-  secrets <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>, which every release needs
-  to push its tags and the index dispatch needs too. The App must be
-  installed on
+<li><strong><code>secrets: inherit</code> on the caller.</strong> Within vergil-project the caller
+  passes <code>secrets: inherit</code>, as <code>vrg-github-repo-init</code> generates it. It
+  carries the <code>package-signing</code> secrets, which <code>cd-release.yml</code> does not
+  declare, and the org App secrets <code>APP_CLIENT_ID</code> and <code>APP_PRIVATE_KEY</code>,
+  which every release needs to push its tags and the index dispatch needs
+  too. vrg-validate's secrets-inherit check allows <code>inherit</code> to
+  <code>cd-release.yml</code>, so the line needs no <code>nosemgrep</code>. GitHub passes
+  <code>inherit</code> only to a reusable workflow in the caller's own organization or
+  enterprise, and a packaged repo outside vergil-project cannot sign its
+  packages yet
+  (<a href="https://github.com/vergil-project/.github/issues/1592">vergil-project/.github#1592</a>).
+  The App must be installed on
   <code>&lt;owner&gt;/packages</code> with permission to create repository dispatches
   (<code>contents: write</code>).</li>
 <li><strong>The same permissions the release job already needs.</strong> The package jobs
@@ -8197,8 +8198,9 @@ never reference the <code>package-signing</code> environment.</p>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">actions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="c1"># Required: environment secrets only reach the reusable workflow with inherit.</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span><span class="w">  </span><span class="c1"># nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="c1"># `inherit` within vergil-project: it carries the App keys and the</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="c1"># package-signing secrets.</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span>
 </code></pre></div>
 <h2 id="container-prefix">Container prefix<a class="headerlink" href="#container-prefix" title="Permanent link">&para;</a></h2>
 <p>The <code>package-build</code> cells run on the images <code>vrg-package matrix</code> names,
@@ -8221,7 +8223,7 @@ temporary setting: remove it once the production images serve again.</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">container-prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span><span class="w">  </span><span class="c1"># optional; omit for prod</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span><span class="w">  </span><span class="c1"># nosemgrep: yaml.github-actions.security.secrets-inherit.secrets-inherit</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">secrets</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inherit</span>
 </code></pre></div>
 
 
