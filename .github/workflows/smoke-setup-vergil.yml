@@ -2,7 +2,8 @@ name: Smoke - setup/vergil outputs
 
 # Smoke test for the shared setup/vergil action's resolver outputs
 # (`versions`, `primary-version`, `primary-container-tag`, `container-tags`,
-# `container-suffixes`, `build-enabled`), the ci/matrix action built from
+# `container-suffixes`, `build-enabled`) and its `tooling-version`, the
+# ci/matrix action built from
 # them, and the ci/toolchain/assert, ci/toolchain/pin-python and
 # ci/toolchain/install-python actions (epics
 # vergil-project/.github#338 and #407).
@@ -267,7 +268,7 @@ jobs:
         with:
           version-window: actions/shared/setup/vergil/tests/fixtures/window.json
 
-      - name: Assert the six resolver outputs
+      - name: Assert the setup action's seven outputs
         shell: bash
         env:
           VERSIONS: ${{ steps.setup.outputs.versions }}
@@ -276,6 +277,7 @@ jobs:
           TAGS: ${{ steps.setup.outputs.container-tags }}
           SUFFIXES: ${{ steps.setup.outputs.container-suffixes }}
           BUILD_ENABLED: ${{ steps.setup.outputs.build-enabled }}
+          TOOLING_VERSION: ${{ steps.setup.outputs.tooling-version }}
         run: |
           set -euo pipefail
           failed=0
@@ -302,8 +304,15 @@ jobs:
               failed=1
               ;;
           esac
+          # tooling-version is the release the install step installed, so
+          # only its shape is checked: X.Y.Z, never empty (#1452).
+          echo "tooling-version=$TOOLING_VERSION"
+          if [[ ! "$TOOLING_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::error::tooling-version is '$TOOLING_VERSION', expected X.Y.Z"
+            failed=1
+          fi
           [ "$failed" -eq 0 ]
-          echo "All six outputs correct."
+          echo "All seven outputs correct."
 
       - name: Build the matrix from the outputs
         id: matrix

@@ -106,8 +106,12 @@ A skipped `build` job is a valid result, so the `evidence` job does not
 require it to succeed. It checks the result against the flag with
 [`ci/evidence/assert`](../actions/ci-evidence-assert.md): skipped with
 BUILD off and successful with BUILD on pass, and anything else, a skipped
-build with BUILD on included, fails `quality / evidence`. The job uploads no
-report. There is no separate required check and no ruleset change.
+build with BUILD on included, fails `quality / evidence`. The job stages its
+build transcript, `quality-build.log`, through
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md) and uploads it as
+the `ci-evidence-quality-reports-build-<version>` partial (see
+[Evidence](#evidence)). There is no separate required check and no ruleset
+change.
 
 ## Usage
 
@@ -133,29 +137,40 @@ vergil-tooling, not in this workflow, so a language's checks change there.
 
 `quality / evidence` always carries the `common` and `custom` transcripts
 (`quality-common.log` and `quality-custom.log`), for every language. Each
-`lint` and `typecheck` leg stages its language's reports through
-[`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose `lint` and
-`typecheck` contracts name them, with the leg's version suffix:
+`lint`, `typecheck` and `build` leg stages its language's reports through
+[`ci/evidence/reports`](../actions/ci-evidence-reports.md), whose `lint`,
+`typecheck` and `build` contracts name them, with the leg's version suffix:
 
-| Language | Leg | Report | Tools |
-| -------- | --- | ------ | ----- |
+| Language | Leg | Reports | Tools |
+| -------- | --- | ------- | ----- |
 | `python` | `lint` | `quality-ruff.json` | ruff |
-| `python` | `typecheck` | `quality-mypy.xml` | mypy |
-| `rust` | `lint` | `quality-clippy.json` | rustfmt, clippy |
+| `python` | `typecheck` | `quality-mypy.xml`, `quality-ty.log`* | mypy, ty |
+| `rust` | `lint` | `quality-rustfmt.log`*, `quality-clippy.json` | rustfmt, clippy |
 | `rust` | `typecheck` | `quality-cargo-check.json` | cargo |
-| `typescript` | `lint` | `quality-eslint.json` | prettier, eslint |
+| `rust` | `build` | `quality-build.log`* | cargo |
+| `typescript` | `lint` | `quality-prettier.log`*, `quality-eslint.json` | prettier, eslint |
 | `typescript` | `typecheck` | `quality-tsc.txt` | tsc |
+| `typescript` | `build` | `quality-build.log`* | npm |
+
+\* A transcript `vrg-validate` writes for a gate tool that writes no report
+of its own, from vergil-tooling v2.1.349 on. It is required only of a leg
+that ran that release or a later one: each leg's staging step takes the
+release its own setup step installed, and the `evidence` job takes the
+`matrix` job's (see
+[Transcripts](../actions/ci-evidence-reports.md#transcripts)).
 
 The reports are required. A leg that passes but leaves its report missing
 or empty fails its staging step. A leg that fails is not failed again for a
 missing report. Before it emits, the `evidence` job checks that every report
-of the language is there from at least one leg, and fails naming any that is
-not. The emitted artifact takes every `quality-*` file the jobs uploaded,
-and its tools are `vrg-validate-common`, `vrg-validate-custom`, then the
-language's lint and typecheck tools.
+of the language is there from at least one leg (a build report only with
+BUILD on), and fails naming any that is not. The emitted artifact takes
+every `quality-*` file the jobs uploaded, and its tools are
+`vrg-validate-common`, `vrg-validate-custom`, then the language's lint and
+typecheck tools, then with BUILD on its build tools.
 
 On a repository not bootstrapped yet (none of the language's manifests and no
-sources), `vrg-validate` skips the `lint` and `typecheck` gates, loudly. Each
+sources), `vrg-validate` skips the `lint`, `typecheck` and `build` gates,
+loudly. Each
 leg's staging step then prints a notice and stages a skip record,
 `quality-<leg>-not-bootstrapped-<version>.json`, in place of its report, and
 the `evidence` job accepts the skip records instead of the reports and lists

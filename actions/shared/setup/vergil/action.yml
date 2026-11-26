@@ -86,6 +86,14 @@ outputs:
       `matrix` job passes it on, and its `build` job runs only when it is
       "true" (epic vergil-project/.github#1174).
     value: ${{ steps.derive.outputs.build-enabled }}
+  tooling-version:
+    description: >-
+      The vergil-tooling release the install step installed, as the installed
+      environment's package metadata gives it (for example 2.1.349), whatever
+      the pin: a line pin (vX.Y) gives the release it resolved to. ci-quality
+      passes it to ci/evidence/reports, whose report contract names some
+      reports only from the release that writes them (issue #1452).
+    value: ${{ steps.install.outputs.tooling-version }}
 
 runs:
   using: composite
@@ -101,6 +109,7 @@ runs:
     # pass --no-config; its self-repo `uv sync` carries the
     # UV_PYTHON_PREFERENCE pin.
     - name: Install vergil-tooling
+      id: install
       shell: bash
       env:
         INSTALL_SOURCE: ${{ inputs.install-source }}

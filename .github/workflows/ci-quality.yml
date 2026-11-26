@@ -29,6 +29,11 @@ jobs:
   # and TypeScript, every version otherwise); TYPECHECK is per-version and
   # consumes `all`. BUILD is run-once too, and `build-enabled` (vrg-ci-resolve's
   # flag, through the setup action) decides whether the `build` job runs.
+  # `tooling-version` is the vergil-tooling release this job installed; the
+  # evidence job's expect step keys the transcripts it requires on it (#1452).
+  # Every leg installs after this job, so no leg runs an older release than
+  # the one the expect step assumes, and each leg's stage step keys on its
+  # own install.
   matrix:
     name: matrix
     runs-on: ubuntu-24.04
@@ -36,6 +41,7 @@ jobs:
       all: ${{ steps.resolve.outputs.all }}
       once: ${{ steps.resolve.outputs.once }}
       build-enabled: ${{ steps.setup.outputs.build-enabled }}
+      tooling-version: ${{ steps.setup.outputs.tooling-version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -217,6 +223,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
+        id: vergil
         uses: ./actions/shared/setup/vergil
 
       # Hand uv the leg's resolved version and pin its source to the image
@@ -252,7 +259,9 @@ jobs:
       # The language's report names come from ci/evidence/reports (#1249),
       # renamed to version-suffixed basenames so each leg stays distinct after
       # the evidence emit step. A passing lint run that wrote no report fails
-      # this step.
+      # this step; a gate tool's transcript is required only from the
+      # vergil-tooling release that writes it, so the step takes the release
+      # this leg installed (#1452).
       - name: Stage lint report for evidence
         if: always()
         uses: ./actions/ci/evidence/reports
@@ -262,6 +271,7 @@ jobs:
           gate: lint
           version: ${{ matrix.version }}
           gate-outcome: ${{ steps.gate.outcome }}
+          tooling-version: ${{ steps.vergil.outputs.tooling-version }}
 
       - name: Upload lint report evidence partial
         if: always()
@@ -290,6 +300,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
+        id: vergil
         uses: ./actions/shared/setup/vergil
 
       # Hand uv the leg's resolved version and pin its source to the image
@@ -325,7 +336,8 @@ jobs:
       # The language's report names come from ci/evidence/reports (#1249),
       # renamed to version-suffixed basenames so each leg stays distinct after
       # the evidence emit step. A passing typecheck run that wrote no report
-      # fails this step.
+      # fails this step; as on the lint leg, a transcript is required only
+      # from the vergil-tooling release that writes it (#1452).
       - name: Stage typecheck report for evidence
         if: always()
         uses: ./actions/ci/evidence/reports
@@ -335,6 +347,7 @@ jobs:
           gate: typecheck
           version: ${{ matrix.version }}
           gate-outcome: ${{ steps.gate.outcome }}
+          tooling-version: ${{ steps.vergil.outputs.tooling-version }}
 
       - name: Upload typecheck report evidence partial
         if: always()
@@ -353,7 +366,9 @@ jobs:
   # workflow. BUILD is run-once, so the job takes the collapsed `once` matrix,
   # the primary version. The evidence job checks its result against the flag
   # (ci/evidence/assert), so a skipped build with BUILD on fails
-  # quality / evidence.
+  # quality / evidence. Its build transcript (quality-build.log, from
+  # vergil-tooling 2.1.349) is staged and uploaded like a lint or typecheck
+  # leg's reports, so the quality evidence shows the build ran (#1452).
   build:
     name: build / ${{ matrix.version }}
     needs: matrix
@@ -368,6 +383,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install vergil-tooling
+        id: vergil
         uses: ./actions/shared/setup/vergil
 
       # As on the lint and typecheck legs: pin uv to the leg's version and the
@@ -391,7 +407,29 @@ jobs:
           expected: ${{ matrix.version }}
 
       - name: Run build
+        id: gate
         run: vrg-validate --check build
+
+      # Bridge the build transcript to the evidence job, as the lint and
+      # typecheck legs do with their reports (#836, #1249).
+      - name: Stage build report for evidence
+        if: always()
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: stage
+          language: ${{ inputs.language }}
+          gate: build
+          version: ${{ matrix.version }}
+          gate-outcome: ${{ steps.gate.outcome }}
+          tooling-version: ${{ steps.vergil.outputs.tooling-version }}
+
+      - name: Upload build report evidence partial
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-evidence-quality-reports-build-${{ matrix.version }}
+          path: ci-reports/
+          if-no-files-found: warn
 
   evidence:
     name: evidence
@@ -410,8 +448,10 @@ jobs:
     # bundle carries each version's reports (#836), and the expect step fails
     # the job when any report the language's contract names is missing
     # (#1249). It also needs `build`, which runs only when BUILD is on for the
-    # language, and `matrix`, for the `build-enabled` flag its result is
-    # checked against (epic vergil-project/.github#1174).
+    # language and then uploads its transcript as a partial too (#1452), and
+    # `matrix`, for the `build-enabled` flag its result is checked against
+    # (epic vergil-project/.github#1174) and the vergil-tooling release the
+    # expect step keys the transcripts on.
     needs: [matrix, common, custom, lint, typecheck, build]
     # Run even when a required leg fails or is skipped (default would skip this
     # job, leaving the gate green-by-absence). The assert step below then turns
@@ -472,20 +512,25 @@ jobs:
 
       # The emit action skips a file pattern that matches nothing, so check
       # first that the legs staged every lint and typecheck report the
-      # language's contract names (#1249). A language with no contract warns,
-      # or for a repository with no fleet primary language notes, and passes.
-      - name: Require the lint and typecheck reports
+      # language's contract names (#1249), and with BUILD on every build
+      # report. A gate tool's transcript is required only from the
+      # vergil-tooling release that writes it, the matrix job's install
+      # deciding (#1452). A language with no contract warns, or for a
+      # repository with no fleet primary language notes, and passes.
+      - name: Require the lint, typecheck and build reports
         uses: ./actions/ci/evidence/reports
         with:
           mode: expect
           language: ${{ inputs.language }}
           reports-dir: evidence-reports
+          build-enabled: ${{ needs.matrix.outputs.build-enabled }}
+          tooling-version: ${{ needs.matrix.outputs.tooling-version }}
 
       # The tools are the common and custom checks', then the lint and
-      # typecheck legs' tools from the same per-language contract. A leg
-      # skipped as not bootstrapped left its skip records in evidence-reports
-      # and ran no tool, so its tools list is empty and the combined list
-      # names none of them (#1406).
+      # typecheck legs' tools from the same per-language contract, then with
+      # BUILD on the build leg's. A leg skipped as not bootstrapped left its
+      # skip records in evidence-reports and ran no tool, so its tools list
+      # is empty and the combined list names none of them (#1406).
       - name: Resolve lint evidence tools
         id: lint-tools
         uses: ./actions/ci/evidence/reports
@@ -504,23 +549,43 @@ jobs:
           gate: typecheck
           reports-dir: evidence-reports
 
+      # With BUILD off the build job is skipped and ran no tool, so this step
+      # is skipped too and the combined list takes no build tools.
+      - name: Resolve build evidence tools
+        id: build-tools
+        if: needs.matrix.outputs.build-enabled == 'true'
+        uses: ./actions/ci/evidence/reports
+        with:
+          mode: tools
+          language: ${{ inputs.language }}
+          gate: build
+          reports-dir: evidence-reports
+
       - name: Combine quality evidence tools
         id: tools
         shell: bash
         env:
           LINT_TOOLS: ${{ steps.lint-tools.outputs.tools }}
           TYPECHECK_TOOLS: ${{ steps.typecheck-tools.outputs.tools }}
+          BUILD_ENABLED: ${{ needs.matrix.outputs.build-enabled }}
+          BUILD_TOOLS: ${{ steps.build-tools.outputs.tools }}
         run: |
           set -euo pipefail
+          # The build tools step ran exactly when BUILD is on (the assert
+          # step above has checked the flag is true or false).
+          if [ "$BUILD_ENABLED" != true ]; then
+            BUILD_TOOLS='[]'
+          fi
           tools="$(jq -cn --argjson lint "$LINT_TOOLS" \
             --argjson typecheck "$TYPECHECK_TOOLS" \
-            '[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}] + $lint + $typecheck')"
+            --argjson build "$BUILD_TOOLS" \
+            '[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}] + $lint + $typecheck + $build')"
           echo "tools=${tools}" >>"$GITHUB_OUTPUT"
           echo "tools: ${tools}"
 
       # Every file the legs uploaded is the common or custom transcript or one
-      # of the language's declared lint and typecheck reports (the stage step
-      # copies nothing else), all named quality-*.
+      # of the language's declared lint, typecheck and build reports (the
+      # stage step copies nothing else), all named quality-*.
       - name: Emit ci-evidence-quality artifact
         uses: ./actions/ci/evidence/emit
         with:

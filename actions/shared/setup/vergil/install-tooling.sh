@@ -42,6 +42,13 @@
 # released Python 3.15 (`Python 3.15.N`, never a pre-release), which it logs.
 # The self repo's host sync gets the same interpreter check.
 #
+# Every path then records the vergil-tooling release it installed, as the
+# environment's own package metadata gives it (the tool environment's, or
+# for the self repo the synced .venv's), as the step output
+# `tooling-version` (for example 2.1.349), so later steps can key on the
+# release that runs rather than on the pin (issue #1452). An unreadable or
+# malformed version fails the job.
+#
 # Every path leaves uv on PATH: later steps (and the scripts they run) rely
 # on it. When none is on PATH, uv is installed from its release tarball at
 # UV_VERSION, checked against the SHA-256 pinned below, into
@@ -57,7 +64,7 @@
 # Environment:
 #   INSTALL_SOURCE           the action's `install-source` input: auto (default) or git
 #   VERGIL_CORE_PYTHON_DIR   set by a Vergil image: its managed Python directory
-#   RUNNER_TEMP, GITHUB_PATH, GITHUB_WORKSPACE   set by the Actions runner
+#   RUNNER_TEMP, GITHUB_PATH, GITHUB_OUTPUT, GITHUB_WORKSPACE   set by the Actions runner
 #
 # Test seams (tests/install-tooling.test.sh); unset in real use:
 #   VRG_ROOT   filesystem root prefix for the /.dockerenv probe (default "")
@@ -167,6 +174,7 @@ self_repo_install() {
     # interpreter source to the image's Python, never a download (issue #1002).
     UV_PYTHON_PREFERENCE=only-system uv sync --frozen --group dev
   fi
+  record_tooling_version "${GITHUB_WORKSPACE}/.venv/bin/python"
   echo "${GITHUB_WORKSPACE}/.venv/bin" >>"$GITHUB_PATH"
 }
 
@@ -281,6 +289,23 @@ check_python() {
   log "vergil-tooling runs on Python ${version#Python } (${py})"
 }
 
+# record_tooling_version <python>: write the vergil-tooling version the
+# environment of <python> holds, from its package metadata, to GITHUB_OUTPUT
+# as `tooling-version`, and log it. It must start with X.Y.Z; anything else,
+# or a failed read, fails the job.
+record_tooling_version() {
+  local py="$1" version
+  [ -n "${GITHUB_OUTPUT:-}" ] ||
+    die "GITHUB_OUTPUT is not set, so the installed ${PACKAGE} version cannot be recorded"
+  version="$("$py" -c 'from importlib.metadata import version; print(version("vergil-tooling"))')" ||
+    die "could not read the installed ${PACKAGE} version with ${py}"
+  if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+    die "${py} gives the installed ${PACKAGE} version as '${version}', which is not X.Y.Z"
+  fi
+  echo "tooling-version=${version}" >>"$GITHUB_OUTPUT"
+  log "installed ${PACKAGE} ${version}"
+}
+
 # check_install: vrg-whoami resolves to uv's tool bin directory and runs, and
 # the tool environment runs on a released Python 3.15.
 check_install() {
@@ -297,6 +322,7 @@ check_install() {
   tools="$(uv tool dir --no-config)" ||
     die "could not read uv's tool directory (uv tool dir)"
   check_python "${tools}/${PACKAGE}/bin/python"
+  record_tooling_version "${tools}/${PACKAGE}/bin/python"
   echo "$bin" >>"$GITHUB_PATH"
   log "vrg-* run from ${bin}"
 }

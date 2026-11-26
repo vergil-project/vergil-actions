@@ -1,27 +1,40 @@
 #!/usr/bin/env bash
 #
 # The per-language report-file contract of the CI `test` and `audit` evidence
-# gates and of the `quality` gate's `lint` and `typecheck` legs, and the
-# staging of one matrix leg's reports (issues #1211, #1249, #1260).
+# gates and of the `quality` gate's `lint`, `typecheck` and `build` legs, and
+# the staging of one matrix leg's reports (issues #1211, #1249, #1260, #1452).
 #
 # vrg-validate writes each gate's machine-readable reports at the workspace
 # root under fixed names. The release-time harvester (vrg-ci-evidence) refuses
 # a required gate whose artifact carries no report file, so the names staged
 # here must be the names the gate commands write, language by language:
 #
-#   language    gate       report files                  tools
-#   python      test       coverage.xml junit.xml        pytest, coverage.py
-#   python      audit      pip-audit.json licenses.json  pip-audit, pip-licenses
-#   python      lint       quality-ruff.json             ruff
-#   python      typecheck  quality-mypy.xml              mypy
-#   rust        test       coverage.xml junit.xml        cargo-llvm-cov, cargo-nextest
-#   rust        audit      cargo-deny.json               cargo-deny
-#   rust        lint       quality-clippy.json           rustfmt, clippy
-#   rust        typecheck  quality-cargo-check.json      cargo
-#   typescript  test       coverage.xml junit.xml        vitest, @vitest/coverage-v8
-#   typescript  audit      npm-audit.json licenses.json  npm audit, vrg-npm-license-gate
-#   typescript  lint       quality-eslint.json           prettier, eslint
-#   typescript  typecheck  quality-tsc.txt               tsc
+#   language    gate       report files                              tools
+#   python      test       coverage.xml junit.xml                    pytest, coverage.py
+#   python      audit      pip-audit.json licenses.json              pip-audit, pip-licenses
+#   python      lint       quality-ruff.json                         ruff
+#   python      typecheck  quality-mypy.xml quality-ty.log*          mypy, ty
+#   rust        test       coverage.xml junit.xml                    cargo-llvm-cov, cargo-nextest
+#   rust        audit      cargo-deny.json                           cargo-deny
+#   rust        lint       quality-rustfmt.log* quality-clippy.json  rustfmt, clippy
+#   rust        typecheck  quality-cargo-check.json                  cargo
+#   rust        build      quality-build.log*                        cargo
+#   typescript  test       coverage.xml junit.xml                    vitest, @vitest/coverage-v8
+#   typescript  audit      npm-audit.json licenses.json              npm audit, vrg-npm-license-gate
+#   typescript  lint       quality-prettier.log* quality-eslint.json prettier, eslint
+#   typescript  typecheck  quality-tsc.txt                           tsc
+#   typescript  build      quality-build.log*                        npm
+#
+# * A transcript: vrg-validate writes one, from vergil-tooling#4953 (released
+# in v2.1.349) on, for each gate tool that writes no report of its own (the
+# tool's version, the command, its output and its exit status). A report a
+# vergil-tooling release does not write yet is not required of a leg that ran
+# it, so stage and expect mode take the installed release (TOOLING_VERSION,
+# the setup action's `tooling-version` output) and require a transcript only
+# from v2.1.349 on, with a ::notice:: naming each one not expected; every
+# other report is required whatever the release, as before. `build` is the
+# quality gate's run-once release-build leg, which runs only when
+# vergil-tooling turns BUILD on for the language (today Rust and TypeScript).
 #
 # The Rust test gate writes junit.xml through cargo-nextest from
 # vergil-tooling#4395 on (vergil-actions#1216); a release of vergil-tooling
@@ -42,8 +55,8 @@
 # vergil-project/.github#1339), so a passing TypeScript audit leg on an earlier
 # release fails here on the missing licenses.json.
 #
-# `lint` and `typecheck` are the quality gate's per-language legs. The quality
-# gate's common and custom transcripts (quality-common.log and
+# `lint`, `typecheck` and `build` are the quality gate's per-language legs.
+# The quality gate's common and custom transcripts (quality-common.log and
 # quality-custom.log) belong to no leg's contract: ci-quality.yml stages them
 # itself.
 #
@@ -62,8 +75,8 @@
 #
 # The quality gate also serves repositories with no fleet primary language (a
 # shell or Claude plugin repository, or one that passes no language), whose
-# lint and typecheck legs write no report. For the `lint` and `typecheck`
-# gates, and in expect mode, such a language (or an empty one) is not a bad
+# lint and typecheck legs write no report. For the quality gate's legs, and in
+# expect mode, such a language (or an empty one) is not a bad
 # input: a ::notice:: says it has no report contract, nothing is staged, the
 # tools list is empty, and the quality evidence carries the common and custom
 # transcripts alone.
@@ -88,10 +101,12 @@
 #            checks them.
 #   expect — check that REPORTS_DIR (the quality evidence job's downloaded
 #            legs) holds at least one non-empty, version-suffixed copy of every
-#            lint and typecheck report the language's contract names, and fail
-#            naming each one missing. The emit action skips a file pattern that
-#            matches nothing, so this check is what makes the reports required
-#            in the quality artifact. GATE is not used.
+#            lint and typecheck report the language's contract names, and of
+#            every build report when BUILD_ENABLED is `true` (it must be `true`
+#            or `false`), and fail naming each one missing. The emit action
+#            skips a file pattern that matches nothing, so this check is what
+#            makes the reports required in the quality artifact. GATE is not
+#            used.
 #
 # A repository not bootstrapped yet (a freshly initialised one, with none of
 # its language's manifests and no sources) has its language stages skipped by
@@ -122,9 +137,11 @@
 # ::notice:: naming them, so the gate's evidence.json names no tool that never
 # ran (#1406).
 #
-# Inputs (env): MODE, LANGUAGE, GATE; for stage also VERSION, GATE_OUTCOME and
-# OUT_DIR (default ci-reports); for tools, optionally REPORTS_DIR; for expect
-# REPORTS_DIR, and no GATE. Sourced
+# Inputs (env): MODE, LANGUAGE, GATE; for stage also VERSION, GATE_OUTCOME,
+# OUT_DIR (default ci-reports) and TOOLING_VERSION; for tools, optionally
+# REPORTS_DIR; for expect REPORTS_DIR, BUILD_ENABLED and TOOLING_VERSION, and
+# no GATE. TOOLING_VERSION is needed only where a gate's contract names a
+# transcript, and an empty or malformed one there fails. Sourced
 # (by tests/reports.test.sh), it defines the functions and runs nothing.
 set -euo pipefail
 
@@ -136,11 +153,17 @@ error() {
 # Any other language name is a bad input, except for the quality gate's legs.
 KNOWN_LANGUAGES="python rust go cpp typescript"
 
-# The gates of the table. `lint` and `typecheck` are the quality gate's legs.
-KNOWN_GATES="test audit lint typecheck"
+# The gates of the table. `lint`, `typecheck` and `build` are the quality
+# gate's legs.
+KNOWN_GATES="test audit lint typecheck build"
 
-# QUALITY_GATES — the gates expect mode checks, in order.
-QUALITY_GATES="lint typecheck"
+# QUALITY_GATES — the quality gate's legs, in the order expect mode checks
+# them. Expect mode checks `build` only when BUILD_ENABLED is `true`.
+QUALITY_GATES="lint typecheck build"
+
+# The first vergil-tooling release that writes the gate tools' transcripts
+# (vergil-tooling#4953).
+TRANSCRIPT_RELEASE="2.1.349"
 
 # is_known_language <language> — succeeds for a fleet primary language.
 is_known_language() {
@@ -160,7 +183,7 @@ is_quality_gate() {
 }
 
 # check_inputs <language> <gate> — fails, with an ::error::, for an unknown
-# gate, or for an unknown language on a gate other than lint and typecheck.
+# gate, or for an unknown language on a gate that is not a quality gate leg.
 check_inputs() {
   case " ${KNOWN_GATES} " in
     *" $2 "*) ;;
@@ -180,10 +203,11 @@ check_inputs() {
 has_contract() {
   case "$1/$2" in
     python/test | python/audit | python/lint | python/typecheck) return 0 ;;
-    rust/test | rust/audit | rust/lint | rust/typecheck) return 0 ;;
+    rust/test | rust/audit | rust/lint | rust/typecheck | rust/build) return 0 ;;
     typescript/test | typescript/audit | typescript/lint | typescript/typecheck)
       return 0
       ;;
+    typescript/build) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -229,16 +253,87 @@ report_files() {
     rust/audit) printf '%s\n' cargo-deny.json ;;
     typescript/audit) printf '%s\n' npm-audit.json licenses.json ;;
     python/lint) printf '%s\n' quality-ruff.json ;;
-    rust/lint) printf '%s\n' quality-clippy.json ;;
-    typescript/lint) printf '%s\n' quality-eslint.json ;;
-    python/typecheck) printf '%s\n' quality-mypy.xml ;;
+    rust/lint) printf '%s\n' quality-rustfmt.log quality-clippy.json ;;
+    typescript/lint) printf '%s\n' quality-prettier.log quality-eslint.json ;;
+    python/typecheck) printf '%s\n' quality-mypy.xml quality-ty.log ;;
     rust/typecheck) printf '%s\n' quality-cargo-check.json ;;
     typescript/typecheck) printf '%s\n' quality-tsc.txt ;;
+    rust/build | typescript/build) printf '%s\n' quality-build.log ;;
     *)
       error "internal: no report files for '$1/$2'"
       return 1
       ;;
   esac
+}
+
+# report_release <report> — the first vergil-tooling release that writes the
+# report, for a report the table's earliest supported release does not write
+# (the transcripts, marked * in the table); nothing for any other report.
+report_release() {
+  case "$1" in
+    quality-ty.log | quality-rustfmt.log | quality-prettier.log | quality-build.log)
+      printf '%s\n' "$TRANSCRIPT_RELEASE"
+      ;;
+  esac
+}
+
+# release_at_least <version> <release> — succeeds when the X.Y.Z that
+# <version> starts with is <release> or later. Both must start with X.Y.Z;
+# check_tooling_version checks <version> first.
+release_at_least() {
+  local have want i
+  [[ "$1" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]] || return 1
+  have=("${BASH_REMATCH[@]:1}")
+  [[ "$2" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]] || return 1
+  want=("${BASH_REMATCH[@]:1}")
+  for i in 0 1 2; do
+    if ((10#${have[i]} != 10#${want[i]})); then
+      ((10#${have[i]} > 10#${want[i]}))
+      return
+    fi
+  done
+  return 0
+}
+
+# check_tooling_version <version> <what> — fails, with an ::error::, unless
+# <version> (the installed vergil-tooling release) starts with X.Y.Z. <what>
+# names the report that needs it.
+check_tooling_version() {
+  if [ -z "$1" ]; then
+    error "TOOLING_VERSION is empty, but $2; pass the installed vergil-tooling" \
+      "version (the shared/setup/vergil action's tooling-version output)"
+    return 1
+  fi
+  if [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+    error "TOOLING_VERSION '$1' is not an X.Y.Z vergil-tooling version"
+    return 1
+  fi
+}
+
+# required_reports <language> <gate> <tooling-version> — the gate's report
+# file names (report_files) that the installed vergil-tooling release writes,
+# one per line. A report first written by a later release (report_release) is
+# left out, with a ::notice:: on stderr naming it. Fails for a missing or
+# malformed <tooling-version> when the gate has such a report.
+required_reports() {
+  local language="$1" gate_name="$2" tooling="$3" names name release
+  names="$(report_files "$language" "$gate_name")" || return 1
+  while IFS= read -r name; do
+    release="$(report_release "$name")"
+    if [ -n "$release" ]; then
+      check_tooling_version "$tooling" \
+        "the ${language} ${gate_name} gate's ${name} is written only from vergil-tooling ${release}" ||
+        return 1
+      if ! release_at_least "$tooling" "$release"; then
+        echo "::notice title=ci/evidence/reports::the ${language} ${gate_name}" \
+          "gate's ${name} is not required: vergil-tooling ${tooling} is older" \
+          "than ${release}, the first release that writes it" \
+          "(vergil-tooling#4953)" >&2
+        continue
+      fi
+    fi
+    printf '%s\n' "$name"
+  done <<<"$names"
 }
 
 # report_tools <language> <gate> — the gate's tools JSON array, on one line.
@@ -256,15 +351,17 @@ report_tools() {
     python/test) printf '%s\n' '[{"name":"pytest"},{"name":"coverage.py"}]' ;;
     python/audit) printf '%s\n' '[{"name":"pip-audit"},{"name":"pip-licenses"}]' ;;
     python/lint) printf '%s\n' '[{"name":"ruff"}]' ;;
-    python/typecheck) printf '%s\n' '[{"name":"mypy"}]' ;;
+    python/typecheck) printf '%s\n' '[{"name":"mypy"},{"name":"ty"}]' ;;
     rust/test) printf '%s\n' '[{"name":"cargo-llvm-cov"},{"name":"cargo-nextest"}]' ;;
     rust/audit) printf '%s\n' '[{"name":"cargo-deny"}]' ;;
     rust/lint) printf '%s\n' '[{"name":"rustfmt"},{"name":"clippy"}]' ;;
     rust/typecheck) printf '%s\n' '[{"name":"cargo"}]' ;;
+    rust/build) printf '%s\n' '[{"name":"cargo"}]' ;;
     typescript/test) printf '%s\n' '[{"name":"vitest"},{"name":"@vitest/coverage-v8"}]' ;;
     typescript/audit) printf '%s\n' '[{"name":"npm audit"},{"name":"vrg-npm-license-gate"}]' ;;
     typescript/lint) printf '%s\n' '[{"name":"prettier"},{"name":"eslint"}]' ;;
     typescript/typecheck) printf '%s\n' '[{"name":"tsc"}]' ;;
+    typescript/build) printf '%s\n' '[{"name":"npm"}]' ;;
     *)
       # A contract with no tools entry would ship an empty tools list
       # silently; has_contract and this table must change together.
@@ -435,9 +532,10 @@ stage_skip() {
 }
 
 # stage_reports <language> <gate> <version> <gate-outcome> <out-dir>
+#   <tooling-version>
 stage_reports() {
   local language="$1" gate_name="$2" version="$3" outcome="$4" out_dir="$5"
-  local names name stem ext missing=() staged=0 status manifests
+  local tooling="$6" names name stem ext missing=() staged=0 status manifests
 
   check_inputs "$language" "$gate_name" || return 1
   if [ -z "$version" ]; then
@@ -454,8 +552,16 @@ stage_reports() {
     no_contract "$language" "$gate_name" "none are staged"
     return 0
   fi
-  if ! names="$(report_files "$language" "$gate_name")"; then
+  if ! names="$(required_reports "$language" "$gate_name" "$tooling")"; then
     return 1
+  fi
+  # Every report of the gate is one the installed release does not write yet
+  # (a build leg before v2.1.349): there is nothing to stage or require.
+  if [ -z "$names" ]; then
+    echo "::notice title=ci/evidence/reports::the ${language} ${gate_name}" \
+      "leg ${version} has no report vergil-tooling ${tooling} writes, so none" \
+      "is staged"
+    return 0
   fi
 
   mkdir -p "$out_dir"
@@ -579,13 +685,16 @@ skipped_tools() {
   report_tools "$language" "$gate_name"
 }
 
-# expect_reports <language> <dir> — every lint and typecheck report of the
-# language's contract is in <dir> at least once, version-suffixed
-# (<stem>-<version>.<ext>) and non-empty, unless the gate's legs were all
-# skipped as not bootstrapped (expect_skip). Fails naming each missing one.
+# expect_reports <language> <dir> <build-enabled> <tooling-version> — every
+# lint and typecheck report of the language's contract, and every build
+# report when <build-enabled> is `true`, is in <dir> at least once,
+# version-suffixed (<stem>-<version>.<ext>) and non-empty, unless the gate's
+# legs were all skipped as not bootstrapped (expect_skip). A transcript the
+# installed release <tooling-version> does not write yet is not expected
+# (required_reports). Fails naming each missing one.
 expect_reports() {
-  local language="$1" dir="$2" gate_name names name stem ext found skipped
-  local missing=()
+  local language="$1" dir="$2" build_enabled="$3" tooling="$4" gate_name names
+  local required name stem ext found skipped gates="lint typecheck" missing=()
 
   if [ -z "$dir" ]; then
     error "REPORTS_DIR is empty; pass the directory holding the legs' reports"
@@ -595,7 +704,16 @@ expect_reports() {
     error "REPORTS_DIR '${dir}' is not a directory"
     return 1
   fi
-  for gate_name in ${QUALITY_GATES}; do
+  case "$build_enabled" in
+    true) gates="${QUALITY_GATES}" ;;
+    false) ;;
+    *)
+      error "BUILD_ENABLED is '${build_enabled}', not 'true' or 'false';" \
+        "pass vrg-ci-resolve's build-enabled flag"
+      return 1
+      ;;
+  esac
+  for gate_name in ${gates}; do
     if ! has_contract "$language" "$gate_name"; then
       no_contract "$language" "$gate_name" "no report is expected"
       continue
@@ -612,6 +730,10 @@ expect_reports() {
         "${gate_name} report is expected"
       continue
     fi
+    if ! required="$(required_reports "$language" "$gate_name" "$tooling")"; then
+      return 1
+    fi
+    [ -n "$required" ] || continue
     while IFS= read -r name; do
       stem="${name%.*}"
       ext="${name##*.}"
@@ -622,7 +744,7 @@ expect_reports() {
       else
         echo "found the ${language} ${gate_name} report ${name} as ${found}"
       fi
-    done <<<"$names"
+    done <<<"$required"
   done
 
   if [ "${#missing[@]}" -eq 0 ]; then
@@ -646,7 +768,7 @@ if [ -z "${MODE:-}" ]; then
   exit 1
 fi
 # Expect mode takes no GATE. LANGUAGE may be empty only where a repository
-# with no language is served: the lint and typecheck legs, and expect mode.
+# with no language is served: the quality gate's legs, and expect mode.
 if [ "$MODE" != "expect" ] && [ -z "${GATE:-}" ]; then
   error "GATE is empty"
   exit 1
@@ -660,7 +782,7 @@ fi
 case "$MODE" in
   stage)
     stage_reports "${LANGUAGE:-}" "$GATE" "${VERSION:-}" "${GATE_OUTCOME:-}" \
-      "${OUT_DIR:-ci-reports}"
+      "${OUT_DIR:-ci-reports}" "${TOOLING_VERSION:-}"
     ;;
   tools)
     if [ -z "${GITHUB_OUTPUT:-}" ]; then
@@ -680,7 +802,8 @@ case "$MODE" in
     echo "tools: ${tools}"
     ;;
   expect)
-    expect_reports "${LANGUAGE:-}" "${REPORTS_DIR:-}"
+    expect_reports "${LANGUAGE:-}" "${REPORTS_DIR:-}" "${BUILD_ENABLED:-}" \
+      "${TOOLING_VERSION:-}"
     ;;
   *)
     error "unknown MODE '$MODE' (expected 'stage', 'tools' or 'expect')"

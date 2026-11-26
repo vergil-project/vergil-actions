@@ -1,16 +1,20 @@
 name: CI evidence reports
 description: >-
   The per-language report-file contract of the `test` and `audit` evidence
-  gates and of the `quality` gate's `lint` and `typecheck` legs (issues #1211,
-  #1249, #1260). In `stage` mode, copies one matrix leg's report files (for
-  example coverage.xml and junit.xml, Rust's cargo-deny.json, TypeScript's
-  npm-audit.json and licenses.json, or a lint leg's quality-ruff.json,
-  quality-clippy.json or quality-eslint.json) into a directory as
-  version-suffixed basenames,
+  gates and of the `quality` gate's `lint`, `typecheck` and `build` legs
+  (issues #1211, #1249, #1260, #1452). In `stage` mode, copies one matrix
+  leg's report files (for example coverage.xml and junit.xml, Rust's
+  cargo-deny.json, TypeScript's npm-audit.json and licenses.json, a lint
+  leg's quality-ruff.json, quality-clippy.json or quality-eslint.json, or a
+  gate tool's transcript such as quality-ty.log or quality-build.log) into a
+  directory as version-suffixed basenames,
   failing when the gate passed but a report the language's gate writes is
-  missing or empty. In `tools` mode, outputs the gate's tools JSON for the
-  emit action. In `expect` mode, fails unless a directory of downloaded legs
-  holds every lint and typecheck report of the language. A fleet language
+  missing or empty. A transcript is required only from vergil-tooling
+  2.1.349, the first release that writes it, keyed on `tooling-version`. In
+  `tools` mode, outputs the gate's tools JSON for the emit action. In
+  `expect` mode, fails unless a directory of downloaded legs holds every
+  lint and typecheck report of the language, and every build report when
+  `build-enabled` is `true`. A fleet language
   with no contract yet (go, cpp) gets a warning, stages nothing and lists no
   tools, leaving the decision to the release-time evidence gate; a lint or
   typecheck leg of a repository with no fleet primary language (shell, a
@@ -30,17 +34,19 @@ inputs:
     description: >-
       `stage` (copy this leg's reports into `out-dir`), `tools` (output the
       gate's tools JSON array) or `expect` (check `reports-dir` holds every
-      lint and typecheck report of the language).
+      lint and typecheck report of the language, and every build report when
+      `build-enabled` is `true`).
     required: true
   language:
     description: >-
       Primary language of the calling repo (e.g. python, rust, typescript).
-      May be empty only for the `lint` and `typecheck` gates and in `expect` mode.
+      May be empty only for the `lint`, `typecheck` and `build` gates and in
+      `expect` mode.
     required: true
   gate:
     description: >-
-      Stage and tools modes: the evidence gate, `test`, `audit`, `lint` or
-      `typecheck`. Not used in `expect` mode.
+      Stage and tools modes: the evidence gate, `test`, `audit`, `lint`,
+      `typecheck` or `build`. Not used in `expect` mode.
     required: false
     default: ""
   version:
@@ -68,6 +74,23 @@ inputs:
       mode, a gate whose legs left skip records there lists no tools.
     required: false
     default: ""
+  tooling-version:
+    description: >-
+      Stage and expect modes: the installed vergil-tooling release (the
+      shared/setup/vergil action's `tooling-version` output). A gate tool's
+      transcript (quality-ty.log, quality-rustfmt.log, quality-prettier.log,
+      quality-build.log) is required only from vergil-tooling 2.1.349, the
+      first release that writes it (vergil-tooling#4953). Needed wherever the
+      gate's contract names a transcript; empty or not X.Y.Z there fails.
+    required: false
+    default: ""
+  build-enabled:
+    description: >-
+      Expect mode: `true` to require the build leg's reports too, `false` to
+      check only the lint and typecheck legs (vrg-ci-resolve's
+      `build-enabled` flag). Any other value fails.
+    required: false
+    default: ""
 
 outputs:
   tools:
@@ -88,4 +111,6 @@ runs:
         GATE_OUTCOME: ${{ inputs.gate-outcome }}
         OUT_DIR: ${{ inputs.out-dir }}
         REPORTS_DIR: ${{ inputs.reports-dir }}
+        TOOLING_VERSION: ${{ inputs.tooling-version }}
+        BUILD_ENABLED: ${{ inputs.build-enabled }}
       run: bash "${GITHUB_ACTION_PATH}/reports.sh"

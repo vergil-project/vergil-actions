@@ -20,7 +20,9 @@
 # with no fleet primary language (shell, a Claude plugin, none) gets a notice
 # on its lint and typecheck legs instead. Tools mode, given the downloaded
 # legs, lists no tools for a gate whose legs left skip records (#1406). The
-# final cases check that
+# build leg's transcript, and the gate tools' transcripts required only from
+# vergil-tooling v2.1.349 on (TOOLING_VERSION), have their own cases (#1452).
+# The final cases check that
 # ci-test.yml, ci-audit.yml and ci-quality.yml stage through this action, so a
 # workflow cannot drift back to a fixed list of names.
 set -euo pipefail
@@ -64,8 +66,14 @@ workspace() {
   done
 }
 
+# The installed vergil-tooling release each run passes as TOOLING_VERSION:
+# by default the first one that writes the gate tools' transcripts
+# (vergil-tooling#4953). A case for another release sets it and restores it.
+DEFAULT_TOOLING_VERSION="2.1.349"
+tooling_version="$DEFAULT_TOOLING_VERSION"
+
 # run_reports <mode> <language> <gate> [version] [outcome] — run reports.sh in
-# $ws with OUT_DIR=ci-reports.
+# $ws with OUT_DIR=ci-reports and TOOLING_VERSION=$tooling_version.
 run_reports() {
   local err out
   err="$(mktemp)"
@@ -77,7 +85,7 @@ run_reports() {
     cd "$ws"
     GITHUB_OUTPUT="$outputs" MODE="$1" LANGUAGE="$2" GATE="$3" \
       VERSION="${4:-}" GATE_OUTCOME="${5:-}" OUT_DIR=ci-reports \
-      bash "$reports_sh"
+      TOOLING_VERSION="$tooling_version" bash "$reports_sh"
   ) >"$out" 2>"$err" || rc=$?
   stderr="$(cat "$err")"
   stdout="$(cat "$out")"
@@ -465,6 +473,9 @@ case_tools typescript test '[{"name":"vitest"},{"name":"@vitest/coverage-v8"}]'
 case_tools typescript audit '[{"name":"npm audit"},{"name":"vrg-npm-license-gate"}]'
 case_tools typescript lint '[{"name":"prettier"},{"name":"eslint"}]'
 case_tools typescript typecheck '[{"name":"tsc"}]'
+case_tools python typecheck '[{"name":"mypy"},{"name":"ty"}]'
+case_tools rust build '[{"name":"cargo"}]'
+case_tools typescript build '[{"name":"npm"}]'
 
 # TypeScript has a contract for every gate, so no mode warns for it.
 name="typescript-warns-on-no-gate"
@@ -477,7 +488,7 @@ for gate in test audit lint typecheck; do
     ok=0
   fi
   workspace "${name}-stage-${gate}" coverage.xml junit.xml npm-audit.json \
-    licenses.json quality-eslint.json quality-tsc.txt
+    licenses.json quality-prettier.log quality-eslint.json quality-tsc.txt
   run_reports stage typescript "$gate" node-24 success
   if [ "$rc" -ne 0 ] || grep -qF -- "::warning::" <<<"${stdout}${stderr}"; then
     fail_case "$name" "stage ${gate}: rc ${rc}, output '${stdout}${stderr}'"
@@ -554,7 +565,7 @@ fi
 name="lint-and-typecheck-are-gates"
 ok=1
 for gate in lint typecheck; do
-  workspace "${name}-${gate}" quality-ruff.json quality-mypy.xml
+  workspace "${name}-${gate}" quality-ruff.json quality-mypy.xml quality-ty.log
   run_reports stage python "$gate" 3.14 success
   if [ "$rc" -ne 0 ] || grep -qF "unknown gate" <<<"$stderr"; then
     fail_case "$name" "${gate} is not a gate: rc ${rc}, stderr ${stderr}"
@@ -566,17 +577,25 @@ if [ "$ok" -eq 1 ]; then
 fi
 
 case_stage python-lint-stages-ruff python lint \
-  "quality-ruff-1.0.json " quality-ruff.json quality-mypy.xml
-case_stage python-typecheck-stages-mypy python typecheck \
-  "quality-mypy-1.0.xml " quality-ruff.json quality-mypy.xml
-case_stage rust-lint-stages-clippy rust lint \
-  "quality-clippy-1.0.json " quality-clippy.json quality-cargo-check.json
+  "quality-ruff-1.0.json " quality-ruff.json quality-mypy.xml quality-ty.log
+case_stage python-typecheck-stages-mypy-and-ty python typecheck \
+  "quality-mypy-1.0.xml quality-ty-1.0.log " quality-ruff.json quality-mypy.xml \
+  quality-ty.log
+case_stage rust-lint-stages-rustfmt-and-clippy rust lint \
+  "quality-clippy-1.0.json quality-rustfmt-1.0.log " quality-rustfmt.log \
+  quality-clippy.json quality-cargo-check.json quality-build.log
 case_stage rust-typecheck-stages-cargo-check rust typecheck \
-  "quality-cargo-check-1.0.json " quality-clippy.json quality-cargo-check.json
-case_stage typescript-lint-stages-eslint typescript lint \
-  "quality-eslint-1.0.json " quality-eslint.json quality-tsc.txt
+  "quality-cargo-check-1.0.json " quality-clippy.json quality-cargo-check.json \
+  quality-rustfmt.log
+case_stage rust-build-stages-the-build-transcript rust build \
+  "quality-build-1.0.log " quality-build.log quality-clippy.json
+case_stage typescript-lint-stages-prettier-and-eslint typescript lint \
+  "quality-eslint-1.0.json quality-prettier-1.0.log " quality-prettier.log \
+  quality-eslint.json quality-tsc.txt quality-build.log
 case_stage typescript-typecheck-stages-tsc typescript typecheck \
   "quality-tsc-1.0.txt " quality-eslint.json quality-tsc.txt
+case_stage typescript-build-stages-the-build-transcript typescript build \
+  "quality-build-1.0.log " quality-build.log quality-prettier.log
 
 # case_tools_named <name> <language> <gate> <expected JSON>
 case_tools_named() {
@@ -598,9 +617,9 @@ case_tools_named() {
 # rust_lint_files_and_tools / rust_typecheck_files_and_tools: the file names
 # are vergil-tooling's CLIPPY_REPORT and CARGO_CHECK_REPORT (#4473).
 name="rust-lint-files-and-tools"
-workspace "$name" quality-clippy.json
+workspace "$name" quality-rustfmt.log quality-clippy.json
 run_reports stage rust lint 1.99 success
-if assert_staged "$name" "quality-clippy-1.99.json "; then
+if assert_staged "$name" "quality-clippy-1.99.json quality-rustfmt-1.99.log "; then
   case_tools_named "$name" rust lint '[{"name":"rustfmt"},{"name":"clippy"}]'
 fi
 name="rust-typecheck-files-and-tools"
@@ -611,10 +630,12 @@ if assert_staged "$name" "quality-cargo-check-1.99.json "; then
 fi
 
 # Python's lint and typecheck evidence is what ci-quality.yml hardcoded before
-# #1249: the files quality-ruff-<version>.json and quality-mypy-<version>.xml,
-# and the tools vrg-validate-common, vrg-validate-custom, ruff, mypy.
+# #1249, with ty's transcript and ty added (#1452): the files
+# quality-ruff-<version>.json, quality-mypy-<version>.xml and
+# quality-ty-<version>.log, and the tools vrg-validate-common,
+# vrg-validate-custom, ruff, mypy, ty.
 name="python-lint-matches-today"
-workspace "$name" quality-ruff.json quality-mypy.xml
+workspace "$name" quality-ruff.json quality-mypy.xml quality-ty.log
 run_reports stage python lint 3.13 success
 lint_staged="$(staged)"
 run_reports stage python typecheck 3.13 success
@@ -627,9 +648,9 @@ typecheck_tools="$(
   run_reports tools python typecheck
   sed -n 's/^tools=//p' "$outputs"
 )"
-today='[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}, {"name": "ruff"}, {"name": "mypy"}]'
+today='[{"name": "vrg-validate-common"}, {"name": "vrg-validate-custom"}, {"name": "ruff"}, {"name": "mypy"}, {"name": "ty"}]'
 if [ "$lint_staged" != "quality-ruff-3.13.json " ] ||
-  [ "$both_staged" != "quality-mypy-3.13.xml quality-ruff-3.13.json " ]; then
+  [ "$both_staged" != "quality-mypy-3.13.xml quality-ruff-3.13.json quality-ty-3.13.log " ]; then
   fail_case "$name" "staged '${lint_staged}' then '${both_staged}'"
 elif ! jq -e -n --argjson l "$lint_tools" --argjson t "$typecheck_tools" \
   --argjson e "$today" \
@@ -643,7 +664,10 @@ fi
 # A passing leg with no report fails, for each of the six entries.
 for entry in python/lint:quality-ruff.json python/typecheck:quality-mypy.xml \
   rust/lint:quality-clippy.json rust/typecheck:quality-cargo-check.json \
-  typescript/lint:quality-eslint.json typescript/typecheck:quality-tsc.txt; do
+  typescript/lint:quality-eslint.json typescript/typecheck:quality-tsc.txt \
+  python/typecheck:quality-ty.log rust/lint:quality-rustfmt.log \
+  typescript/lint:quality-prettier.log rust/build:quality-build.log \
+  typescript/build:quality-build.log; do
   pair="${entry%%:*}"
   file="${entry#*:}"
   language="${pair%%/*}"
@@ -670,7 +694,7 @@ done
 # A failing leg's missing report is not an extra failure: the step passes,
 # and the leg's own failure stands.
 for pair in python/lint rust/lint typescript/lint python/typecheck \
-  rust/typecheck typescript/typecheck; do
+  rust/typecheck typescript/typecheck rust/build typescript/build; do
   language="${pair%%/*}"
   gate="${pair#*/}"
   name="failing-${language}-${gate}-leg-missing-report-not-extra-error"
@@ -838,7 +862,7 @@ skip_stages() {
 # marker_of <gate> <version> — the skip record's basename.
 marker_of() {
   case "$1" in
-    lint | typecheck) echo "quality-$1-not-bootstrapped-$2.json" ;;
+    lint | typecheck | build) echo "quality-$1-not-bootstrapped-$2.json" ;;
     *) echo "$1-not-bootstrapped-$2.json" ;;
   esac
 }
@@ -889,7 +913,9 @@ assert_skipped() {
 
 for language in python rust typescript; do
   manifests="$(manifests_of "$language")"
-  for gate in test audit lint typecheck; do
+  gates="test audit lint typecheck"
+  [ "$language" = python ] || gates="${gates} build"
+  for gate in $gates; do
     name="not-bootstrapped-${language}-${gate}-skips-loudly"
     git_ws "$name"
     mapfile -t stages < <(skip_stages "$language" "$gate")
@@ -1064,8 +1090,9 @@ fi
 
 # --- expect mode --------------------------------------------------------------
 
-# run_expect <language> <dir> — run reports.sh in expect mode in $ws, with no
-# GATE.
+# run_expect <language> <dir> [build-enabled] — run reports.sh in expect mode
+# in $ws, with no GATE, BUILD_ENABLED (default false) and
+# TOOLING_VERSION=$tooling_version.
 run_expect() {
   local err out
   err="$(mktemp)"
@@ -1073,7 +1100,9 @@ run_expect() {
   rc=0
   (
     cd "$ws"
-    env -u GATE MODE=expect LANGUAGE="$1" REPORTS_DIR="$2" bash "$reports_sh"
+    env -u GATE MODE=expect LANGUAGE="$1" REPORTS_DIR="$2" \
+      BUILD_ENABLED="${3-false}" TOOLING_VERSION="$tooling_version" \
+      bash "$reports_sh"
   ) >"$out" 2>"$err" || rc=$?
   stderr="$(cat "$err")"
   stdout="$(cat "$out")"
@@ -1092,7 +1121,7 @@ reports_dir() {
 name="expect-rust-finds-both-reports"
 workspace "$name"
 reports_dir quality-common.log quality-custom.log quality-clippy-1.99.json \
-  quality-cargo-check-1.99.json
+  quality-rustfmt-1.99.log quality-cargo-check-1.99.json
 run_expect rust evidence-reports
 if [ "$rc" -ne 0 ]; then
   fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
@@ -1129,7 +1158,8 @@ fi
 name="expect-python-matches-today"
 workspace "$name"
 reports_dir quality-common.log quality-custom.log quality-ruff-3.13.json \
-  quality-ruff-3.14.json quality-mypy-3.13.xml quality-mypy-3.14.xml
+  quality-ruff-3.14.json quality-mypy-3.13.xml quality-mypy-3.14.xml \
+  quality-ty-3.13.log quality-ty-3.14.log
 run_expect python evidence-reports
 if [ "$rc" -ne 0 ]; then
   fail_case "$name" "expected exit 0, got ${rc}; stderr: ${stderr}"
@@ -1147,7 +1177,7 @@ fi
 name="expect-typescript-finds-both-reports"
 workspace "$name"
 reports_dir quality-common.log quality-custom.log quality-eslint-node-24.json \
-  quality-tsc-node-24.txt
+  quality-prettier-node-24.log quality-tsc-node-24.txt
 run_expect typescript evidence-reports
 if [ "$rc" -ne 0 ] || grep -qF -- "::warning::" <<<"${stdout}${stderr}"; then
   fail_case "$name" "expected exit 0 and no warning, got ${rc}; stderr: ${stderr}"
@@ -1289,6 +1319,208 @@ if assert_error "$name" "is not a typescript typecheck skip record"; then
   pass_case "$name"
 fi
 
+# --- the build leg and the gate tools' transcripts (#1452) -------------------
+
+# assert_ok_no_error <name> — exit 0 and no ::error::.
+assert_ok_no_error() {
+  if [ "$rc" -ne 0 ] || grep -qF -- "::error::" <<<"${stdout}${stderr}"; then
+    fail_case "$1" "expected exit 0 and no error, got ${rc}; stderr: ${stderr}"
+    return 1
+  fi
+  return 0
+}
+
+# With BUILD on, expect mode requires the build transcript too.
+name="expect-build-enabled-requires-the-build-transcript"
+workspace "$name"
+reports_dir quality-clippy-1.99.json quality-rustfmt-1.99.log \
+  quality-cargo-check-1.99.json
+run_expect rust evidence-reports true
+if assert_error "$name" "no rust build leg staged its quality-build.log"; then
+  reports_dir quality-build-1.99.log
+  run_expect rust evidence-reports true
+  if assert_ok_no_error "$name" &&
+    grep -qF "found the rust build report quality-build.log" <<<"$stdout"; then
+    pass_case "$name"
+  elif [ "$rc" -eq 0 ]; then
+    fail_case "$name" "the build report was not checked; stdout: ${stdout}"
+  fi
+fi
+
+# With BUILD off, the build leg did not run and nothing of it is expected.
+name="expect-build-disabled-ignores-the-build-leg"
+workspace "$name"
+reports_dir quality-eslint-node-24.json quality-prettier-node-24.log \
+  quality-tsc-node-24.txt
+run_expect typescript evidence-reports false
+if assert_ok_no_error "$name"; then
+  if grep -qF "build" <<<"${stdout}${stderr}"; then
+    fail_case "$name" "mentions the build leg: ${stdout}${stderr}"
+  else
+    pass_case "$name"
+  fi
+fi
+
+for value in "" yes TRUE; do
+  name="expect-build-enabled-'${value}'-fails"
+  workspace "expect-build-enabled-${value:-empty}"
+  reports_dir quality-clippy-1.99.json
+  run_expect rust evidence-reports "$value"
+  if assert_error "$name" "BUILD_ENABLED is '${value}', not 'true' or 'false'"; then
+    pass_case "$name"
+  fi
+done
+
+# A build leg skipped as not bootstrapped excuses the build transcript.
+name="expect-not-bootstrapped-build-leg-passes"
+workspace "$name"
+reports_dir quality-clippy-1.99.json quality-rustfmt-1.99.log \
+  quality-cargo-check-1.99.json
+skip_record rust build 1.99
+run_expect rust evidence-reports true
+if assert_ok_no_error "$name" &&
+  has_notice "$stdout" "rust build legs were skipped"; then
+  pass_case "$name"
+elif [ "$rc" -eq 0 ]; then
+  fail_case "$name" "expected a build skip notice, got '${stdout}'"
+fi
+
+# A primary language with BUILD on but no build contract warns, as any gate
+# with no contract does.
+name="expect-no-build-contract-warns"
+workspace "$name"
+reports_dir quality-common.log
+run_expect go evidence-reports true
+if assert_no_contract_warning "$name" go build; then
+  pass_case "$name"
+fi
+
+# On a vergil-tooling release before the transcripts (v2.1.349), a leg that
+# wrote every other report passes, with a notice naming each transcript not
+# required; the build leg stages nothing.
+tooling_version="2.1.348"
+for entry in "python typecheck quality-mypy.xml quality-ty.log" \
+  "rust lint quality-clippy.json quality-rustfmt.log" \
+  "typescript lint quality-eslint.json quality-prettier.log"; do
+  read -r language gate report transcript <<<"$entry"
+  name="old-release-${language}-${gate}-does-not-require-${transcript}"
+  workspace "$name" "$report"
+  run_reports stage "$language" "$gate" 1.0 success
+  stem="${report%.*}"
+  if assert_staged "$name" "${stem}-1.0.${report##*.} "; then
+    if has_notice "$stderr" "${transcript} is not required" \
+      "vergil-tooling 2.1.348 is older than 2.1.349"; then
+      pass_case "$name"
+    else
+      fail_case "$name" "no notice naming ${transcript}; stderr: ${stderr}"
+    fi
+  fi
+done
+
+for language in rust typescript; do
+  name="old-release-${language}-build-stages-nothing"
+  workspace "$name"
+  run_reports stage "$language" build 1.0 success
+  if assert_staged "$name" "" && assert_ok_no_error "$name"; then
+    if has_notice "$stdout" "has no report vergil-tooling 2.1.348 writes"; then
+      pass_case "$name"
+    else
+      fail_case "$name" "no notice; stdout: ${stdout}"
+    fi
+  fi
+done
+
+# A transcript an old release happens to leave is not required, so not staged.
+name="old-release-transcript-is-not-staged"
+workspace "$name" quality-mypy.xml quality-ty.log
+run_reports stage python typecheck 3.14 success
+if assert_staged "$name" "quality-mypy-3.14.xml "; then
+  pass_case "$name"
+fi
+
+name="old-release-expect-passes-without-transcripts"
+workspace "$name"
+reports_dir quality-ruff-3.14.json quality-mypy-3.14.xml quality-clippy-1.99.json \
+  quality-cargo-check-1.99.json quality-eslint-node-24.json quality-tsc-node-24.txt
+ok=1
+for language in python rust typescript; do
+  run_expect "$language" evidence-reports true
+  if [ "$language" = python ]; then
+    # Python has no build contract: its build gate warns (BUILD is never on
+    # for Python; the flag here only exercises every gate).
+    if [ "$rc" -ne 0 ] || grep -qF -- "::error::" <<<"$stderr"; then
+      fail_case "$name" "python: rc ${rc}; stderr: ${stderr}"
+      ok=0
+    fi
+  elif ! assert_ok_no_error "$name"; then
+    ok=0
+  fi
+done
+if [ "$ok" -eq 1 ]; then
+  pass_case "$name"
+fi
+tooling_version="$DEFAULT_TOOLING_VERSION"
+
+# From v2.1.349 on every transcript is required, compared as numbers, never
+# as text (2.1.1000 is newer than 2.1.349).
+for v in 2.1.349 2.1.350 2.1.1000 2.2.0 3.0.0 2.1.349.dev1; do
+  tooling_version="$v"
+  name="release-${v}-requires-quality-ty.log"
+  workspace "$name" quality-mypy.xml
+  run_reports stage python typecheck 3.14 success
+  if assert_error "$name" "python typecheck gate passed but wrote no quality-ty.log"; then
+    pass_case "$name"
+  fi
+done
+for v in 2.1.348 2.0.999 1.9.400 0.0.1; do
+  tooling_version="$v"
+  name="release-${v}-does-not-require-quality-ty.log"
+  workspace "$name" quality-mypy.xml
+  run_reports stage python typecheck 3.14 success
+  if assert_staged "$name" "quality-mypy-3.14.xml "; then
+    pass_case "$name"
+  fi
+done
+
+# A gate whose contract names a transcript needs the release; any other gate
+# does not.
+for v in "" v2.1.349 latest 2.1; do
+  tooling_version="$v"
+  name="tooling-version-'${v}'-fails-where-a-transcript-is-named"
+  workspace "tooling-version-${v:-empty}" quality-mypy.xml quality-ty.log
+  run_reports stage python typecheck 3.14 success
+  if [ -z "$v" ]; then
+    want="TOOLING_VERSION is empty, but the python typecheck gate's quality-ty.log"
+  else
+    want="TOOLING_VERSION '${v}' is not an X.Y.Z vergil-tooling version"
+  fi
+  if assert_error "$name" "$want"; then
+    if [ -n "$(staged)" ]; then
+      fail_case "$name" "staged '$(staged)'"
+    else
+      pass_case "$name"
+    fi
+  fi
+  name="tooling-version-'${v}'-fails-in-expect-mode"
+  reports_dir quality-ruff-3.14.json quality-mypy-3.14.xml quality-ty-3.14.log
+  run_expect python evidence-reports false
+  if assert_error "$name" "$want"; then
+    pass_case "$name"
+  fi
+done
+tooling_version=""
+name="tooling-version-not-needed-without-a-transcript"
+workspace "$name" quality-ruff.json coverage.xml junit.xml
+run_reports stage python lint 3.14 success
+lint_rc="$rc"
+run_reports stage python test 3.14 success
+if [ "$lint_rc" -ne 0 ] || [ "$rc" -ne 0 ]; then
+  fail_case "$name" "lint rc ${lint_rc}, test rc ${rc}; stderr: ${stderr}"
+else
+  pass_case "$name"
+fi
+tooling_version="$DEFAULT_TOOLING_VERSION"
+
 # --- tools mode with the downloaded legs (#1406) -----------------------------
 
 # run_tools_dir <language> <gate> <reports-dir> — tools mode in $ws with
@@ -1345,12 +1577,13 @@ done
 # Only the skipped quality leg loses its tools; the other leg keeps its own.
 name="tools-not-bootstrapped-quality-leg-lists-no-tools"
 workspace "$name"
-reports_dir quality-common.log quality-custom.log quality-mypy-3.14.xml
+reports_dir quality-common.log quality-custom.log quality-mypy-3.14.xml \
+  quality-ty-3.14.log
 skip_record python lint 3.14
 run_tools_dir python lint evidence-reports
 if assert_tools_output "$name" '[]'; then
   run_tools_dir python typecheck evidence-reports
-  if assert_tools_output "$name" '[{"name":"mypy"}]'; then
+  if assert_tools_output "$name" '[{"name":"mypy"},{"name":"ty"}]'; then
     pass_case "$name"
   fi
 fi
@@ -1459,26 +1692,38 @@ case_workflow() {
 case_workflow ci-test.yml test
 case_workflow ci-audit.yml audit
 
-# ci-quality.yml: the lint and typecheck legs stage through the action with
-# their gate step's outcome, the evidence job requires the reports (expect
-# mode) and takes its tools from the action, the emit step takes every
-# staged quality-* file, and no step names a lint or typecheck report or tool.
+# ci-quality.yml: the lint, typecheck and build legs stage through the action
+# with their gate step's outcome and their own install's vergil-tooling
+# release, the evidence job requires the reports (expect mode, with the BUILD
+# flag and the matrix job's release) and takes its tools from the action, the
+# emit step takes every staged quality-* file, and no step names a lint or
+# typecheck report or tool.
 name="ci-quality.yml-stages-through-ci-evidence-reports"
 wf="${repo_root}/.github/workflows/ci-quality.yml"
 code="$(sed -E 's/(^|[[:space:]])#.*//' "$wf")"
-if [ "$(grep -cE '^ +uses: \./actions/ci/evidence/reports$' <<<"$code")" -lt 5 ]; then
+if [ "$(grep -cE '^ +uses: \./actions/ci/evidence/reports$' <<<"$code")" -lt 7 ]; then
   fail_case "$name" "the stage, expect and tools steps do not all use the action"
-elif [ "$(grep -cE '^ +gate-outcome: \$\{\{ steps\.gate\.outcome \}\}$' <<<"$code")" -ne 2 ] ||
-  [ "$(grep -cE '^ +id: gate$' <<<"$code")" -ne 2 ]; then
-  fail_case "$name" "the lint and typecheck stage steps do not take their gate step's outcome"
+elif [ "$(grep -cE '^ +gate-outcome: \$\{\{ steps\.gate\.outcome \}\}$' <<<"$code")" -ne 3 ] ||
+  [ "$(grep -cE '^ +id: gate$' <<<"$code")" -ne 3 ]; then
+  fail_case "$name" "the lint, typecheck and build stage steps do not take their gate step's outcome"
+elif [ "$(grep -cE '^ +tooling-version: \$\{\{ steps\.vergil\.outputs\.tooling-version \}\}$' <<<"$code")" -ne 3 ] ||
+  [ "$(grep -cE '^ +id: vergil$' <<<"$code")" -ne 3 ]; then
+  fail_case "$name" "the stage steps do not take their own install's vergil-tooling release (#1452)"
 elif [ "$(grep -cE '^ +gate: lint$' <<<"$code")" -ne 2 ] ||
-  [ "$(grep -cE '^ +gate: typecheck$' <<<"$code")" -ne 2 ]; then
-  fail_case "$name" "lint and typecheck are not each named in a stage and a tools step"
+  [ "$(grep -cE '^ +gate: typecheck$' <<<"$code")" -ne 2 ] ||
+  [ "$(grep -cE '^ +gate: build$' <<<"$code")" -ne 2 ]; then
+  fail_case "$name" "lint, typecheck and build are not each named in a stage and a tools step"
 elif ! grep -qE '^ +mode: expect$' <<<"$code" ||
   ! grep -qE '^ +reports-dir: evidence-reports$' <<<"$code"; then
   fail_case "$name" "the evidence job does not require the reports"
-elif [ "$(grep -cE '^ +reports-dir: evidence-reports$' <<<"$code")" -ne 3 ]; then
-  fail_case "$name" "the expect step and both tools steps do not all read the downloaded legs (#1406)"
+elif ! grep -qE '^ +build-enabled: \$\{\{ needs\.matrix\.outputs\.build-enabled \}\}$' <<<"$code" ||
+  ! grep -qE '^ +tooling-version: \$\{\{ needs\.matrix\.outputs\.tooling-version \}\}$' <<<"$code" ||
+  ! grep -qE '^ +tooling-version: \$\{\{ steps\.setup\.outputs\.tooling-version \}\}$' <<<"$code"; then
+  fail_case "$name" "the expect step does not take the BUILD flag and the matrix job's vergil-tooling release"
+elif ! grep -qE '^ +name: ci-evidence-quality-reports-build-\$\{\{ matrix\.version \}\}$' <<<"$code"; then
+  fail_case "$name" "the build job does not upload its reports as a quality partial"
+elif [ "$(grep -cE '^ +reports-dir: evidence-reports$' <<<"$code")" -ne 4 ]; then
+  fail_case "$name" "the expect step and the three tools steps do not all read the downloaded legs (#1406)"
 elif ! grep -qE '^ +files: evidence-reports/quality-\*$' <<<"$code"; then
   fail_case "$name" "the emit step does not take evidence-reports/quality-*"
 elif ! grep -qE '^ +tools: \$\{\{ steps\.tools\.outputs\.tools \}\}$' <<<"$code"; then
