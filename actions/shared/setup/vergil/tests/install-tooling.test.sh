@@ -62,10 +62,13 @@ write_stub() {
 uv_body="${work}/uv-body"
 cat >"$uv_body" <<'STUB'
 # fake_python <path>: an interpreter whose --version names FAKE_PYTHON_VERSION
-# (default 3.15.2), like the one uv provides the environment it builds.
+# (default 3.15.2), like the one uv provides the environment it builds, and
+# whose -c (the installed-version read) prints FAKE_TOOLING_VERSION (default
+# 2.1.349).
 fake_python() {
   mkdir -p "$(dirname "$1")"
-  printf '#!/usr/bin/env bash\necho "Python %s"\n' "${FAKE_PYTHON_VERSION:-3.15.2}" >"$1"
+  printf '#!/usr/bin/env bash\nif [ "${1:-}" = -c ]; then echo "%s"; else echo "Python %s"; fi\n' \
+    "${FAKE_TOOLING_VERSION-2.1.349}" "${FAKE_PYTHON_VERSION:-3.15.2}" >"$1"
   chmod +x "$1"
 }
 line="uv $*"
@@ -220,8 +223,9 @@ new_case() {
   mkdir -p "${root}/usr/bin" "${case_dir}/runner-temp" "${case_dir}/ws"
   : >"${case_dir}/calls"
   : >"${case_dir}/github-path"
+  : >"${case_dir}/github-output"
   unset FAKE_GIT_REFS FAKE_GIT_FETCH_FAIL FAKE_UV_INSTALL_FAIL FAKE_UV_EXPORT_FAIL \
-    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS FAKE_PYTHON_VERSION
+    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS FAKE_PYTHON_VERSION FAKE_TOOLING_VERSION
 }
 
 as_container() {
@@ -269,7 +273,7 @@ run_script() {
     esac
   done
   for v in FAKE_GIT_REFS FAKE_GIT_FETCH_FAIL FAKE_UV_INSTALL_FAIL FAKE_UV_EXPORT_FAIL \
-    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS FAKE_PYTHON_VERSION; do
+    FAKE_UV_NO_SHIM FAKE_CONSTRAINTS FAKE_PYTHON_VERSION FAKE_TOOLING_VERSION; do
     [ -z "${!v:-}" ] || extra+=("${v}=${!v}")
   done
   local err="${case_dir}/stderr"
@@ -280,6 +284,7 @@ run_script() {
       PATH="${path_prefix}:${root}/usr/bin:/usr/bin:/bin" \
       VRG_ROOT="$root" CALLS="${case_dir}/calls" \
       RUNNER_TEMP="${case_dir}/runner-temp" GITHUB_PATH="${case_dir}/github-path" \
+      GITHUB_OUTPUT="${case_dir}/github-output" \
       GITHUB_WORKSPACE="${case_dir}/ws" FAKE_UV_TARBALL="${work}/uv.tar.gz" \
       FAKE_UV_BIN_DIR="${case_dir}/uv-bin" FAKE_UV_TOOL_DIR="${case_dir}/uv-tools" \
       "${extra[@]}" bash "$s" "$@"
@@ -878,6 +883,62 @@ case_self_repo_container_pins_image_python() {
   pass_case "$name"
 }
 
+# expect_tooling_version <name> <version>: GITHUB_OUTPUT holds exactly the
+# one `tooling-version=<version>` line.
+expect_tooling_version() {
+  local got
+  got="$(cat "${case_dir}/github-output")"
+  if [ "$got" != "tooling-version=$2" ]; then
+    fail_case "$1" "GITHUB_OUTPUT is '${got}', not 'tooling-version=$2'"
+    return 1
+  fi
+}
+
+# Every install path records the release it installed, read from the
+# environment's own metadata, as the `tooling-version` output (issue #1452).
+case_every_path_records_tooling_version() {
+  local name="every_path_records_tooling_version" ref
+  for ref in v2.1.7 v2.1 develop; do
+    new_case
+    with_git_refs v2.1.7
+    export FAKE_TOOLING_VERSION="2.1.7"
+    run_script -- "$ref"
+    expect_status "$name" 0 || return
+    expect_tooling_version "$name" 2.1.7 || return
+    expect_stderr "$name" "vergil-tooling: installed vergil-tooling 2.1.7" || return
+  done
+  new_case
+  printf '[project]\nname = "vergil-tooling"\n' >"${case_dir}/ws/pyproject.toml"
+  export FAKE_TOOLING_VERSION="2.1.351"
+  run_script --
+  expect_status "$name" 0 || return
+  expect_tooling_version "$name" 2.1.351 || return
+  new_case; as_container
+  printf '[project]\nname = "vergil-tooling"\n' >"${case_dir}/ws/pyproject.toml"
+  export FAKE_TOOLING_VERSION="2.1.351"
+  run_script --with-uv --
+  expect_status "$name" 0 || return
+  expect_tooling_version "$name" 2.1.351 || return
+  pass_case "$name"
+}
+
+# A version the metadata cannot give as X.Y.Z fails the job, records no
+# output and leaves the bin directory off GITHUB_PATH.
+case_malformed_tooling_version_fails() {
+  local name="malformed_tooling_version_fails"
+  new_case
+  with_git_refs v2.1.7
+  export FAKE_TOOLING_VERSION="unknown"
+  run_script -- v2.1.7
+  expect_status "$name" 1 || return
+  expect_stderr "$name" "::error::vergil-tooling: ${case_dir}/uv-tools/vergil-tooling/bin/python gives the installed vergil-tooling version as 'unknown', which is not X.Y.Z" || return
+  if [ -s "${case_dir}/github-output" ] || grep -qx "${case_dir}/uv-bin" "${case_dir}/github-path"; then
+    fail_case "$name" "a malformed version was recorded or the bin dir added to GITHUB_PATH"
+    return
+  fi
+  pass_case "$name"
+}
+
 case_missing_pin_fails() {
   local name="missing_pin_fails"
   new_case
@@ -915,6 +976,8 @@ case_released_install_installs_pinned_uv || true
 case_uv_hash_mismatch || true
 case_self_repo_host_installs_pinned_uv || true
 case_self_repo_container_pins_image_python || true
+case_every_path_records_tooling_version || true
+case_malformed_tooling_version_fails || true
 case_missing_pin_fails || true
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"

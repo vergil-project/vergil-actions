@@ -1,9 +1,10 @@
 # ci/evidence/reports
 
 Holds the per-language report-file contract of the `test` and `audit` evidence
-gates and of the `quality` gate's `lint` and `typecheck` legs, stages one
-matrix leg's reports for the gate's evidence artifact, and checks that the
-quality evidence job received every lint and typecheck report.
+gates and of the `quality` gate's `lint`, `typecheck` and `build` legs,
+stages one matrix leg's reports for the gate's evidence artifact, and checks
+that the quality evidence job received every lint and typecheck report, and
+with BUILD on every build report.
 
 `vrg-validate` writes each gate's machine-readable reports at the workspace
 root. At release time the evidence gate
@@ -18,16 +19,23 @@ must be the ones the language's gate commands write:
 | `rust` | `test` | `coverage.xml`, `junit.xml` | cargo-llvm-cov, cargo-nextest |
 | `rust` | `audit` | `cargo-deny.json` | cargo-deny |
 | `python` | `lint` | `quality-ruff.json` | ruff |
-| `python` | `typecheck` | `quality-mypy.xml` | mypy |
-| `rust` | `lint` | `quality-clippy.json` | rustfmt, clippy |
+| `python` | `typecheck` | `quality-mypy.xml`, `quality-ty.log`* | mypy, ty |
+| `rust` | `lint` | `quality-rustfmt.log`*, `quality-clippy.json` | rustfmt, clippy |
 | `rust` | `typecheck` | `quality-cargo-check.json` | cargo |
+| `rust` | `build` | `quality-build.log`* | cargo |
 | `typescript` | `test` | `coverage.xml`, `junit.xml` | vitest, @vitest/coverage-v8 |
 | `typescript` | `audit` | `npm-audit.json`, `licenses.json` | npm audit, vrg-npm-license-gate |
-| `typescript` | `lint` | `quality-eslint.json` | prettier, eslint |
+| `typescript` | `lint` | `quality-prettier.log`*, `quality-eslint.json` | prettier, eslint |
 | `typescript` | `typecheck` | `quality-tsc.txt` | tsc |
+| `typescript` | `build` | `quality-build.log`* | npm |
 
-`lint` and `typecheck` are the legs of the `quality` gate in
-[`ci-quality`](../workflows/ci-quality.md). Each leg is its own job and
+\* A transcript, required only from vergil-tooling v2.1.349 (see
+[Transcripts](#transcripts)).
+
+`lint`, `typecheck` and `build` are the legs of the `quality` gate in
+[`ci-quality`](../workflows/ci-quality.md). The `build` leg runs only when
+vergil-tooling turns BUILD on for the language (today Rust and TypeScript).
+Each leg is its own job and
 writes only its own report, so the contract is per leg. The gate's `common`
 and `custom` transcripts (`quality-common.log` and `quality-custom.log`)
 belong to no leg's contract; `ci-quality` stages them itself.
@@ -48,7 +56,7 @@ on: Vitest's JUnit report and its Cobertura coverage (copied to
 `coverage.xml`), `npm audit --json` as `npm-audit.json`, ESLint's JSON
 formatter output as `quality-eslint.json`, and the `tsc --diagnostics`
 output as `quality-tsc.txt`. Prettier runs first in the `lint` gate and
-writes no report. As for Rust, a repository pinned to a vergil-tooling
+writes no report of its own (its transcript is below). As for Rust, a repository pinned to a vergil-tooling
 release without them fails its passing legs here.
 
 Like Python's, the TypeScript `audit` gate also writes a license report,
@@ -59,6 +67,32 @@ from
 on (released in vergil-tooling v2.1.327). A repository pinned to an earlier
 vergil-tooling release fails its passing TypeScript `audit` legs here, on the
 missing `licenses.json`.
+
+## Transcripts
+
+Some gate tools write no report of their own: ty in the Python `typecheck`
+gate, rustfmt and Prettier in the Rust and TypeScript `lint` gates, and the
+release build in the `build` gate. From
+[vergil-tooling#4953](https://github.com/vergil-project/vergil-tooling/issues/4953)
+on (released in vergil-tooling v2.1.349), `vrg-validate` writes a
+**transcript** for each, at the workspace root: the tool's version, the
+command, its output and its exit status (`quality-ty.log`,
+`quality-rustfmt.log`, `quality-prettier.log` and `quality-build.log`).
+They are staged like any other report, so the quality evidence shows that
+these tools ran.
+
+An earlier vergil-tooling release writes none, so a transcript is required
+only of a leg that ran v2.1.349 or later. `stage` and `expect` mode take the
+installed release as `tooling-version`, the
+[`shared/setup/vergil`](shared-setup-vergil.md) action's output of the same
+name, and leave out each transcript the release does not write yet, with a
+`::notice::` naming it; a `build` leg on such a release stages nothing.
+Every other report is required whatever the release. `tooling-version` is
+needed wherever the gate's contract names a transcript: empty, or not
+`X.Y.Z`, it fails the step there. `ci-quality` passes each leg's own
+install to its stage step and the `matrix` job's install to the expect
+step; every leg installs after the `matrix` job, so the expect step never
+assumes a newer release than a leg ran.
 
 This table, in `actions/ci/evidence/reports/reports.sh`, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
@@ -74,8 +108,8 @@ empty payload.
 
 The `quality` gate also serves repositories with no fleet primary language:
 a shell or Claude plugin repository, or one that passes no `language`. Their
-`lint` and `typecheck` legs write no report, so for those two gates such a
-language, or an empty one, is not an error: the step emits a `::notice::`
+`lint` and `typecheck` legs write no report, so for the quality gate's legs
+such a language, or an empty one, is not an error: the step emits a `::notice::`
 saying it has no report contract, stages nothing and lists no tools, and the
 quality evidence carries the `common` and `custom` transcripts alone. The
 `test` and `audit` gates still refuse it.
@@ -102,7 +136,12 @@ This action is **wired automatically** into `ci-test`, `ci-audit` and
     gate: test
     version: ${{ matrix.version }}
     gate-outcome: ${{ steps.gate.outcome }}
+    tooling-version: ${{ steps.vergil.outputs.tooling-version }}
 ```
+
+`steps.vergil` is the leg's [`shared/setup/vergil`](shared-setup-vergil.md)
+step. A `test` or `audit` leg names no transcript and may leave
+`tooling-version` out.
 
 In the evidence job, `mode: tools` gives the tools JSON for
 [`ci/evidence/emit`](ci-evidence-emit.md):
@@ -128,25 +167,29 @@ The `quality` evidence job checks the downloaded legs with `mode: expect`
 before it emits, since the emit action skips a pattern that matches nothing:
 
 ```yaml
-- name: Require the lint and typecheck reports
+- name: Require the lint, typecheck and build reports
   uses: vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1
   with:
     mode: expect
     language: rust
     reports-dir: evidence-reports
+    build-enabled: ${{ needs.matrix.outputs.build-enabled }}
+    tooling-version: ${{ needs.matrix.outputs.tooling-version }}
 ```
 
 ## Inputs
 
 | Input | Required | Default | Description |
 | ----- | -------- | ------- | ----------- |
-| `mode` | Yes | — | `stage` copies this leg's reports into `out-dir`; `tools` outputs the gate's tools JSON; `expect` checks `reports-dir` holds every lint and typecheck report of the language. |
-| `language` | Yes | — | Primary language of the calling repository, e.g. `python` or `rust`. May be empty only for the `lint` and `typecheck` gates and in `expect` mode. |
-| `gate` | Stage and tools modes | `""` | `test`, `audit`, `lint` or `typecheck`. Not used in `expect` mode. |
+| `mode` | Yes | — | `stage` copies this leg's reports into `out-dir`; `tools` outputs the gate's tools JSON; `expect` checks `reports-dir` holds every lint and typecheck report of the language, and every build report when `build-enabled` is `true`. |
+| `language` | Yes | — | Primary language of the calling repository, e.g. `python` or `rust`. May be empty only for the `lint`, `typecheck` and `build` gates and in `expect` mode. |
+| `gate` | Stage and tools modes | `""` | `test`, `audit`, `lint`, `typecheck` or `build`. Not used in `expect` mode. |
 | `version` | Stage mode | `""` | The matrix leg's version label, appended to each staged file's stem. |
 | `gate-outcome` | Stage mode | `""` | The outcome of the step that ran the gate (`steps.<id>.outcome`). |
 | `out-dir` | No | `ci-reports` | Stage mode, the directory to stage the reports into. |
 | `reports-dir` | Expect mode; optional in tools mode | `""` | The directory holding every leg's staged reports, the evidence job's download directory. In tools mode, a gate whose legs left skip records there lists no tools. |
+| `tooling-version` | Stage and expect modes, where the gate names a transcript | `""` | The installed vergil-tooling release, the [`shared/setup/vergil`](shared-setup-vergil.md) action's `tooling-version` output. A transcript is required only from v2.1.349 (see [Transcripts](#transcripts)). |
+| `build-enabled` | Expect mode | `""` | `true` to require the build leg's reports too, `false` to check only the lint and typecheck legs: `vrg-ci-resolve`'s `build-enabled` flag. Any other value fails. |
 
 ## Outputs
 
@@ -162,7 +205,8 @@ before it emits, since the emit action skips a pattern that matches nothing:
 evidence job flattens the legs' files by basename. No other file is staged,
 so the evidence job takes every file the legs uploaded.
 
-- When `gate-outcome` is `success`, every report must exist and be non-empty.
+- When `gate-outcome` is `success`, every report must exist and be non-empty,
+  except a transcript the installed release does not write yet.
   A missing or empty one fails the step with an `::error::` naming it, so a
   gate that passed without writing its evidence fails the leg, and through it
   the required `evidence` check, instead of failing later at release.
@@ -179,13 +223,16 @@ so the evidence job takes every file the legs uploaded.
 with a warning or notice, for a language with no entry. Given `reports-dir`,
 a gate whose legs were skipped as not bootstrapped lists no tools (see below).
 
-**Expect.** For each of the language's `lint` and `typecheck` reports,
+**Expect.** For each of the language's `lint` and `typecheck` reports, and
+with `build-enabled` `true` each `build` report, apart from a transcript
+the installed release does not write yet,
 `reports-dir` must hold at least one non-empty, version-suffixed copy
 (`<stem>-<version>.<ext>`, for example `quality-clippy-1.95.json`). A missing
 one fails the step with an `::error::` naming it. For a language with no
 lint or typecheck entry, the step warns or notes as above and passes. A gate
 whose legs were all skipped as not bootstrapped needs no report (see below).
-An empty `reports-dir`, or one that is not a directory, fails.
+An empty `reports-dir`, or one that is not a directory, fails, as does a
+`build-enabled` other than `true` or `false`.
 
 ## Not-bootstrapped repositories
 
@@ -218,14 +265,14 @@ as a vergil-tooling release before v2.1.342 records one, is not a skip.
 The step then prints a `::notice::` naming the leg and the reason, stages no
 report, and writes the leg's **skip record** into `out-dir`:
 `<gate>-not-bootstrapped-<version>.json`, or
-`quality-<gate>-not-bootstrapped-<version>.json` for a `lint` or `typecheck`
-leg. It is a JSON object with `"skipped": true`, `"reason":
+`quality-<gate>-not-bootstrapped-<version>.json` for a `lint`, `typecheck`
+or `build` leg. It is a JSON object with `"skipped": true`, `"reason":
 "not-bootstrapped"`, the gate, language, version, the commit (`head`) and the
 missing manifests the record gives the gate's stage. When any condition fails, each failing one is an
 `::error::` and the leg fails on its missing reports, as any passing gate that
 wrote no report does.
 
-In `expect` mode a `lint` or `typecheck` gate with no report passes, with a
+In `expect` mode a `lint`, `typecheck` or `build` gate with no report passes, with a
 `::notice::`, when `reports-dir` holds its legs' skip records. A skip record
 of another language or gate, or one found beside a report of the same gate,
 fails the step.

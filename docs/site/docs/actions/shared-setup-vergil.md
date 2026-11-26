@@ -42,6 +42,7 @@ to detect vergil-tooling itself, `pyproject.toml`) from the working directory.
 | `container-tags` | Compact JSON object mapping each resolved version to its image tag, e.g. `{"clang-20":"20","gcc-14":"14"}`. Passed to [`ci/matrix`](ci-matrix.md). |
 | `container-suffixes` | Compact JSON object mapping each resolved version to its image suffix, e.g. `{"clang-20":"cpp-clang","gcc-14":"cpp-gcc"}`. Passed to [`ci/matrix`](ci-matrix.md), and to [`shared/setup/primary-suffix`](shared-setup-primary-suffix.md) for the single-container jobs' image suffix. |
 | `build-enabled` | `true` when vergil-tooling turns the BUILD check on for the repository's language (`vrg-ci-resolve`'s `build-enabled`), else `false`. A vergil-tooling release older than the field gives `false`, with a notice; any value other than `true` or `false` fails the step. `ci-quality`'s `matrix` job passes it on, and its `build` job runs only when it is `true`. |
+| `tooling-version` | The vergil-tooling release the install step installed, read from the installed environment's package metadata (for example `2.1.349`), so a line pin (`v2.1`) gives the release it resolved to. `ci-quality` passes it to [`ci/evidence/reports`](ci-evidence-reports.md), whose report contract names some reports only from the release that writes them. |
 
 ## Behavior
 
@@ -119,6 +120,13 @@ The action runs these steps in order:
       example `vergil-tooling: vergil-tooling runs on Python 3.15.2 (<path>)`.
       A pre-release such as `3.15.0rc3`, or another series, fails the job.
       The self repo's host sync is checked the same way.
+
+      Every path then reads the installed vergil-tooling version from the
+      environment's own package metadata (the tool environment's, or the
+      self repo's synced `.venv`'s), logs it (`vergil-tooling: installed
+      vergil-tooling 2.1.349`) and writes it as the `tooling-version`
+      output. A version that cannot be read, or does not start `X.Y.Z`,
+      fails the job.
 
       A path that needs `uv` and finds none on `PATH` installs uv from its
       release tarball at the version and SHA-256 pinned in
