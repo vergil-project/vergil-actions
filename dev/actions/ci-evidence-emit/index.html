@@ -8251,11 +8251,12 @@ reusable CI workflows:</p>
 the report files and tools come from each language's contract in
 <a href="../ci-evidence-reports/"><code>ci/evidence/reports</code></a>. In <code>ci-quality</code> the files are
 <code>evidence-reports/quality-*</code>: the <code>common</code> and <code>custom</code> transcripts and every
-lint and typecheck leg's reports. The tools are <code>vrg-validate-common</code> and
-<code>vrg-validate-custom</code>, then the language's lint and typecheck tools from the
-same contract. Because an entry that matches no file is skipped, <code>ci-quality</code>
-first checks, with that action's <code>expect</code> mode, that every lint and
-typecheck report of the language is there.</p>
+lint, typecheck and build leg's reports. The tools are <code>vrg-validate-common</code>
+and <code>vrg-validate-custom</code>, then the language's lint and typecheck tools, and
+with BUILD on its build tools, from the same contract. Because an entry that
+matches no file is skipped, <code>ci-quality</code> first checks, with that action's
+<code>expect</code> mode, that every lint and typecheck report of the language, and with
+BUILD on every build report, is there.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/evidence/emit@v2.1</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>

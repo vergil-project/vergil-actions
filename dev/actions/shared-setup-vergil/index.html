@@ -8330,6 +8330,10 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
 <td><code>build-enabled</code></td>
 <td><code>true</code> when vergil-tooling turns the BUILD check on for the repository's language (<code>vrg-ci-resolve</code>'s <code>build-enabled</code>), else <code>false</code>. A vergil-tooling release older than the field gives <code>false</code>, with a notice; any value other than <code>true</code> or <code>false</code> fails the step. <code>ci-quality</code>'s <code>matrix</code> job passes it on, and its <code>build</code> job runs only when it is <code>true</code>.</td>
 </tr>
+<tr>
+<td><code>tooling-version</code></td>
+<td>The vergil-tooling release the install step installed, read from the installed environment's package metadata (for example <code>2.1.349</code>), so a line pin (<code>v2.1</code>) gives the release it resolved to. <code>ci-quality</code> passes it to <a href="../ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose report contract names some reports only from the release that writes them.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="behavior">Behavior<a class="headerlink" href="#behavior" title="Permanent link">&para;</a></h2>
@@ -8409,6 +8413,12 @@ to detect vergil-tooling itself, <code>pyproject.toml</code>) from the working d
   example <code>vergil-tooling: vergil-tooling runs on Python 3.15.2 (&lt;path&gt;)</code>.
   A pre-release such as <code>3.15.0rc3</code>, or another series, fails the job.
   The self repo's host sync is checked the same way.</p>
+<p>Every path then reads the installed vergil-tooling version from the
+  environment's own package metadata (the tool environment's, or the
+  self repo's synced <code>.venv</code>'s), logs it (<code>vergil-tooling: installed
+  vergil-tooling 2.1.349</code>) and writes it as the <code>tooling-version</code>
+  output. A version that cannot be read, or does not start <code>X.Y.Z</code>,
+  fails the job.</p>
 <p>A path that needs <code>uv</code> and finds none on <code>PATH</code> installs uv from its
   release tarball at the version and SHA-256 pinned in
   <code>install-tooling.sh</code>, into <code>$RUNNER_TEMP/uv/bin</code>, and adds that to

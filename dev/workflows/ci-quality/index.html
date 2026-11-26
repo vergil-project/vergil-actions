@@ -8464,8 +8464,12 @@ vergil-tooling release older than the flag gives <code>false</code>.</p>
 require it to succeed. It checks the result against the flag with
 <a href="../../actions/ci-evidence-assert/"><code>ci/evidence/assert</code></a>: skipped with
 BUILD off and successful with BUILD on pass, and anything else, a skipped
-build with BUILD on included, fails <code>quality / evidence</code>. The job uploads no
-report. There is no separate required check and no ruleset change.</p>
+build with BUILD on included, fails <code>quality / evidence</code>. The job stages its
+build transcript, <code>quality-build.log</code>, through
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a> and uploads it as
+the <code>ci-evidence-quality-reports-build-&lt;version&gt;</code> partial (see
+<a href="#evidence">Evidence</a>). There is no separate required check and no ruleset
+change.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">jobs</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">quality</span><span class="p">:</span>
@@ -8484,15 +8488,15 @@ vergil-tooling, not in this workflow, so a language's checks change there.</p>
 <h2 id="evidence">Evidence<a class="headerlink" href="#evidence" title="Permanent link">&para;</a></h2>
 <p><code>quality / evidence</code> always carries the <code>common</code> and <code>custom</code> transcripts
 (<code>quality-common.log</code> and <code>quality-custom.log</code>), for every language. Each
-<code>lint</code> and <code>typecheck</code> leg stages its language's reports through
-<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose <code>lint</code> and
-<code>typecheck</code> contracts name them, with the leg's version suffix:</p>
+<code>lint</code>, <code>typecheck</code> and <code>build</code> leg stages its language's reports through
+<a href="../../actions/ci-evidence-reports/"><code>ci/evidence/reports</code></a>, whose <code>lint</code>,
+<code>typecheck</code> and <code>build</code> contracts name them, with the leg's version suffix:</p>
 <table>
 <thead>
 <tr>
 <th>Language</th>
 <th>Leg</th>
-<th>Report</th>
+<th>Reports</th>
 <th>Tools</th>
 </tr>
 </thead>
@@ -8506,13 +8510,13 @@ vergil-tooling, not in this workflow, so a language's checks change there.</p>
 <tr>
 <td><code>python</code></td>
 <td><code>typecheck</code></td>
-<td><code>quality-mypy.xml</code></td>
-<td>mypy</td>
+<td><code>quality-mypy.xml</code>, <code>quality-ty.log</code>*</td>
+<td>mypy, ty</td>
 </tr>
 <tr>
 <td><code>rust</code></td>
 <td><code>lint</code></td>
-<td><code>quality-clippy.json</code></td>
+<td><code>quality-rustfmt.log</code>*, <code>quality-clippy.json</code></td>
 <td>rustfmt, clippy</td>
 </tr>
 <tr>
@@ -8522,9 +8526,15 @@ vergil-tooling, not in this workflow, so a language's checks change there.</p>
 <td>cargo</td>
 </tr>
 <tr>
+<td><code>rust</code></td>
+<td><code>build</code></td>
+<td><code>quality-build.log</code>*</td>
+<td>cargo</td>
+</tr>
+<tr>
 <td><code>typescript</code></td>
 <td><code>lint</code></td>
-<td><code>quality-eslint.json</code></td>
+<td><code>quality-prettier.log</code>*, <code>quality-eslint.json</code></td>
 <td>prettier, eslint</td>
 </tr>
 <tr>
@@ -8533,17 +8543,31 @@ vergil-tooling, not in this workflow, so a language's checks change there.</p>
 <td><code>quality-tsc.txt</code></td>
 <td>tsc</td>
 </tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>build</code></td>
+<td><code>quality-build.log</code>*</td>
+<td>npm</td>
+</tr>
 </tbody>
 </table>
+<p>* A transcript <code>vrg-validate</code> writes for a gate tool that writes no report
+of its own, from vergil-tooling v2.1.349 on. It is required only of a leg
+that ran that release or a later one: each leg's staging step takes the
+release its own setup step installed, and the <code>evidence</code> job takes the
+<code>matrix</code> job's (see
+<a href="../../actions/ci-evidence-reports/#transcripts">Transcripts</a>).</p>
 <p>The reports are required. A leg that passes but leaves its report missing
 or empty fails its staging step. A leg that fails is not failed again for a
 missing report. Before it emits, the <code>evidence</code> job checks that every report
-of the language is there from at least one leg, and fails naming any that is
-not. The emitted artifact takes every <code>quality-*</code> file the jobs uploaded,
-and its tools are <code>vrg-validate-common</code>, <code>vrg-validate-custom</code>, then the
-language's lint and typecheck tools.</p>
+of the language is there from at least one leg (a build report only with
+BUILD on), and fails naming any that is not. The emitted artifact takes
+every <code>quality-*</code> file the jobs uploaded, and its tools are
+<code>vrg-validate-common</code>, <code>vrg-validate-custom</code>, then the language's lint and
+typecheck tools, then with BUILD on its build tools.</p>
 <p>On a repository not bootstrapped yet (none of the language's manifests and no
-sources), <code>vrg-validate</code> skips the <code>lint</code> and <code>typecheck</code> gates, loudly. Each
+sources), <code>vrg-validate</code> skips the <code>lint</code>, <code>typecheck</code> and <code>build</code> gates,
+loudly. Each
 leg's staging step then prints a notice and stages a skip record,
 <code>quality-&lt;leg&gt;-not-bootstrapped-&lt;version&gt;.json</code>, in place of its report, and
 the <code>evidence</code> job accepts the skip records instead of the reports and lists

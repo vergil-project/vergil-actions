@@ -6184,6 +6184,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#transcripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transcripts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8159,6 +8170,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#transcripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transcripts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8232,9 +8254,10 @@
 
 <h1 id="cievidencereports">ci/evidence/reports<a class="headerlink" href="#cievidencereports" title="Permanent link">&para;</a></h1>
 <p>Holds the per-language report-file contract of the <code>test</code> and <code>audit</code> evidence
-gates and of the <code>quality</code> gate's <code>lint</code> and <code>typecheck</code> legs, stages one
-matrix leg's reports for the gate's evidence artifact, and checks that the
-quality evidence job received every lint and typecheck report.</p>
+gates and of the <code>quality</code> gate's <code>lint</code>, <code>typecheck</code> and <code>build</code> legs,
+stages one matrix leg's reports for the gate's evidence artifact, and checks
+that the quality evidence job received every lint and typecheck report, and
+with BUILD on every build report.</p>
 <p><code>vrg-validate</code> writes each gate's machine-readable reports at the workspace
 root. At release time the evidence gate
 (<a href="../cd-release-ci-evidence-gate/"><code>cd/release/ci-evidence-gate</code></a>) refuses a
@@ -8283,19 +8306,25 @@ must be the ones the language's gate commands write:</p>
 <tr>
 <td><code>python</code></td>
 <td><code>typecheck</code></td>
-<td><code>quality-mypy.xml</code></td>
-<td>mypy</td>
+<td><code>quality-mypy.xml</code>, <code>quality-ty.log</code>*</td>
+<td>mypy, ty</td>
 </tr>
 <tr>
 <td><code>rust</code></td>
 <td><code>lint</code></td>
-<td><code>quality-clippy.json</code></td>
+<td><code>quality-rustfmt.log</code>*, <code>quality-clippy.json</code></td>
 <td>rustfmt, clippy</td>
 </tr>
 <tr>
 <td><code>rust</code></td>
 <td><code>typecheck</code></td>
 <td><code>quality-cargo-check.json</code></td>
+<td>cargo</td>
+</tr>
+<tr>
+<td><code>rust</code></td>
+<td><code>build</code></td>
+<td><code>quality-build.log</code>*</td>
 <td>cargo</td>
 </tr>
 <tr>
@@ -8313,7 +8342,7 @@ must be the ones the language's gate commands write:</p>
 <tr>
 <td><code>typescript</code></td>
 <td><code>lint</code></td>
-<td><code>quality-eslint.json</code></td>
+<td><code>quality-prettier.log</code>*, <code>quality-eslint.json</code></td>
 <td>prettier, eslint</td>
 </tr>
 <tr>
@@ -8322,10 +8351,20 @@ must be the ones the language's gate commands write:</p>
 <td><code>quality-tsc.txt</code></td>
 <td>tsc</td>
 </tr>
+<tr>
+<td><code>typescript</code></td>
+<td><code>build</code></td>
+<td><code>quality-build.log</code>*</td>
+<td>npm</td>
+</tr>
 </tbody>
 </table>
-<p><code>lint</code> and <code>typecheck</code> are the legs of the <code>quality</code> gate in
-<a href="../../workflows/ci-quality/"><code>ci-quality</code></a>. Each leg is its own job and
+<p>* A transcript, required only from vergil-tooling v2.1.349 (see
+<a href="#transcripts">Transcripts</a>).</p>
+<p><code>lint</code>, <code>typecheck</code> and <code>build</code> are the legs of the <code>quality</code> gate in
+<a href="../../workflows/ci-quality/"><code>ci-quality</code></a>. The <code>build</code> leg runs only when
+vergil-tooling turns BUILD on for the language (today Rust and TypeScript).
+Each leg is its own job and
 writes only its own report, so the contract is per leg. The gate's <code>common</code>
 and <code>custom</code> transcripts (<code>quality-common.log</code> and <code>quality-custom.log</code>)
 belong to no leg's contract; <code>ci-quality</code> stages them itself.</p>
@@ -8344,7 +8383,7 @@ on: Vitest's JUnit report and its Cobertura coverage (copied to
 <code>coverage.xml</code>), <code>npm audit --json</code> as <code>npm-audit.json</code>, ESLint's JSON
 formatter output as <code>quality-eslint.json</code>, and the <code>tsc --diagnostics</code>
 output as <code>quality-tsc.txt</code>. Prettier runs first in the <code>lint</code> gate and
-writes no report. As for Rust, a repository pinned to a vergil-tooling
+writes no report of its own (its transcript is below). As for Rust, a repository pinned to a vergil-tooling
 release without them fails its passing legs here.</p>
 <p>Like Python's, the TypeScript <code>audit</code> gate also writes a license report,
 <code>licenses.json</code>: <code>vrg-npm-license-gate</code> checks each package in the committed
@@ -8354,6 +8393,29 @@ from
 on (released in vergil-tooling v2.1.327). A repository pinned to an earlier
 vergil-tooling release fails its passing TypeScript <code>audit</code> legs here, on the
 missing <code>licenses.json</code>.</p>
+<h2 id="transcripts">Transcripts<a class="headerlink" href="#transcripts" title="Permanent link">&para;</a></h2>
+<p>Some gate tools write no report of their own: ty in the Python <code>typecheck</code>
+gate, rustfmt and Prettier in the Rust and TypeScript <code>lint</code> gates, and the
+release build in the <code>build</code> gate. From
+<a href="https://github.com/vergil-project/vergil-tooling/issues/4953">vergil-tooling#4953</a>
+on (released in vergil-tooling v2.1.349), <code>vrg-validate</code> writes a
+<strong>transcript</strong> for each, at the workspace root: the tool's version, the
+command, its output and its exit status (<code>quality-ty.log</code>,
+<code>quality-rustfmt.log</code>, <code>quality-prettier.log</code> and <code>quality-build.log</code>).
+They are staged like any other report, so the quality evidence shows that
+these tools ran.</p>
+<p>An earlier vergil-tooling release writes none, so a transcript is required
+only of a leg that ran v2.1.349 or later. <code>stage</code> and <code>expect</code> mode take the
+installed release as <code>tooling-version</code>, the
+<a href="../shared-setup-vergil/"><code>shared/setup/vergil</code></a> action's output of the same
+name, and leave out each transcript the release does not write yet, with a
+<code>::notice::</code> naming it; a <code>build</code> leg on such a release stages nothing.
+Every other report is required whatever the release. <code>tooling-version</code> is
+needed wherever the gate's contract names a transcript: empty, or not
+<code>X.Y.Z</code>, it fails the step there. <code>ci-quality</code> passes each leg's own
+install to its stage step and the <code>matrix</code> job's install to the expect
+step; every leg installs after the <code>matrix</code> job, so the expect step never
+assumes a newer release than a leg ran.</p>
 <p>This table, in <code>actions/ci/evidence/reports/reports.sh</code>, is the one place
 vergil-actions records the contract. The files are written by vergil-tooling's
 gate commands (<code>lib/languages.py</code>), so a change to a gate's report names
@@ -8366,8 +8428,8 @@ release-time evidence gate still decides; in enforcing mode it rejects an
 empty payload.</p>
 <p>The <code>quality</code> gate also serves repositories with no fleet primary language:
 a shell or Claude plugin repository, or one that passes no <code>language</code>. Their
-<code>lint</code> and <code>typecheck</code> legs write no report, so for those two gates such a
-language, or an empty one, is not an error: the step emits a <code>::notice::</code>
+<code>lint</code> and <code>typecheck</code> legs write no report, so for the quality gate's legs
+such a language, or an empty one, is not an error: the step emits a <code>::notice::</code>
 saying it has no report contract, stages nothing and lists no tools, and the
 quality evidence carries the <code>common</code> and <code>custom</code> transcripts alone. The
 <code>test</code> and <code>audit</code> gates still refuse it.</p>
@@ -8389,7 +8451,11 @@ or an unknown <code>mode</code> fails the step.</p>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">gate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ matrix.version }}</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">gate-outcome</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.gate.outcome }}</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">tooling-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.vergil.outputs.tooling-version }}</span>
 </code></pre></div>
+<p><code>steps.vergil</code> is the leg's <a href="../shared-setup-vergil/"><code>shared/setup/vergil</code></a>
+step. A <code>test</code> or <code>audit</code> leg names no transcript and may leave
+<code>tooling-version</code> out.</p>
 <p>In the evidence job, <code>mode: tools</code> gives the tools JSON for
 <a href="../ci-evidence-emit/"><code>ci/evidence/emit</code></a>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resolve test evidence tools</span>
@@ -8409,12 +8475,14 @@ or an unknown <code>mode</code> fails the step.</p>
 </code></pre></div>
 <p>The <code>quality</code> evidence job checks the downloaded legs with <code>mode: expect</code>
 before it emits, since the emit action skips a pattern that matches nothing:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Require the lint and typecheck reports</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Require the lint, typecheck and build reports</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vergil-project/vergil-actions/actions/ci/evidence/reports@v2.1</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">with</span><span class="p">:</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">expect</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rust</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">reports-dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">evidence-reports</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">build-enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ needs.matrix.outputs.build-enabled }}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">tooling-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ needs.matrix.outputs.tooling-version }}</span>
 </code></pre></div>
 <h2 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">&para;</a></h2>
 <table>
@@ -8431,19 +8499,19 @@ before it emits, since the emit action skips a pattern that matches nothing:</p>
 <td><code>mode</code></td>
 <td>Yes</td>
 <td>—</td>
-<td><code>stage</code> copies this leg's reports into <code>out-dir</code>; <code>tools</code> outputs the gate's tools JSON; <code>expect</code> checks <code>reports-dir</code> holds every lint and typecheck report of the language.</td>
+<td><code>stage</code> copies this leg's reports into <code>out-dir</code>; <code>tools</code> outputs the gate's tools JSON; <code>expect</code> checks <code>reports-dir</code> holds every lint and typecheck report of the language, and every build report when <code>build-enabled</code> is <code>true</code>.</td>
 </tr>
 <tr>
 <td><code>language</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Primary language of the calling repository, e.g. <code>python</code> or <code>rust</code>. May be empty only for the <code>lint</code> and <code>typecheck</code> gates and in <code>expect</code> mode.</td>
+<td>Primary language of the calling repository, e.g. <code>python</code> or <code>rust</code>. May be empty only for the <code>lint</code>, <code>typecheck</code> and <code>build</code> gates and in <code>expect</code> mode.</td>
 </tr>
 <tr>
 <td><code>gate</code></td>
 <td>Stage and tools modes</td>
 <td><code>""</code></td>
-<td><code>test</code>, <code>audit</code>, <code>lint</code> or <code>typecheck</code>. Not used in <code>expect</code> mode.</td>
+<td><code>test</code>, <code>audit</code>, <code>lint</code>, <code>typecheck</code> or <code>build</code>. Not used in <code>expect</code> mode.</td>
 </tr>
 <tr>
 <td><code>version</code></td>
@@ -8469,6 +8537,18 @@ before it emits, since the emit action skips a pattern that matches nothing:</p>
 <td><code>""</code></td>
 <td>The directory holding every leg's staged reports, the evidence job's download directory. In tools mode, a gate whose legs left skip records there lists no tools.</td>
 </tr>
+<tr>
+<td><code>tooling-version</code></td>
+<td>Stage and expect modes, where the gate names a transcript</td>
+<td><code>""</code></td>
+<td>The installed vergil-tooling release, the <a href="../shared-setup-vergil/"><code>shared/setup/vergil</code></a> action's <code>tooling-version</code> output. A transcript is required only from v2.1.349 (see <a href="#transcripts">Transcripts</a>).</td>
+</tr>
+<tr>
+<td><code>build-enabled</code></td>
+<td>Expect mode</td>
+<td><code>""</code></td>
+<td><code>true</code> to require the build leg's reports too, <code>false</code> to check only the lint and typecheck legs: <code>vrg-ci-resolve</code>'s <code>build-enabled</code> flag. Any other value fails.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
@@ -8493,7 +8573,8 @@ before it emits, since the emit action skips a pattern that matches nothing:</p>
 evidence job flattens the legs' files by basename. No other file is staged,
 so the evidence job takes every file the legs uploaded.</p>
 <ul>
-<li>When <code>gate-outcome</code> is <code>success</code>, every report must exist and be non-empty.
+<li>When <code>gate-outcome</code> is <code>success</code>, every report must exist and be non-empty,
+  except a transcript the installed release does not write yet.
   A missing or empty one fails the step with an <code>::error::</code> naming it, so a
   gate that passed without writing its evidence fails the leg, and through it
   the required <code>evidence</code> check, instead of failing later at release.</li>
@@ -8509,13 +8590,16 @@ so the evidence job takes every file the legs uploaded.</p>
 <p><strong>Tools.</strong> Writes the gate's tools JSON array to the <code>tools</code> output: <code>[]</code>,
 with a warning or notice, for a language with no entry. Given <code>reports-dir</code>,
 a gate whose legs were skipped as not bootstrapped lists no tools (see below).</p>
-<p><strong>Expect.</strong> For each of the language's <code>lint</code> and <code>typecheck</code> reports,
+<p><strong>Expect.</strong> For each of the language's <code>lint</code> and <code>typecheck</code> reports, and
+with <code>build-enabled</code> <code>true</code> each <code>build</code> report, apart from a transcript
+the installed release does not write yet,
 <code>reports-dir</code> must hold at least one non-empty, version-suffixed copy
 (<code>&lt;stem&gt;-&lt;version&gt;.&lt;ext&gt;</code>, for example <code>quality-clippy-1.95.json</code>). A missing
 one fails the step with an <code>::error::</code> naming it. For a language with no
 lint or typecheck entry, the step warns or notes as above and passes. A gate
 whose legs were all skipped as not bootstrapped needs no report (see below).
-An empty <code>reports-dir</code>, or one that is not a directory, fails.</p>
+An empty <code>reports-dir</code>, or one that is not a directory, fails, as does a
+<code>build-enabled</code> other than <code>true</code> or <code>false</code>.</p>
 <h2 id="not-bootstrapped-repositories">Not-bootstrapped repositories<a class="headerlink" href="#not-bootstrapped-repositories" title="Permanent link">&para;</a></h2>
 <p>A freshly initialised repository has none of its language's manifests yet
 (no <code>pyproject.toml</code> or <code>uv.lock</code>, no <code>Cargo.toml</code> or <code>Cargo.lock</code>, no
@@ -8544,13 +8628,13 @@ as a vergil-tooling release before v2.1.342 records one, is not a skip.</p>
 <p>The step then prints a <code>::notice::</code> naming the leg and the reason, stages no
 report, and writes the leg's <strong>skip record</strong> into <code>out-dir</code>:
 <code>&lt;gate&gt;-not-bootstrapped-&lt;version&gt;.json</code>, or
-<code>quality-&lt;gate&gt;-not-bootstrapped-&lt;version&gt;.json</code> for a <code>lint</code> or <code>typecheck</code>
-leg. It is a JSON object with <code>"skipped": true</code>, <code>"reason":
+<code>quality-&lt;gate&gt;-not-bootstrapped-&lt;version&gt;.json</code> for a <code>lint</code>, <code>typecheck</code>
+or <code>build</code> leg. It is a JSON object with <code>"skipped": true</code>, <code>"reason":
 "not-bootstrapped"</code>, the gate, language, version, the commit (<code>head</code>) and the
 missing manifests the record gives the gate's stage. When any condition fails, each failing one is an
 <code>::error::</code> and the leg fails on its missing reports, as any passing gate that
 wrote no report does.</p>
-<p>In <code>expect</code> mode a <code>lint</code> or <code>typecheck</code> gate with no report passes, with a
+<p>In <code>expect</code> mode a <code>lint</code>, <code>typecheck</code> or <code>build</code> gate with no report passes, with a
 <code>::notice::</code>, when <code>reports-dir</code> holds its legs' skip records. A skip record
 of another language or gate, or one found beside a report of the same gate,
 fails the step.</p>
