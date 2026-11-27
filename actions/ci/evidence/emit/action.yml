@@ -2,7 +2,9 @@ name: Emit CI evidence artifact
 description: >-
   Writes an evidence.json fragment and uploads a gate's report files as a
   ci-evidence-<gate> workflow-run artifact, so the release-time harvester
-  (vrg-ci-evidence) can bundle durable, attested per-gate evidence. Additive
+  (vrg-ci-evidence) can bundle durable, attested per-gate evidence. A second
+  copy, ci-evidence-<gate>-attempt-<run attempt>, keeps each attempt's
+  evidence through a re-run of the CI run. Additive
   and harmless: the artifact is always produced (evidence.json is always
   present) and missing report files are skipped, never fatal.
 
@@ -11,8 +13,9 @@ inputs:
     description: >-
       Evidence gate name — one of "security", "test", "audit", "quality",
       "package".
-      Determines the artifact name (ci-evidence-<gate>) and the evidence.json
-      "gate" field.
+      Determines the artifact names (ci-evidence-<gate> and
+      ci-evidence-<gate>-attempt-<run attempt>) and the evidence.json "gate"
+      field.
     required: true
   files:
     description: >-
@@ -94,5 +97,20 @@ runs:
       uses: actions/upload-artifact@v7
       with:
         name: ci-evidence-${{ inputs.gate }}
+        path: ${{ steps.stage.outputs.staging }}
+        if-no-files-found: error
+
+    # A run's artifact names are shared by all its attempts: a re-run's
+    # upload of ci-evidence-<gate> replaces the earlier attempt's copy, so a
+    # harvest that must read an earlier attempt that passed finds its
+    # evidence gone (issue #1444). This second copy carries the attempt in
+    # its name, so no later attempt replaces it. The copy above keeps the
+    # name the released harvest matches exactly. Neither name matches the
+    # ci-evidence-<gate>-reports-* or -part-* patterns that the evidence
+    # jobs download.
+    - name: Upload per-attempt evidence artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ci-evidence-${{ inputs.gate }}-attempt-${{ github.run_attempt }}
         path: ${{ steps.stage.outputs.staging }}
         if-no-files-found: error

@@ -53,6 +53,10 @@ name: Smoke - setup/vergil outputs
 #         names every scanner whose SARIF partial it bundles in the
 #         security gate's tools, codeql only when its job passed, and two
 #         broken copies of the workflow fail the check (issue #1215);
+#       - ci/evidence emit-attempt.test.sh: ci/evidence/emit uploads each
+#         gate's evidence as ci-evidence-<gate> and as a per-attempt copy
+#         that a re-run does not replace, and neither name matches a
+#         partial pattern an evidence job downloads (issue #1444);
 #       - ci/evidence security-gate.test.sh: ci-security's codeql job runs
 #         whenever run-security and run-codeql are true, and its evidence
 #         gate accepts a skipped codeql job only when run-codeql is false
@@ -188,6 +192,9 @@ jobs:
       - name: Run ci/evidence security-tools harness
         shell: bash
         run: bash actions/ci/evidence/tests/security-tools.test.sh
+      - name: Run ci/evidence emit-attempt harness
+        shell: bash
+        run: bash actions/ci/evidence/tests/emit-attempt.test.sh
       - name: Run ci/evidence security-gate harness
         shell: bash
         run: bash actions/ci/evidence/tests/security-gate.test.sh
