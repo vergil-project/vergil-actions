@@ -8210,7 +8210,8 @@
 
 <h1 id="cievidenceemit">ci/evidence/emit<a class="headerlink" href="#cievidenceemit" title="Permanent link">&para;</a></h1>
 <p>Writes a gate's <code>evidence.json</code> and uploads it, with the gate's report files,
-as a <code>ci-evidence-&lt;gate&gt;</code> workflow-run artifact. At release time <code>cd-release</code>
+as a <code>ci-evidence-&lt;gate&gt;</code> workflow-run artifact, plus a
+<code>ci-evidence-&lt;gate&gt;-attempt-&lt;n&gt;</code> copy that a re-run does not replace. At release time <code>cd-release</code>
 harvests these artifacts (<code>vrg-ci-evidence</code>) into the attested evidence bundle
 it attaches to the GitHub Release (see
 <a href="../cd-release-ci-evidence-gate/"><code>cd/release/ci-evidence-gate</code></a> and
@@ -8281,7 +8282,7 @@ BUILD on every build report, is there.</p>
 <td><code>gate</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Evidence gate name: <code>security</code>, <code>test</code>, <code>audit</code>, <code>quality</code> or <code>package</code>. Sets the artifact name (<code>ci-evidence-&lt;gate&gt;</code>) and the <code>gate</code> field of <code>evidence.json</code>.</td>
+<td>Evidence gate name: <code>security</code>, <code>test</code>, <code>audit</code>, <code>quality</code> or <code>package</code>. Sets the artifact names (<code>ci-evidence-&lt;gate&gt;</code> and <code>ci-evidence-&lt;gate&gt;-attempt-&lt;n&gt;</code>) and the <code>gate</code> field of <code>evidence.json</code>.</td>
 </tr>
 <tr>
 <td><code>files</code></td>
@@ -8314,9 +8315,21 @@ BUILD on every build report, is there.</p>
 </code></pre></div>
 <p><code>tools</code> and <code>metrics</code> must be valid JSON; <code>jq</code> fails the step otherwise.
 2. <strong>Upload.</strong> Uploads the staging directory as the <code>ci-evidence-&lt;gate&gt;</code>
-   artifact with <code>actions/upload-artifact</code>.</p>
+   artifact with <code>actions/upload-artifact</code>.
+3. <strong>Upload the per-attempt copy.</strong> Uploads the same directory again as
+   <code>ci-evidence-&lt;gate&gt;-attempt-&lt;n&gt;</code>, where <code>&lt;n&gt;</code> is the run's
+   <code>github.run_attempt</code>.</p>
 </li>
 </ol>
+<p>All attempts of a workflow run share one set of artifact names, so a re-run
+that uploads <code>ci-evidence-&lt;gate&gt;</code> again replaces the earlier attempt's copy.
+The per-attempt copy keeps each attempt's evidence, so a release can still
+use an earlier attempt that passed when a later re-run failed. The harvest
+still reads <code>ci-evidence-&lt;gate&gt;</code>. Both copies follow the repository's
+artifact retention setting, and each gate now keeps two artifacts per
+attempt. The evidence jobs download only the <code>ci-evidence-&lt;gate&gt;-reports-*</code>
+and <code>ci-evidence-security-part-*</code> partials, and neither name matches those
+patterns.</p>
 <p>Because <code>evidence.json</code> is always written, the artifact is always produced,
 even for a gate that has no report files yet. Whether an artifact is complete
 enough is decided at release time: the harvest rejects an
